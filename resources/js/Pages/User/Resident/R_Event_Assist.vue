@@ -1293,7 +1293,7 @@ onUnmounted(() => {
 
 .success-message .highlight {
     color: #ff8c42;
-    font-weight: 700;
+    font-weight: 650;
 }
 
 .view-request-btn {
