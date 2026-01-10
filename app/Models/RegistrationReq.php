@@ -6,16 +6,12 @@ use Illuminate\Database\Eloquent\Model;
 
 class RegistrationReq extends Model
 {
-    // Table name if it doesn't follow convention (not 'registration_reqs')
-    protected $table = 'registration_req';
+    protected $table = 'registration_requests';
 
-    // Primary key as in your table
-    protected $primaryKey = 'registration_req_id';
+    protected $primaryKey = 'registration_request_id';
 
-    // Eloquent won't maintain updated_at automatically if you set timestamps manually,
-    // but we included updated_at in migration so keep timestamps true:
+    // Table has created_at column but not necessarily updated_at — controller will set created_at explicitly
     public $timestamps = false;
-    const CREATED_AT = 'created_at';
 
     protected $fillable = [
         'last_name',
@@ -24,25 +20,45 @@ class RegistrationReq extends Model
         'suffix',
         'contact_number',
         'secondary_contact_number',
+        'email',
+        'password',
+        'house_number',
+        'street',
         'phase',
         'package',
-        'password',
+        'barangay',
+        'city',
+        'province',
         'sex',
         'birthdate',
+        'place_of_birth',
+        'religion',
+        'nationality',
+        'occupation',
         'civil_status',
         'fk_role_id',
-        'address',
-        // 'barangay',        
-        // 'proof_of_residency',
+        'created_at',
+        'proof',
+        'proof_of_residency',
         'registration_status',
+        'offense_type',
+        'admin_feedback',
     ];
 
     protected $casts = [
         'created_at' => 'datetime',
+        'birthdate' => 'date',
     ];
 
-    // Hide hashed password when serializing
     protected $hidden = [
         'password',
     ];
+
+    /**
+     * Relationship to the User model (created when request is approved)
+     */
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'user_id', 'user_id');
+    }
 }

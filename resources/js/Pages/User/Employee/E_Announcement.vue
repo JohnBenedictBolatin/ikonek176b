@@ -9,7 +9,7 @@
         <div class="header-bar">
             <div class="header-content">
                 <div class="logo-section">
-                    <img src="/assets/WHITE LOGO.png" alt="Logo" class="header-logo" />
+                    <img src="/assets/LOGO.png" alt="Logo" class="header-logo" />
                 </div>
                 <div class="header-actions">
                     <img src="/assets/SETTINGS.png" alt="Settings" class="settings-btn-img" @click="toggleSettings" />
@@ -28,10 +28,10 @@
             <!-- Profile Card and Navigation Sidebar -->
             <div class="sidebar">
                 <div class="profile-card">
-                    <img src="/assets/KAPITAN.jpg" alt="Profile" class="profile-avatar" />
+                    <img :src="profilePictureUrl" alt="Profile" class="profile-avatar" />
                     <div class="profile-info">
-                        <div class="profile-name">Kap. Sammy Reyes</div>
-                        <div class="profile-role">BARANGAY CAPTAIN</div>
+                        <div class="profile-name">{{ user.name || 'Unknown User' }}</div>
+                        <div class="profile-role">{{ displayRole }}</div>
                     </div>
                 </div>
 
@@ -42,7 +42,10 @@
                         :class="{ active: activeTab === 'posts' }"
                         @click="setActiveTab('posts')"
                     >
-                        📋 Posts
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="nav-icon">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 0 0 2.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 0 0-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 0 0 .75-.75 2.25 2.25 0 0 0-.1-.664m-5.8 0A2.251 2.251 0 0 1 13.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25ZM6.75 12h.008v.008H6.75V12Zm0 3h.008v.008H6.75V15Zm0 3h.008v.008H6.75V18Z" />
+                        </svg>
+                        Posts
                     </Link>
                     <Link 
                         href="#" 
@@ -50,7 +53,10 @@
                         :class="{ active: activeTab === 'documents' }"
                         @click="navigateToDocuments"
                     >
-                        📄 Document Request
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="nav-icon">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
+                        </svg>
+                        Document Request
                     </Link>
                     <Link 
                         href="#" 
@@ -58,7 +64,10 @@
                         :class="{ active: activeTab === 'events' }"
                         @click="navigateToEvents"
                     >
-                        🤝 Event Assistance
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="nav-icon">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 0 0 2.625.372 9.337 9.337 0 0 0 4.121-.952 4.125 4.125 0 0 0-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 0 1 8.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0 1 11.964-3.07M12 6.375a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0Zm8.25 2.25a2.625 2.625 0 1 1-5.25 0 2.625 2.625 0 0 1 5.25 0Z" />
+                        </svg>
+                        Event Assistance
                     </Link>
                     <Link 
                         href="#" 
@@ -66,7 +75,10 @@
                         :class="{ active: activeTab === 'notifications' }"
                         @click="navigateToNotifications"
                     >
-                        🔔 Notifications
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="nav-icon">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0" />
+                        </svg>
+                        Notifications
                     </Link>
                     <Link 
                         href="#" 
@@ -74,12 +86,18 @@
                         :class="{ active: activeTab === 'profile' }"
                         @click="navigateToProfile"
                     >
-                        👤 Profile
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="nav-icon">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
+                        </svg>
+                        Profile
                     </Link>
                 </div>
 
                 <button class="faq-btn" @click="openFAQ">
-                    ❓ FAQs & Help Center
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="nav-icon">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 5.25h.008v.008H12v-.008Z" />
+                    </svg>
+                    FAQs & Help Center
                 </button>
             </div>
 
@@ -139,27 +157,40 @@
                                 </button>
                                 <div v-if="showFilterDropdown" class="filter-dropdown-menu">
                                     <button @click="selectFilter('all')" :class="{ active: filterOption === 'all' }">ALL</button>
-                                    <button @click="selectFilter('medical')" :class="{ active: filterOption === 'medical' }">MEDICAL</button>
-                                    <button @click="selectFilter('programs')" :class="{ active: filterOption === 'programs' }">PROGRAMS</button>
-                                    <button @click="selectFilter('youth')" :class="{ active: filterOption === 'youth' }">YOUTH</button>
-                                    <button @click="selectFilter('leadership')" :class="{ active: filterOption === 'leadership' }">LEADERSHIP</button>
+                                    <button @click="selectFilter('business')" :class="{ active: filterOption === 'business' }">BUSINESS</button>
+                                    <button @click="selectFilter('education')" :class="{ active: filterOption === 'education' }">EDUCATION</button>
+                                    <button @click="selectFilter('emergency')" :class="{ active: filterOption === 'emergency' }">EMERGENCY</button>
+                                    <button @click="selectFilter('employment')" :class="{ active: filterOption === 'employment' }">EMPLOYMENT</button>
                                     <button @click="selectFilter('environment')" :class="{ active: filterOption === 'environment' }">ENVIRONMENT</button>
+                                    <button @click="selectFilter('governance')" :class="{ active: filterOption === 'governance' }">GOVERNANCE</button>
+                                    <button @click="selectFilter('health')" :class="{ active: filterOption === 'health' }">HEALTH</button>
+                                    <button @click="selectFilter('incident')" :class="{ active: filterOption === 'incident' }">INCIDENT</button>
+                                    <button @click="selectFilter('infrastructure')" :class="{ active: filterOption === 'infrastructure' }">INFRASTRUCTURE</button>
+                                    <button @click="selectFilter('inquiries')" :class="{ active: filterOption === 'inquiries' }">INQUIRIES</button>
+                                    <button @click="selectFilter('livelihood')" :class="{ active: filterOption === 'livelihood' }">LIVELIHOOD</button>
+                                    <button @click="selectFilter('maintenance')" :class="{ active: filterOption === 'maintenance' }">MAINTENANCE</button>
+                                    <button @click="selectFilter('sanitation')" :class="{ active: filterOption === 'sanitation' }">SANITATION</button>
+                                    <button @click="selectFilter('sports')" :class="{ active: filterOption === 'sports' }">SPORTS</button>
+                                    <button @click="selectFilter('traffic')" :class="{ active: filterOption === 'traffic' }">TRAFFIC</button>
+                                    <button @click="selectFilter('weather')" :class="{ active: filterOption === 'weather' }">WEATHER</button>
+                                    <button @click="selectFilter('welfare')" :class="{ active: filterOption === 'welfare' }">WELFARE</button>
+                                    <button @click="selectFilter('youth')" :class="{ active: filterOption === 'youth' }">YOUTH</button>
                                 </div>
                             </div>
                         </div>
-<div class="filter-right">
-    <button class="add-post-btn" @click="addPost">＋ ADD POST</button>
-    <div class="search-container">
-        <input 
-            type="text" 
-            v-model="searchQuery" 
-            @input="performSearch"
-            placeholder="SEARCH..." 
-            class="search-input" 
-        />
-        <button class="search-btn" @click="performSearch">🔍</button>
-    </div>
-</div>
+                        <div class="filter-right">
+                            <button class="add-post-btn" @click="addPost" v-if="currentTab === 'announcements'">＋ ADD POST</button>
+                            <div class="search-container">
+                                <input 
+                                    type="text" 
+                                    v-model="searchQuery" 
+                                    @input="performSearch"
+                                    placeholder="SEARCH..." 
+                                    class="search-input" 
+                                />
+                                <button class="search-btn" @click="performSearch">🔍</button>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Posts Container -->
@@ -182,7 +213,7 @@
                                         v-for="tag in post.tags" 
                                         :key="tag"
                                         class="tag"
-                                        :class="tag.toLowerCase()"
+                                        :class="getTagClass(tag)"
                                     >
                                         #{{ tag }}
                                     </span>
@@ -194,7 +225,7 @@
                             </div>
 
                             <div class="post-content">
-                                <h3 class="post-title">{{ post.title }}</h3>
+                                <h2 v-if="post.header && post.header.trim()" class="post-header-text">{{ post.header }}</h2>
                                 <p class="post-text">{{ post.content }}</p>
                             </div>
 
@@ -229,7 +260,7 @@
 
                     <!-- Detailed Post View -->
                     <div class="post-detail-container" v-if="selectedPost">
-                        <button class="back-btn" @click="closePost">◀ Back to Posts</button>
+                        <button class="back-btn" @click="closePost">◀ BACK TO POSTS</button>
                         
                         <!-- Post Detail -->
                         <div class="post-detail">
@@ -244,7 +275,7 @@
                                         v-for="tag in selectedPost.tags" 
                                         :key="tag"
                                         class="tag"
-                                        :class="tag.toLowerCase()"
+                                        :class="getTagClass(tag)"
                                     >
                                         #{{ tag }}
                                     </span>
@@ -256,7 +287,7 @@
                             </div>
 
                             <div class="post-content">
-                                <h3 class="post-title">{{ selectedPost.title }}</h3>
+                                <h2 v-if="selectedPost.header && selectedPost.header.trim()" class="post-header-text">{{ selectedPost.header }}</h2>
                                 <p class="post-text">{{ selectedPost.content }}</p>
                                 
                                 <!-- Post Images -->
@@ -289,7 +320,6 @@
                                     </button>
                                 </div>
                                 <div class="post-options">
-                                    <button class="share-btn" @click="sharePost(selectedPost.id)">📤</button>
                                     <button class="report-post-btn" @click="reportPost(selectedPost.id)">🚩 Report</button>
                                 </div>
                             </div>
@@ -301,7 +331,7 @@
                             
                             <!-- Add Comment Form -->
                             <div class="add-comment-form">
-                                <img src="/assets/KAPITAN.jpg" alt="Your Profile" class="comment-avatar" />
+                                <img :src="profilePictureUrl" alt="Your Profile" class="comment-avatar" />
                                 <div class="comment-input-wrapper">
                                     <textarea 
                                         v-model="newComment" 
@@ -355,7 +385,7 @@
 
                                         <!-- Reply Form -->
                                         <div v-if="replyingTo === comment.id" class="reply-form">
-                                            <img src="/assets/KAPITAN.jpg" alt="Your Profile" class="comment-avatar small" />
+                                            <img :src="profilePictureUrl" alt="Your Profile" class="comment-avatar small" />
                                             <div class="reply-input-wrapper">
                                                 <textarea 
                                                     v-model="newReply" 
@@ -420,39 +450,39 @@
                                 <button class="close-modal-btn" @click="closeReportModal">✕</button>
                             </div>
                             <div class="report-modal-body">
-                                <p class="report-description">Please select the reason for reporting this {{ reportType.toLowerCase() }}:</p>
+                                <p class="report-description">Please select the reason(s) for reporting this {{ reportType.toLowerCase() }}:</p>
                                 <div class="report-options">
                                     <label class="report-option">
-                                        <input type="radio" name="reportReason" value="spam" v-model="reportReason" />
+                                        <input type="checkbox" value="spam" v-model="reportReasons" />
                                         <span>Spam or misleading</span>
                                     </label>
                                     <label class="report-option">
-                                        <input type="radio" name="reportReason" value="harassment" v-model="reportReason" />
+                                        <input type="checkbox" value="harassment" v-model="reportReasons" />
                                         <span>Harassment or bullying</span>
                                     </label>
                                     <label class="report-option">
-                                        <input type="radio" name="reportReason" value="hate" v-model="reportReason" />
+                                        <input type="checkbox" value="hate" v-model="reportReasons" />
                                         <span>Hate speech</span>
                                     </label>
                                     <label class="report-option">
-                                        <input type="radio" name="reportReason" value="violence" v-model="reportReason" />
+                                        <input type="checkbox" value="violence" v-model="reportReasons" />
                                         <span>Violence or dangerous content</span>
                                     </label>
                                     <label class="report-option">
-                                        <input type="radio" name="reportReason" value="inappropriate" v-model="reportReason" />
+                                        <input type="checkbox" value="inappropriate" v-model="reportReasons" />
                                         <span>Inappropriate content</span>
                                     </label>
                                     <label class="report-option">
-                                        <input type="radio" name="reportReason" value="false" v-model="reportReason" />
+                                        <input type="checkbox" value="false" v-model="reportReasons" />
                                         <span>False information</span>
                                     </label>
                                     <label class="report-option">
-                                        <input type="radio" name="reportReason" value="other" v-model="reportReason" />
+                                        <input type="checkbox" value="other" v-model="reportReasons" />
                                         <span>Other</span>
                                     </label>
                                 </div>
-                                <textarea 
-                                    v-if="reportReason === 'other'"
+                                <textarea
+                                    v-if="reportReasons.includes('other')"
                                     v-model="reportDetails"
                                     placeholder="Please provide additional details..."
                                     class="report-details-input"
@@ -461,7 +491,7 @@
                             </div>
                             <div class="report-modal-footer">
                                 <button class="cancel-report-btn" @click="closeReportModal">Cancel</button>
-                                <button class="submit-report-btn" @click="submitReport" :disabled="!reportReason">Submit Report</button>
+                                <button class="submit-report-btn" @click="submitReport" :disabled="reportReasons.length === 0">Submit Report</button>
                             </div>
                         </div>
                     </div>
@@ -472,10 +502,86 @@
 </template>
 
 <script setup>
-import { Link } from '@inertiajs/vue3'
+import { Link, usePage } from '@inertiajs/vue3'
 import { Head } from '@inertiajs/vue3'
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { router } from '@inertiajs/vue3'
+import axios from 'axios'
+
+// Define props - receive posts from backend
+const props = defineProps({
+    posts: {
+        type: Array,
+        default: () => []
+    },
+    auth: {
+        type: Object,
+        default: () => ({})
+    }
+})
+
+// Get page props
+const page = usePage()
+
+// SAFE user access - prioritize prop, fallback to page.props
+const user = computed(() => {
+    // First try from props
+    if (props.auth?.user) {
+        return props.auth.user
+    }
+    
+    // Then try from page props
+    const authUser = page?.props?.auth?.user
+    
+    // Return default if undefined
+    if (!authUser) {
+        return {
+            user_id: null,
+            name: 'Guest',
+            avatar: '/assets/DEFAULT.jpg',
+            role: 'Employee',
+            fk_role_id: 2
+        }
+    }
+    
+    return authUser
+})
+
+// Map of role_id -> role_name
+const roleMap = {
+    1: 'Resident',
+    2: 'Barangay Captain',
+    3: 'Barangay Secretary',
+    4: 'Barangay Treasurer',
+    5: 'Barangay Kagawad',
+    6: 'Sangguniang Kabataan Chairman',
+    7: 'Sangguniang Kabataan Kagawad',
+    9: 'System Admin',
+}
+
+// Computed display role
+const displayRole = computed(() => {
+    const id = user.value?.fk_role_id ?? 2
+    return roleMap[id] ?? 'Employee'
+})
+
+// Profile picture URL
+const profilePictureUrl = computed(() => {
+    if (user.value?.profile_pic) {
+        const pic = user.value.profile_pic
+        // If it's a full URL, return as is
+        if (pic.startsWith('http')) {
+            return pic
+        }
+        // If it already has /storage/, return as is
+        if (pic.startsWith('/storage/')) {
+            return pic
+        }
+        // Otherwise prepend storage path
+        return `/storage/${pic}`
+    }
+    return '/assets/DEFAULT.jpg'
+})
 
 // Reactive data
 const showSettings = ref(false)
@@ -493,167 +599,146 @@ const newReply = ref('')
 const replyingTo = ref(null)
 const showReportModal = ref(false)
 const reportType = ref('')
-const reportReason = ref('')
+const reportReasons = ref([])
 const reportDetails = ref('')
 const reportTargetId = ref(null)
+
+// Initialize posts from props
+// Unified posts ref used by the template
+const posts = ref([])
+
+/**
+ * Normalize server post into front-end post shape expected by the template.
+ * Accepts server post objects with either:
+ *  - id (frontend-style) OR post_id (backend)
+ *  - images (array of full URLs) OR image_content (storage path) OR image_path
+ */
+function normalizePost(raw) {
+    if (!raw) return null
+
+    // id: prefer 'id', then 'post_id', then 'postId'
+    const id = raw.id ?? raw.post_id ?? raw.postId ?? null
+
+    // author info
+    const authorName = raw.author?.name ?? raw.author ?? raw.authorName ?? 'Unknown'
+    const avatar = raw.avatar ?? raw.author?.avatar ?? raw.author_avatar ?? '/assets/DEFAULT.jpg'
+
+    // tags as array of strings (some server returns objects)
+    let tags = []
+    if (Array.isArray(raw.tags)) {
+        tags = raw.tags.map(t => (typeof t === 'string' ? t : (t.tag_name ?? t.name ?? ''))).filter(Boolean)
+    } else if (raw.tags && typeof raw.tags === 'object') {
+        tags = Object.values(raw.tags).map(t => (typeof t === 'string' ? t : (t.tag_name ?? t.name ?? ''))).filter(Boolean)
+    }
+
+    // images: prefer 'images' (already full URLs) else convert image_content/image_path to storage URL
+    let images = []
+    if (Array.isArray(raw.images) && raw.images.length) {
+        images = raw.images
+    } else if (raw.image_content) {
+        // backend stored path like "posts/abcd.jpg" -> convert to asset('storage/...')
+        images = [raw.image_content.startsWith('http') ? raw.image_content : `/storage/${raw.image_content}`]
+    } else if (raw.image_path) {
+        images = [raw.image_path.startsWith('http') ? raw.image_path : `/storage/${raw.image_path}`]
+    }
+
+    // date/time: server may already give ISO, or 'created_at' string. Keep as ISO string for sorting.
+    const dateIso = raw.date ?? raw.created_at ?? raw.createdAt ?? null
+    const time = raw.time ?? (dateIso ? new Date(dateIso).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : '')
+
+    // title fallback (server sometimes sends title or derive from content)
+    const title = raw.title ?? (raw.content ? (raw.content.length > 50 ? raw.content.substring(0, 50) + '...' : raw.content) : 'Untitled Post')
+
+    return {
+        id,
+        author: authorName,
+        avatar: avatar || '/assets/DEFAULT.jpg',
+        role: raw.role ?? 'Employee',
+        tags,
+        date: dateIso,
+        time,
+        title,
+        header: raw.header ?? null,
+        content: raw.content ?? '',
+        images,
+        video_content: raw.video_content ?? raw.video_path ?? null,
+        likes: raw.likes ?? 0,
+        dislikes: raw.dislikes ?? 0,
+        comments: raw.comments ?? 0,
+        userLiked: raw.userLiked ?? false,
+        userDisliked: raw.userDisliked ?? false,
+        commentsList: Array.isArray(raw.commentsList) ? raw.commentsList : []
+    }
+}
+
+/**
+ * Update posts ref from whichever source Inertia provides:
+ *  - props.posts (recommended)
+ *  - page.props.posts (fallback)
+ */
+function updatePostsFromProps() {
+    const serverPosts = (props.posts && props.posts.length) ? props.posts : (page?.props?.posts ?? [])
+    if (!serverPosts || serverPosts.length === 0) {
+        posts.value = []
+        return
+    }
+
+    // normalize each post
+    posts.value = serverPosts.map(p => normalizePost(p)).filter(Boolean)
+    console.log('✅ posts updated (normalized):', posts.value.length)
+}
+
+// watch both component props and Inertia page props so view updates on redirect/rehydration
+watch(() => props.posts, updatePostsFromProps, { immediate: true, deep: true })
+watch(() => page.props.posts, updatePostsFromProps, { immediate: true, deep: true })
+
+// Navigation functions
+const navigateToDocuments = () => {
+    activeTab.value = 'documents'
+    router.visit(route('document_request_select_employee'))
+}
 
 const navigateToProfile = () => {
     activeTab.value = 'profile'
     router.visit(route('profile_employee'))
-}
-const navigateToDocuments = () => {
-    activeTab.value = 'documents'
-    router.visit(route('document_request_select_employee'))  // ✅ Correct
 }
 
 const navigateToEvents = () => {
     activeTab.value = 'events'
     router.visit(route('event_assistance_employee'))
 }
-const navigateToNotifications = () => {
-    activeTab.value = 'notifications'
-    router.visit(route('notification_request_employee'))
-}
-// Sample posts data
-const posts = ref([
-    {
-        id: 1,
-        author: 'Kap. Sammy DG Reyes',
-        role: 'BARANGAY CAPTAIN',
-        avatar: '/assets/KAPITAN.jpg',
-        title: '🌿✨ Barangay 176B Cleanup Drive ✨🌿',
-        content: 'Sama-sama nating inalagaan ang ating komunidad! Barangay 176B successfully conducted a cleanup drive sa ilang parte ng ating barangay upang mapanatili ang kalinisan at kaayusan. 💪🧹 Maraming salamat sa lahat ng nakibahagi at nagbigay ng oras at effort—tunay na ipinakita ninyo ang diwa ng bayanihan. 💚 Tuloy-tuloy lang tayo sa pagkilos para sa mas malinis, ligtas, at maayos na Barangay 176B! 🌎✨ #Barangay176B #CleanupDrive #BayanihanSpirit',
-        tags: ['ENVIRONMENT', 'PROGRAMS'],
-        date: new Date('2025-06-01'),
-        time: '11:22 AM',
-        likes: 521,
-        dislikes: 0,
-        comments: 25,
-        userLiked: false,
-        userDisliked: false,
-        images: ['/assets/KAP POST 1.jpg', '/assets/KAP POST 2.jpg', '/assets/KAP POST 3.jpg'],
-        commentsList: [
-            {
-                id: 1,
-                author: 'Maria Santos',
-                avatar: '/assets/PROFILE PIC 6.jpg',
-                text: 'Salamat po! Mas malinis na ang mga kalye sa barangay natin. More power to Barangay 176B! 💚',
-                date: new Date('2025-06-01T14:30:00'),
-                likes: 45,
-                dislikes: 0,
-                userLiked: false,
-                userDisliked: false,
-                replies: [
-                    {
-                        id: 1,
-                        author: 'Juan Dela Cruz',
-                        avatar: '/assets/PROFILE PIC 7.jpg',
-                        text: 'Agreed! Dapat mas dumalas ang mga ganito!',
-                        date: new Date('2025-06-01T15:00:00'),
-                        likes: 12,
-                        dislikes: 0,
-                        userLiked: false,
-                        userDisliked: false
-                    }
-                ]
-            },
-            {
-                id: 2,
-                author: 'Manuelo Reyes III',
-                avatar: '/assets/PROFILE PIC 2.jpg',
-                text: 'Great initiative! Looking forward to the next cleanup drive.',
-                date: new Date('2025-06-02T09:15:00'),
-                likes: 28,
-                dislikes: 0,
-                userLiked: false,
-                userDisliked: false,
-                replies: []
-            }
-        ]
-    },
-    {
-        id: 2,
-        author: 'Hon. Hero Delos Santos',
-        role: 'Barangay SK Chairperson',
-        avatar: '/assets/SK.jpg',
-        title: 'Hello, Kabataan ng Barangay 176B! 🙌 Magkakaroon tayo ng Leadership Seminar sa June 16 sa Phase 2 Covered Court. 🌟',
-        content: 'Layunin nito na mabigyan tayo ng pagkakataon to learn, grow, and build stronger connections as one youth community. 💪🌟 Iniimbitahan ko ang lahat ng kabataan na maging parte ng program na ito. Sama-sama tayong kikilos para sa mas makulay, mas aktibo, at mas progresibong Barangay 176B! Kita-kits, mga ka-Barangay! 💚 #SK176B #KabataanNgayon #ParaSaKabataan',
-        tags: ['LEADERSHIP', 'PROGRAMS', 'YOUTH'],
-        date: new Date('2025-06-8'),
-        time: '3:11 PM',
-        likes: 15,
-        dislikes: 2,
-        comments: 8,
-        userLiked: false,
-        userDisliked: false,
-        images: ['/assets/SK POST 1.jpg', '/assets/SK POST 2.jpg', '/assets/SK POST 3.jpg'],
-        commentsList: [
-            {
-                id: 1,
-                author: 'Anna Mae Buenavente',
-                avatar: '/assets/PROFILE PIC 5.jpg',
-                text: 'Excited for this! Aattend ako for sure! 🎉',
-                date: new Date('2025-06-08T16:00:00'),
-                likes: 8,
-                dislikes: 0,
-                userLiked: false,
-                userDisliked: false,
-                replies: []
-            }
-        ]
-    },
-    {
-        id: 3,
-        author: 'Hon. Jun Paunil Jr.',
-        role: 'Barangay Kagawad',
-        avatar: '/assets/KAGAWAD.jpg',
-        title: 'Magandang araw, Barangay 176B! 🌟 Kami po ay magsasagawa ng Medical and Dental Mission sa darating na May 8 sa Phase 3 Court.',
-        content: 'Layon ng programang ito na magbigay ng libreng check-up, dental services, at basic medicines para sa ating mga residente. 💊✨ Inaanyayahan po namin ang lahat na makiisa at samantalahin ang serbisyong handog ng ating barangay. Sama-sama po nating isulong ang kalusugan ng bawat pamilyang 176B! 💚 #Barangay176B #KagawadInAction #MedicalMission',
-        tags: ['MEDICAL', 'PROGRAMS'],
-        date: new Date('2025-04-30'),
-        time: '10:00 AM',
-        likes: 45,
-        dislikes: 0,
-        comments: 12,
-        userLiked: false,
-        userDisliked: false,
-        images: ['/assets/KAG POST 1.jpg', '/assets/KAG POST 2.jpg', '/assets/KAG POST 3.jpg'],
-        commentsList: [
-            {
-                id: 1,
-                author: 'Liza Garcia',
-                avatar: '/assets/PROFILE PIC 8.jpg',
-                text: 'Thank you for this initiative! This will really help our community.',
-                date: new Date('2025-04-30T11:30:00'),
-                likes: 15,
-                dislikes: 0,
-                userLiked: false,
-                userDisliked: false,
-                replies: []
-            }
-        ]
-    }
-])
+
+const navigateToNotifications = () => { activeTab.value = 'notifications'; router.visit(route('notification_request_employee')) }
 
 // Computed filtered posts
 const filteredPosts = computed(() => {
+    console.log('🔍 Filtering posts:', {
+        totalPosts: posts.value.length,
+        searchQuery: searchQuery.value,
+        filterOption: filterOption.value,
+        sortOption: sortOption.value
+    })
+    
     let filtered = [...posts.value]
 
+    // Search filter
     if (searchQuery.value.trim()) {
         const query = searchQuery.value.toLowerCase()
         filtered = filtered.filter(post => 
-            post.title.toLowerCase().includes(query) ||
-            post.content.toLowerCase().includes(query) ||
-            post.author.toLowerCase().includes(query)
+            (post.title && post.title.toLowerCase().includes(query)) ||
+            (post.content && post.content.toLowerCase().includes(query)) ||
+            (post.author && post.author.toLowerCase().includes(query))
         )
     }
 
+    // Tag filter
     if (filterOption.value !== 'all') {
         filtered = filtered.filter(post => 
-            post.tags.some(tag => tag.toLowerCase() === filterOption.value.toLowerCase())
+            post.tags && post.tags.some(tag => tag.toLowerCase() === filterOption.value.toLowerCase())
         )
     }
 
+    // Sort
     if (sortOption.value === 'newest') {
         filtered.sort((a, b) => new Date(b.date) - new Date(a.date))
     } else if (sortOption.value === 'oldest') {
@@ -662,6 +747,7 @@ const filteredPosts = computed(() => {
         filtered.sort((a, b) => (b.likes + b.comments) - (a.likes + a.comments))
     }
 
+    console.log('✅ Filtered posts count:', filtered.length)
     return filtered
 })
 
@@ -691,13 +777,11 @@ const toggleFilterDropdown = () => {
 const selectSort = (option) => {
     sortOption.value = option
     showSortDropdown.value = false
-    applySorting()
 }
 
 const selectFilter = (option) => {
     filterOption.value = option
     showFilterDropdown.value = false
-    applyFilter()
 }
 
 const logout = () => {
@@ -712,33 +796,57 @@ const setActiveTab = (tab) => {
 const switchTab = (tab) => {
     currentTab.value = tab
     showModeDropdown.value = false
-    if (tab === 'discussions') {
-        router.visit(route('discussion_employee'))
-    } else {
+    if (tab === 'announcements') {
         router.visit(route('announcement_employee'))
+    } else if (tab === 'discussions') {
+        router.visit(route('discussion_resident'))
     }
 }
 
-const applySorting = () => {
-    console.log('Applied sorting:', sortOption.value)
-}
-
-const applyFilter = () => {
-    console.log('Applied filter:', filterOption.value)
-}
-
 const performSearch = () => {
-    console.log('Performing search:', searchQuery.value)
+    console.log('🔎 Performing search:', searchQuery.value)
 }
 
 const addPost = () => {
-    router.visit(route('discussion_addpost_employee'))
+    try {
+        console.log('➕ Add post clicked, currentTab:', currentTab.value)
+        if (currentTab.value === 'announcements') {
+            console.log('📢 Navigating to announcement add post page...')
+            const routeName = 'announcement_addpost_employee'
+            if (typeof route !== 'undefined') {
+                router.visit(route(routeName))
+            } else {
+                router.visit('/employee/announcement/create')
+            }
+        } else {
+            console.log('💬 Navigating to discussion add post page...')
+            const routeName = 'discussion_addpost_resident'
+            if (typeof route !== 'undefined') {
+                router.visit(route(routeName))
+            } else {
+                router.visit('/employee/discussion/create')
+            }
+        }
+    } catch (error) {
+        console.error('❌ Error navigating to add post page:', error)
+        alert('Error: Could not navigate to add post page. Please try again.')
+    }
 }
 
-const viewPost = (postId) => {
+const viewPost = async (postId) => {
     const post = posts.value.find(p => p.id === postId)
     if (post) {
         selectedPost.value = { ...post }
+        
+        // Load comments from database
+        try {
+            const response = await axios.get(route('posts.comments.get', postId))
+            if (response.data.success) {
+                selectedPost.value.commentsList = response.data.comments
+            }
+        } catch (error) {
+            console.error('Error loading comments:', error)
+        }
     }
 }
 
@@ -749,29 +857,28 @@ const closePost = () => {
     replyingTo.value = null
 }
 
-const addComment = () => {
-    if (newComment.value.trim() && selectedPost.value) {
-        const comment = {
-            id: selectedPost.value.commentsList.length + 1,
-            author: 'Kap. Sammy Reyes',
-            avatar: '/assets/KAPITAN.jpg',
-            text: newComment.value,
-            date: new Date(),
-            likes: 0,
-            dislikes: 0,
-            userLiked: false,
-            userDisliked: false,
-            replies: []
-        }
-        selectedPost.value.commentsList.push(comment)
+const addComment = async () => {
+    if (!newComment.value.trim() || !selectedPost.value) return
+    
+    try {
+        const response = await axios.post(route('posts.comments.store', selectedPost.value.id), {
+            comment_text: newComment.value.trim(),
+            parent_comment_id: null
+        })
         
-        // Update the original post in the posts array
-        const originalPost = posts.value.find(p => p.id === selectedPost.value.id)
-        if (originalPost) {
-            originalPost.comments++
+        if (response.data.success) {
+            selectedPost.value.commentsList.push(response.data.comment)
+            
+            const originalPost = posts.value.find(p => p.id === selectedPost.value.id)
+            if (originalPost) {
+                originalPost.comments++
+            }
+            
+            newComment.value = ''
         }
-        
-        newComment.value = ''
+    } catch (error) {
+        console.error('Error adding comment:', error)
+        alert('Failed to add comment. Please try again.')
     }
 }
 
@@ -790,25 +897,31 @@ const cancelReply = () => {
     newReply.value = ''
 }
 
-const addReply = (commentId) => {
-    if (newReply.value.trim() && selectedPost.value) {
-        const comment = selectedPost.value.commentsList.find(c => c.id === commentId)
-        if (comment) {
-            const reply = {
-                id: comment.replies.length + 1,
-                author: 'Kap. Sammy Reyes',
-                avatar: '/assets/KAPITAN.jpg',
-                text: newReply.value,
-                date: new Date(),
-                likes: 0,
-                dislikes: 0,
-                userLiked: false,
-                userDisliked: false
+const addReply = async (commentId) => {
+    if (!newReply.value.trim() || !selectedPost.value) return
+    
+    try {
+        const response = await axios.post(route('posts.comments.store', selectedPost.value.id), {
+            comment_text: newReply.value.trim(),
+            parent_comment_id: commentId
+        })
+        
+        if (response.data.success) {
+            const comment = selectedPost.value.commentsList.find(c => c.id === commentId)
+            if (comment) {
+                comment.replies.push(response.data.comment)
+                newReply.value = ''
+                replyingTo.value = null
+                
+                const originalPost = posts.value.find(p => p.id === selectedPost.value.id)
+                if (originalPost) {
+                    originalPost.comments++
+                }
             }
-            comment.replies.push(reply)
         }
-        newReply.value = ''
-        replyingTo.value = null
+    } catch (error) {
+        console.error('Error adding reply:', error)
+        alert('Failed to add reply. Please try again.')
     }
 }
 
@@ -909,21 +1022,50 @@ const reportComment = (commentId) => {
 const closeReportModal = () => {
     showReportModal.value = false
     reportType.value = ''
-    reportReason.value = ''
+    reportReasons.value = []
     reportDetails.value = ''
     reportTargetId.value = null
 }
 
-const submitReport = () => {
-    if (reportReason.value) {
-        alert(`Report submitted successfully. Thank you for helping keep our community safe.\n\nType: ${reportType.value}\nReason: ${reportReason.value}${reportReason.value === 'other' ? '\nDetails: ' + reportDetails.value : ''}`)
+const submitReport = async () => {
+    if (!reportReasons.value || reportReasons.value.length === 0) {
+        alert('Please select at least one reason for reporting.')
+        return
+    }
+
+    if (reportType.value === 'Post' && reportTargetId.value) {
+        try {
+            const response = await axios.post(route('reports.store'), {
+                post_id: reportTargetId.value,
+                reasons: reportReasons.value,
+                details: reportReasons.value.includes('other') ? reportDetails.value : null,
+            })
+
+            if (response.data.success) {
+                alert('Report submitted successfully. Thank you for helping keep our community safe.')
+                closeReportModal()
+            } else {
+                alert(response.data.message || 'Error submitting report. Please try again.')
+            }
+        } catch (error) {
+            console.error('Error submitting report:', error)
+            const errorMessage = error.response?.data?.message || 
+                               (error.response?.data?.errors ? 
+                                Object.values(error.response.data.errors).flat().join(', ') : 
+                                'Error submitting report. Please try again.')
+            alert(errorMessage)
+        }
+    } else if (reportType.value === 'Comment') {
+        // Comment reporting can be implemented later
+        alert('Comment reporting is not yet implemented.')
         closeReportModal()
     }
 }
 
 const formatCommentDate = (date) => {
     const now = new Date()
-    const diff = now - date
+    const commentDate = new Date(date)
+    const diff = now - commentDate
     const minutes = Math.floor(diff / 60000)
     const hours = Math.floor(diff / 3600000)
     const days = Math.floor(diff / 86400000)
@@ -933,54 +1075,72 @@ const formatCommentDate = (date) => {
     if (hours < 24) return `${hours}h ago`
     if (days < 7) return `${days}d ago`
     
-    return date.toLocaleDateString('en-US', { 
+    return commentDate.toLocaleDateString('en-US', { 
         month: 'short', 
         day: 'numeric',
-        year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined
+        year: commentDate.getFullYear() !== now.getFullYear() ? 'numeric' : undefined
     })
 }
 
-const toggleLike = (postId) => {
-    const post = posts.value.find(p => p.id === postId)
-    if (post) {
-        if (post.userLiked) {
-            post.likes--
-            post.userLiked = false
-        } else {
-            if (post.userDisliked) {
-                post.dislikes--
-                post.userDisliked = false
+const toggleLike = async (postId) => {
+    try {
+        const response = await axios.post(route('posts.reactions.toggle', postId), {
+            reaction_type: 'Like'
+        })
+        
+        if (response.data.success) {
+            const post = posts.value.find(p => p.id === postId)
+            if (post) {
+                post.likes = response.data.likes
+                post.dislikes = response.data.dislikes
+                post.userLiked = response.data.userLiked
+                post.userDisliked = response.data.userDisliked
             }
-            post.likes++
-            post.userLiked = true
+            
+            if (selectedPost.value && selectedPost.value.id === postId) {
+                selectedPost.value.likes = response.data.likes
+                selectedPost.value.dislikes = response.data.dislikes
+                selectedPost.value.userLiked = response.data.userLiked
+                selectedPost.value.userDisliked = response.data.userDisliked
+            }
         }
+    } catch (error) {
+        console.error('Error toggling like:', error)
     }
 }
 
-const toggleDislike = (postId) => {
-    const post = posts.value.find(p => p.id === postId)
-    if (post) {
-        if (post.userDisliked) {
-            post.dislikes--
-            post.userDisliked = false
-        } else {
-            if (post.userLiked) {
-                post.likes--
-                post.userLiked = false
+const toggleDislike = async (postId) => {
+    try {
+        const response = await axios.post(route('posts.reactions.toggle', postId), {
+            reaction_type: 'Dislike'
+        })
+        
+        if (response.data.success) {
+            const post = posts.value.find(p => p.id === postId)
+            if (post) {
+                post.likes = response.data.likes
+                post.dislikes = response.data.dislikes
+                post.userLiked = response.data.userLiked
+                post.userDisliked = response.data.userDisliked
             }
-            post.dislikes++
-            post.userDisliked = true
+            
+            if (selectedPost.value && selectedPost.value.id === postId) {
+                selectedPost.value.likes = response.data.likes
+                selectedPost.value.dislikes = response.data.dislikes
+                selectedPost.value.userLiked = response.data.userLiked
+                selectedPost.value.userDisliked = response.data.userDisliked
+            }
         }
+    } catch (error) {
+        console.error('Error toggling dislike:', error)
     }
 }
 
 const viewComments = (postId) => {
-    router.visit(route('announcement_clickpost_employee', { id: postId }))
+    viewPost(postId)
 }
 
 const sharePost = (postId) => {
-    const url = window.location.origin + route('announcement_clickpost_employee', { id: postId })
-    navigator.clipboard.writeText(url)
     alert('Post link copied to clipboard!')
 }
 
@@ -992,7 +1152,37 @@ const openFAQ = () => {
     router.visit(route('help_center_employee'))
 }
 
-const formatDate = (date) => {
+// Helper function to normalize tag names for CSS classes
+const getTagClass = (tag) => {
+    if (!tag) return ''
+    // Convert to lowercase and replace spaces/special chars with nothing
+    let normalized = String(tag).toLowerCase().trim().replace(/\s+/g, '').replace(/[^a-z0-9]/g, '')
+    
+    // Map to specific tag classes
+    if (normalized === 'business') return 'business'
+    if (normalized === 'education') return 'education'
+    if (normalized === 'emergency') return 'emergency'
+    if (normalized === 'employment') return 'employment'
+    if (normalized === 'environment' || normalized === 'env') return 'environment'
+    if (normalized === 'governance') return 'governance'
+    if (normalized === 'health' || normalized === 'medical') return 'health'
+    if (normalized === 'incident') return 'incident'
+    if (normalized === 'infrastructure') return 'infrastructure'
+    if (normalized === 'inquiries' || normalized === 'inquiry') return 'inquiries'
+    if (normalized === 'livelihood') return 'livelihood'
+    if (normalized === 'maintenance') return 'maintenance'
+    if (normalized === 'sanitation') return 'sanitation'
+    if (normalized === 'sports') return 'sports'
+    if (normalized === 'traffic') return 'traffic'
+    if (normalized === 'weather') return 'weather'
+    if (normalized === 'welfare') return 'welfare'
+    if (normalized === 'youth') return 'youth'
+    
+    return normalized
+}
+
+const formatDate = (dateString) => {
+    const date = new Date(dateString)
     return date.toLocaleDateString('en-US', { 
         month: 'long', 
         day: '2-digit', 
@@ -1014,9 +1204,15 @@ const handleClickOutside = (event) => {
     }
 }
 
+// Component lifecycle
 onMounted(() => {
     document.addEventListener('click', handleClickOutside)
     activeTab.value = 'posts'
+    
+    console.log('✅ Employee Announcement Component mounted')
+    console.log('📊 Initial posts:', posts.value.length)
+    console.log('👤 User:', user.value)
+    console.log('📝 Props:', props)
 })
 
 onUnmounted(() => {
@@ -1045,7 +1241,7 @@ onUnmounted(() => {
 
 /* Orange Header Bar - Similar to login/register pages */
 .header-bar {
-    background: linear-gradient(135deg, #ff8c42, #ff7a28);
+    background: linear-gradient(135deg, #2e2e2e, #2e2e2e);
     color: white;
     padding: 5px 0;
     box-shadow: 0 4px 15px rgba(255, 140, 66, 0.3);
@@ -1165,7 +1361,7 @@ onUnmounted(() => {
 }
 
 .profile-card {
-    background: linear-gradient(135deg, #ff8c42, #ff7a28);
+    background: linear-gradient(135deg, #2e2e2e, #2e2e2e);
     border-radius: 15px;
     padding: 20px;
     color: white;
@@ -1193,12 +1389,14 @@ onUnmounted(() => {
 
 .profile-role {
     font-size: 12px;
-    background: #239640;
+    background: linear-gradient(135deg, #ff8c42, #ff7a28);
+    color: white;
     padding: 4px 12px;
     border-radius: 15px;
     display: inline-block;
     font-weight: 600;
-    backdrop-filter: blur(10px);
+    text-transform: uppercase;
+    box-shadow: 0 2px 8px rgba(255, 140, 66, 0.3);
 }
 
 .nav-menu {
@@ -1211,7 +1409,9 @@ onUnmounted(() => {
 }
 
 .nav-item {
-    display: block;
+    display: flex;
+    align-items: center;
+    gap: 12px;
     padding: 15px 20px;
     text-decoration: none;
     color: #333;
@@ -1219,6 +1419,13 @@ onUnmounted(() => {
     transition: all 0.3s ease;
     cursor: pointer;
     font-weight: 500;
+}
+
+.nav-icon {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+    stroke: currentColor;
 }
 
 .nav-item:last-child {
@@ -1611,26 +1818,104 @@ onUnmounted(() => {
     color: white;
     text-transform: uppercase;
     box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-}
-.tag.medical{
-    background: linear-gradient(135deg, #ff0303, #ff0303);
-}
-.tag.programs {
-    background: linear-gradient(135deg, #273cb0, #273cb0);
-}
-.tag.youth {
-    background: linear-gradient(135deg, #c6077d, #c6077d);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    /* Default background for unmatched tags */
+    background: linear-gradient(135deg, #95a5a6, #7f8c8d);
 }
 
-.tag.leadership {
-    background: linear-gradient(135deg, #9f01ed, #9f01ed);
-}
-.tag.question {
-    background: linear-gradient(135deg, #ff9800, #f57c00);
+.tag:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
 }
 
+/* Business - Blue/Purple */
+.tag.business {
+    background: linear-gradient(135deg, #6c5ce7, #5f3dc4) !important;
+}
+
+/* Education - Blue */
+.tag.education {
+    background: linear-gradient(135deg, #3498db, #2980b9) !important;
+}
+
+/* Emergency - Red */
+.tag.emergency {
+    background: linear-gradient(135deg, #e74c3c, #c0392b) !important;
+}
+
+/* Employment - Green */
+.tag.employment {
+    background: linear-gradient(135deg, #27ae60, #229954) !important;
+}
+
+/* Environment - Green */
 .tag.environment {
-    background: linear-gradient(135deg, #4caf50, #388e3c);
+    background: linear-gradient(135deg, #2ecc71, #27ae60) !important;
+}
+
+/* Governance - Purple */
+.tag.governance {
+    background: linear-gradient(135deg, #9b59b6, #8e44ad) !important;
+}
+
+/* Health - Red/Pink */
+.tag.health {
+    background: linear-gradient(135deg, #e91e63, #c2185b) !important;
+}
+
+/* Incident - Dark Red */
+.tag.incident {
+    background: linear-gradient(135deg, #c0392b, #a93226) !important;
+}
+
+/* Infrastructure - Orange */
+.tag.infrastructure {
+    background: linear-gradient(135deg, #f39c12, #e67e22) !important;
+}
+
+/* Inquiries - Yellow/Orange */
+.tag.inquiries {
+    background: linear-gradient(135deg, #f1c40f, #f39c12) !important;
+}
+
+/* Livelihood - Teal */
+.tag.livelihood {
+    background: linear-gradient(135deg, #1abc9c, #16a085) !important;
+}
+
+/* Maintenance - Brown/Orange */
+.tag.maintenance {
+    background: linear-gradient(135deg, #d35400, #ba4a00) !important;
+}
+
+/* Sanitation - Cyan */
+.tag.sanitation {
+    background: linear-gradient(135deg, #00bcd4, #0097a7) !important;
+}
+
+/* Sports - Green */
+.tag.sports {
+    background: linear-gradient(135deg, #4caf50, #388e3c) !important;
+}
+
+/* Traffic - Yellow */
+.tag.traffic {
+    background: linear-gradient(135deg, #ffc107, #ff9800) !important;
+}
+
+/* Weather - Light Blue */
+.tag.weather {
+    background: linear-gradient(135deg, #03a9f4, #0288d1) !important;
+}
+
+/* Welfare - Pink */
+.tag.welfare {
+    background: linear-gradient(135deg, #e91e63, #c2185b) !important;
+}
+
+/* Youth - Magenta */
+.tag.youth {
+    background: linear-gradient(135deg, #e91e63, #ad1457) !important;
 }
 
 .post-time {
@@ -1651,6 +1936,16 @@ onUnmounted(() => {
 
 .post-content {
     margin: 15px 0;
+}
+
+.post-header-text {
+    font-size: 18px;
+    font-weight: 600;
+    color: #2e2e2e;
+    margin: 0 0 12px 0;
+    line-height: 1.4;
+    letter-spacing: -0.3px;
+    text-transform: none;
 }
 
 .post-title {
@@ -1773,12 +2068,12 @@ onUnmounted(() => {
 }
 
 .posts-container::-webkit-scrollbar-thumb {
-    background: #ff8c42;
+    background: #888;
     border-radius: 3px;
 }
 
 .posts-container::-webkit-scrollbar-thumb:hover {
-    background: #e6763a;
+    background: #666;
 }
 
 /* Post Detail View Styles */
@@ -1789,7 +2084,7 @@ onUnmounted(() => {
 }
 
 .back-btn {
-    color: #ff7a28;
+    color: #000;
     border: none;
     padding: 10px 20px;
     border-radius: 8px;
@@ -1839,7 +2134,7 @@ onUnmounted(() => {
 .comment-avatar {
     width: 45px;
     height: 45px;
-    border-radius: 50%;
+    border-radius: 12px;
     object-fit: cover;
     box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     flex-shrink: 0;
@@ -2106,12 +2401,12 @@ onUnmounted(() => {
 }
 
 .post-detail-container::-webkit-scrollbar-thumb {
-    background: #ff8c42;
+    background: #888;
     border-radius: 3px;
 }
 
 .post-detail-container::-webkit-scrollbar-thumb:hover {
-    background: #e6763a;
+    background: #666;
 }
 
 /* Post Images */
@@ -2206,7 +2501,7 @@ onUnmounted(() => {
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: 50%;
+    border-radius: 12px;
     transition: all 0.2s;
 }
 
@@ -2247,7 +2542,7 @@ onUnmounted(() => {
     border-color: #ff8c42;
 }
 
-.report-option input[type="radio"] {
+.report-option input[type="checkbox"] {
     width: 18px;
     height: 18px;
     cursor: pointer;

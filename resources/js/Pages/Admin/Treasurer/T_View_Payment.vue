@@ -22,7 +22,7 @@
                 </div>
             </div>
         </div>
-
+        
         <!-- Main Content Area - Full Width -->
         <div class="main-layout">
             <!-- Profile Card and Navigation Sidebar -->
@@ -40,14 +40,20 @@
                         href="#" 
                         class="nav-item active"
                     >
-                        💰 View Payment
+                        <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 003 15h-.75M15 10.5a3 3 0 11-6 0 3 3 0 016 0zm3 0h.008v.008H18V10.5zm-12 0h.008v.008H6V10.5z" />
+                        </svg>
+                        View Payment
                     </Link>
                     <Link 
                         href="#" 
                         class="nav-item"
                         @click="navigateToHistory"
                     >
-                        📜 History
+                        <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        History
                     </Link>
                 </div>
             </div>
@@ -73,7 +79,9 @@
                             <div class="filter-dropdown-wrapper">
                                 <button class="filter-dropdown-btn" @click="toggleSortDropdown">
                                     {{ sortOption.toUpperCase() }}
-                                    <span class="filter-arrow" :class="{ rotated: showSortDropdown }">▼</span>
+                                    <svg class="filter-arrow" :class="{ rotated: showSortDropdown }" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width: 12px; height: 12px;">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+                                    </svg>
                                 </button>
                                 <div v-if="showSortDropdown" class="filter-dropdown-menu">
                                     <button @click="selectSort('newest')" :class="{ active: sortOption === 'newest' }">NEWEST</button>
@@ -85,13 +93,16 @@
                             <div class="filter-dropdown-wrapper">
                                 <button class="filter-dropdown-btn" @click="toggleFilterDropdown">
                                     {{ filterOption.toUpperCase() }}
-                                    <span class="filter-arrow" :class="{ rotated: showFilterDropdown }">▼</span>
+                                    <svg class="filter-arrow" :class="{ rotated: showFilterDropdown }" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width: 12px; height: 12px;">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+                                    </svg>
                                 </button>
                                 <div v-if="showFilterDropdown" class="filter-dropdown-menu">
                                     <button @click="selectFilter('all')" :class="{ active: filterOption === 'all' }">ALL</button>
                                     <button @click="selectFilter('cash')" :class="{ active: filterOption === 'cash' }">CASH</button>
                                     <button @click="selectFilter('gcash')" :class="{ active: filterOption === 'gcash' }">GCASH</button>
                                     <button @click="selectFilter('maya')" :class="{ active: filterOption === 'maya' }">MAYA</button>
+                                    <button @click="selectFilter('onsite')" :class="{ active: filterOption === 'onsite' }">ONSITE</button>
                                 </div>
                             </div>
                         </div>
@@ -104,7 +115,11 @@
                                     placeholder="SEARCH..." 
                                     class="search-input" 
                                 />
-                                <button class="search-btn" @click="performSearch">🔍</button>
+                                <button class="search-btn" @click="performSearch">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width: 18px; height: 18px;">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                    </svg>
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -116,31 +131,36 @@
                             :key="payment.id"
                             class="request-card"
                         >
-                            <div class="request-header">
-                                <div class="request-user-info">
-                                    <div class="request-details">
+                            <div class="request-content">
+                                <div class="request-left">
+                                    <img :src="payment.profileImg || '/assets/DEFAULT.jpg'" alt="Profile" class="modal-avatar" />
+                                    <div class="request-info">
                                         <h3 class="request-name">{{ payment.requestor }}</h3>
-                                        <p class="request-type">
-                                            <span class="payment-method-highlight" :class="payment.paymentMethod.toLowerCase()">
-                                                {{ payment.paymentMethod.toUpperCase() }}
-                                            </span>
-                                        </p>
+                                        <p class="request-doc-type">{{ payment.documentType }}</p>
+                                        <p class="request-ref-code">{{ payment.document }}</p>
                                     </div>
                                 </div>
-                            </div>
-                            <div class="request-body">
-                                <p class="payment-info"><strong>Document:</strong> {{ payment.document }}</p>
-                                <p class="payment-info"><strong>Amount:</strong> ₱{{ payment.amount.toFixed(2) }}</p>
-                                <p class="request-date">{{ payment.date }}</p>
-                                <button @click="openModal(payment)" class="view-btn">
-                                    View Details
-                                </button>
+                                <div class="request-right">
+                                    <div class="request-status-badge-wrapper">
+                                        <span class="payment-status-badge" :class="payment.status?.toLowerCase() || 'pending'">
+                                            {{ payment.status || 'PENDING' }}
+                                        </span>
+                                    </div>
+                                    <p class="request-date">{{ payment.date }}</p>
+                                    <button 
+                                        @click.stop="openModal(payment)" 
+                                        class="view-btn" 
+                                        type="button"
+                                    >
+                                        View Payment Details
+                                    </button>
+                                </div>
                             </div>
                         </div>
 
                         <!-- No payments message -->
                         <div v-if="filteredPayments.length === 0" class="no-requests">
-                            <p>No pending payments found matching your criteria.</p>
+                            <p>No payments found matching your criteria.</p>
                         </div>
                     </div>
                 </div>
@@ -151,26 +171,51 @@
         <div v-if="isModalOpen" class="modal-overlay" @click="closeModal">
             <div class="modal-container" @click.stop>
                 <!-- Close Button -->
-                <button @click="closeModal" class="modal-close">✕</button>
+                <button @click="closeModal" class="modal-close">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width: 20px; height: 20px;">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
 
                 <div class="modal-content">
                     <!-- Top Section -->
-                    <div class="modal-top">
-                        <div class="modal-user-section">
-                            <div>
-                                <h3 class="modal-name">{{ selectedPayment.requestor }}</h3>
-                                <p class="modal-label">Payment Request</p>
+                    <div class="modal-top" style="grid-template-columns: 1fr 1fr; gap: 15px; align-items: start;">
+                        <div class="modal-user-section" style="display: flex; align-items: center; gap: 12px;">
+                            <img :src="selectedPayment.profileImg || '/assets/DEFAULT.jpg'" alt="Profile" class="modal-avatar" style="width: 60px; height: 60px; flex-shrink: 0;" />
+                            <div style="flex: 1; min-width: 0;">
+                                <h3 class="modal-name" style="font-size: 18px; margin-bottom: 4px;">{{ selectedPayment.requestor || 'Unknown' }}</h3>
+                                <p class="modal-label" style="font-size: 12px; margin: 0;">Payment Request</p>
                             </div>
                         </div>
-                        <div class="modal-role-section">
-                            <h3 class="modal-payment-method" :class="selectedPayment.paymentMethod.toLowerCase()">
-                                {{ selectedPayment.paymentMethod.toUpperCase() }}
-                            </h3>
+                        <div style="display: flex; flex-direction: row; gap: 15px; align-items: center; justify-content: space-between; background: linear-gradient(135deg, #ff8c42 0%, #ff7a28 100%); color: white; padding: 10px 15px; border-radius: 10px; box-shadow: 0 3px 10px rgba(255, 122, 40, 0.3); min-height: fit-content;">
+                            <div style="flex: 1;">
+                                <p style="font-size: 8px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px; margin: 0 0 3px 0; opacity: 0.9;">Payment Method</p>
+                                <h3 style="font-size: 15px; font-weight: 700; margin: 0; text-shadow: 0 1px 3px rgba(0,0,0,0.2); line-height: 1.2;">{{ (selectedPayment.paymentMethod || 'UNKNOWN METHOD').toUpperCase() }}</h3>
+                            </div>
+                            <div style="width: 1px; height: 30px; background: rgba(255,255,255,0.3); flex-shrink: 0;"></div>
+                            <div style="flex: 0 0 auto; text-align: right;">
+                                <p style="font-size: 8px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px; margin: 0 0 3px 0; opacity: 0.9;">Document Number</p>
+                                <p style="font-size: 13px; font-weight: 700; margin: 0; font-family: monospace; letter-spacing: 0.8px; text-shadow: 0 1px 2px rgba(0,0,0,0.2);">{{ selectedPayment.document }}</p>
+                            </div>
                         </div>
-                        <div class="modal-proof-section" v-if="selectedPayment.paymentMethod !== 'Cash'">
-                            <button class="proof-btn" @click="viewReceipt">
-                                View Digital Receipt
+                    </div>
+                    
+                    <!-- Proof of Payment Section -->
+                    <div style="margin-bottom: 20px; padding: 15px; background: #f8f9fa; border-radius: 10px;">
+                        <div style="display: flex; align-items: center; justify-content: space-between;">
+                            <div>
+                                <p style="font-size: 12px; font-weight: 600; color: #666; margin: 0 0 5px 0;">Proof of Payment</p>
+                                <p style="font-size: 11px; color: #999; margin: 0;">Transaction ID: {{ selectedPayment.transactionId || 'N/A' }}</p>
+                            </div>
+                            <button 
+                                v-if="selectedPayment.receiptImage" 
+                                class="proof-btn" 
+                                @click="viewReceipt"
+                                style="background: #ff7a28; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 13px; transition: all 0.3s ease; box-shadow: 0 2px 8px rgba(255, 122, 40, 0.3);"
+                            >
+                                View Proof
                             </button>
+                            <p v-else class="no-receipt-text" style="color: #999; font-size: 12px; font-style: italic; margin: 0;">No proof of payment uploaded</p>
                         </div>
                     </div>
 
@@ -200,44 +245,49 @@
                             </div>
                         </div>
 
-                        <!-- Payment Method Specific Details -->
-                        <div class="details-grid-2" v-if="selectedPayment.paymentMethod !== 'Cash'">
+                        <!-- Payment Method Specific Details - Always show transaction ID -->
+                        <div class="details-grid-2" v-if="selectedPayment.paymentMethodKey !== 'cash'">
+                            <div class="detail-item">
+                                <p class="detail-label">Transaction ID:</p>
+                                <p class="detail-value">{{ selectedPayment.transactionId || 'N/A' }}</p>
+                            </div>
+                            <div class="detail-item">
+                                <p class="detail-label">Payment Method:</p>
+                                <p class="detail-value">{{ selectedPayment.paymentMethod || 'N/A' }}</p>
+                            </div>
+                            <div class="detail-item">
+                                <p class="detail-label">Payment Time:</p>
+                                <p class="detail-value">{{ selectedPayment.paymentTime || 'N/A' }}</p>
+                            </div>
+                        </div>
+                        
+                        <!-- Transaction ID for Cash payments too -->
+                        <div class="details-grid-2" v-if="selectedPayment.paymentMethodKey === 'cash' && selectedPayment.transactionId && selectedPayment.transactionId !== 'N/A'">
                             <div class="detail-item">
                                 <p class="detail-label">Transaction ID:</p>
                                 <p class="detail-value">{{ selectedPayment.transactionId }}</p>
                             </div>
-                            <div class="detail-item">
-                                <p class="detail-label">Payment Platform:</p>
-                                <p class="detail-value">{{ selectedPayment.paymentMethod }}</p>
-                            </div>
-                            <div class="detail-item">
-                                <p class="detail-label">Payment Time:</p>
-                                <p class="detail-value">{{ selectedPayment.paymentTime }}</p>
-                            </div>
                         </div>
 
-                        <!-- Full Address -->
-                        <div class="detail-item-full">
-                            <p class="detail-label">Requestor Address:</p>
-                            <p class="detail-value">{{ selectedPayment.address }}</p>
-                        </div>
-
-                        <!-- Notes Section -->
-                        <div class="comment-section">
-                            <label class="comment-label">Notes (Optional):</label>
-                            <textarea 
-                                v-model="notes"
-                                placeholder="Add any notes about this payment..." 
-                                class="comment-textarea"
-                                rows="4"
-                            ></textarea>
-                        </div>
-
-                        <!-- Action Button -->
-                        <div class="modal-actions">
-                            <button @click="confirmPayment" class="approve-btn">
+                        <!-- Action Button - Only show for PENDING payments -->
+                        <div class="modal-actions" v-if="selectedPayment.status === 'PENDING'">
+                            <button @click="openApproveModal" class="approve-btn">
                                 Confirm Payment
                             </button>
+
+                            <button @click="openRejectModal" class="reject-btn">
+                                Reject Payment
+                            </button>
+                        </div>
+                        
+                        <!-- Status display for non-pending payments -->
+                        <div class="modal-status-display" v-else>
+                            <div class="status-info">
+                                <p class="status-label">Payment Status:</p>
+                                <span class="payment-status-badge-large" :class="selectedPayment.status?.toLowerCase() || 'pending'">
+                                    {{ selectedPayment.status || 'PENDING' }}
+                                </span>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -248,11 +298,15 @@
         <div v-if="showConfirmModal" class="modal-overlay" @click="closeConfirmModal">
             <div class="confirm-modal-container" @click.stop>
                 <div class="confirm-modal-content">
-                    <div class="confirm-icon">✓</div>
+                    <div class="confirm-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width: 32px; height: 32px;">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    </div>
                     <h3 class="confirm-title">Payment Confirmed!</h3>
                     <p class="confirm-message">
-                        Payment from <strong>{{ selectedPayment.requestor }}</strong> for 
-                        <strong>{{ selectedPayment.document }}</strong> has been successfully confirmed.
+                        Payment from <strong>{{ confirmedPaymentSnapshot?.requestor || 'Unknown' }}</strong> for 
+                        <strong>{{ confirmedPaymentSnapshot?.document || 'N/A' }}</strong> has been successfully confirmed.
                     </p>
                     <button @click="closeConfirmModal" class="confirm-ok-btn">
                         OK
@@ -261,20 +315,89 @@
             </div>
         </div>
 
+        <!-- Approve Confirmation Modal (Are you sure?) -->
+        <div v-if="showApproveModal" class="modal-overlay" @click="closeApproveModal">
+            <div class="confirm-modal-container" @click.stop>
+                <div class="confirm-modal-content">
+                    <div class="confirm-icon" style="background: #239640;">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width: 32px; height: 32px;">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    </div>
+                    <h3 class="confirm-title">Confirm Payment</h3>
+                    <p class="confirm-message">
+                        Are you sure you want to confirm the payment from 
+                        <strong>{{ selectedPayment?.requestor }}</strong> for 
+                        <strong>{{ selectedPayment?.document }}</strong>?
+                        This action cannot be undone.
+                    </p>
+                    <div class="confirm-actions">
+                        <button @click="closeApproveModal" class="confirm-cancel-btn">Cancel</button>
+                        <button @click="confirmPayment" class="confirm-approve-btn">Confirm</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Reject Confirmation Modal (Are you sure?) -->
+        <div v-if="showRejectModal" class="modal-overlay" @click="closeRejectModal">
+            <div class="confirm-modal-container" @click.stop>
+                <div class="confirm-modal-content">
+                    <div class="confirm-icon">!</div>
+                    <h3 class="confirm-title">Reject Payment</h3>
+                    <p class="confirm-message">
+                        Are you sure you want to reject the payment from 
+                        <strong>{{ selectedPayment?.requestor }}</strong> for 
+                        <strong>{{ selectedPayment?.document }}</strong>?
+                        This action cannot be undone.
+                    </p>
+                    <div class="confirm-actions">
+                        <button @click="closeRejectModal" class="confirm-cancel-btn">Cancel</button>
+                        <button @click="rejectPaymentConfirmed" class="confirm-reject-btn">Reject</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Reject Success Modal -->
+        <div v-if="showRejectConfirmModal" class="modal-overlay" @click="closeRejectConfirmModal">
+            <div class="confirm-modal-container" @click.stop>
+                <div class="confirm-modal-content reject-modal-content">
+                    <div class="confirm-icon reject-icon">✖</div>
+                    <h3 class="confirm-title reject-title">Payment Rejected</h3>
+                    <p class="confirm-message">
+                        Payment from <strong>{{ rejectedPaymentSnapshot?.requestor }}</strong> for 
+                        <strong>{{ rejectedPaymentSnapshot?.document }}</strong> has been rejected.
+                    </p>
+                    <button @click="closeRejectConfirmModal" class="confirm-ok-btn reject-ok-btn">
+                        OK
+                    </button>
+                </div>
+            </div>
+        </div>
+
         <!-- Receipt Viewer Modal -->
-        <div v-if="showReceiptModal" class="modal-overlay" @click="closeReceiptModal">
+        <div v-if="showReceiptModal && selectedPayment" class="modal-overlay" @click="closeReceiptModal">
             <div class="receipt-modal-container" @click.stop>
-                <button @click="closeReceiptModal" class="modal-close">✕</button>
+                <button @click="closeReceiptModal" class="modal-close">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width: 20px; height: 20px;">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
                 <div class="receipt-modal-content">
-                    <h3 class="receipt-title">Digital Receipt</h3>
-                    <div class="receipt-image-container">
-                        <img :src="selectedPayment.receiptImage" alt="Payment Receipt" class="receipt-image" />
+                    <h3 class="receipt-title">Proof of Payment</h3>
+                    <div class="receipt-image-container" v-if="selectedPayment.receiptImage">
+                        <img :src="selectedPayment.receiptImage" alt="Payment Receipt" class="receipt-image" @error="handleImageError" />
+                    </div>
+                    <div v-else class="no-receipt-container">
+                        <p class="no-receipt-message">No proof of payment image available</p>
                     </div>
                     <div class="receipt-details">
-                        <p><strong>Transaction ID:</strong> {{ selectedPayment.transactionId }}</p>
-                        <p><strong>Platform:</strong> {{ selectedPayment.paymentMethod }}</p>
-                        <p><strong>Amount:</strong> ₱{{ selectedPayment.amount.toFixed(2) }}</p>
-                        <p><strong>Date & Time:</strong> {{ selectedPayment.paymentTime }}</p>
+                        <p><strong>Transaction ID:</strong> {{ selectedPayment.transactionId || 'N/A' }}</p>
+                        <p><strong>Payment Method:</strong> {{ (selectedPayment.paymentMethod || 'N/A').toUpperCase() }}</p>
+                        <p><strong>Amount:</strong> ₱{{ selectedPayment.amount?.toFixed(2) || '0.00' }}</p>
+                        <p><strong>Date & Time:</strong> {{ selectedPayment.paymentTime || 'N/A' }}</p>
+                        <p v-if="selectedPayment.status"><strong>Status:</strong> {{ selectedPayment.status }}</p>
                     </div>
                 </div>
             </div>
@@ -319,88 +442,86 @@ const filterOption = ref('all')
 const searchQuery = ref('')
 const isModalOpen = ref(false)
 const selectedPayment = ref(null)
-const notes = ref('')
+const showApproveModal = ref(false)
 const showConfirmModal = ref(false)
 const showReceiptModal = ref(false)
+const showRejectModal = ref(false)
+const showRejectConfirmModal = ref(false)
+const rejectedPaymentSnapshot = ref(null)
+const confirmedPaymentSnapshot = ref(null)
 
-// Sample payments data
-const payments = ref([
-    {
-        id: 1,
-        requestor: 'John Rodriguez',
-        document: 'Invoice #001',
-        documentType: 'Barangay Clearance',
-        amount: 150.00,
-        date: '09/28/2025',
-        dateObj: new Date('2025-09-28'),
-        paymentMethod: 'GCash',
-        contact: '09789932832',
-        address: 'Phase 2 Package 3, Barangay Commonwealth',
-        transactionId: 'GC-2025092801234',
-        paymentTime: '09/28/2025 10:30 AM',
-        receiptImage: '/assets/receipt-sample.jpg'
-    },
-    {
-        id: 2,
-        requestor: 'Maria Santos',
-        document: 'Invoice #002',
-        documentType: 'Certificate of Indigency',
-        amount: 50.00,
-        date: '09/27/2025',
-        dateObj: new Date('2025-09-27'),
-        paymentMethod: 'Cash',
-        contact: '09178234567',
-        address: 'Phase 1 Package 5, Barangay Commonwealth',
-        transactionId: 'N/A',
-        paymentTime: 'N/A',
-        receiptImage: null
-    },
-    {
-        id: 3,
-        requestor: 'Roberto Cruz',
-        document: 'Invoice #003',
-        documentType: 'Business Permit',
-        amount: 500.00,
-        date: '09/26/2025',
-        dateObj: new Date('2025-09-26'),
-        paymentMethod: 'maya',
-        contact: '09267891234',
-        address: 'Phase 3 Package 1, Barangay Commonwealth',
-        transactionId: 'PM-2025092601567',
-        paymentTime: '09/26/2025 2:15 PM',
-        receiptImage: '/assets/receipt-sample.jpg'
-    },
-    {
-        id: 4,
-        requestor: 'Ana Reyes',
-        document: 'Invoice #004',
-        documentType: 'Barangay ID',
-        amount: 100.00,
-        date: '09/25/2025',
-        dateObj: new Date('2025-09-25'),
-        paymentMethod: 'GCash',
-        contact: '09456123789',
-        address: 'Phase 2 Package 7, Barangay Commonwealth',
-        transactionId: 'GC-2025092502345',
-        paymentTime: '09/25/2025 3:45 PM',
-        receiptImage: '/assets/receipt-sample.jpg'
-    },
-    {
-        id: 5,
-        requestor: 'Carlos Mendoza',
-        document: 'Invoice #005',
-        documentType: 'Certificate of Residency',
-        amount: 75.00,
-        date: '09/24/2025',
-        dateObj: new Date('2025-09-24'),
-        paymentMethod: 'Cash',
-        contact: '09123456789',
-        address: 'Phase 1 Package 2, Barangay Commonwealth',
-        transactionId: 'N/A',
-        paymentTime: 'N/A',
-        receiptImage: null
+// --- payments from server (Inertia props) ---
+// page.props can vary: check both shapes
+const serverPayments = computed(() => {
+  // try the common shapes Inertia exposes
+  return page?.props?.value?.payments ?? page?.props?.payments ?? []
+})
+
+// Convert server payments into the same shape the UI expects, and ensure dateObj is a JS Date
+const payments = ref([])
+
+const initializePaymentsFromServer = () => {
+  payments.value = (serverPayments.value || []).map(p => {
+    // compute dateObj safely
+    let dateObj = null
+    try {
+      dateObj = p.date_iso ? new Date(p.date_iso) : (p.date ? new Date(p.date) : new Date())
+    } catch (e) {
+      dateObj = new Date()
     }
-])
+
+    // Normalize incoming payment method into stable keys:
+    // resultMethod will be one of: 'gcash', 'maya', 'cash', 'onsite'
+    const raw = (p.paymentMethod ?? '').toString().trim().toLowerCase()
+
+    let resultMethod = 'onsite' // safe default
+    if (raw.includes('gcash')) {
+    resultMethod = 'gcash'
+    } else if (raw.includes('maya')) {
+    resultMethod = 'maya'
+    } else if (raw.includes('cash')) {
+    resultMethod = 'cash'
+    } else if (raw.includes('onsite') || raw.includes('on-site') || raw.includes('on site')) {
+    resultMethod = 'onsite'
+    } else if (raw === '') {
+    // if backend gave empty, try to detect from paymentMethodRaw (if available)
+    const raw2 = (p.paymentMethodRaw ?? '').toString().trim().toLowerCase();
+    if (raw2.includes('onsite') || raw2.includes('on-site') || raw2.includes('on site')) {
+        resultMethod = 'onsite'
+    }
+    // else leave default onsite or set to 'manual'
+    }
+
+
+    return {
+      id: p.id,
+      requestor: p.requestor ?? 'Unknown',
+      document: p.document ?? 'N/A',
+      documentType: p.documentType ?? 'N/A',
+      amount: Number(p.amount ?? 0),
+      date: p.date ?? (dateObj.toLocaleDateString()),
+      dateObj: dateObj,
+      // keep a lowercase stable key for logic / classes:
+      paymentMethod: (p.paymentMethod ?? resultMethod).toUpperCase(),
+      // keep a lowercase stable key for logic / classes:
+      paymentMethodKey: resultMethod,
+      // keep original casing string available if you want the original label:
+      paymentMethodRaw: p.paymentMethod ?? null,
+      contact: p.contact ?? 'N/A',
+      address: p.address ?? 'N/A',
+      transactionId: p.transactionId ?? 'N/A',
+      paymentTime: p.paymentTime ?? 'N/A',
+      receiptImage: p.receiptImage ?? null,
+      status: (p.status ?? 'PENDING').toUpperCase(),
+      profileImg: p.profileImg ?? '/assets/DEFAULT.jpg',
+    }
+  })
+}
+
+// initialize once on mount
+onMounted(() => {
+  initializePaymentsFromServer()
+})
 
 // Computed filtered payments
 const filteredPayments = computed(() => {
@@ -413,14 +534,16 @@ const filteredPayments = computed(() => {
             item.requestor.toLowerCase().includes(query) ||
             item.document.toLowerCase().includes(query) ||
             item.documentType.toLowerCase().includes(query) ||
-            item.paymentMethod.toLowerCase().includes(query)
+            item.paymentMethod.toLowerCase().includes(query) ||
+            item.transactionId.toLowerCase().includes(query) ||
+            (item.paymentMethodKey && item.paymentMethodKey.toLowerCase().includes(query))
         )
     }
 
     // Payment method filter
     if (filterOption.value !== 'all') {
         filtered = filtered.filter(item => 
-            item.paymentMethod.toLowerCase() === filterOption.value.toLowerCase()
+            item.paymentMethodKey === filterOption.value.toLowerCase()
         )
     }
 
@@ -437,6 +560,31 @@ const filteredPayments = computed(() => {
 
     return filtered
 })
+
+// -- helper to call backend and handle success/failure
+const sendStatusUpdate = (paymentId, status, notes = '') => {
+  // Use a direct URL so Ziggy missing-route errors won't break the call.
+  const url = `/payments/${paymentId}/status`
+
+  return new Promise((resolve, reject) => {
+    router.post(url, { status, notes }, {
+      preserveState: true,
+      preserveScroll: true,
+      only: [],
+      onSuccess: (page) => {
+        resolve(page)
+      },
+      onError: (errors) => {
+        // Handle Inertia validation errors gracefully
+        const errorMessage = errors?.payment_status || errors?.payment || errors?.message || 'An error occurred. Please try again.'
+        reject({ message: errorMessage, response: { data: { message: errorMessage } } })
+      },
+      onFinish: () => {
+        // optional cleanup hook
+      }
+    })
+  })
+}
 
 // Methods
 const toggleSettings = () => {
@@ -467,6 +615,7 @@ const selectFilter = (option) => {
     showFilterDropdown.value = false
 }
 
+
 const logout = () => {
     showSettings.value = false
     router.visit(route('login_treasurer'))
@@ -478,41 +627,127 @@ const performSearch = () => {
 
 const openModal = (payment) => {
     selectedPayment.value = payment
-    notes.value = ''
     isModalOpen.value = true
 }
 
 const closeModal = () => {
     isModalOpen.value = false
     selectedPayment.value = null
-    notes.value = ''
 }
 
-const confirmPayment = () => {
-    console.log('Confirming payment:', selectedPayment.value.requestor)
-    console.log('Notes:', notes.value)
-    
-    // Remove payment from list
-    const index = payments.value.findIndex(p => p.id === selectedPayment.value.id)
-    if (index > -1) {
-        payments.value.splice(index, 1)
-    }
-    
+const confirmPayment = async () => {
+  if (!selectedPayment.value) return
+
+  const paymentId = selectedPayment.value.id
+
+  // Store snapshot for success confirmation message
+  confirmedPaymentSnapshot.value = {
+    requestor: selectedPayment.value.requestor,
+    document: selectedPayment.value.document,
+  }
+
+  // Close the approval confirmation modal
+  closeApproveModal()
+
+  try {
+    await sendStatusUpdate(paymentId, 'APPROVED', '')
+
+    // Remove payment from list since it's no longer PENDING
+    const index = payments.value.findIndex(p => p.id === paymentId)
+    if (index > -1) payments.value.splice(index, 1)
+
+    // Close main modal and show success confirmation
     closeModal()
     showConfirmModal.value = true
+  } catch (err) {
+    console.error('Failed to confirm payment:', err)
+    // Handle error gracefully - show user-friendly message
+    const errorMessage = err?.response?.data?.message || err?.message || 'Failed to confirm payment. Please try again.'
+    alert(errorMessage)
+    confirmedPaymentSnapshot.value = null
+  }
 }
 
 const closeConfirmModal = () => {
     showConfirmModal.value = false
-    selectedPayment.value = null
+    confirmedPaymentSnapshot.value = null
 }
 
 const viewReceipt = () => {
-    showReceiptModal.value = true
+    if (selectedPayment.value && selectedPayment.value.receiptImage) {
+        showReceiptModal.value = true
+    } else {
+        alert('No proof of payment available for this payment.')
+    }
+}
+
+const handleImageError = (event) => {
+    event.target.style.display = 'none'
+    const container = event.target.closest('.receipt-image-container')
+    if (container) {
+        container.innerHTML = '<p class="no-receipt-message">Failed to load image</p>'
+    }
 }
 
 const closeReceiptModal = () => {
     showReceiptModal.value = false
+}
+
+const openApproveModal = () => {
+  if (!selectedPayment.value) return
+  showApproveModal.value = true
+}
+
+const closeApproveModal = () => {
+    showApproveModal.value = false
+}
+
+const openRejectModal = () => {
+  if (!selectedPayment.value) return
+  showRejectModal.value = true
+}
+
+// close without rejecting
+const closeRejectModal = () => {
+    showRejectModal.value = false
+}
+
+const rejectPaymentConfirmed = async () => {
+  if (!selectedPayment.value) {
+    showRejectModal.value = false
+    return
+  }
+
+  const paymentId = selectedPayment.value.id
+
+  // snapshot for UI feedback
+  rejectedPaymentSnapshot.value = {
+    id: selectedPayment.value.id,
+    requestor: selectedPayment.value.requestor,
+    document: selectedPayment.value.document,
+  }
+
+  try {
+    await sendStatusUpdate(paymentId, 'REJECTED', '')
+
+    // Remove payment from list since it's no longer PENDING
+    const index = payments.value.findIndex(p => p.id === paymentId)
+    if (index > -1) payments.value.splice(index, 1)
+
+    // Close modals and show confirmation
+    showRejectModal.value = false
+    closeModal()
+    showRejectConfirmModal.value = true
+  } catch (err) {
+    console.error('Failed to reject payment:', err)
+    alert('Failed to reject payment. Check console for details.')
+  }
+}
+
+// close the reject-success modal
+const closeRejectConfirmModal = () => {
+    showRejectConfirmModal.value = false
+    rejectedPaymentSnapshot.value = null
 }
 
 const navigateToHistory = () => {
@@ -538,12 +773,81 @@ onUnmounted(() => {
     document.removeEventListener('click', handleClickOutside)
 })
 </script>
+
 <style scoped>
 /* Full screen layout reset */
 * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 12px;
+}
+.approve-btn {
+  padding: 8px 14px;
+  border-radius: 6px;
+  border: none;
+  background-color: #28a745;
+  color: white;
+  cursor: pointer;
+}
+.reject-btn {
+  padding: 8px 14px;
+  border-radius: 6px;
+  border: none;
+  background-color: #dc3545;
+  color: white;
+  cursor: pointer;
+}
+
+/* Confirm modal action buttons */
+.confirm-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  margin-top: 12px;
+}
+.confirm-cancel-btn {
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  background: white;
+  cursor: pointer;
+}
+.confirm-approve-btn {
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: none;
+  background-color: #239640;
+  color: white;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.confirm-approve-btn:hover {
+  background-color: #1e7d36;
+  transform: translateY(-1px);
+}
+
+.confirm-reject-btn {
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: none;
+  background-color: #dc3545;
+  color: white;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.confirm-reject-btn:hover {
+  background-color: #c82333;
+  transform: translateY(-1px);
 }
 
 .app-container {
@@ -708,7 +1012,9 @@ onUnmounted(() => {
 }
 
 .nav-item {
-    display: block;
+    display: flex;
+    align-items: center;
+    gap: 12px;
     padding: 15px 20px;
     text-decoration: none;
     color: #333;
@@ -716,6 +1022,12 @@ onUnmounted(() => {
     transition: all 0.3s ease;
     cursor: pointer;
     font-weight: 500;
+}
+
+.nav-icon {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
 }
 
 .nav-item:last-child {
@@ -822,8 +1134,8 @@ onUnmounted(() => {
 }
 
 .filter-arrow {
-    font-size: 10px;
     transition: transform 0.3s ease;
+    flex-shrink: 0;
 }
 
 .filter-arrow.rotated {
@@ -899,10 +1211,19 @@ onUnmounted(() => {
     border-radius: 6px;
     cursor: pointer;
     transition: background 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #666;
 }
 
 .search-btn:hover {
     background: #e9ecef;
+}
+
+.search-btn svg {
+    width: 18px;
+    height: 18px;
 }
 
 /* Requests Container */
@@ -927,17 +1248,28 @@ onUnmounted(() => {
     transform: translateY(-2px);
 }
 
-.request-header {
-    margin-bottom: 15px;
+.request-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 }
 
-.request-user-info {
+.request-left {
     display: flex;
     align-items: center;
     gap: 15px;
 }
 
-.request-details {
+.modal-avatar {
+    width: 70px;
+    height: 70px;
+    border-radius: 15px;
+    object-fit: cover;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    flex-shrink: 0;
+}
+
+.request-info {
     flex: 1;
 }
 
@@ -946,6 +1278,65 @@ onUnmounted(() => {
     font-weight: 700;
     color: #333;
     margin: 0 0 5px 0;
+}
+
+.request-doc-type {
+    font-size: 14px;
+    color: #239640;
+    font-weight: 600;
+    margin: 3px 0;
+}
+
+.request-ref-code {
+    font-size: 12px;
+    color: #999;
+    margin: 3px 0;
+    font-family: monospace;
+}
+
+.request-right {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 10px;
+}
+
+.request-status-badge-wrapper {
+    display: flex;
+    align-items: center;
+}
+
+.request-date {
+    font-size: 13px;
+    color: #999;
+    margin: 0;
+}
+
+.payment-status-badge {
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.payment-status-badge.pending {
+    background: #fff3cd;
+    color: #856404;
+    border: 1px solid #ffeeba;
+}
+
+.payment-status-badge.approved {
+    background: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+.payment-status-badge.rejected {
+    background: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
 }
 
 .request-type {
@@ -985,28 +1376,26 @@ onUnmounted(() => {
     margin: 10px 0 0 0;
 }
 
-.request-body {
-    padding-top: 10px;
-    border-top: 1px solid #f0f0f0;
-}
-
 .view-btn {
-    background: #ff7a28;
+    background: #239640;
     color: white;
     border: none;
-    margin-left: 1250px;
     padding: 10px 24px;
     border-radius: 8px;
     cursor: pointer;
     font-weight: 600;
     font-size: 13px;
     transition: all 0.3s ease;
-    box-shadow: 0 2px 8px rgba(255, 122, 40, 0.3);
+    box-shadow: 0 2px 8px rgba(35, 150, 64, 0.3);
+    pointer-events: auto;
+    position: relative;
+    z-index: 10;
 }
 
 .view-btn:hover {
-    background: #e66a1f;
-    transform: translateY(-1px);
+    background: #1e7e34;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(35, 150, 64, 0.4);
 }
 
 .no-requests {
@@ -1054,7 +1443,11 @@ onUnmounted(() => {
     height: 35px;
     border-radius: 50%;
     cursor: pointer;
-    font-size: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #666;
+    transition: all 0.2s;
     color: #666;
     transition: all 0.2s;
     display: flex;
@@ -1063,9 +1456,8 @@ onUnmounted(() => {
 }
 
 .modal-close:hover {
-    background: #ff4444;
-    color: white;
-    transform: rotate(90deg);
+    background: #f8f9fa;
+    color: #333;
 }
 
 .modal-content {
@@ -1200,39 +1592,69 @@ onUnmounted(() => {
     margin: 0;
 }
 
-.comment-section {
-    margin-top: 5px;
-}
-
-.comment-label {
-    font-size: 13px;
-    font-weight: 600;
-    color: #666;
-    margin-bottom: 8px;
-    display: block;
-}
-
-.comment-textarea {
-    width: 100%;
-    padding: 15px;
-    border: 2px solid #e0e0e0;
-    border-radius: 10px;
-    font-size: 14px;
-    font-family: inherit;
-    resize: none;
-    transition: border-color 0.3s;
-}
-
-.comment-textarea:focus {
-    outline: none;
-    border-color: #239640;
-}
 
 .modal-actions {
     display: flex;
     justify-content: flex-end;
     gap: 15px;
     margin-top: 10px;
+}
+
+.modal-status-display {
+    margin-top: 20px;
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 10px;
+    text-align: center;
+}
+
+.status-info {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+}
+
+.status-label {
+    font-size: 14px;
+    font-weight: 600;
+    color: #666;
+    margin: 0;
+}
+
+.payment-status-badge-large {
+    padding: 8px 20px;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.payment-status-badge-large.pending {
+    background: #fff3cd;
+    color: #856404;
+    border: 1px solid #ffeeba;
+}
+
+.payment-status-badge-large.approved {
+    background: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+.payment-status-badge-large.rejected {
+    background: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}
+
+.no-receipt-text {
+    color: #999;
+    font-size: 13px;
+    font-style: italic;
+    margin: 0;
+    padding: 10px;
 }
 
 .approve-btn {
@@ -1280,9 +1702,14 @@ onUnmounted(() => {
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 48px;
-    font-weight: bold;
+    margin: 0 auto 20px;
     box-shadow: 0 4px 15px rgba(35, 150, 64, 0.3);
+}
+
+.confirm-icon svg {
+    width: 32px;
+    height: 32px;
+    stroke-width: 3;
 }
 
 .confirm-title {
@@ -1317,6 +1744,25 @@ onUnmounted(() => {
     background: #1e7d36;
 }
 
+/* Reject Confirmation Modal - Red Theme */
+.reject-icon {
+    background: #dc3545 !important;
+    box-shadow: 0 4px 15px rgba(220, 53, 69, 0.3) !important;
+}
+
+.reject-title {
+    color: #dc3545 !important;
+}
+
+.reject-ok-btn {
+    background: #dc3545 !important;
+    box-shadow: 0 2px 8px rgba(220, 53, 69, 0.3) !important;
+}
+
+.reject-ok-btn:hover {
+    background: #c82333 !important;
+}
+
 /* Receipt Modal */
 .receipt-modal-container {
     background: white;
@@ -1349,6 +1795,24 @@ onUnmounted(() => {
     border-radius: 12px;
     padding: 15px;
     text-align: center;
+    min-height: 200px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.no-receipt-container {
+    background: #f8f9fa;
+    border-radius: 12px;
+    padding: 40px;
+    text-align: center;
+}
+
+.no-receipt-message {
+    color: #999;
+    font-size: 14px;
+    font-style: italic;
+    margin: 0;
 }
 
 .receipt-image {
@@ -1395,14 +1859,14 @@ onUnmounted(() => {
 .requests-container::-webkit-scrollbar-thumb,
 .modal-container::-webkit-scrollbar-thumb,
 .receipt-modal-container::-webkit-scrollbar-thumb {
-    background: #ff8c42;
+    background: #888;
     border-radius: 3px;
 }
 
 .requests-container::-webkit-scrollbar-thumb:hover,
 .modal-container::-webkit-scrollbar-thumb:hover,
 .receipt-modal-container::-webkit-scrollbar-thumb:hover {
-    background: #e6763a;
+    background: #666;
 }
 
 /* Responsive */
@@ -1421,9 +1885,15 @@ onUnmounted(() => {
         grid-template-columns: repeat(2, 1fr);
     }
 
-    .view-btn {
-        margin-left: auto;
-        display: block;
+    .request-content {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 15px;
+    }
+    
+    .request-right {
+        width: 100%;
+        align-items: flex-start;
     }
 }
 
@@ -1466,7 +1936,6 @@ onUnmounted(() => {
     }
 
     .view-btn {
-        margin-left: 0;
         width: 100%;
     }
 }</style>

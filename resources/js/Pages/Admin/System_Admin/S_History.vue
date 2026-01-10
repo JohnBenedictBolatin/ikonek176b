@@ -41,34 +41,48 @@
                         class="nav-item"
                         @click="navigateToDashboard"
                     >
-                        📊 Dashboard
-                    </Link>
-                    <Link 
-                        href="#" 
-                        class="nav-item"
-                        @click="navigateToUsers"
-                    >
-                        👥 Users
+                        <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z" />
+                        </svg>
+                        Dashboard
                     </Link>
                     <Link 
                         href="#" 
                         class="nav-item active"
                     >
-                        📜 History
+                        <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        History
                     </Link>
                     <Link 
                         href="#" 
                         class="nav-item"
                         @click="navigateToRegisterRequest"
                     >
-                        📝 Register Request
+                        <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                        </svg>
+                        Register Request
+                    </Link>
+                    <Link 
+                        :href="route('registration_employee')" 
+                        class="nav-item"
+                    >
+                        <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                        </svg>
+                        Register Official
                     </Link>
                     <Link 
                         href="#" 
                         class="nav-item"
                         @click="navigateToReport"
                     >
-                        🚩 Report
+                        <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                        </svg>
+                        Report
                     </Link>
                 </div>
 
@@ -95,7 +109,9 @@
                             <div class="filter-dropdown-wrapper">
                                 <button class="filter-dropdown-btn" @click="toggleSortDropdown">
                                     {{ sortOption.toUpperCase() }}
-                                    <span class="filter-arrow" :class="{ rotated: showSortDropdown }">▼</span>
+                                    <svg class="filter-arrow" :class="{ rotated: showSortDropdown }" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width: 12px; height: 12px;">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+                                    </svg>
                                 </button>
                                 <div v-if="showSortDropdown" class="filter-dropdown-menu">
                                     <button @click="selectSort('newest')" :class="{ active: sortOption === 'newest' }">NEWEST</button>
@@ -106,14 +122,13 @@
                             <div class="filter-dropdown-wrapper">
                                 <button class="filter-dropdown-btn" @click="toggleFilterDropdown">
                                     {{ filterOption.toUpperCase() }}
-                                    <span class="filter-arrow" :class="{ rotated: showFilterDropdown }">▼</span>
+                                    <svg class="filter-arrow" :class="{ rotated: showFilterDropdown }" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width: 12px; height: 12px;">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+                                    </svg>
                                 </button>
                                 <div v-if="showFilterDropdown" class="filter-dropdown-menu">
                                     <button @click="selectFilter('all')" :class="{ active: filterOption === 'all' }">ALL</button>
                                     <button @click="selectFilter('approved')" :class="{ active: filterOption === 'approved' }">APPROVED</button>
-                                    <button @click="selectFilter('deleted')" :class="{ active: filterOption === 'deleted' }">DELETED</button>
-                                    <button @click="selectFilter('restricted')" :class="{ active: filterOption === 'restricted' }">RESTRICTED</button>
-                                    <button @click="selectFilter('password_changed')" :class="{ active: filterOption === 'password_changed' }">PASSWORD CHANGED</button>
                                 </div>
                             </div>
                         </div>
@@ -126,23 +141,33 @@
                                     placeholder="SEARCH..." 
                                     class="search-input" 
                                 />
-                                <button class="search-btn" @click="performSearch">🔍</button>
+                                <button class="search-btn" @click="performSearch">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width: 18px; height: 18px;">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                    </svg>
+                                </button>
                             </div>
                         </div>
                     </div>
 
                     <!-- History Table Container -->
                     <div class="users-container">
-                        <table class="users-table">
+                        <!-- Loading state -->
+                        <div v-if="isLoading" class="loading-state">
+                            <p>Loading history...</p>
+                        </div>
+                        
+                        <!-- History table -->
+                        <table v-else class="users-table">
                             <thead>
                                 <tr>
-                                    <th style="width: 80px;">Profile</th>
-                                    <th style="width: 180px;">Full Name</th>
-                                    <th style="width: 100px;">Role</th>
-                                    <th style="width: 200px;">Activity</th>
-                                    <th style="width: 140px;">Action</th>
-                                    <th style="width: 150px;">Admin</th>
-                                    <th style="width: 110px;">Date</th>
+                                    <th style="width: 70px; text-align: center;">Profile</th>
+                                    <th style="width: 180px; text-align: left; padding-left: 20px;">Full Name</th>
+                                    <th style="width: 200px; text-align: center;">Role</th>
+                                    <th style="width: 250px; text-align: left; padding-left: 25px;">Activity</th>
+                                    <th style="width: 140px; text-align: center;">Action</th>
+                                    <th style="width: 150px; text-align: center;">Admin</th>
+                                    <th style="width: 110px; text-align: center;">Date</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -151,29 +176,29 @@
                                     :key="activity.id"
                                     class="user-row"
                                 >
-                                    <td style="text-align: center;">
+                                    <td style="text-align: center; padding: 15px 8px;">
                                         <img :src="activity.avatar" :alt="activity.name" class="user-avatar" />
                                     </td>
-                                    <td class="user-name">{{ activity.name }}</td>
-                                    <td style="text-align: center;">
-                                        <span class="role-badge" :class="activity.role.toLowerCase()">
+                                    <td style="text-align: left; padding: 15px 12px 15px 20px;" class="user-name">{{ activity.name }}</td>
+                                    <td style="text-align: center; padding: 15px 15px;">
+                                        <span class="role-badge" :class="getRoleClass(activity.role)">
                                             {{ activity.role.toUpperCase() }}
                                         </span>
                                     </td>
-                                    <td style="text-align: left;">{{ activity.activity }}</td>
-                                    <td style="text-align: center;">
+                                    <td style="text-align: left; padding: 15px 12px 15px 25px;">{{ activity.activity }}</td>
+                                    <td style="text-align: center; padding: 15px 12px;">
                                         <span class="action-badge" :class="getActionClass(activity.action)">
                                             {{ activity.action.toUpperCase() }}
                                         </span>
                                     </td>
-                                    <td style="text-align: center;">{{ activity.moderator }}</td>
-                                    <td style="text-align: center;">{{ activity.date }}</td>
+                                    <td style="text-align: center; padding: 15px 12px;">{{ activity.moderator }}</td>
+                                    <td style="text-align: center; padding: 15px 12px;">{{ activity.date }}</td>
                                 </tr>
                             </tbody>
                         </table>
 
                         <!-- No history message -->
-                        <div v-if="filteredHistory.length === 0" class="no-users">
+                        <div v-if="!isLoading && filteredHistory.length === 0" class="no-users">
                             <p>No history records found matching your criteria.</p>
                         </div>
                     </div>
@@ -188,6 +213,7 @@ import { Link } from '@inertiajs/vue3'
 import { Head, usePage } from '@inertiajs/vue3'
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { router } from '@inertiajs/vue3'
+import axios from 'axios'
 
   // --- Inertia-shared auth user ---
 const page = usePage()
@@ -218,98 +244,121 @@ const showFilterDropdown = ref(false)
 const sortOption = ref('newest')
 const filterOption = ref('all')
 const searchQuery = ref('')
+const isLoading = ref(false)
 
-// Sample history data
-const history = ref([
-    {
-        id: 1,
-        name: 'John Rey Santiago',
-        role: 'Resident',
-        activity: 'Document Request',
-        action: 'Approved',
-        moderator: 'Shawn C.',
-        date: '05/31/2025',
-        avatar: '/assets/PROFILE PIC.jpg',
-        dateObj: new Date('2025-05-31')
-    },
-    {
-        id: 2,
-        name: 'Joshua Rodriguez',
-        role: 'Resident',
-        activity: 'Document Request',
-        action: 'Deleted',
-        moderator: 'Rave C.',
-        date: '04/01/2025',
-        avatar: '/assets/PROFILE PIC 2.jpg',
-        dateObj: new Date('2025-04-01')
-    },
-    {
-        id: 3,
-        name: 'Maria Santos',
-        role: 'Resident',
-        activity: 'Comment on Discussions',
-        action: 'Approved',
-        moderator: 'Justin N.',
-        date: '05/28/2025',
-        avatar: '/assets/PROFILE PIC 6.jpg',
-        dateObj: new Date('2025-05-28')
-    },
-    {
-        id: 4,
-        name: 'Kap. Sammy DG Reyes',
-        role: 'Official',
-        activity: 'Announcement Post',
-        action: 'Approved',
-        moderator: 'Auto',
-        date: '05/30/2025',
-        avatar: '/assets/KAPITAN.jpg',
-        dateObj: new Date('2025-05-30')
-    },
-    {
-        id: 5,
-        name: 'John Rey Santiago',
-        role: 'Resident',
-        activity: 'User Account',
-        action: 'Restricted',
-        moderator: 'Justin N.',
-        date: '05/29/2025',
-        avatar: '/assets/PROFILE PIC.jpg',
-        dateObj: new Date('2025-05-29')
-    },
-    {
-        id: 6,
-        name: 'Joshua Rodriguez',
-        role: 'Resident',
-        activity: 'Password Reset',
-        action: 'Password Changed',
-        moderator: 'Justin N.',
-        date: '05/27/2025',
-        avatar: '/assets/PROFILE PIC 2.jpg',
-        dateObj: new Date('2025-05-27')
-    },
-    {
-        id: 7,
-        name: 'Maria Santos',
-        role: 'Resident',
-        activity: 'Inappropriate Comment',
-        action: 'Deleted',
-        moderator: 'Shawn C.',
-        date: '05/26/2025',
-        avatar: '/assets/PROFILE PIC 6.jpg',
-        dateObj: new Date('2025-05-26')
-    },
-    {
-        id: 8,
-        name: 'Kap. Sammy DG Reyes',
-        role: 'Official',
-        activity: 'Report Post',
-        action: 'Approved',
-        moderator: 'Auto',
-        date: '05/25/2025',
-        avatar: '/assets/KAPITAN.jpg',
-        dateObj: new Date('2025-05-25')
+// History data - will be populated from backend
+const history = ref([])
+
+// Format date helper - converts UTC to Philippines timezone (Asia/Manila, UTC+8)
+const formatDate = (dateStr) => {
+  if (!dateStr) return ''
+  try {
+    // Parse the date string (assumes it's in UTC from server)
+    const date = new Date(dateStr)
+    if (isNaN(date.getTime())) return ''
+    
+    // Use Intl.DateTimeFormat to format in Philippines timezone
+    const formatter = new Intl.DateTimeFormat('en-US', {
+      timeZone: 'Asia/Manila',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    })
+    
+    const parts = formatter.formatToParts(date)
+    const month = parts.find(p => p.type === 'month').value
+    const day = parts.find(p => p.type === 'day').value
+    const year = parts.find(p => p.type === 'year').value
+    
+    return `${month}/${day}/${year}`
+  } catch (e) {
+    return ''
+  }
+}
+
+// Get admin/moderator name helper
+const getAdminName = (req) => {
+  // First try to get from approver_info (from backend)
+  if (req.approver_info && req.approver_info.name) {
+    return req.approver_info.name
+  }
+  // Fallback: if there's an approver ID and it matches current user, use current user's name
+  if (req.fk_approver_id && user.value?.name) {
+    const nameParts = user.value.name.split(' ')
+    if (nameParts.length > 0) {
+      return nameParts[0] + (nameParts.length > 1 ? ' ' + nameParts[nameParts.length - 1].charAt(0) + '.' : '')
     }
-])
+    return user.value.name
+  }
+  // For system admin actions, use current user's name
+  if (user.value?.name) {
+    const nameParts = user.value.name.split(' ')
+    if (nameParts.length > 0) {
+      return nameParts[0] + (nameParts.length > 1 ? ' ' + nameParts[nameParts.length - 1].charAt(0) + '.' : '')
+    }
+    return user.value.name
+  }
+  return 'N/A'
+}
+
+// Fetch history data from backend
+const fetchHistory = async () => {
+  isLoading.value = true
+  try {
+    // Build URL for registration requests
+    const buildRegUrl = (status) => {
+      return `/s_register_request?status=${status}`
+    }
+
+    // Fetch approved registration requests (rejected ones are deleted, so we only fetch approved)
+    const approvedRegRes = await axios.get(buildRegUrl('Approved'), {
+      headers: {
+        'Accept': 'application/json',
+        'X-Requested-With': 'XMLHttpRequest'
+      }
+    })
+
+    // Extract requests from JSON response
+    let approvedRegRequests = approvedRegRes?.data?.registration_requests || []
+    
+    // Debug logging
+    console.log('Approved registration requests found:', approvedRegRequests.length)
+
+    const historyItems = []
+
+    // Map approved registration requests
+    approvedRegRequests.forEach((req) => {
+      const admin = getAdminName(req)
+      
+      let profileImg = req.profile_pic || '/assets/DEFAULT.jpg'
+      if (profileImg && !profileImg.startsWith('http') && !profileImg.startsWith('/')) {
+        profileImg = `/storage/${profileImg}`.replace('//', '/')
+      }
+
+      const roleId = req.role_id || 1
+      const role = roleMap[roleId] || 'Resident'
+
+      historyItems.push({
+        id: req.registration_request_id || req.id,
+        name: req.name || `${req.first_name || ''} ${req.last_name || ''}`.trim() || 'Unknown',
+        role: role,
+        activity: 'Registration Request',
+        action: 'Approved',
+        moderator: admin,
+        date: formatDate(req.updated_at || req.created_at),
+        dateObj: new Date(req.updated_at || req.created_at || new Date()),
+        avatar: profileImg
+      })
+    })
+
+    history.value = historyItems
+  } catch (error) {
+    console.error('Error fetching history:', error)
+    history.value = []
+  } finally {
+    isLoading.value = false
+  }
+}
 
 // Computed filtered history
 const filteredHistory = computed(() => {
@@ -329,7 +378,7 @@ const filteredHistory = computed(() => {
     // Action filter
     if (filterOption.value !== 'all') {
         filtered = filtered.filter(item => 
-            item.action.toLowerCase().replace(/\s+/g, '_') === filterOption.value.toLowerCase()
+            item.action.toLowerCase() === filterOption.value.toLowerCase()
         )
     }
 
@@ -339,11 +388,11 @@ const filteredHistory = computed(() => {
     } else if (sortOption.value === 'oldest') {
         filtered.sort((a, b) => a.dateObj - b.dateObj)
     } else if (sortOption.value === 'relevant') {
-        // Sort by action priority: Restricted > Deleted > Password Changed > Approved
-        const priority = { 'restricted': 1, 'deleted': 2, 'password changed': 3, 'approved': 4 }
+        // Sort by action priority: Rejected > Approved
+        const priority = { 'rejected': 1, 'approved': 2 }
         filtered.sort((a, b) => {
-            const aPriority = priority[a.action.toLowerCase()] || 5
-            const bPriority = priority[b.action.toLowerCase()] || 5
+            const aPriority = priority[a.action.toLowerCase()] || 3
+            const bPriority = priority[b.action.toLowerCase()] || 3
             return aPriority - bPriority
         })
     }
@@ -392,10 +441,19 @@ const performSearch = () => {
 const getActionClass = (action) => {
     const actionLower = action.toLowerCase()
     if (actionLower === 'approved') return 'approved'
+    if (actionLower === 'rejected') return 'rejected'
     if (actionLower === 'deleted') return 'deleted'
     if (actionLower === 'restricted') return 'restricted'
     if (actionLower === 'password changed') return 'password-changed'
     return 'default'
+}
+
+const getRoleClass = (role) => {
+    const roleLower = role.toLowerCase().replace(/\s+/g, '-')
+    // Check if it's a resident (role_id 1)
+    if (roleLower === 'resident') return 'resident'
+    // All other roles are officials
+    return 'official'
 }
 
 const navigateToDashboard = () => {
@@ -427,6 +485,7 @@ const handleClickOutside = (event) => {
 
 onMounted(() => {
     document.addEventListener('click', handleClickOutside)
+    fetchHistory()
 })
 
 onUnmounted(() => {
@@ -604,7 +663,9 @@ onUnmounted(() => {
 }
 
 .nav-item {
-    display: block;
+    display: flex;
+    align-items: center;
+    gap: 12px;
     padding: 15px 20px;
     text-decoration: none;
     color: #333;
@@ -612,6 +673,12 @@ onUnmounted(() => {
     transition: all 0.3s ease;
     cursor: pointer;
     font-weight: 500;
+}
+
+.nav-icon {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
 }
 
 .nav-item:last-child {
@@ -718,8 +785,8 @@ onUnmounted(() => {
 }
 
 .filter-arrow {
-    font-size: 10px;
     transition: transform 0.3s ease;
+    flex-shrink: 0;
 }
 
 .filter-arrow.rotated {
@@ -789,16 +856,24 @@ onUnmounted(() => {
 }
 
 .search-btn {
-    background: #f8f9fa;
+    background: transparent;
     border: none;
-    padding: 8px 12px;
-    border-radius: 6px;
     cursor: pointer;
-    transition: background 0.2s;
+    color: #6b7280;
+    padding: 8px 12px;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .search-btn:hover {
-    background: #e9ecef;
+    color: #ff8c42;
+}
+
+.search-btn svg {
+    width: 18px;
+    height: 18px;
 }
 
 /* Users Container */
@@ -815,7 +890,7 @@ onUnmounted(() => {
 }
 
 .users-table thead {
-    background: #9c9b9b;
+    background: #2e2e2e;
     color: white;
     position: sticky;
     top: 0;
@@ -824,12 +899,20 @@ onUnmounted(() => {
 
 .users-table th {
     padding: 12px 8px;
-    text-align: center;
+    text-align: left;
     font-weight: 600;
     font-size: 13px;
     text-transform: uppercase;
     letter-spacing: 0.5px;
     vertical-align: middle;
+}
+
+.users-table th:nth-child(1),
+.users-table th:nth-child(3),
+.users-table th:nth-child(5),
+.users-table th:nth-child(6),
+.users-table th:nth-child(7) {
+    text-align: center;
 }
 
 .users-table tbody tr {
@@ -846,6 +929,15 @@ onUnmounted(() => {
     font-size: 13px;
     color: #555;
     vertical-align: middle;
+    text-align: left;
+}
+
+.users-table td:nth-child(1),
+.users-table td:nth-child(3),
+.users-table td:nth-child(5),
+.users-table td:nth-child(6),
+.users-table td:nth-child(7) {
+    text-align: center;
 }
 
 .user-avatar {
@@ -882,6 +974,11 @@ onUnmounted(() => {
     background: linear-gradient(135deg, #ff8c42, #ff7a28);
 }
 
+/* Default style for any role badge that doesn't match above classes */
+.role-badge:not(.resident):not(.official) {
+    background: linear-gradient(135deg, #6b7280, #4b5563);
+}
+
 .action-badge {
     font-size: 11px;
     padding: 5px 12px;
@@ -894,6 +991,10 @@ onUnmounted(() => {
 
 .action-badge.approved {
     background: linear-gradient(135deg, #10b981, #059669);
+}
+
+.action-badge.rejected {
+    background: linear-gradient(135deg, #ef4444, #dc2626);
 }
 
 .action-badge.deleted {
@@ -910,6 +1011,17 @@ onUnmounted(() => {
 
 .action-badge.default {
     background: linear-gradient(135deg, #6b7280, #4b5563);
+}
+
+.loading-state {
+    padding: 60px 40px;
+    text-align: center;
+    color: #666;
+}
+
+.loading-state p {
+    font-size: 16px;
+    color: #999;
 }
 
 .no-users {
@@ -934,12 +1046,12 @@ onUnmounted(() => {
 }
 
 .users-container::-webkit-scrollbar-thumb {
-    background: #ff8c42;
+    background: #999;
     border-radius: 3px;
 }
 
 .users-container::-webkit-scrollbar-thumb:hover {
-    background: #e6763a;
+    background: #777;
 }
 
 /* Responsive */

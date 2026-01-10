@@ -5,67 +5,354 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\DocumentRequest;
 use App\Models\EventAssistanceRequest;
+use App\Models\Payment;
 use Inertia\Inertia;
+use Illuminate\Support\Str;
 
 class NotificationRequestController extends Controller
 {
     public function index()
     {
+        // Temporarily increase memory limit for this request
+        $originalLimit = ini_get('memory_limit');
+        ini_set('memory_limit', '256M');
+        
         $userId = auth()->id();
         if (! $userId) {
             abort(403, 'Unauthorized');
         }
 
-        // Document requests for the authenticated user
-        $documentRequests = DocumentRequest::with(['documentType','user','userCredential'])
+        // Limit records to prevent memory issues (latest 100 of each type)
+        $limit = 100;
+
+        // Document requests - select only needed columns and limit
+        $documentRequests = DocumentRequest::with(['documentType'])
+            ->select([
+                'doc_request_id',
+                'doc_request_ticket',
+                'fk_user_id',
+                'fk_document_type_id',
+                'status',
+                'purpose',
+                'pickup_item',
+                'pickup_location',
+                'pickup_start',
+                'pickup_end',
+                'person_to_look',
+                'applied_processing_fee',
+                'created_at',
+                'reviewed_at',
+                'admin_feedback',
+            ])
             ->where('fk_user_id', $userId)
             ->orderByDesc('doc_request_id')
+            ->limit($limit)
             ->get();
 
-        // Event assistance requests for the authenticated user
-        // Make sure you have an App\Models\EventAssistanceRequest model
-        $eventAssistanceRequests = EventAssistanceRequest::query()
-            // ->with(['user', 'approver']) // uncomment/adjust if you add relationships
+        // Event assistance requests - select only needed columns and limit
+        $eventAssistanceRequests = EventAssistanceRequest::select([
+                'event_assist_request_id',
+                'event_assist_request_ticket',
+                'fk_user_id',
+                'purpose',
+                'event_location',
+                'status',
+                'extra_fields',
+                'created_at',
+                'reviewed_at',
+                'admin_feedback',
+            ])
             ->where('fk_user_id', $userId)
-            ->orderByDesc('eventassist_request_id')
+            ->orderByDesc('event_assist_request_id')
+            ->limit($limit)
             ->get();
 
-        return Inertia::render('User/Resident/R_Notification_Request', [
-            'document_requests' => $documentRequests,
-            'documentRequests'  => $documentRequests,
-            'event_assistance_requests' => $eventAssistanceRequests,
-            'eventAssistanceRequests' => $eventAssistanceRequests,
-            'auth' => ['user' => auth()->user()],
+        // Get document request IDs for payment lookup
+        $docRequestIds = $documentRequests->pluck('doc_request_id')->filter()->values()->all();
+
+        // Payments - select only needed columns and limit
+        $payments = Payment::select([
+                'payment_id',
+                'fk_doc_request_id',
+                'fk_user_id',
+                'status',
+                'paid_amount',
+                'transaction_ref',
+                'receipt_content',
+                'paid_at',
+                'updated_at',
+            ])
+            ->where(function ($query) use ($userId, $docRequestIds) {
+                $query->where('fk_user_id', $userId);
+                if (!empty($docRequestIds)) {
+                    $query->orWhereIn('fk_doc_request_id', $docRequestIds);
+                }
+            })
+            ->orderByDesc('payment_id')
+            ->limit($limit)
+            ->get();
+
+        // Helper: sanitize string to UTF-8 (simplified, non-recursive for scalars)
+        $sanitizeString = function ($value) {
+            if (!is_string($value)) {
+                return $value;
+            }
+            if (mb_check_encoding($value, 'UTF-8')) {
+                return $value;
+            }
+            // Try common encodings
+            $tryEncodings = ['Windows-1252', 'ISO-8859-1', 'CP1252'];
+            foreach ($tryEncodings as $enc) {
+                $converted = @mb_convert_encoding($value, 'UTF-8', $enc);
+                if ($converted !== false && mb_check_encoding($converted, 'UTF-8')) {
+                    return $converted;
+                }
+            }
+            // Fallback: strip invalid bytes
+            $stripped = @iconv('UTF-8', 'UTF-8//IGNORE', $value);
+            return $stripped !== false ? $stripped : mb_convert_encoding($value, 'UTF-8', 'UTF-8');
+        };
+
+        // Convert to arrays efficiently - only include what's needed
+        $documentRequestsArray = $documentRequests->map(function ($m) use ($sanitizeString) {
+            $docType = $m->documentType;
+            return [
+                'doc_request_id' => $m->doc_request_id,
+                'doc_request_ticket' => $sanitizeString($m->doc_request_ticket ?? ''),
+                'fk_user_id' => $m->fk_user_id,
+                'fk_document_type_id' => $m->fk_document_type_id,
+                'status' => $sanitizeString($m->status ?? 'PENDING'),
+                'purpose' => $sanitizeString($m->purpose ?? ''),
+                'pickup_item' => $sanitizeString($m->pickup_item ?? ''),
+                'pickup_location' => $sanitizeString($m->pickup_location ?? ''),
+                'pickup_start' => $m->pickup_start ? $m->pickup_start->toIso8601String() : null,
+                'pickup_end' => $m->pickup_end ? $m->pickup_end->toIso8601String() : null,
+                'person_to_look' => $sanitizeString($m->person_to_look ?? ''),
+                'applied_processing_fee' => $m->applied_processing_fee,
+                'processing_fee' => $docType ? ($docType->processing_fee ?? null) : null,
+                'document_name' => $docType ? $sanitizeString($docType->document_name ?? '') : '',
+                'created_at' => $m->created_at ? $m->created_at->toIso8601String() : null,
+                'reviewed_at' => $m->reviewed_at ? $m->reviewed_at->toIso8601String() : null,
+                'admin_feedback' => $sanitizeString($m->admin_feedback ?? ''),
+            ];
+        })->all();
+
+        $eventAssistanceRequestsArray = $eventAssistanceRequests->map(function ($m) use ($sanitizeString) {
+            // Extract event_type from extra_fields for the title
+            $extraFields = $m->extra_fields ?? [];
+            $eventType = is_array($extraFields) ? ($extraFields['event_type'] ?? null) : null;
+            $title = $eventType ?? $sanitizeString($m->purpose ?? 'Event Assistance Request');
+            
+            return [
+                'event_assist_request_id' => $m->event_assist_request_id,
+                'eventassist_request_ticket' => $sanitizeString($m->event_assist_request_ticket ?? ''),
+                'fk_user_id' => $m->fk_user_id,
+                'purpose' => $sanitizeString($m->purpose ?? ''),
+                'title' => $title,
+                'event_type' => $eventType,
+                'event_location' => $sanitizeString($m->event_location ?? ''),
+                'status' => $sanitizeString($m->status ?? 'PENDING'),
+                'created_at' => $m->created_at ? $m->created_at->toIso8601String() : null,
+                'reviewed_at' => $m->reviewed_at ? $m->reviewed_at->toIso8601String() : null,
+                'admin_feedback' => $sanitizeString($m->admin_feedback ?? ''),
+            ];
+        })->all();
+
+        $paymentsArray = $payments->map(function ($m) use ($sanitizeString) {
+            // Format receipt image URL similar to PaymentController
+            $receiptImage = null;
+            if (!empty($m->receipt_content)) {
+                // if it looks like a full URL use as-is
+                if (Str::startsWith($m->receipt_content, ['http://', 'https://', '/'])) {
+                    $receiptImage = $m->receipt_content;
+                } else {
+                    // assume it's a storage path (e.g. payments/xyz.jpg)
+                    $receiptImage = asset('storage/' . ltrim($m->receipt_content, '/'));
+                }
+            }
+            
+            return [
+                'payment_id' => $m->payment_id,
+                'fk_doc_request_id' => $m->fk_doc_request_id,
+                'fk_user_id' => $m->fk_user_id,
+                'status' => $sanitizeString($m->status ?? 'PENDING'),
+                'amount' => $m->paid_amount, // Map paid_amount to amount for frontend
+                'paid_amount' => $m->paid_amount, // Also include original name
+                'transaction_ref' => $sanitizeString($m->transaction_ref ?? ''),
+                'receipt_path' => $receiptImage, // Formatted receipt image URL
+                'receipt_content' => $sanitizeString($m->receipt_content ?? ''), // Also include original name
+                'receipt_image' => $receiptImage, // Add receipt_image for consistency
+                'paid_at' => $m->paid_at ? $m->paid_at->toIso8601String() : null,
+                'updated_at' => $m->updated_at ? $m->updated_at->toIso8601String() : null,
+            ];
+        })->all();
+
+        // Get user data (simplified)
+        $user = auth()->user();
+        $userData = $user ? [
+            'id' => $user->user_id,
+            'name' => $sanitizeString($user->name ?? ''),
+            'email' => $sanitizeString($user->email ?? ''),
+            'fk_role_id' => $user->fk_role_id ?? null,
+            'profile_pic' => $sanitizeString($user->profile_pic ?? ''),
+        ] : null;
+
+        $result = Inertia::render('User/Resident/R_Notification_Request', [
+            // Send both naming conventions for backward compatibility
+            'documentRequests' => $documentRequestsArray,
+            'document_requests' => $documentRequestsArray,
+            'eventAssistanceRequests' => $eventAssistanceRequestsArray,
+            'event_assistance_requests' => $eventAssistanceRequestsArray,
+            'payments' => $paymentsArray,
+            'auth' => ['user' => $userData],
         ]);
+        
+        // Restore original memory limit
+        ini_set('memory_limit', $originalLimit);
+        
+        return $result;
     }
 
     public function OfficialReq()
     {
-        $userId = auth()->id();
-        if (! $userId) {
+        // Temporarily increase memory limit for this request
+        $originalLimit = ini_get('memory_limit');
+        ini_set('memory_limit', '256M');
+        
+        $user = auth()->user();
+        if (! $user) {
             abort(403, 'Unauthorized');
         }
 
-        // Document requests for the authenticated user
-        $documentRequests = DocumentRequest::with(['documentType','user','userCredential'])
+        // Resolve user ID - handle both user_id and id fields
+        $userId = $user->user_id ?? $user->id ?? auth()->id();
+        if (! $userId) {
+            abort(403, 'Unauthorized - Unable to resolve user ID');
+        }
+
+        // Helper: sanitize string to UTF-8 (same as resident version)
+        $sanitizeString = function ($value) {
+            if (!is_string($value)) {
+                return $value;
+            }
+            if (mb_check_encoding($value, 'UTF-8')) {
+                return $value;
+            }
+            // Try common encodings
+            $tryEncodings = ['Windows-1252', 'ISO-8859-1', 'CP1252'];
+            foreach ($tryEncodings as $enc) {
+                $converted = @mb_convert_encoding($value, 'UTF-8', $enc);
+                if ($converted !== false && mb_check_encoding($converted, 'UTF-8')) {
+                    return $converted;
+                }
+            }
+            // Fallback: strip invalid bytes
+            $stripped = @iconv('UTF-8', 'UTF-8//IGNORE', $value);
+            return $stripped !== false ? $stripped : mb_convert_encoding($value, 'UTF-8', 'UTF-8');
+        };
+
+        // Document requests for the authenticated user - sanitize data before returning
+        $documentRequestsRaw = DocumentRequest::with(['documentType', 'user', 'userCredential'])
             ->where('fk_user_id', $userId)
             ->orderByDesc('doc_request_id')
             ->get();
 
-        // Event assistance requests for the authenticated user
-        // Make sure you have an App\Models\EventAssistanceRequest model
-        $eventAssistanceRequests = EventAssistanceRequest::query()
-            // ->with(['user', 'approver']) // uncomment/adjust if you add relationships
+        // Convert to arrays and sanitize string fields
+        $documentRequests = $documentRequestsRaw->map(function ($m) use ($sanitizeString) {
+            $docType = $m->documentType;
+            return [
+                'doc_request_id' => $m->doc_request_id,
+                'doc_request_ticket' => $sanitizeString($m->doc_request_ticket ?? ''),
+                'fk_user_id' => $m->fk_user_id,
+                'fk_document_type_id' => $m->fk_document_type_id,
+                'status' => $sanitizeString($m->status ?? 'PENDING'),
+                'purpose' => $sanitizeString($m->purpose ?? ''),
+                'pickup_item' => $sanitizeString($m->pickup_item ?? ''),
+                'pickup_location' => $sanitizeString($m->pickup_location ?? ''),
+                'pickup_start' => $m->pickup_start ? $m->pickup_start->toIso8601String() : null,
+                'pickup_end' => $m->pickup_end ? $m->pickup_end->toIso8601String() : null,
+                'person_to_look' => $sanitizeString($m->person_to_look ?? ''),
+                'applied_processing_fee' => $m->applied_processing_fee,
+                'processing_fee' => $docType ? ($docType->processing_fee ?? null) : null,
+                'document_name' => $docType ? $sanitizeString($docType->document_name ?? '') : '',
+                'created_at' => $m->created_at ? $m->created_at->toIso8601String() : null,
+                'reviewed_at' => $m->reviewed_at ? $m->reviewed_at->toIso8601String() : null,
+                'admin_feedback' => $sanitizeString($m->admin_feedback ?? ''),
+                'documentType' => $docType ? [
+                    'document_type_id' => $docType->document_type_id,
+                    'document_name' => $sanitizeString($docType->document_name ?? ''),
+                    'processing_fee' => $docType->processing_fee ?? null,
+                ] : null,
+                'user' => $m->user ? [
+                    'user_id' => $m->user->user_id,
+                    'name' => $sanitizeString($m->user->name ?? ''),
+                    'email' => $sanitizeString($m->user->email ?? ''),
+                ] : null,
+                'userCredential' => $m->userCredential ? [
+                    'contact_number' => $sanitizeString($m->userCredential->contact_number ?? ''),
+                    'secondary_contact_number' => $sanitizeString($m->userCredential->secondary_contact_number ?? ''),
+                ] : null,
+            ];
+        })->values();
+
+        // Event assistance requests for the authenticated user - sanitize data
+        $eventAssistanceRequestsRaw = EventAssistanceRequest::with(['user', 'approver', 'details'])
             ->where('fk_user_id', $userId)
-            ->orderByDesc('eventassist_request_id')
+            ->orderByDesc('event_assist_request_id')
             ->get();
 
-        return Inertia::render('User/Resident/E_Notification_Request', [
+        // Convert to arrays and sanitize string fields
+        $eventAssistanceRequests = $eventAssistanceRequestsRaw->map(function ($m) use ($sanitizeString) {
+            // Extract event_type from extra_fields for the title
+            $extraFields = $m->extra_fields ?? [];
+            $eventType = is_array($extraFields) ? ($extraFields['event_type'] ?? null) : null;
+            $title = $eventType ?? $sanitizeString($m->purpose ?? 'Event Assistance Request');
+            
+            return [
+                'event_assist_request_id' => $m->event_assist_request_id,
+                'eventassist_request_ticket' => $sanitizeString($m->event_assist_request_ticket ?? ''),
+                'fk_user_id' => $m->fk_user_id,
+                'purpose' => $sanitizeString($m->purpose ?? ''),
+                'title' => $title,
+                'event_type' => $eventType,
+                'event_location' => $sanitizeString($m->event_location ?? ''),
+                'status' => $sanitizeString($m->status ?? 'PENDING'),
+                'created_at' => $m->created_at ? $m->created_at->toIso8601String() : null,
+                'reviewed_at' => $m->reviewed_at ? $m->reviewed_at->toIso8601String() : null,
+                'admin_feedback' => $sanitizeString($m->admin_feedback ?? ''),
+                'user' => $m->user ? [
+                    'user_id' => $m->user->user_id,
+                    'name' => $sanitizeString($m->user->name ?? ''),
+                    'email' => $sanitizeString($m->user->email ?? ''),
+                ] : null,
+                'approver' => $m->approver ? [
+                    'user_id' => $m->approver->user_id,
+                    'name' => $sanitizeString($m->approver->name ?? ''),
+                ] : null,
+            ];
+        })->values();
+
+        // Sanitize user data
+        $userData = [
+            'user_id' => $user->user_id,
+            'id' => $user->user_id,
+            'name' => $sanitizeString($user->name ?? ''),
+            'email' => $sanitizeString($user->email ?? ''),
+            'fk_role_id' => $user->fk_role_id ?? null,
+            'profile_pic' => $sanitizeString($user->profile_pic ?? ''),
+        ];
+
+        $result = Inertia::render('User/Employee/E_Notification_Request', [
             'document_requests' => $documentRequests,
             'documentRequests'  => $documentRequests,
             'event_assistance_requests' => $eventAssistanceRequests,
             'eventAssistanceRequests' => $eventAssistanceRequests,
-            'auth' => ['user' => auth()->user()],
+            'auth' => ['user' => $userData],
         ]);
+        
+        // Restore original memory limit
+        ini_set('memory_limit', $originalLimit);
+        
+        return $result;
     }
 }

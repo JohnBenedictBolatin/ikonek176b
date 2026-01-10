@@ -24,7 +24,8 @@ const roleMap = {
 // computed display role (safe if user is null)
 const displayRole = computed(() => {
   const id = user.value?.fk_role_id ?? user.value?.role_id ?? null
-  return id ? (roleMap[id] ?? `Role ${id}`) : 'Resident' // fallback to 'Resident' or whatever you prefer
+  const role = id ? (roleMap[id] ?? `Role ${id}`) : 'Resident'
+  return role.toUpperCase()
 })
 
   // UI state

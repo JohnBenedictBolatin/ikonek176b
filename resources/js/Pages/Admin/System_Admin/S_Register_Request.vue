@@ -41,34 +41,48 @@
                         class="nav-item"
                         @click="navigateToDashboard"
                     >
-                        📊 Dashboard
-                    </Link>
-                    <Link 
-                        href="#" 
-                        class="nav-item"
-                        @click="navigateToUsers"
-                    >
-                        👥 Users
+                        <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z" />
+                        </svg>
+                        Dashboard
                     </Link>
                     <Link 
                         href="#" 
                         class="nav-item"
                         @click="navigateToHistory"
                     >
-                        📜 History
+                        <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        History
                     </Link>
                     <Link 
                         href="#" 
                         class="nav-item active"
                     >
-                        📝 Register Request
+                        <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                        </svg>
+                        Register Request
+                    </Link>
+                    <Link 
+                        :href="route('registration_employee')" 
+                        class="nav-item"
+                    >
+                        <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                        </svg>
+                        Register Official
                     </Link>
                     <Link 
                         href="#" 
                         class="nav-item"
                         @click="navigateToReport"
                     >
-                        🚩 Report
+                        <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                        </svg>
+                        Report
                     </Link>
                 </div>
             </div>
@@ -94,7 +108,9 @@
                             <div class="filter-dropdown-wrapper">
                                 <button class="filter-dropdown-btn" @click="toggleSortDropdown">
                                     {{ sortOption.toUpperCase() }}
-                                    <span class="filter-arrow" :class="{ rotated: showSortDropdown }">▼</span>
+                                    <svg class="filter-arrow" :class="{ rotated: showSortDropdown }" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width: 12px; height: 12px;">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+                                    </svg>
                                 </button>
                                 <div v-if="showSortDropdown" class="filter-dropdown-menu">
                                     <button @click="selectSort('newest')" :class="{ active: sortOption === 'newest' }">NEWEST</button>
@@ -105,7 +121,9 @@
                             <div class="filter-dropdown-wrapper">
                                 <button class="filter-dropdown-btn" @click="toggleFilterDropdown">
                                     {{ filterOption.toUpperCase() }}
-                                    <span class="filter-arrow" :class="{ rotated: showFilterDropdown }">▼</span>
+                                    <svg class="filter-arrow" :class="{ rotated: showFilterDropdown }" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width: 12px; height: 12px;">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+                                    </svg>
                                 </button>
                                 <div v-if="showFilterDropdown" class="filter-dropdown-menu">
                                     <button @click="selectFilter('all')" :class="{ active: filterOption === 'all' }">ALL</button>
@@ -123,7 +141,11 @@
                                     placeholder="SEARCH..." 
                                     class="search-input" 
                                 />
-                                <button class="search-btn" @click="performSearch">🔍</button>
+                                <button class="search-btn" @click="performSearch">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width: 18px; height: 18px;">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                    </svg>
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -131,23 +153,29 @@
                     <!-- Requests Container -->
                     <div class="requests-container">
                         <div 
-                            v-for="request in filteredRequests" 
-                            :key="request.id"
+                            v-for="(request, index) in filteredRequests" 
+                            :key="request.id || index"
                             class="request-card"
                         >
-                            <div class="request-header">
-                                <div class="request-user-info">
-                                    <div class="request-details">
+                            <div class="request-content">
+                                <div class="request-left">
+                                    <img :src="request.profileImg || '/assets/DEFAULT.jpg'" alt="Profile" class="modal-avatar" />
+                                    <div class="request-info">
                                         <h3 class="request-name">{{ request.name }}</h3>
                                         <p class="request-type"><span class="role-highlight" :class="request.role.toLowerCase()">{{ request.role.toUpperCase() }}</span></p>
+                                        <p class="request-date-small">{{ request.date }}</p>
                                     </div>
                                 </div>
-                            </div>
-                            <div class="request-body">
-                                <p class="request-date">{{ request.date }}</p>
-                                <button @click="openModal(request)" class="view-btn">
-                                    View Request
-                                </button>
+                                <div class="request-right">
+                                    <p class="request-date">{{ request.date }}</p>
+                                    <button 
+                                        @click.stop="openModal(request)" 
+                                        class="view-btn" 
+                                        type="button"
+                                    >
+                                        View Request Details
+                                    </button>
+                                </div>
                             </div>
                         </div>
 
@@ -164,84 +192,180 @@
         <div v-if="isModalOpen" class="modal-overlay" @click="closeModal">
             <div class="modal-container" @click.stop>
                 <!-- Close Button -->
-                <button @click="closeModal" class="modal-close">✕</button>
+                <button @click="closeModal" class="modal-close">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width: 20px; height: 20px;">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
 
-                <div class="modal-content">
-                    <!-- Top Section -->
-                    <div class="modal-top">
-                        <div class="modal-user-section">
-                            <div>
-                                <h3 class="modal-name">{{ selectedRequest.name }}</h3>
-                                <p class="modal-label">Registration Request</p>
+                <div v-if="selectedRequest" class="modal-content">
+                    <!-- Top Section - Matching Document Request Design -->
+                    <div class="modal-top" style="grid-template-columns: 1fr 1fr; gap: 15px; align-items: start;">
+                        <div class="modal-user-section" style="display: flex; align-items: center; gap: 12px;">
+                            <img :src="selectedRequest?.profileImg || '/assets/DEFAULT.jpg'" alt="Profile" class="modal-avatar" style="width: 60px; height: 60px; flex-shrink: 0;" />
+                            <div style="flex: 1; min-width: 0;">
+                                <h3 class="modal-name" style="font-size: 18px; margin-bottom: 4px;">{{ selectedRequest?.name || 'Unknown' }}</h3>
+                                <p class="modal-label" style="font-size: 12px; margin: 0;">Registration Request</p>
                             </div>
                         </div>
-                        <div class="modal-role-section">
-                            <h3 class="modal-role" :class="selectedRequest.role.toLowerCase()">{{ selectedRequest.role.toUpperCase() }}</h3>
-                        </div>
-                        <div class="modal-proof-section">
-                            <button class="proof-btn">
-                            Proof of Residency
-                            </button>
+                        <div style="display: flex; flex-direction: row; gap: 15px; align-items: center; justify-content: space-between; background: linear-gradient(135deg, #ff8c42 0%, #ff7a28 100%); color: white; padding: 10px 15px; border-radius: 10px; box-shadow: 0 3px 10px rgba(255, 122, 40, 0.3); min-height: fit-content;">
+                            <div style="flex: 1;">
+                                <p style="font-size: 8px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px; margin: 0 0 3px 0; opacity: 0.9;">Registration Type</p>
+                                <h3 style="font-size: 15px; font-weight: 700; margin: 0; text-shadow: 0 1px 3px rgba(0,0,0,0.2); line-height: 1.2;">{{ selectedRequest.role || 'Unknown' }}</h3>
+                            </div>
+                            <div style="width: 1px; height: 30px; background: rgba(255,255,255,0.3); flex-shrink: 0;"></div>
+                            <div style="flex: 0 0 auto; text-align: right;">
+                                <p style="font-size: 8px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px; margin: 0 0 3px 0; opacity: 0.9;">Request Date</p>
+                                <p style="font-size: 13px; font-weight: 700; margin: 0; font-family: monospace; letter-spacing: 0.8px; text-shadow: 0 1px 2px rgba(0,0,0,0.2);">{{ selectedRequest.date }}</p>
+                            </div>
                         </div>
                     </div>
 
                     <!-- Details Section -->
                     <div class="modal-details">
-                        <!-- First Row -->
-                        <div class="details-grid">
-                            <div class="detail-item">
-                                <p class="detail-label">Birthdate:</p>
-                                <p class="detail-value">{{ selectedRequest.birthdate }}</p>
-                            </div>
-                            <div class="detail-item">
-                                <p class="detail-label">Age:</p>
-                                <p class="detail-value">{{ selectedRequest.age }}</p>
-                            </div>
-                            <div class="detail-item">
-                                <p class="detail-label">Sex:</p>
-                                <p class="detail-value">{{ selectedRequest.sex }}</p>
-                            </div>
-                            <div class="detail-item">
-                                <p class="detail-label">Civil Status:</p>
-                                <p class="detail-value">{{ selectedRequest.civilStatus }}</p>
-                            </div>
-                            <div class="detail-item">
-                                <p class="detail-label">Contact Number:</p>
-                                <p class="detail-value">{{ selectedRequest.contact }}</p>
+                        <!-- User & Personal Information -->
+                        <div class="detail-section" style="margin-bottom: 15px;">
+                            <h4 class="section-title" style="margin-bottom: 10px; font-size: 16px;">User Information</h4>
+                            <div class="details-grid" style="grid-template-columns: repeat(4, 1fr); gap: 8px 12px;">
+                                <!-- Personal Info -->
+                                <div v-if="selectedRequest.first_name" class="detail-item" style="margin: 0;">
+                                    <p class="detail-label" style="font-size: 11px; margin-bottom: 2px; color: #666;">First Name:</p>
+                                    <p class="detail-value" style="font-size: 12px; margin: 0;">{{ selectedRequest.first_name }}</p>
+                                </div>
+                                <div v-if="selectedRequest.middle_name" class="detail-item" style="margin: 0;">
+                                    <p class="detail-label" style="font-size: 11px; margin-bottom: 2px; color: #666;">Middle Name:</p>
+                                    <p class="detail-value" style="font-size: 12px; margin: 0;">{{ selectedRequest.middle_name }}</p>
+                                </div>
+                                <div v-if="selectedRequest.last_name" class="detail-item" style="margin: 0;">
+                                    <p class="detail-label" style="font-size: 11px; margin-bottom: 2px; color: #666;">Last Name:</p>
+                                    <p class="detail-value" style="font-size: 12px; margin: 0;">{{ selectedRequest.last_name }}</p>
+                                </div>
+                                <div v-if="selectedRequest.suffix" class="detail-item" style="margin: 0;">
+                                    <p class="detail-label" style="font-size: 11px; margin-bottom: 2px; color: #666;">Suffix:</p>
+                                    <p class="detail-value" style="font-size: 12px; margin: 0;">{{ selectedRequest.suffix }}</p>
+                                </div>
+                                <div v-if="selectedRequest.birthdate" class="detail-item" style="margin: 0;">
+                                    <p class="detail-label" style="font-size: 11px; margin-bottom: 2px; color: #666;">Birthdate:</p>
+                                    <p class="detail-value" style="font-size: 12px; margin: 0;">{{ formatDate(selectedRequest.birthdate) }}</p>
+                                </div>
+                                <div v-if="selectedRequest.age" class="detail-item" style="margin: 0;">
+                                    <p class="detail-label" style="font-size: 11px; margin-bottom: 2px; color: #666;">Age:</p>
+                                    <p class="detail-value" style="font-size: 12px; margin: 0;">{{ selectedRequest.age }}</p>
+                                </div>
+                                <div v-if="selectedRequest.sex" class="detail-item" style="margin: 0;">
+                                    <p class="detail-label" style="font-size: 11px; margin-bottom: 2px; color: #666;">Sex:</p>
+                                    <p class="detail-value" style="font-size: 12px; margin: 0;">{{ selectedRequest.sex }}</p>
+                                </div>
+                                <div v-if="selectedRequest.civilStatus" class="detail-item" style="margin: 0;">
+                                    <p class="detail-label" style="font-size: 11px; margin-bottom: 2px; color: #666;">Civil Status:</p>
+                                    <p class="detail-value" style="font-size: 12px; margin: 0;">{{ selectedRequest.civilStatus }}</p>
+                                </div>
+                                <div v-if="selectedRequest.place_of_birth" class="detail-item" style="margin: 0;">
+                                    <p class="detail-label" style="font-size: 11px; margin-bottom: 2px; color: #666;">Place of Birth:</p>
+                                    <p class="detail-value" style="font-size: 12px; margin: 0;">{{ selectedRequest.place_of_birth }}</p>
+                                </div>
+                                <div v-if="selectedRequest.religion" class="detail-item" style="margin: 0;">
+                                    <p class="detail-label" style="font-size: 11px; margin-bottom: 2px; color: #666;">Religion:</p>
+                                    <p class="detail-value" style="font-size: 12px; margin: 0;">{{ selectedRequest.religion }}</p>
+                                </div>
+                                <div v-if="selectedRequest.nationality" class="detail-item" style="margin: 0;">
+                                    <p class="detail-label" style="font-size: 11px; margin-bottom: 2px; color: #666;">Nationality:</p>
+                                    <p class="detail-value" style="font-size: 12px; margin: 0;">{{ selectedRequest.nationality }}</p>
+                                </div>
                             </div>
                         </div>
 
-                        <!-- Second Row -->
-                        <div class="details-grid-2">
-                            <div class="detail-item">
-                                <p class="detail-label">Phase:</p>
-                                <p class="detail-value">{{ selectedRequest.phase }}</p>
-                            </div>
-                            <div class="detail-item">
-                                <p class="detail-label">Year in Barangay:</p>
-                                <p class="detail-value">{{ selectedRequest.yearsInBarangay }}</p>
-                            </div>
-                            <div class="detail-item">
-                                <p class="detail-label">Package:</p>
-                                <p class="detail-value">{{ selectedRequest.package }}</p>
+                        <!-- Additional Information -->
+                        <div v-if="selectedRequest.contact || selectedRequest.secondary_contact || selectedRequest.occupation || selectedRequest.address || selectedRequest.phase || selectedRequest.package || selectedRequest.yearsInBarangay" class="detail-section" style="margin-bottom: 15px;">
+                            <h4 class="section-title" style="margin-bottom: 10px; font-size: 16px;">Additional Information</h4>
+                            <div class="details-grid" style="grid-template-columns: repeat(4, 1fr); gap: 8px 12px;">
+                                <!-- Contact Info -->
+                                <div v-if="selectedRequest.contact" class="detail-item" style="margin: 0;">
+                                    <p class="detail-label" style="font-size: 11px; margin-bottom: 2px; color: #666;">Contact:</p>
+                                    <p class="detail-value" style="font-size: 12px; margin: 0;">{{ selectedRequest.contact }}</p>
+                                </div>
+                                <div v-if="selectedRequest.secondary_contact" class="detail-item" style="margin: 0;">
+                                    <p class="detail-label" style="font-size: 11px; margin-bottom: 2px; color: #666;">Secondary Contact:</p>
+                                    <p class="detail-value" style="font-size: 12px; margin: 0;">{{ selectedRequest.secondary_contact }}</p>
+                                </div>
+                                <div v-if="selectedRequest.occupation" class="detail-item" style="margin: 0;">
+                                    <p class="detail-label" style="font-size: 11px; margin-bottom: 2px; color: #666;">Occupation:</p>
+                                    <p class="detail-value" style="font-size: 12px; margin: 0;">{{ selectedRequest.occupation }}</p>
+                                </div>
+                                
+                                <!-- Address Info (Compact) -->
+                                <div v-if="selectedRequest.address" class="detail-item" style="grid-column: span 2; margin: 0;">
+                                    <p class="detail-label" style="font-size: 11px; margin-bottom: 2px; color: #666;">Address:</p>
+                                    <p class="detail-value" style="font-size: 12px; margin: 0; line-height: 1.3;">
+                                        {{ selectedRequest.address }}
+                                    </p>
+                                </div>
+                                <div v-if="selectedRequest.phase || selectedRequest.package" class="detail-item" style="margin: 0;">
+                                    <p class="detail-label" style="font-size: 11px; margin-bottom: 2px; color: #666;">Phase/Package:</p>
+                                    <p class="detail-value" style="font-size: 12px; margin: 0;">
+                                        {{ [selectedRequest.phase, selectedRequest.package].filter(Boolean).join(' / ') }}
+                                    </p>
+                                </div>
+                                <div v-if="selectedRequest.yearsInBarangay" class="detail-item" style="margin: 0;">
+                                    <p class="detail-label" style="font-size: 11px; margin-bottom: 2px; color: #666;">Years in Barangay:</p>
+                                    <p class="detail-value" style="font-size: 12px; margin: 0;">{{ selectedRequest.yearsInBarangay }}</p>
+                                </div>
                             </div>
                         </div>
 
-                        <!-- Third Row -->
-                        <div class="detail-item-full">
-                            <p class="detail-label">Home Address:</p>
-                            <p class="detail-value">{{ selectedRequest.address }}</p>
+                        <!-- Proof of Residency Section -->
+                        <div class="detail-section" style="margin-bottom: 15px;">
+                            <h4 class="section-title" style="margin-bottom: 10px; font-size: 16px;">Proof of Residency</h4>
+                            
+                            <!-- Proof Type -->
+                            <div v-if="selectedRequest.proof_of_residency" class="detail-item" style="margin: 0 0 15px 0; padding: 12px 15px; background: #e8f8ed; border-left: 4px solid #239640;">
+                                <p class="detail-label" style="font-size: 12px; font-weight: 700; color: #239640; margin: 0 0 5px 0; text-transform: uppercase;">Type of Proof:</p>
+                                <p class="detail-value" style="font-size: 14px; font-weight: 600; color: #333; margin: 0;">{{ selectedRequest.proof_of_residency }}</p>
+                            </div>
+                            
+                            <div v-if="selectedRequest && (selectedRequest.proof || (selectedRequest.proof_raw && selectedRequest.proof_raw !== 'none'))" class="proof-viewer" style="margin-top: 10px;">
+                                <!-- If the controller resolved a URL (preferred) use it -->
+                                <div v-if="selectedRequest.proof" class="attachment-preview-section">
+                                    <div class="image-preview-container-inline" style="width: 100%; max-height: 400px; overflow: hidden; border-radius: 8px; border: 1px solid #e0e0e0; display: flex; align-items: center; justify-content: center; background: #f8f9fa; margin-top: 10px;">
+                                        <img
+                                            :src="selectedRequest.proof"
+                                            alt="Proof of Residency"
+                                            class="attachment-image-inline"
+                                            style="max-width: 100%; max-height: 400px; border-radius: 8px; object-fit: contain; display: block; margin: 0 auto;"
+                                            @error="handleImageError"
+                                        />
+                                    </div>
+                                    <div class="attachment-actions-inline" style="margin-top: 10px; text-align: center;">
+                                        <a 
+                                            :href="selectedRequest.proof" 
+                                            target="_blank" 
+                                            rel="noopener"
+                                            class="attachment-download-btn"
+                                            style="display: inline-block; text-align: center; padding: 10px 20px; background: #239640; color: white; text-decoration: none; border-radius: 6px; font-weight: 600; transition: all 0.3s ease;"
+                                        >
+                                            View/Download Proof
+                                        </a>
+                                    </div>
+                                </div>
+
+                                <!-- If controller couldn't resolve a full URL but raw value exists and is not 'none', show raw path so admin can inspect -->
+                                <div v-else style="padding:15px; background:#fff7e6; border-radius:8px; border: 1px solid #ffc107;">
+                                    <p style="margin:0 0 8px 0; font-weight:600; color:#856404;"><strong>Proof path:</strong> {{ selectedRequest.proof_raw }}</p>
+                                    <p style="margin:0; color:#856404; font-size:13px;">(Image file could not be found at the expected location. Check your storage disk or file path.)</p>
+                                </div>
+                            </div>
+
+                            <!-- No proof uploaded -->
+                            <div v-else style="padding:20px; background:#f8f9fa; border-radius:8px; border: 1px dashed #ddd; text-align: center;">
+                                <p style="margin:0; font-weight:600; color:#999; display: flex; align-items: center; gap: 8px;">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width: 18px; height: 18px; flex-shrink: 0;">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                    </svg>
+                                    User did not upload proof of residency.
+                                </p>
+                            </div>
                         </div>
 
-                        <!-- Comment Section -->
-                        <div class="comment-section">
-                            <textarea 
-                                v-model="comment"
-                                placeholder="Leave a comment..." 
-                                class="comment-textarea"
-                                rows="4"
-                            ></textarea>
-                        </div>
 
                         <!-- Action Buttons -->
                         <div class="modal-actions">
@@ -266,13 +390,21 @@
                         </div>
                     </div>
                 </div>
+                <div v-else class="modal-content" style="padding: 40px; text-align: center;">
+                    <p style="font-size: 16px; color: #666;">Loading request details...</p>
+                    <p style="font-size: 14px; color: #999; margin-top: 10px;">If this message persists, please refresh the page.</p>
+                </div>
             </div>
         </div>
 
         <!-- Offenses Check Modal -->
         <div v-if="showOffensesModal" class="modal-overlay" @click="closeOffensesModal">
             <div class="offenses-modal-container" @click.stop>
-                <button @click="closeOffensesModal" class="modal-close">✕</button>
+                <button @click="closeOffensesModal" class="modal-close">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width: 20px; height: 20px;">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
                 
                 <div class="offenses-modal-content">
                     <h3 class="offenses-title">Record Check - Physical Records</h3>
@@ -321,7 +453,11 @@
         <!-- Reject Reason Modal -->
         <div v-if="showRejectModal" class="modal-overlay" @click="closeRejectModal">
             <div class="reject-modal-container" @click.stop>
-                <button @click="closeRejectModal" class="modal-close">✕</button>
+                <button @click="closeRejectModal" class="modal-close">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width: 20px; height: 20px;">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
                 
                 <div class="reject-modal-content">
                     <h3 class="reject-title">Rejection Reason</h3>
@@ -398,13 +534,43 @@ const filterOption = ref('all')
 const searchQuery = ref('')
 const isModalOpen = ref(false)
 const selectedRequest = ref(null)
-const comment = ref('')
 const showOffensesModal = ref(false)
 const showRejectModal = ref(false)
 const selectedOffenses = ref([])
 const rejectReason = ref('')
 const loadingApprove = ref(false)
 const loadingReject = ref(false)
+
+// Handle image load errors
+const handleImageError = (event) => {
+  console.error('Failed to load image:', event)
+  event.target.style.display = 'none'
+  const parent = event.target.parentElement
+  if (parent) {
+    const errorMsg = document.createElement('p')
+    errorMsg.textContent = 'Failed to load image'
+    errorMsg.style.color = '#999'
+    errorMsg.style.padding = '20px'
+    errorMsg.style.textAlign = 'center'
+    parent.appendChild(errorMsg)
+  }
+}
+
+// update openModal to prepare request data
+const openModal = (request) => {
+  if (request && request.birthdate) {
+    request.age = computeAgeFromBirthdate(request.birthdate)
+    // ensure formatted value exists on the object
+    request.birthdateFormatted = formatDate(request.birthdate)
+  }
+  // Set default profile image if not present
+  if (!request.profileImg) {
+    request.profileImg = '/assets/DEFAULT.jpg'
+  }
+  selectedRequest.value = request
+  isModalOpen.value = true
+}
+
 
 const offensesList = [
     'Violation of Community Rules',
@@ -471,6 +637,44 @@ const computeAgeFromBirthdate = (birthdate) => {
   return age >= 0 ? String(age) : ''
 }
 
+// helper: robust date formatter -> returns MM/DD/YYYY or '' on invalid
+const formatDate = (dateStr) => {
+  if (!dateStr) return ''
+  // if it's already a Date object
+  if (dateStr instanceof Date) {
+    const d = dateStr
+    if (isNaN(d.getTime())) return ''
+    const mm = String(d.getMonth() + 1).padStart(2, '0')
+    const dd = String(d.getDate()).padStart(2, '0')
+    const yyyy = d.getFullYear()
+    return `${mm}/${dd}/${yyyy}`
+  }
+
+  let s = String(dateStr).trim()
+  // Some DBs include microseconds (.000000Z). JS Date may not parse that reliably in all engines.
+  // Remove fractional seconds so it becomes valid ISO e.g. "2007-04-07T00:00:00Z"
+  s = s.replace(/\.(\d+)Z$/, 'Z') // remove fractional seconds
+  // Also handle case without trailing Z but with fractional seconds
+  s = s.replace(/\.(\d+)$/, '')
+
+  const d = new Date(s)
+  if (isNaN(d.getTime())) {
+    // try parse yyyy-mm-dd fallback
+    const ymd = s.match(/^(\d{4})[-\/](\d{1,2})[-\/](\d{1,2})/)
+    if (ymd) {
+      const dd2 = new Date(Number(ymd[1]), Number(ymd[2]) - 1, Number(ymd[3]))
+      if (!isNaN(dd2.getTime())) {
+        return formatDate(dd2)
+      }
+    }
+    return ''
+  }
+
+  const mm = String(d.getMonth() + 1).padStart(2, '0')
+  const dd = String(d.getDate()).padStart(2, '0')
+  const yyyy = d.getFullYear()
+  return `${mm}/${dd}/${yyyy}`
+}
 
 // hydrate requests from server and normalize fields expected by the front-end
 const requests = ref(
@@ -507,8 +711,10 @@ const requests = ref(
       name: (r.name ?? r.full_name ?? `${r.first_name ?? ''} ${r.last_name ?? ''}`.trim()) || 'Unknown',
       role: r.role ?? (r.is_official ? 'Official' : (r.role_name ?? (r.fk_role_id && r.fk_role_id !== 1 ? 'Official' : 'Resident'))),
       birthdate: bd,
+      birthdateDisplay: formatDate(bd),
+      birthdateFormatted: formatDate(bd),
       // set age computed from birthdate (frontend)
-      age: computedAge,
+      age: computedAge || r.age || '',
       sex: r.sex ?? '',
       civilStatus: r.civilStatus ?? r.civil_status ?? '',
       contact: r.contact ?? r.contact_number ?? '',
@@ -517,6 +723,8 @@ const requests = ref(
       package: packageVal ?? '',
       address: r.address ?? r.home_address ?? '',
       description: r.description ?? '',
+      // Set default profile image
+      profileImg: r.profileImg || r.profile_pic || '/assets/DEFAULT.jpg',
     }
   })
 )
@@ -608,20 +816,9 @@ const performSearch = () => {
     console.log('Performing search:', searchQuery.value)
 }
 
-const openModal = (request) => {
-    // ensure selectedRequest has age computed (in case request came from older code)
-    if (request && request.birthdate) {
-      request.age = computeAgeFromBirthdate(request.birthdate)
-    }
-    selectedRequest.value = request
-    comment.value = ''
-    isModalOpen.value = true
-}
-
 const closeModal = () => {
     isModalOpen.value = false
     selectedRequest.value = null
-    comment.value = ''
 }
 
 const approveRequest = () => {
@@ -634,33 +831,43 @@ const rejectRequest = () => {
 
 // Confirm Approval -> call backend to create user from user_credentials and delete credential
 const confirmApproval = async () => {
-    if (!selectedRequest.value) return
-    loadingApprove.value = true
+  if (!selectedRequest.value) return
+  loadingApprove.value = true
 
-    const id = selectedRequest.value.id
-    const payload = {
-        comment: comment.value || '',
-        offenses: selectedOffenses.value
-    }
+  const id = selectedRequest.value.id
+  if (!id) {
+    alert('Missing request id. Cannot approve.')
+    loadingApprove.value = false
+    return
+  }
 
-    // Use named route with path param
-    router.post(route('admin.register_requests.approve', id), payload, {
-        preserveState: true,
-        onSuccess: () => {
-            // remove locally
-            const idx = requests.value.findIndex(r => r.id === id)
-            if (idx > -1) requests.value.splice(idx, 1)
-            closeOffensesModal()
-            closeModal()
-            alert('Request approved.')
-        },
-        onError: (errors) => {
-            console.error('Approve errors', errors)
-            alert('Error approving request.')
-        },
-        onFinish: () => { loadingApprove.value = false }
-    })
+  const payload = {
+    offenses: selectedOffenses.value
+  }
+
+  // build URL robustly in case route() helper signature differs
+  const url = (typeof route === 'function')
+    ? route('admin.register_requests.approve', id)
+    : `/admin/register-requests/${encodeURIComponent(id)}/approve`
+
+  router.post(url, payload, {
+    preserveState: true,
+    onSuccess: () => {
+      // remove locally
+      const idx = requests.value.findIndex(r => r.id === id)
+      if (idx > -1) requests.value.splice(idx, 1)
+      closeOffensesModal()
+      closeModal()
+      alert('Request approved.')
+    },
+    onError: (errors) => {
+      console.error('Approve errors', errors)
+      alert('Error approving request.')
+    },
+    onFinish: () => { loadingApprove.value = false }
+  })
 }
+
 
 // Confirm Rejection -> call backend to delete user_credentials record and optionally record reason
 const confirmRejection = async () => {
@@ -673,8 +880,7 @@ const confirmRejection = async () => {
 
     const id = selectedRequest.value.id
     const payload = {
-        reason: rejectReason.value,
-        comment: comment.value || ''
+        reason: rejectReason.value
     }
 
     router.post(route('admin.register_requests.reject', id), payload, {
@@ -905,7 +1111,9 @@ onUnmounted(() => {
 }
 
 .nav-item {
-    display: block;
+    display: flex;
+    align-items: center;
+    gap: 12px;
     padding: 15px 20px;
     text-decoration: none;
     color: #333;
@@ -913,6 +1121,12 @@ onUnmounted(() => {
     transition: all 0.3s ease;
     cursor: pointer;
     font-weight: 500;
+}
+
+.nav-icon {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
 }
 
 .nav-item:last-child {
@@ -1019,8 +1233,8 @@ onUnmounted(() => {
 }
 
 .filter-arrow {
-    font-size: 10px;
     transition: transform 0.3s ease;
+    flex-shrink: 0;
 }
 
 .filter-arrow.rotated {
@@ -1090,16 +1304,24 @@ onUnmounted(() => {
 }
 
 .search-btn {
-    background: #f8f9fa;
+    background: transparent;
     border: none;
-    padding: 8px 12px;
-    border-radius: 6px;
     cursor: pointer;
-    transition: background 0.2s;
+    color: #6b7280;
+    padding: 8px 12px;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .search-btn:hover {
-    background: #e9ecef;
+    color: #ff8c42;
+}
+
+.search-btn svg {
+    width: 18px;
+    height: 18px;
 }
 
 /* Requests Container */
@@ -1124,19 +1346,6 @@ onUnmounted(() => {
     transform: translateY(-2px);
 }
 
-.request-header {
-    margin-bottom: 15px;
-}
-
-.request-user-info {
-    display: flex;
-    align-items: center;
-    gap: 15px;
-}
-
-.request-details {
-    flex: 1;
-}
 
 .request-name {
     font-size: 18px;
@@ -1177,18 +1386,63 @@ onUnmounted(() => {
     border-top: 1px solid #f0f0f0;
 }
 
+.request-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.request-left {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.modal-avatar {
+    width: 60px;
+    height: 60px;
+    border-radius: 12px;
+    object-fit: cover;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.request-info {
+    flex: 1;
+}
+
+.request-date-small {
+    font-size: 12px;
+    color: #999;
+    margin: 3px 0;
+}
+
+.request-right {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 10px;
+}
+
 .view-btn {
-    background: #ff7a28;
+    background: #239640;
     color: white;
     border: none;
-    margin-left: 1250px;
     padding: 10px 24px;
     border-radius: 8px;
     cursor: pointer;
     font-weight: 600;
     font-size: 13px;
     transition: all 0.3s ease;
-    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+    box-shadow: 0 2px 8px rgba(35, 150, 64, 0.3);
+    pointer-events: auto;
+    position: relative;
+    z-index: 10;
+}
+
+.view-btn:hover {
+    background: #1e7e34;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(35, 150, 64, 0.4);
 }
 
 .no-requests {
@@ -1236,7 +1490,11 @@ onUnmounted(() => {
     height: 35px;
     border-radius: 50%;
     cursor: pointer;
-    font-size: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #666;
+    transition: all 0.2s;
     color: #666;
     transition: all 0.2s;
     display: flex;
@@ -1245,9 +1503,8 @@ onUnmounted(() => {
 }
 
 .modal-close:hover {
-    background: #ff4444;
-    color: white;
-    transform: rotate(90deg);
+    background: #e0e0e0;
+    color: #666;
 }
 
 .modal-content {
@@ -1256,11 +1513,12 @@ onUnmounted(() => {
 
 .modal-top {
     display: grid;
-    grid-template-columns: 2fr 1fr 1fr;
-    gap: 20px;
-    padding-bottom: 25px;
-    border-bottom: 2px solid #f0f0f0;
-    margin-bottom: 25px;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid #e0e0e0;
+    margin-bottom: 20px;
+    align-items: start;
 }
 
 .modal-user-section {
@@ -1316,42 +1574,93 @@ onUnmounted(() => {
     background: linear-gradient(135deg, #ff8c42, #ff7a28);
 }
 
-.modal-proof-section {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.proof-btn {
-    background: #ff7a28;
-    color: white;
-    border: none;
-    padding: 15px 30px;
-    border-radius: 10px;
-    cursor: pointer;
-    font-weight: 600;
-    font-size: 15px;
-    transition: all 0.3s ease;
-    box-shadow: 0 2px 8px rgba(107, 114, 128, 0.3);
-    text-align: center;
-}
-
 .modal-details {
     display: flex;
     flex-direction: column;
     gap: 20px;
 }
 
-.details-grid {
-    display: grid;
-    grid-template-columns: repeat(5, 1fr);
-    gap: 15px;
+.detail-section {
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px solid #e0e0e0;
 }
 
-.details-grid-2 {
+.detail-section:first-of-type {
+    margin-top: 0;
+    padding-top: 0;
+    border-top: none;
+}
+
+.section-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: #239640;
+    margin: 0 0 10px 0;
+    padding-bottom: 8px;
+    border-bottom: 2px solid #239640;
+}
+
+.proof-viewer {
+    margin-top: 10px;
+}
+
+.attachment-preview-section {
+    margin-top: 15px;
+}
+
+.image-preview-container-inline {
+    width: 100%;
+    max-height: 400px;
+    overflow: hidden;
+    border-radius: 8px;
+    border: 1px solid #e0e0e0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f8f9fa;
+    margin-top: 10px;
+}
+
+.attachment-image-inline {
+    max-width: 100%;
+    max-height: 400px;
+    object-fit: contain;
+    display: block;
+    margin: 0 auto;
+}
+
+.attachment-actions-inline {
+    display: flex;
+    gap: 10px;
+    margin-top: 10px;
+    justify-content: center;
+}
+
+.attachment-download-btn {
+    display: inline-block;
+    text-align: center;
+    padding: 10px 20px;
+    background: #239640;
+    color: white;
+    text-decoration: none;
+    border-radius: 6px;
+    font-weight: 600;
+    font-size: 13px;
+    transition: all 0.3s ease;
+    white-space: nowrap;
+}
+
+.attachment-download-btn:hover {
+    background: #1e7d35;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(35, 150, 64, 0.4);
+}
+
+.details-grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 15px;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px 12px;
 }
 
 .detail-item {
@@ -1382,24 +1691,6 @@ onUnmounted(() => {
     margin: 0;
 }
 
-.comment-section {
-    margin-top: 5px;
-}
-
-.comment-textarea {
-    width: 100%;
-    padding: 15px;
-    border: 2px solid #e0e0e0;
-    border-radius: 10px;
-    font-size: 14px;
-    font-family: inherit;
-    resize: none;
-    transition: border-color 0.3s;
-}
-
-.comment-textarea:focus {
-    outline: none;
-    border-color: #239640;
 }
 
 .modal-actions {
@@ -1694,13 +1985,13 @@ onUnmounted(() => {
 
 .requests-container::-webkit-scrollbar-thumb,
 .modal-container::-webkit-scrollbar-thumb {
-    background: #ff8c42;
+    background: #888;
     border-radius: 3px;
 }
 
 .requests-container::-webkit-scrollbar-thumb:hover,
 .modal-container::-webkit-scrollbar-thumb:hover {
-    background: #e6763a;
+    background: #666;
 }
 
 .offenses-list::-webkit-scrollbar {
@@ -1713,12 +2004,12 @@ onUnmounted(() => {
 }
 
 .offenses-list::-webkit-scrollbar-thumb {
-    background: #239640;
+    background: #888;
     border-radius: 3px;
 }
 
 .offenses-list::-webkit-scrollbar-thumb:hover {
-    background: #1e7d36;
+    background: #666;
 }
 
 /* Responsive */
@@ -1764,14 +2055,24 @@ onUnmounted(() => {
         padding: 20px;
     }
     
-    .details-grid,
-    .details-grid-2 {
+    .details-grid {
         grid-template-columns: 1fr;
     }
     
     .modal-top {
         grid-template-columns: 1fr;
         gap: 15px;
+    }
+    
+    .request-content {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 15px;
+    }
+    
+    .request-right {
+        width: 100%;
+        align-items: flex-start;
     }
 }
 </style>

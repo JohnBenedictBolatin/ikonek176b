@@ -41,20 +41,29 @@
                         class="nav-item"
                         @click="navigateToDocumentRequest"
                     >
-                        📄 Document Request
+                        <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        Document Request
                     </Link>
                     <Link 
                         href="#" 
                         class="nav-item"
                         @click="navigateToRegisterRequest"
                     >
-                        📝 Event Assistance Request
+                        <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                        </svg>
+                        Event Assistance Request
                     </Link>
                     <Link 
                         href="#" 
                         class="nav-item active"
                     >
-                        📜 History
+                        <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        History
                     </Link>
                 </div>
             </div>
@@ -80,7 +89,9 @@
                             <div class="filter-dropdown-wrapper">
                                 <button class="filter-dropdown-btn" @click="toggleSortDropdown">
                                     {{ sortOption.toUpperCase() }}
-                                    <span class="filter-arrow" :class="{ rotated: showSortDropdown }">▼</span>
+                                    <svg class="filter-arrow" :class="{ rotated: showSortDropdown }" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width: 12px; height: 12px;">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+                                    </svg>
                                 </button>
                                 <div v-if="showSortDropdown" class="filter-dropdown-menu">
                                     <button @click="selectSort('newest')" :class="{ active: sortOption === 'newest' }">NEWEST</button>
@@ -91,7 +102,9 @@
                             <div class="filter-dropdown-wrapper">
                                 <button class="filter-dropdown-btn" @click="toggleFilterDropdown">
                                     {{ filterOption.toUpperCase() }}
-                                    <span class="filter-arrow" :class="{ rotated: showFilterDropdown }">▼</span>
+                                    <svg class="filter-arrow" :class="{ rotated: showFilterDropdown }" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width: 12px; height: 12px;">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+                                    </svg>
                                 </button>
                                 <div v-if="showFilterDropdown" class="filter-dropdown-menu">
                                     <button @click="selectFilter('all')" :class="{ active: filterOption === 'all' }">ALL</button>
@@ -109,7 +122,11 @@
                                     placeholder="SEARCH..." 
                                     class="search-input" 
                                 />
-                                <button class="search-btn" @click="performSearch">🔍</button>
+                                <button class="search-btn" @click="performSearch">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width: 18px; height: 18px;">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                    </svg>
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -119,13 +136,14 @@
                         <table class="users-table">
                             <thead>
                                 <tr>
-                                    <th style="width: 80px;">Profile</th>
-                                    <th style="width: 180px;">Full Name</th>
-                                    <th style="width: 100px;">Role</th>
-                                    <th style="width: 200px;">Activity</th>
-                                    <th style="width: 140px;">Action</th>
-                                    <th style="width: 150px;">Approver</th>
-                                    <th style="width: 110px;">Date</th>
+                                    <th style="width: 70px; text-align: center;">Profile</th>
+                                    <th style="width: 180px; text-align: left; padding-left: 20px;">Full Name</th>
+                                    <th style="width: 200px; text-align: center;">Role</th>
+                                    <th style="width: 250px; text-align: left; padding-left: 25px;">Service Requested</th>
+                                    <th style="width: 140px; text-align: center;">Action</th>
+                                    <th style="width: 150px; text-align: center;">Approver</th>
+                                    <th style="width: 110px; text-align: center;">Date</th>
+                                    <th style="width: 120px; text-align: center;">Download</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -134,23 +152,35 @@
                                     :key="activity.id"
                                     class="user-row"
                                 >
-                                    <td style="text-align: center;">
+                                    <td style="text-align: center; padding: 15px 8px;">
                                         <img :src="activity.avatar" :alt="activity.name" class="user-avatar" />
                                     </td>
-                                    <td class="user-name">{{ activity.name }}</td>
-                                    <td style="text-align: center;">
-                                        <span class="role-badge" :class="activity.role.toLowerCase()">
+                                    <td style="text-align: left; padding: 15px 12px 15px 20px;" class="user-name">{{ activity.name }}</td>
+                                    <td style="text-align: center; padding: 15px 15px;">
+                                        <span class="role-badge" :class="getRoleClass(activity.role)">
                                             {{ activity.role.toUpperCase() }}
                                         </span>
                                     </td>
-                                    <td style="text-align: left;">{{ activity.activity }}</td>
-                                    <td style="text-align: center;">
+                                    <td style="text-align: left; padding: 15px 12px 15px 25px;">{{ activity.activity }}</td>
+                                    <td style="text-align: center; padding: 15px 12px;">
                                         <span class="action-badge" :class="getActionClass(activity.action)">
                                             {{ activity.action.toUpperCase() }}
                                         </span>
                                     </td>
-                                    <td style="text-align: center;">{{ activity.approver }}</td>
-                                    <td style="text-align: center;">{{ activity.date }}</td>
+                                    <td style="text-align: center; padding: 15px 12px;">{{ activity.approver }}</td>
+                                    <td style="text-align: center; padding: 15px 12px;">{{ activity.date }}</td>
+                                    <td style="text-align: center; padding: 15px 12px;">
+                                        <a 
+                                            v-if="activity.type === 'document' && activity.action === 'Approved' && canDownloadDocument(activity.documentType)"
+                                            :href="getDownloadUrl(activity.docRequestId, 'pdf')"
+                                            class="download-btn-history"
+                                            :download="getDownloadFilename(activity)"
+                                            @click.stop
+                                        >
+                                            Download
+                                        </a>
+                                        <span v-else style="color: #999; font-size: 12px;">-</span>
+                                    </td>
                                 </tr>
                             </tbody>
                         </table>
@@ -169,8 +199,9 @@
 <script setup>
 import { Link } from '@inertiajs/vue3'
 import { Head, usePage } from '@inertiajs/vue3'
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { router } from '@inertiajs/vue3'
+import axios from 'axios'
 
   // --- Inertia-shared auth user ---
 const page = usePage()
@@ -201,78 +232,307 @@ const showFilterDropdown = ref(false)
 const sortOption = ref('newest')
 const filterOption = ref('all')
 const searchQuery = ref('')
+const isLoading = ref(false)
 
-// Sample history data - 3 document requests + 3 event assistance requests
-const history = ref([
-    // Document Requests
-    {
-        id: 1,
-        name: 'John Rodriguez',
-        role: 'Resident',
-        activity: 'Barangay Clearance Request',
-        action: 'Approved',
-        approver: 'Justin N.',
-        date: '09/28/2025',
-        avatar: '/assets/PROFILE PIC 4.jpg',
-        dateObj: new Date('2025-09-28')
-    },
-    {
-        id: 2,
-        name: 'Maria Santos',
-        role: 'Resident',
-        activity: 'Certificate of Residency Request',
-        action: 'Approved',
-        approver: 'Justin N.',
-        date: '09/27/2025',
-        avatar: '/assets/PROFILE PIC 3.jpg',
-        dateObj: new Date('2025-09-27')
-    },
-    {
-        id: 3,
-        name: 'Roberto Cruz',
-        role: 'Resident',
-        activity: 'Barangay ID Request',
-        action: 'Rejected',
-        approver: 'Justin N.',
-        date: '09/26/2025',
-        avatar: '/assets/PROFILE PIC 7.jpg',
-        dateObj: new Date('2025-09-26')
-    },
-    // Event Assistance Requests
-    {
-        id: 4,
-        name: 'Roberto Cruz',
-        role: 'Resident',
-        activity: 'Venue Assistance - Wedding Reception',
-        action: 'Approved',
-        approver: 'Justin N.',
-        date: '09/25/2025',
-        avatar: '/assets/PROFILE PIC 2.jpg',
-        dateObj: new Date('2025-09-25')
-    },
-    {
-        id: 5,
-        name: 'Ana Reyes',
-        role: 'Resident',
-        activity: 'Equipment Assistance - Youth Summit',
-        action: 'Approved',
-        approver: 'Justin N.',
-        date: '09/24/2025',
-        avatar: '/assets/PROFILE PIC 3.jpg',
-        dateObj: new Date('2025-09-24')
-    },
-    {
-        id: 6,
-        name: 'Carlos Mendoza',
-        role: 'Resident',
-        activity: 'Personnel Assistance - Senior Gathering',
-        action: 'Rejected',
-        approver: 'Justin N.',
-        date: '09/23/2025',
-        avatar: '/assets/PROFILE PIC.jpg',
-        dateObj: new Date('2025-09-23')
+// History data - will be populated from backend
+const history = ref([])
+
+// Format date helper - converts UTC to Philippines timezone (Asia/Manila, UTC+8)
+const formatDate = (dateStr) => {
+  if (!dateStr) return ''
+  try {
+    // Parse the date string (assumes it's in UTC from server)
+    const date = new Date(dateStr)
+    if (isNaN(date.getTime())) return ''
+    
+    // Use Intl.DateTimeFormat to format in Philippines timezone
+    const formatter = new Intl.DateTimeFormat('en-US', {
+      timeZone: 'Asia/Manila',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    })
+    
+    const parts = formatter.formatToParts(date)
+    const month = parts.find(p => p.type === 'month').value
+    const day = parts.find(p => p.type === 'day').value
+    const year = parts.find(p => p.type === 'year').value
+    
+    return `${month}/${day}/${year}`
+  } catch (e) {
+    return ''
+  }
+}
+
+// Get approver name helper - get from approver_info in the response
+const getApproverName = (req) => {
+  // First try to get from approver_info (from backend)
+  if (req.approver_info && req.approver_info.name) {
+    return req.approver_info.name
+  }
+  // Fallback: if there's an approver ID and it matches current user, use current user's name
+  if (req.fk_approver_id && user.value?.name) {
+    const nameParts = user.value.name.split(' ')
+    if (nameParts.length > 0) {
+      return nameParts[0] + (nameParts.length > 1 ? ' ' + nameParts[nameParts.length - 1].charAt(0) + '.' : '')
     }
-])
+    return user.value.name
+  }
+  return 'N/A'
+}
+
+// Fetch history data from backend
+const fetchHistory = async () => {
+  isLoading.value = true
+  try {
+    // Build URLs for document requests
+    const buildDocUrl = (status) => {
+      return `/a_document_request?status=${status}`
+    }
+
+    // Build URLs for event assistance requests
+    const buildEventUrl = (status) => {
+      return `/a_event_request?status=${status}`
+    }
+
+    // Fetch approved and rejected document requests and event assistance requests
+    const [approvedDocRes, rejectedDocRes, approvedEventRes, rejectedEventRes] = await Promise.all([
+      axios.get(buildDocUrl('Approved'), {
+        headers: {
+          'Accept': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest'
+        }
+      }),
+      axios.get(buildDocUrl('Rejected'), {
+        headers: {
+          'Accept': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest'
+        }
+      }),
+      axios.get(buildEventUrl('Approved'), {
+        headers: {
+          'Accept': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest'
+        }
+      }),
+      axios.get(buildEventUrl('Rejected'), {
+        headers: {
+          'Accept': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest'
+        }
+      })
+    ])
+
+    // Extract requests from JSON responses
+    let approvedDocRequests = approvedDocRes?.data?.document_requests || []
+    let rejectedDocRequests = rejectedDocRes?.data?.document_requests || []
+    let approvedEventRequests = approvedEventRes?.data?.event_requests || []
+    let rejectedEventRequests = rejectedEventRes?.data?.event_requests || []
+    
+    // Debug logging
+    console.log('Approved document requests found:', approvedDocRequests.length)
+    console.log('Rejected document requests found:', rejectedDocRequests.length)
+    console.log('Approved event requests found:', approvedEventRequests.length)
+    console.log('Rejected event requests found:', rejectedEventRequests.length)
+
+    const historyItems = []
+
+    // Map approved document requests
+    approvedDocRequests.forEach((req) => {
+      const userInfo = req.user_info || {}
+      const approver = getApproverName(req)
+      
+      let profileImg = '/assets/DEFAULT.jpg'
+      if (userInfo.profile_pic) {
+        if (String(userInfo.profile_pic).startsWith('http')) {
+          profileImg = userInfo.profile_pic
+        } else {
+          profileImg = `/storage/${userInfo.profile_pic}`.replace('//', '/')
+        }
+      }
+
+      const roleId = userInfo.fk_role_id || userInfo.role_id || 1
+      const role = roleMap[roleId] || 'Resident'
+
+      const docTypeName = req.document_type?.name || req.documentType?.name || req.documentType || 'Document Request'
+
+      // Parse date properly - use reviewed_at if available, otherwise created_at, otherwise use epoch (oldest)
+      const dateSource = req.reviewed_at || req.created_at
+      let dateObj = new Date(0) // Default to epoch (oldest) if no date
+      if (dateSource) {
+        const parsed = new Date(dateSource)
+        if (!isNaN(parsed.getTime())) {
+          dateObj = parsed
+        }
+      }
+
+      historyItems.push({
+        id: req.doc_request_id || req.id,
+        name: req.name || `${req.first_name || ''} ${req.last_name || ''}`.trim() || 'Unknown',
+        role: role,
+        activity: docTypeName,
+        action: 'Approved',
+        approver: approver,
+        date: formatDate(dateSource),
+        dateObj: dateObj,
+        avatar: profileImg,
+        type: 'document',
+        docRequestId: req.doc_request_id || req.id,
+        documentType: req.document_type?.name || req.documentType?.name || docTypeName,
+        status: req.status || 'Approved'
+      })
+    })
+
+    // Map rejected document requests
+    rejectedDocRequests.forEach((req) => {
+      const userInfo = req.user_info || {}
+      const approver = getApproverName(req)
+      
+      let profileImg = '/assets/DEFAULT.jpg'
+      if (userInfo.profile_pic) {
+        if (String(userInfo.profile_pic).startsWith('http')) {
+          profileImg = userInfo.profile_pic
+        } else {
+          profileImg = `/storage/${userInfo.profile_pic}`.replace('//', '/')
+        }
+      }
+
+      const roleId = userInfo.fk_role_id || userInfo.role_id || 1
+      const role = roleMap[roleId] || 'Resident'
+
+      const docTypeName = req.document_type?.name || req.documentType?.name || req.documentType || 'Document Request'
+
+      // Parse date properly - use reviewed_at if available, otherwise created_at, otherwise use epoch (oldest)
+      const dateSource = req.reviewed_at || req.created_at
+      let dateObj = new Date(0) // Default to epoch (oldest) if no date
+      if (dateSource) {
+        const parsed = new Date(dateSource)
+        if (!isNaN(parsed.getTime())) {
+          dateObj = parsed
+        }
+      }
+
+      historyItems.push({
+        id: req.doc_request_id || req.id,
+        name: req.name || `${req.first_name || ''} ${req.last_name || ''}`.trim() || 'Unknown',
+        role: role,
+        activity: docTypeName,
+        action: 'Rejected',
+        approver: approver,
+        date: formatDate(dateSource),
+        dateObj: dateObj,
+        avatar: profileImg,
+        type: 'document',
+        docRequestId: req.doc_request_id || req.id,
+        documentType: req.document_type?.name || req.documentType?.name || docTypeName,
+        status: req.status || 'Rejected'
+      })
+    })
+
+    // Map approved event assistance requests
+    approvedEventRequests.forEach((req) => {
+      const userInfo = req.user_info || {}
+      const approver = getApproverName(req)
+      
+      let profileImg = '/assets/DEFAULT.jpg'
+      if (userInfo.profile_pic) {
+        if (String(userInfo.profile_pic).startsWith('http')) {
+          profileImg = userInfo.profile_pic
+        } else {
+          profileImg = `/storage/${userInfo.profile_pic}`.replace('//', '/')
+        }
+      }
+
+      const roleId = userInfo.fk_role_id || userInfo.role_id || 1
+      const role = roleMap[roleId] || 'Resident'
+
+      const eventTypeName = req.event_type || 'Event Assistance Request'
+
+      // Parse date properly - use reviewed_at if available, otherwise created_at, otherwise use epoch (oldest)
+      const dateSource = req.reviewed_at || req.created_at
+      let dateObj = new Date(0) // Default to epoch (oldest) if no date
+      if (dateSource) {
+        const parsed = new Date(dateSource)
+        if (!isNaN(parsed.getTime())) {
+          dateObj = parsed
+        }
+      }
+
+      historyItems.push({
+        id: req.event_assist_request_id || req.id,
+        name: req.name || `${req.first_name || ''} ${req.last_name || ''}`.trim() || 'Unknown',
+        role: role,
+        activity: eventTypeName,
+        action: 'Approved',
+        approver: approver,
+        date: formatDate(dateSource),
+        dateObj: dateObj,
+        avatar: profileImg,
+        type: 'event',
+        status: req.status || 'Approved'
+      })
+    })
+
+    // Map rejected event assistance requests
+    rejectedEventRequests.forEach((req) => {
+      const userInfo = req.user_info || {}
+      const approver = getApproverName(req)
+      
+      let profileImg = '/assets/DEFAULT.jpg'
+      if (userInfo.profile_pic) {
+        if (String(userInfo.profile_pic).startsWith('http')) {
+          profileImg = userInfo.profile_pic
+        } else {
+          profileImg = `/storage/${userInfo.profile_pic}`.replace('//', '/')
+        }
+      }
+
+      const roleId = userInfo.fk_role_id || userInfo.role_id || 1
+      const role = roleMap[roleId] || 'Resident'
+
+      const eventTypeName = req.event_type || 'Event Assistance Request'
+
+      // Parse date properly - use reviewed_at if available, otherwise created_at, otherwise use epoch (oldest)
+      const dateSource = req.reviewed_at || req.created_at
+      let dateObj = new Date(0) // Default to epoch (oldest) if no date
+      if (dateSource) {
+        const parsed = new Date(dateSource)
+        if (!isNaN(parsed.getTime())) {
+          dateObj = parsed
+        }
+      }
+
+      historyItems.push({
+        id: req.event_assist_request_id || req.id,
+        name: req.name || `${req.first_name || ''} ${req.last_name || ''}`.trim() || 'Unknown',
+        role: role,
+        activity: eventTypeName,
+        action: 'Rejected',
+        approver: approver,
+        date: formatDate(dateSource),
+        dateObj: dateObj,
+        avatar: profileImg,
+        type: 'event',
+        status: req.status || 'Rejected'
+      })
+    })
+
+    // Sort by newest first (most recent first) by default
+    historyItems.sort((a, b) => {
+      // Ensure dateObj is valid
+      const aDate = a.dateObj instanceof Date && !isNaN(a.dateObj.getTime()) ? a.dateObj : new Date(0)
+      const bDate = b.dateObj instanceof Date && !isNaN(b.dateObj.getTime()) ? b.dateObj : new Date(0)
+      return bDate.getTime() - aDate.getTime() // Descending order (newest first)
+    })
+    
+    history.value = historyItems
+  } catch (error) {
+    console.error('Error fetching history:', error)
+    history.value = []
+  } finally {
+    isLoading.value = false
+  }
+}
 
 // Computed filtered history
 const filteredHistory = computed(() => {
@@ -298,16 +558,32 @@ const filteredHistory = computed(() => {
 
     // Sorting
     if (sortOption.value === 'newest') {
-        filtered.sort((a, b) => b.dateObj - a.dateObj)
+        filtered.sort((a, b) => {
+            // Ensure dateObj is valid Date object
+            const aDate = a.dateObj instanceof Date && !isNaN(a.dateObj.getTime()) ? a.dateObj : new Date(0)
+            const bDate = b.dateObj instanceof Date && !isNaN(b.dateObj.getTime()) ? b.dateObj : new Date(0)
+            return bDate.getTime() - aDate.getTime() // Descending order (newest first)
+        })
     } else if (sortOption.value === 'oldest') {
-        filtered.sort((a, b) => a.dateObj - b.dateObj)
+        filtered.sort((a, b) => {
+            // Ensure dateObj is valid Date object
+            const aDate = a.dateObj instanceof Date && !isNaN(a.dateObj.getTime()) ? a.dateObj : new Date(0)
+            const bDate = b.dateObj instanceof Date && !isNaN(b.dateObj.getTime()) ? b.dateObj : new Date(0)
+            return aDate.getTime() - bDate.getTime() // Ascending order (oldest first)
+        })
     } else if (sortOption.value === 'relevant') {
-        // Sort by action priority: Rejected > Approved
+        // Sort by action priority: Rejected > Approved, then by date (newest first)
         const priority = { 'rejected': 1, 'approved': 2 }
         filtered.sort((a, b) => {
             const aPriority = priority[a.action.toLowerCase()] || 3
             const bPriority = priority[b.action.toLowerCase()] || 3
-            return aPriority - bPriority
+            if (aPriority !== bPriority) {
+                return aPriority - bPriority
+            }
+            // If same priority, sort by date (newest first)
+            const aDate = a.dateObj instanceof Date && !isNaN(a.dateObj.getTime()) ? a.dateObj : new Date(0)
+            const bDate = b.dateObj instanceof Date && !isNaN(b.dateObj.getTime()) ? b.dateObj : new Date(0)
+            return bDate.getTime() - aDate.getTime()
         })
     }
 
@@ -359,12 +635,67 @@ const getActionClass = (action) => {
     return 'default'
 }
 
+const getRoleClass = (role) => {
+    const roleLower = role.toLowerCase().replace(/\s+/g, '-')
+    // Check if it's a resident (role_id 1)
+    if (roleLower === 'resident') return 'resident'
+    // All other roles are officials
+    return 'official'
+}
+
 const navigateToDocumentRequest = () => {
     router.visit(route('document_request_approver'))
 }
 
 const navigateToRegisterRequest = () => {
     router.visit(route('event_request_approver'))
+}
+
+// Helper function to check if document type supports download
+const canDownloadDocument = (documentType) => {
+  if (!documentType) return false
+  
+  // Document types that currently have generated documents from API
+  // Currently only Barangay Certificate and Business Permit have it
+  const supportedTypes = [
+    'Barangay Certificate',
+    'Business Permit'
+  ]
+  
+  // Check if document type matches any supported type (case-insensitive, partial match)
+  return supportedTypes.some(type => {
+    const docTypeLower = documentType.toLowerCase().trim()
+    const supportedTypeLower = type.toLowerCase().trim()
+    return docTypeLower === supportedTypeLower || 
+           docTypeLower.includes(supportedTypeLower) ||
+           supportedTypeLower.includes(docTypeLower)
+  })
+}
+
+// Helper function to get download URL
+const getDownloadUrl = (docRequestId, format = 'pdf') => {
+  try {
+    if (typeof route === 'function') {
+      return route('document_requests.download', { id: docRequestId, format: format })
+    }
+  } catch (e) {
+    console.warn('Route helper not available, using fallback URL')
+  }
+  // Fallback URL
+  return `/document-requests/${docRequestId}/download/${format}`
+}
+
+// Helper function to generate download filename
+const getDownloadFilename = (activity) => {
+  if (!activity.docRequestId || !activity.documentType) return 'document.pdf'
+  
+  // Sanitize document type name for filename
+  const docTypeSanitized = activity.documentType
+    .replace(/[^a-zA-Z0-9_-]/g, '_')
+    .replace(/_+/g, '_')
+    .trim('_')
+  
+  return `${activity.docRequestId}_${docTypeSanitized}.pdf`
 }
 
 // Close dropdowns when clicking outside
@@ -380,6 +711,7 @@ const handleClickOutside = (event) => {
 
 onMounted(() => {
     document.addEventListener('click', handleClickOutside)
+    fetchHistory()
 })
 
 onUnmounted(() => {
@@ -557,7 +889,9 @@ onUnmounted(() => {
 }
 
 .nav-item {
-    display: block;
+    display: flex;
+    align-items: center;
+    gap: 12px;
     padding: 15px 20px;
     text-decoration: none;
     color: #333;
@@ -565,6 +899,12 @@ onUnmounted(() => {
     transition: all 0.3s ease;
     cursor: pointer;
     font-weight: 500;
+}
+
+.nav-icon {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
 }
 
 .nav-item:last-child {
@@ -671,8 +1011,8 @@ onUnmounted(() => {
 }
 
 .filter-arrow {
-    font-size: 10px;
     transition: transform 0.3s ease;
+    flex-shrink: 0;
 }
 
 .filter-arrow.rotated {
@@ -768,7 +1108,7 @@ onUnmounted(() => {
 }
 
 .users-table thead {
-    background: #9c9b9b;
+    background: #2e2e2e;
     color: white;
     position: sticky;
     top: 0;
@@ -777,12 +1117,20 @@ onUnmounted(() => {
 
 .users-table th {
     padding: 12px 8px;
-    text-align: center;
+    text-align: left;
     font-weight: 600;
     font-size: 13px;
     text-transform: uppercase;
     letter-spacing: 0.5px;
     vertical-align: middle;
+}
+
+.users-table th:nth-child(1),
+.users-table th:nth-child(3),
+.users-table th:nth-child(5),
+.users-table th:nth-child(6),
+.users-table th:nth-child(7) {
+    text-align: center;
 }
 
 .users-table tbody tr {
@@ -799,6 +1147,15 @@ onUnmounted(() => {
     font-size: 13px;
     color: #555;
     vertical-align: middle;
+    text-align: left;
+}
+
+.users-table td:nth-child(1),
+.users-table td:nth-child(3),
+.users-table td:nth-child(5),
+.users-table td:nth-child(6),
+.users-table td:nth-child(7) {
+    text-align: center;
 }
 
 .user-avatar {
@@ -835,6 +1192,11 @@ onUnmounted(() => {
     background: linear-gradient(135deg, #ff8c42, #ff7a28);
 }
 
+/* Default style for any role badge that doesn't match above classes */
+.role-badge:not(.resident):not(.official) {
+    background: linear-gradient(135deg, #6b7280, #4b5563);
+}
+
 .action-badge {
     font-size: 11px;
     padding: 5px 12px;
@@ -855,6 +1217,30 @@ onUnmounted(() => {
 
 .action-badge.default {
     background: linear-gradient(135deg, #6b7280, #4b5563);
+}
+
+.download-btn-history {
+    display: inline-block;
+    padding: 6px 12px;
+    background: linear-gradient(135deg, #239640, #1e7a33);
+    color: white;
+    text-decoration: none;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    transition: all 0.2s;
+    cursor: pointer;
+    border: none;
+}
+
+.download-btn-history:hover {
+    background: linear-gradient(135deg, #1e7a33, #1a6b2a);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(35, 150, 64, 0.3);
+}
+
+.download-btn-history:active {
+    transform: translateY(0);
 }
 
 .no-users {
@@ -879,12 +1265,12 @@ onUnmounted(() => {
 }
 
 .users-container::-webkit-scrollbar-thumb {
-    background: #ff8c42;
+    background: #999;
     border-radius: 3px;
 }
 
 .users-container::-webkit-scrollbar-thumb:hover {
-    background: #e6763a;
+    background: #777;
 }
 
 /* Responsive */

@@ -660,6 +660,7 @@ onUnmounted(() => {
     border-radius: 15px;
     display: inline-block;
     font-weight: 600;
+    text-transform: uppercase;
 }
 
 .nav-menu {
@@ -1280,12 +1281,12 @@ onUnmounted(() => {
 }
 
 .notifications-container::-webkit-scrollbar-thumb {
-    background: #ff8c42;
+    background: #888;
     border-radius: 3px;
 }
 
 .notifications-container::-webkit-scrollbar-thumb:hover {
-    background: #e6763a;
+    background: #666;
 }
 
 /* Responsive Design */

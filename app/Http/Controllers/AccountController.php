@@ -57,26 +57,63 @@ class AccountController extends Controller
         // Validation adjusted:
         // - password minimum length 6 and must be confirmed
         // - contact fields must be digits (nullable)
+        // - optional name fields accepted for verification
         $validated = $request->validate([
             'user_cred_id' => ['required', 'integer', 'exists:user_credentials,user_cred_id'],
-            'password' => ['required', 'string', 'min:6', 'confirmed'], // <-- min:6
-            // require digits only; allow between 7 and 15 digits (adjust if you need different range)
+            'password' => ['required', 'string', 'min:6', 'confirmed'],
             'contact_number' => ['nullable', 'digits_between:7,15'],
             'secondary_contact' => ['nullable', 'digits_between:7,15'],
+            'last_name' => ['nullable', 'string'],
+            'first_name' => ['nullable', 'string'],
+            'middle_name' => ['nullable', 'string'],
+            'suffix' => ['nullable', 'string'],
         ]);
 
-        $cred = UserCredential::find($validated['user_cred_id']);
+        $cred = UserCredential::with('user')->find($validated['user_cred_id']);
 
         if (! $cred) {
             return back()->withErrors(['user_cred_id' => 'Selected account not found.']);
         }
 
-        // Hash and save password
+        // Verify provided identifying fields actually match the selected credential's user record.
+        // For each provided field, check case-insensitive equality (or prefix for phone).
+        $user = $cred->user;
+
+        if ($request->filled('last_name')) {
+            if (! $user || strcasecmp(trim($user->last_name ?? ''), trim($request->input('last_name'))) !== 0) {
+                return back()->withErrors(['last_name' => 'Last name does not match the selected account.']);
+            }
+        }
+        if ($request->filled('first_name')) {
+            if (! $user || strcasecmp(trim($user->first_name ?? ''), trim($request->input('first_name'))) !== 0) {
+                return back()->withErrors(['first_name' => 'First name does not match the selected account.']);
+            }
+        }
+        if ($request->filled('middle_name')) {
+            if (! $user || strcasecmp(trim($user->middle_name ?? ''), trim($request->input('middle_name'))) !== 0) {
+                return back()->withErrors(['middle_name' => 'Middle name does not match the selected account.']);
+            }
+        }
+        if ($request->filled('suffix')) {
+            if (! $user || strcasecmp(trim($user->suffix ?? ''), trim($request->input('suffix'))) !== 0) {
+                return back()->withErrors(['suffix' => 'Suffix does not match the selected account.']);
+            }
+        }
+
+        // For contact number verification, allow frontend matching behavior: check that credential's stored number starts with provided digits.
+        if ($request->filled('contact_number')) {
+            $provided = preg_replace('/\D+/', '', $request->input('contact_number'));
+            $stored = preg_replace('/\D+/', '', $cred->contact_number ?? '');
+            if ($provided === '' || strpos($stored, $provided) !== 0) {
+                return back()->withErrors(['contact_number' => 'Contact number does not match the selected account.']);
+            }
+        }
+
+        // All good: hash and save new password
         $cred->password = Hash::make($validated['password']);
 
-        // Update contact numbers (store as integers/strings consistent with DB column)
+        // Update contact numbers when provided (overwrite)
         if ($request->filled('contact_number')) {
-            // store as integer-compatible value; cast to string if your column is unsignedBigInt but you prefer to store as numeric string
             $cred->contact_number = $request->input('contact_number');
         }
         if ($request->filled('secondary_contact')) {
@@ -85,6 +122,8 @@ class AccountController extends Controller
 
         $cred->save();
 
-        return back()->with('success', 'Password updated successfully.');
+        // return back()->with('success', 'Password updated successfully.');
+        return redirect()->route('login')->with('success', 'Password updated successfully. Please login.');
+
     }
 }

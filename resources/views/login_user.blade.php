@@ -24,8 +24,6 @@
 	        <input type="text" placeholder="OTP Code (Text Message)" required>
 	      </div>
 
-	      <a href="{{ route('find_account_user') }}" class="link">Lost your contact number?</a>
-
 	      <button type="submit" class="login-btn" onclick="window.location.href='{{ route('discussion_user') }}'">LOGIN</button>
 
 	      <div class="or-divider">OR</div>

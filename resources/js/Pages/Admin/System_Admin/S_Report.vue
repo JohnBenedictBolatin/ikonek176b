@@ -41,34 +41,48 @@
                         class="nav-item"
                         @click="navigateToDashboard"
                     >
-                        📊 Dashboard
-                    </Link>
-                    <Link 
-                        href="#" 
-                        class="nav-item"
-                        @click="navigateToUsers"
-                    >
-                        👥 Users
+                        <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z" />
+                        </svg>
+                        Dashboard
                     </Link>
                     <Link 
                         href="#" 
                         class="nav-item"
                         @click="navigateToHistory"
                     >
-                        📜 History
+                        <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        History
                     </Link>
                     <Link 
                         href="#" 
                         class="nav-item"
                         @click="navigateToRegisterRequest"
                     >
-                        📝 Register Request
+                        <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                        </svg>
+                        Register Request
+                    </Link>
+                    <Link 
+                        :href="route('registration_employee')" 
+                        class="nav-item"
+                    >
+                        <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                        </svg>
+                        Register Official
                     </Link>
                     <Link 
                         href="#" 
                         class="nav-item active"
                     >
-                        🚩 Report
+                        <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                        </svg>
+                        Report
                     </Link>
                 </div>
             </div>
@@ -79,9 +93,9 @@
                 <div class="main-content">
                     <!-- Report Header -->
                     <div class="users-header">
-                        <div class="users-title">
-                            <h2>Reported Posts</h2>
-                        </div>
+                    <div class="users-title">
+                        <h2>Reports & Contact Messages</h2>
+                    </div>
                         <div class="header-icon">
                             <img src="/assets/ICON.png" alt="iKONEK" class="small-logo" />
                         </div>
@@ -94,7 +108,9 @@
                             <div class="filter-dropdown-wrapper">
                                 <button class="filter-dropdown-btn" @click="toggleSortDropdown">
                                     {{ sortOption.toUpperCase() }}
-                                    <span class="filter-arrow" :class="{ rotated: showSortDropdown }">▼</span>
+                                    <svg class="filter-arrow" :class="{ rotated: showSortDropdown }" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width: 12px; height: 12px;">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+                                    </svg>
                                 </button>
                                 <div v-if="showSortDropdown" class="filter-dropdown-menu">
                                     <button @click="selectSort('newest')" :class="{ active: sortOption === 'newest' }">NEWEST</button>
@@ -105,7 +121,9 @@
                             <div class="filter-dropdown-wrapper">
                                 <button class="filter-dropdown-btn" @click="toggleFilterDropdown">
                                     {{ filterOption.toUpperCase() }}
-                                    <span class="filter-arrow" :class="{ rotated: showFilterDropdown }">▼</span>
+                                    <svg class="filter-arrow" :class="{ rotated: showFilterDropdown }" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width: 12px; height: 12px;">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+                                    </svg>
                                 </button>
                                 <div v-if="showFilterDropdown" class="filter-dropdown-menu">
                                     <button @click="selectFilter('all')" :class="{ active: filterOption === 'all' }">ALL</button>
@@ -123,78 +141,151 @@
                                     placeholder="SEARCH..." 
                                     class="search-input" 
                                 />
-                                <button class="search-btn" @click="performSearch">🔍</button>
+                                <button class="search-btn" @click="performSearch">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width: 18px; height: 18px;">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                    </svg>
+                                </button>
                             </div>
                         </div>
                     </div>
 
                     <!-- Reports Container -->
                     <div class="reports-container">
+                        <!-- Post Reports -->
                         <div 
                             v-for="report in filteredReports" 
                             :key="report.id"
                             class="report-card"
                         >
-                            <!-- Reported Post Section -->
-                            <div class="reported-post-section">
+                            <!-- Contact Message Section -->
+                            <div v-if="report.type === 'contact'" class="contact-message-section">
                                 <div class="section-label">
-                                    <span class="flag-icon">🚩</span>
-                                    <span>Reported Post</span>
+                                    <svg class="message-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                                    </svg>
+                                    <span>Contact Message</span>
                                 </div>
-                                <div class="post-preview">
-                                    <div class="post-author-info">
-                                        <img :src="report.postAuthorAvatar" :alt="report.postAuthor" class="author-avatar" />
-                                        <div class="author-details">
-                                            <h3 class="author-name">{{ report.postAuthor }}</h3>
-                                            <span class="role-badge" :class="report.postAuthorRole.toLowerCase()">
-                                                {{ report.postAuthorRole.toUpperCase() }}
+                                <div class="contact-message-preview">
+                                    <div class="contact-sender-info">
+                                        <div class="sender-details">
+                                            <h3 class="sender-name">{{ report.user_name || 'Guest' }}</h3>
+                                            <span class="role-badge" :class="getRoleClass(report.user_type)">
+                                                {{ (report.user_type || 'GUEST').toUpperCase() }}
                                             </span>
-                                            <p class="post-date">Posted: {{ report.postDate }}</p>
+                                            <p class="contact-date">Received: {{ report.reportDate }}</p>
                                         </div>
                                     </div>
-                                    <div class="post-content-preview">
-                                        <h4 class="post-title">{{ report.postTitle }}</h4>
-                                        <p class="post-text">{{ report.postContent }}</p>
+                                    <div class="contact-info-box">
+                                        <div v-if="report.first_name" class="contact-info-item">
+                                            <strong>First Name:</strong> {{ report.first_name }}
+                                        </div>
+                                        <div v-if="report.last_name" class="contact-info-item">
+                                            <strong>Last Name:</strong> {{ report.last_name }}
+                                        </div>
+                                        <div v-if="report.user_email" class="contact-info-item">
+                                            <strong>Email:</strong> {{ report.user_email }}
+                                        </div>
+                                        <div v-if="report.user_contact_number" class="contact-info-item">
+                                            <strong>Contact Number:</strong> {{ report.user_contact_number }}
+                                        </div>
                                     </div>
+                                    <div class="message-content-box">
+                                        <div class="message-label">Message:</div>
+                                        <p class="message-text">{{ report.message }}</p>
+                                    </div>
+                                </div>
+                                <!-- Action Buttons for Contact Messages -->
+                                <div class="action-buttons">
+                                    <button @click="markContactAsRead(report)" class="read-btn">
+                                        Mark as Read
+                                    </button>
+                                    <button @click="markContactAsReplied(report)" class="replied-btn">
+                                        Mark as Replied
+                                    </button>
                                 </div>
                             </div>
 
-                            <!-- Reporter Section -->
-                            <div class="reporter-section">
-                                <div class="section-label">
-                                    <span class="user-icon">👤</span>
-                                    <span>Reported By</span>
-                                </div>
-                                <div class="reporter-info">
-                                    <img :src="report.reportedByAvatar" :alt="report.reportedBy" class="reporter-avatar" />
-                                    <div class="reporter-details">
-                                        <h4 class="reporter-name">{{ report.reportedBy }}</h4>
-                                        <p class="report-date">Reported: {{ report.reportDate }}</p>
+                            <!-- Post Report Section (existing) -->
+                            <template v-else>
+                                <!-- Reported Post Section -->
+                                <div class="reported-post-section">
+                                    <div class="section-label">
+                                        <svg class="flag-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                        </svg>
+                                        <span>Reported Post</span>
+                                    </div>
+                                    <div class="post-preview">
+                                        <div class="post-author-info">
+                                            <img :src="report.postAuthorAvatar" :alt="report.postAuthor" class="author-avatar" @error="$event.target.src='/assets/DEFAULT.jpg'" />
+                                            <div class="author-details">
+                                                <h3 class="author-name">{{ report.postAuthor }}</h3>
+                                                <span class="role-badge" :class="getRoleClass(report.postAuthorRole)">
+                                                    {{ report.postAuthorRole.toUpperCase() }}
+                                                </span>
+                                                <p class="post-date">Posted: {{ report.postDate }}</p>
+                                            </div>
+                                        </div>
+                                        <div class="post-content-preview">
+                                            <h4 class="post-title">{{ report.postTitle }}</h4>
+                                            <p class="post-text">{{ report.postContent }}</p>
+                                        </div>
                                     </div>
                                 </div>
-                                <div class="report-reason-box">
-                                    <div class="reason-label">Reason:</div>
-                                    <div class="reason-badge">{{ report.reportReason }}</div>
-                                    <div class="reason-details">{{ report.reportDetails }}</div>
-                                </div>
-                            </div>
 
-                            <!-- Action Buttons -->
-                            <div class="action-buttons">
-                                <button @click="openModal(report, 'keep')" class="keep-btn">
-                                    ✓ Keep Post
-                                </button>
-                                <button @click="openModal(report, 'delete')" class="delete-btn">
-                                    ✕ Remove Post
-                                </button>
-                            </div>
+                                <!-- Reporter Section -->
+                                <div class="reporter-section">
+                                    <div class="section-label">
+                                        <svg class="user-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                        </svg>
+                                        <span>Reported By</span>
+                                    </div>
+                                    <div class="reporter-info">
+                                        <img :src="report.reportedByAvatar" :alt="report.reportedBy" class="reporter-avatar" @error="$event.target.src='/assets/DEFAULT.jpg'" />
+                                        <div class="reporter-details">
+                                            <h4 class="reporter-name">{{ report.reportedBy }}</h4>
+                                            <span class="role-badge" :class="getRoleClass(report.reporterRole)">
+                                                {{ report.reporterRole.toUpperCase() }}
+                                            </span>
+                                            <p class="report-date">Reported: {{ report.reportDate }}</p>
+                                        </div>
+                                    </div>
+                                    <div class="report-reason-box">
+                                        <div class="reason-label">Reason{{ report.reportReasons && report.reportReasons.length > 1 ? 's' : '' }}:</div>
+                                        <div class="reasons-list">
+                                            <span 
+                                                v-for="(reason, index) in (report.reportReasons || [report.reportReason])" 
+                                                :key="index"
+                                                class="reason-badge"
+                                            >
+                                                {{ reason }}
+                                            </span>
+                                        </div>
+                                        <div v-if="report.reportDetails" class="reason-details">{{ report.reportDetails }}</div>
+                                    </div>
+                                </div>
+
+                                <!-- Action Buttons -->
+                                <div class="action-buttons">
+                                    <button @click="openModal(report, 'keep')" class="keep-btn">
+                                        Keep Post
+                                    </button>
+                                    <button @click="openModal(report, 'delete')" class="delete-btn">
+                                        Remove Post
+                                    </button>
+                                </div>
+                            </template>
                         </div>
 
                         <!-- No reports message -->
                         <div v-if="filteredReports.length === 0" class="no-reports">
-                            <div class="no-reports-icon">🔍</div>
-                            <p>No flagged posts found matching your criteria.</p>
-                            <p class="no-reports-subtext">All posts are following community guidelines.</p>
+                            <svg class="no-reports-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                            </svg>
+                            <p>No reports or contact messages found matching your criteria.</p>
+                            <p class="no-reports-subtext">All posts are following community guidelines and there are no pending contact messages.</p>
                         </div>
                     </div>
                 </div>
@@ -205,7 +296,11 @@
         <div v-if="isModalOpen" class="modal-overlay" @click="closeModal">
             <div class="modal-container" @click.stop>
                 <!-- Close Button -->
-                <button @click="closeModal" class="modal-close">✕</button>
+                <button @click="closeModal" class="modal-close">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width: 20px; height: 20px;">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
 
                 <div class="modal-content">
                     <h2 class="modal-title">
@@ -218,10 +313,16 @@
                         <p><strong>Post Author:</strong> {{ selectedReport?.postAuthor }}</p>
                         <p><strong>Post Title:</strong> {{ selectedReport?.postTitle }}</p>
                         <p><strong>Reported By:</strong> {{ selectedReport?.reportedBy }}</p>
-                        <p><strong>Reason:</strong> {{ selectedReport?.reportReason }}</p>
+                        <p><strong>Reason{{ selectedReport?.reportReasons && selectedReport.reportReasons.length > 1 ? 's' : '' }}:</strong> 
+                            <span v-for="(reason, index) in (selectedReport?.reportReasons || [selectedReport?.reportReason])" :key="index">
+                                {{ reason }}{{ index < (selectedReport?.reportReasons?.length - 1 || 0) ? ', ' : '' }}
+                            </span>
+                        </p>
                     </div>
                     <div class="modal-warning" v-if="modalAction === 'delete'">
-                        <span class="warning-icon">⚠️</span>
+                        <svg class="warning-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                        </svg>
                         <span>This action will permanently remove the post from the discussion board and notify the author.</span>
                     </div>
                     <div class="modal-info" v-if="modalAction === 'keep'">
@@ -246,6 +347,14 @@ import { Link } from '@inertiajs/vue3'
 import { Head, usePage } from '@inertiajs/vue3'
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { router } from '@inertiajs/vue3'
+
+// Define props - receive reports from backend
+const props = defineProps({
+    reports: {
+        type: Array,
+        default: () => []
+    }
+})
 
   // --- Inertia-shared auth user ---
 const page = usePage()
@@ -278,68 +387,26 @@ const filterOption = ref('all')
 const searchQuery = ref('')
 const isModalOpen = ref(false)
 const selectedReport = ref(null)
+const selectedReportId = ref(null)
+const selectedPostId = ref(null)
 const modalAction = ref('')
+const isLoading = ref(false)
 
-// Sample flagged posts data - posts that have been reported by users
-const reports = ref([
-    {
-        id: 1,
-        postAuthor: 'Maria Theresa Santos',
-        postAuthorRole: 'Resident',
-        postAuthorAvatar: '/assets/PROFILE PIC 3.jpg',
-        postTitle: 'Tanong lang po about Barangay ID Renewal',
-        postContent: 'Hi guys! May nakakaalam ba dito ng requirements for barangay ID renewal? Nawala kasi yung old ID ko eh, need ko na rin kumuha ng bago. Salamat sa sasagot!',
-        postDate: '09/28/2025',
-        dateObj: new Date('2025-09-28'),
-        reportedBy: 'Juan Dela Cruz',
-        reportedByAvatar: '/assets/PROFILE PIC 9.jpg',
-        reportReason: 'Spam or misleading',
-        reportDetails: 'This post appears multiple times and seems automated. User is posting the same question repeatedly.',
-        reportDate: '09/29/2025',
-        likes: 12,
-        comments: 5,
-        shares: 2,
-        status: 'pending'
-    },
-    {
-        id: 2,
-        postAuthor: 'Josefino Manalantad',
-        postAuthorRole: 'Resident',
-        postAuthorAvatar: '/assets/PROFILE PIC 4.jpg',
-        postTitle: 'May nakaexperience na ba ng problema sa water supply?',
-        postContent: 'Since last night wala kaming tubig dito sa Phase 2. Kayo ba? Normal lang ba to or may problema sa main line? Pa-update naman kung may nakakaalam ng reason.',
-        postDate: '09/26/2025',
-        dateObj: new Date('2025-09-26'),
-        reportedBy: 'Anna Mae Buenavente',
-        reportedByAvatar: '/assets/PROFILE PIC 5.jpg',
-        reportReason: 'False information',
-        reportDetails: 'Post contains misleading information about water supply issues. There was no actual water interruption reported by the water company.',
-        reportDate: '09/27/2025',
-        likes: 15,
-        comments: 10,
-        shares: 5,
-        status: 'pending'
-    },
-    {
-        id: 3,
-        postAuthor: 'Manuelo Reyes III',
-        postAuthorRole: 'Resident',
-        postAuthorAvatar: '/assets/PROFILE PIC 2.jpg',
-        postTitle: 'Pa-recommend naman ng Vet Clinic malapit dito',
-        postContent: 'Mga ka-barangay, sino may alam na magandang vet clinic malapit lang dito sa area natin? Need ng dog ko ng checkup kasi parang may allergy. Salamat sa tutulong!',
-        postDate: '09/27/2025',
-        dateObj: new Date('2025-09-27'),
-        reportedBy: 'Liza Garcia',
-        reportedByAvatar: '/assets/PROFILE PIC 8.jpg',
-        reportReason: 'Inappropriate content',
-        reportDetails: 'User has been using this post to advertise their own vet clinic business in the comments section repeatedly.',
-        reportDate: '09/28/2025',
-        likes: 8,
-        comments: 4,
-        shares: 1,
-        status: 'pending'
+// Convert props.reports to reactive ref and process dates
+const reportsData = (props.reports || []).map((report, index) => {
+    // Ensure all properties are preserved
+    const mappedReport = {
+        ...report,
+        dateObj: report.reportDateTime ? new Date(report.reportDateTime) : new Date(report.reportDate),
     }
-])
+    // Debug: log first report to verify structure
+    if (index === 0) {
+        console.log('First report structure:', mappedReport)
+        console.log('Report ID:', mappedReport.id, 'Post ID:', mappedReport.post_id)
+    }
+    return mappedReport
+})
+const reports = ref(reportsData)
 
 // Computed filtered reports
 const filteredReports = computed(() => {
@@ -348,33 +415,62 @@ const filteredReports = computed(() => {
     // Search filter
     if (searchQuery.value.trim()) {
         const query = searchQuery.value.toLowerCase()
-        filtered = filtered.filter(item => 
-            item.postAuthor.toLowerCase().includes(query) ||
-            item.postTitle.toLowerCase().includes(query) ||
-            item.postContent.toLowerCase().includes(query) ||
-            item.reportedBy.toLowerCase().includes(query) ||
-            item.reportReason.toLowerCase().includes(query)
-        )
+        filtered = filtered.filter(item => {
+            if (item.type === 'contact') {
+                return (item.user_name && item.user_name.toLowerCase().includes(query)) ||
+                    (item.first_name && item.first_name.toLowerCase().includes(query)) ||
+                    (item.last_name && item.last_name.toLowerCase().includes(query)) ||
+                    (item.user_email && item.user_email.toLowerCase().includes(query)) ||
+                    (item.user_contact_number && item.user_contact_number.toLowerCase().includes(query)) ||
+                    item.message.toLowerCase().includes(query)
+            } else {
+                const reasons = item.reportReasons || [item.reportReason]
+                const reasonsText = reasons.join(' ').toLowerCase()
+                return item.postAuthor.toLowerCase().includes(query) ||
+                    item.postTitle.toLowerCase().includes(query) ||
+                    item.postContent.toLowerCase().includes(query) ||
+                    item.reportedBy.toLowerCase().includes(query) ||
+                    reasonsText.includes(query)
+            }
+        })
     }
 
     // Role filter
     if (filterOption.value !== 'all') {
-        filtered = filtered.filter(item => 
-            item.postAuthorRole.toLowerCase() === filterOption.value.toLowerCase()
-        )
+        filtered = filtered.filter(item => {
+            if (item.type === 'contact') {
+                const userType = (item.user_type || 'Guest').toLowerCase()
+                if (filterOption.value === 'resident') {
+                    return userType === 'resident'
+                } else if (filterOption.value === 'official') {
+                    return userType === 'employee' || userType.includes('official')
+                }
+                return true
+            } else {
+                return item.postAuthorRole.toLowerCase() === filterOption.value.toLowerCase()
+            }
+        })
     }
 
     // Sorting
     if (sortOption.value === 'newest') {
-        filtered.sort((a, b) => b.dateObj - a.dateObj)
-    } else if (sortOption.value === 'oldest') {
-        filtered.sort((a, b) => a.dateObj - b.dateObj)
-    } else if (sortOption.value === 'relevant') {
-        // Sort by engagement (likes + comments + shares)
         filtered.sort((a, b) => {
-            const aEngagement = a.likes + a.comments + a.shares
-            const bEngagement = b.likes + b.comments + b.shares
-            return bEngagement - aEngagement
+            const dateA = a.dateObj || new Date(a.reportDate)
+            const dateB = b.dateObj || new Date(b.reportDate)
+            return dateB - dateA
+        })
+    } else if (sortOption.value === 'oldest') {
+        filtered.sort((a, b) => {
+            const dateA = a.dateObj || new Date(a.reportDate)
+            const dateB = b.dateObj || new Date(b.reportDate)
+            return dateA - dateB
+        })
+    } else if (sortOption.value === 'relevant') {
+        // Sort by report date (most recent reports first)
+        filtered.sort((a, b) => {
+            const dateA = a.dateObj || new Date(a.reportDate)
+            const dateB = b.dateObj || new Date(b.reportDate)
+            return dateB - dateA
         })
     }
 
@@ -420,31 +516,207 @@ const performSearch = () => {
 }
 
 const openModal = (report, action) => {
-    selectedReport.value = report
+    console.log('Opening modal with report:', report)
+    console.log('Report ID:', report.id, 'Post ID:', report.post_id)
+    console.log('All report keys:', Object.keys(report))
+    console.log('Report values:', {
+        id: report.id,
+        report_id: report.report_id,
+        post_report_id: report.post_report_id,
+        post_id: report.post_id
+    })
+    
+    // Find the original report from reports.value to ensure we have all properties
+    // Try to match by id first, then by other possible ID fields
+    const originalReport = reports.value.find(r => {
+        return r.id === report.id || 
+               r.report_id === report.report_id || 
+               r.post_report_id === report.post_report_id ||
+               (r.id && r.id === report.id)
+    }) || report
+    
+    console.log('Original report:', originalReport)
+    console.log('Original report ID:', originalReport.id, 'Post ID:', originalReport.post_id)
+    
+    // Store both the full report object and the IDs separately
+    // Try multiple possible field names for report ID
+    selectedReport.value = originalReport
+    selectedReportId.value = originalReport.id || 
+                              originalReport.report_id || 
+                              originalReport.post_report_id || 
+                              originalReport.reportId
+    selectedPostId.value = originalReport.post_id || 
+                            originalReport.postId || 
+                            originalReport.post?.post_id
     modalAction.value = action
     isModalOpen.value = true
+    
+    console.log('Stored IDs - Report ID:', selectedReportId.value, 'Post ID:', selectedPostId.value)
+    
+    // If still no ID, log detailed info
+    if (!selectedReportId.value) {
+        console.error('CRITICAL: No report ID found!')
+        console.error('Report object:', JSON.stringify(report, null, 2))
+        console.error('Original report object:', JSON.stringify(originalReport, null, 2))
+    }
 }
 
 const closeModal = () => {
     isModalOpen.value = false
     selectedReport.value = null
+    selectedReportId.value = null
+    selectedPostId.value = null
     modalAction.value = ''
 }
 
-const confirmAction = () => {
-    if (modalAction.value === 'keep') {
-        console.log('Keeping post and dismissing report:', selectedReport.value.postTitle)
-        alert('✅ Post Kept!\n\nThe post will remain on the discussion board and the report has been dismissed.')
-    } else if (modalAction.value === 'delete') {
-        console.log('Removing post:', selectedReport.value.postTitle)
-        // Remove report from list
-        const index = reports.value.findIndex(r => r.id === selectedReport.value.id)
-        if (index > -1) {
-            reports.value.splice(index, 1)
-        }
-        alert('❌ Post Removed!\n\nThe post has been permanently removed from the discussion board and the author has been notified.')
+const confirmAction = async () => {
+    if (isLoading.value) return
+
+    if (!selectedReport.value) {
+        alert('Error: No report selected.')
+        return
     }
-    closeModal()
+
+    // Store the report data in local variables to avoid reactivity issues
+    let report = selectedReport.value
+    
+    // Try to find the original report from reports.value to ensure we have all properties
+    if (report.id) {
+        const originalReport = reports.value.find(r => r.id === report.id)
+        if (originalReport) {
+            report = originalReport
+        }
+    }
+    
+    const action = modalAction.value
+
+    console.log('Confirm action - Report:', report)
+    console.log('Confirm action - Action:', action)
+    console.log('Report ID:', report.id, 'Post ID:', report.post_id)
+    console.log('All report keys:', Object.keys(report))
+
+    isLoading.value = true
+
+    try {
+        if (action === 'keep') {
+            // Dismiss the report - use stored ID first, then try from report object
+            // Try all possible field names
+            const reportId = selectedReportId.value || 
+                             report.id || 
+                             report.report_id || 
+                             report.post_report_id || 
+                             report.reportId
+            
+            console.log('Attempting to dismiss report with ID:', reportId)
+            console.log('Stored report ID:', selectedReportId.value)
+            console.log('Report object ID fields:', {
+                id: report.id,
+                report_id: report.report_id,
+                post_report_id: report.post_report_id,
+                reportId: report.reportId
+            })
+            
+            if (!reportId) {
+                console.error('Report object structure:', JSON.stringify(report, null, 2))
+                console.error('Available keys:', Object.keys(report))
+                console.error('Selected report ID:', selectedReportId.value)
+                console.error('Selected report object:', selectedReport.value)
+                alert('Error: Report ID is missing. Please refresh the page and try again.\n\nCheck console for details.')
+                isLoading.value = false
+                return
+            }
+
+            // Build URL - use route helper if available, otherwise construct manually
+            let url
+            if (typeof route === 'function') {
+                try {
+                    url = route('reports.dismiss', reportId)
+                } catch (e) {
+                    console.warn('Route helper error, using fallback URL:', e)
+                    url = `/reports/${reportId}/dismiss`
+                }
+            } else {
+                url = `/reports/${reportId}/dismiss`
+            }
+
+            console.log('Dismissing report:', { reportId, url })
+            const response = await window.axios.post(url)
+            console.log('Dismiss response:', response.data)
+            
+            if (response.data && response.data.success) {
+                // Remove only the dismissed report from the list
+                reports.value = reports.value.filter(r => r.id !== reportId)
+                alert('✅ Post Kept!\n\nThe post will remain on the discussion board and the report has been dismissed.')
+            } else {
+                const errorMsg = response.data?.message || 'Error dismissing report. Please try again.'
+                alert(errorMsg)
+            }
+        } else if (action === 'delete') {
+            // Delete the post - use stored ID first, then try from report object
+            const postId = selectedPostId.value || report.post_id || report.postId || report.post?.post_id
+            
+            console.log('Attempting to delete post with ID:', postId)
+            console.log('Stored post ID:', selectedPostId.value)
+            console.log('Report object post_id:', report.post_id)
+            
+            if (!postId) {
+                console.error('Report object structure:', JSON.stringify(report, null, 2))
+                console.error('Available keys:', Object.keys(report))
+                console.error('Selected post ID:', selectedPostId.value)
+                alert('Error: Post ID is missing. Please refresh the page and try again.\n\nCheck console for details.')
+                isLoading.value = false
+                return
+            }
+
+            // Build URL - use route helper if available, otherwise construct manually
+            let url
+            if (typeof route === 'function') {
+                try {
+                    url = route('admin.posts.delete', { postId: postId })
+                } catch (e) {
+                    console.warn('Route helper error, using fallback URL:', e)
+                    url = `/admin/posts/${postId}`
+                }
+            } else {
+                url = `/admin/posts/${postId}`
+            }
+
+            console.log('Deleting post:', { postId, url })
+            const response = await window.axios.delete(url)
+            console.log('Delete response:', response.data)
+            
+            if (response.data && response.data.success) {
+                // Remove all reports for this post from the list (since post is deleted)
+                reports.value = reports.value.filter(r => r.post_id !== postId)
+                alert('❌ Post Removed!\n\nThe post has been permanently removed from the discussion board.')
+            } else {
+                const errorMsg = response.data?.message || 'Error deleting post. Please try again.'
+                alert(errorMsg)
+            }
+        }
+    } catch (error) {
+        console.error('Error performing action:', error)
+        console.error('Error response:', error.response)
+        console.error('Error response data:', error.response?.data)
+        
+        let errorMessage = 'An error occurred. Please try again.'
+        if (error.response) {
+            if (error.response.data) {
+                errorMessage = error.response.data.message || error.response.data.error || errorMessage
+            } else if (error.response.status === 404) {
+                errorMessage = 'The requested resource was not found. Please refresh the page.'
+            } else if (error.response.status === 500) {
+                errorMessage = 'Server error. Please try again later.'
+            }
+        } else if (error.message) {
+            errorMessage = error.message
+        }
+        
+        alert(`Error: ${errorMessage}`)
+    } finally {
+        isLoading.value = false
+        closeModal()
+    }
 }
 
 const navigateToDashboard = () => {
@@ -463,6 +735,58 @@ const navigateToRegisterRequest = () => {
     router.visit(route('register_request_admin'))
 }
 
+const markContactAsRead = async (contact) => {
+    if (!contact.contact_id) return
+    
+    try {
+        const response = await window.axios.post(route('admin.contact_messages.update', contact.contact_id), {
+            status: 'Read'
+        })
+        
+        if (response.data && response.data.success) {
+            reports.value = reports.value.filter(r => r.id !== contact.id)
+            alert('✅ Contact message marked as read!')
+        } else {
+            alert('Error updating contact message.')
+        }
+    } catch (error) {
+        console.error('Error marking contact as read:', error)
+        alert('Error updating contact message. Please try again.')
+    }
+}
+
+const markContactAsReplied = async (contact) => {
+    if (!contact.contact_id) return
+    
+    try {
+        const response = await window.axios.post(route('admin.contact_messages.update', contact.contact_id), {
+            status: 'Replied'
+        })
+        
+        if (response.data && response.data.success) {
+            reports.value = reports.value.filter(r => r.id !== contact.id)
+            alert('✅ Contact message marked as replied!')
+        } else {
+            alert('Error updating contact message.')
+        }
+    } catch (error) {
+        console.error('Error marking contact as replied:', error)
+        alert('Error updating contact message. Please try again.')
+    }
+}
+
+// Get role class for styling
+const getRoleClass = (role) => {
+    if (!role) return 'resident'
+    const roleLower = role.toLowerCase()
+    if (roleLower === 'resident') {
+        return 'resident'
+    } else if (roleLower.includes('barangay') || roleLower.includes('sangguniang') || roleLower.includes('system admin')) {
+        return 'official'
+    }
+    return 'resident' // default
+}
+
 // Close dropdowns when clicking outside
 const handleClickOutside = (event) => {
     if (!event.target.closest('.header-actions')) {
@@ -476,6 +800,15 @@ const handleClickOutside = (event) => {
 
 onMounted(() => {
     document.addEventListener('click', handleClickOutside)
+    
+    // Debug: Check reports structure on mount
+    console.log('Reports on mount:', reports.value)
+    if (reports.value.length > 0) {
+        console.log('First report on mount:', reports.value[0])
+        console.log('First report ID:', reports.value[0].id)
+        console.log('First report post_id:', reports.value[0].post_id)
+        console.log('First report keys:', Object.keys(reports.value[0]))
+    }
 })
 
 onUnmounted(() => {
@@ -653,7 +986,9 @@ onUnmounted(() => {
 }
 
 .nav-item {
-    display: block;
+    display: flex;
+    align-items: center;
+    gap: 12px;
     padding: 15px 20px;
     text-decoration: none;
     color: #333;
@@ -661,6 +996,12 @@ onUnmounted(() => {
     transition: all 0.3s ease;
     cursor: pointer;
     font-weight: 500;
+}
+
+.nav-icon {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
 }
 
 .nav-item:last-child {
@@ -767,8 +1108,8 @@ onUnmounted(() => {
 }
 
 .filter-arrow {
-    font-size: 10px;
     transition: transform 0.3s ease;
+    flex-shrink: 0;
 }
 
 .filter-arrow.rotated {
@@ -838,16 +1179,24 @@ onUnmounted(() => {
 }
 
 .search-btn {
-    background: #f8f9fa;
+    background: transparent;
     border: none;
-    padding: 8px 12px;
-    border-radius: 6px;
     cursor: pointer;
-    transition: background 0.2s;
+    color: #6b7280;
+    padding: 8px 12px;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .search-btn:hover {
-    background: #e9ecef;
+    color: #ff8c42;
+}
+
+.search-btn svg {
+    width: 18px;
+    height: 18px;
 }
 
 /* Reports Container */
@@ -892,11 +1241,15 @@ onUnmounted(() => {
 }
 
 .flag-icon {
-    font-size: 16px;
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
 }
 
 .user-icon {
-    font-size: 16px;
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
 }
 
 .post-preview {
@@ -1009,7 +1362,7 @@ onUnmounted(() => {
 .reporter-avatar {
     width: 45px;
     height: 45px;
-    border-radius: 50%;
+    border-radius: 10px;
     object-fit: cover;
     box-shadow: 0 2px 6px rgba(0,0,0,0.1);
 }
@@ -1023,6 +1376,17 @@ onUnmounted(() => {
     font-weight: 700;
     color: #333;
     margin: 0 0 4px 0;
+}
+
+.reporter-details .role-badge {
+    display: inline-block;
+    font-size: 10px;
+    padding: 3px 10px;
+    border-radius: 8px;
+    font-weight: 700;
+    color: white;
+    margin-bottom: 5px;
+    margin-right: 5px;
 }
 
 .report-date {
@@ -1046,6 +1410,13 @@ onUnmounted(() => {
     margin-bottom: 8px;
 }
 
+.reasons-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 10px;
+}
+
 .reason-badge {
     display: inline-block;
     background: linear-gradient(135deg, #dc2626, #b91c1c);
@@ -1054,7 +1425,6 @@ onUnmounted(() => {
     font-weight: 700;
     padding: 6px 12px;
     border-radius: 8px;
-    margin-bottom: 10px;
 }
 
 .reason-details {
@@ -1116,12 +1486,19 @@ onUnmounted(() => {
     padding: 80px 40px;
     text-align: center;
     color: #666;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
 }
 
 .no-reports-icon {
-    font-size: 64px;
+    width: 64px;
+    height: 64px;
     margin-bottom: 20px;
     opacity: 0.3;
+    color: #9ca3af;
+    margin-left: auto;
+    margin-right: auto;
 }
 
 .no-reports p {
@@ -1169,7 +1546,11 @@ onUnmounted(() => {
     height: 35px;
     border-radius: 50%;
     cursor: pointer;
-    font-size: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #666;
+    transition: all 0.2s;
     color: #666;
     transition: all 0.2s;
     display: flex;
@@ -1178,9 +1559,8 @@ onUnmounted(() => {
 }
 
 .modal-close:hover {
-    background: #ff4444;
-    color: white;
-    transform: rotate(90deg);
+    background: #f8f9fa;
+    color: #333;
 }
 
 .modal-content {
@@ -1239,8 +1619,10 @@ onUnmounted(() => {
 }
 
 .modal-warning .warning-icon {
-    font-size: 20px;
+    width: 20px;
+    height: 20px;
     flex-shrink: 0;
+    color: #dc3545;
 }
 
 .modal-warning span:last-child {
@@ -1305,6 +1687,128 @@ onUnmounted(() => {
     box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
 }
 
+/* Contact Message Section */
+.contact-message-section {
+    background: linear-gradient(135deg, #f0f9ff, #e0f2fe);
+    padding: 20px;
+    border-bottom: 2px solid #bae6fd;
+}
+
+.message-icon {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+}
+
+.contact-message-preview {
+    background: white;
+    border-radius: 10px;
+    padding: 15px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+.contact-sender-info {
+    display: flex;
+    align-items: start;
+    gap: 12px;
+    margin-bottom: 15px;
+}
+
+.sender-details {
+    flex: 1;
+}
+
+.sender-name {
+    font-size: 16px;
+    font-weight: 700;
+    color: #333;
+    margin: 0 0 5px 0;
+}
+
+.contact-date {
+    font-size: 11px;
+    color: #999;
+    margin: 0;
+}
+
+.contact-info-box {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 15px;
+}
+
+.contact-info-item {
+    font-size: 13px;
+    color: #555;
+    margin-bottom: 5px;
+}
+
+.contact-info-item:last-child {
+    margin-bottom: 0;
+}
+
+.message-content-box {
+    padding: 15px 0;
+    border-top: 1px solid #f0f0f0;
+}
+
+.message-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: #666;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+}
+
+.message-text {
+    font-size: 13px;
+    line-height: 1.6;
+    color: #555;
+    margin: 0;
+    white-space: pre-wrap;
+}
+
+.read-btn {
+    flex: 1;
+    background: linear-gradient(135deg, #3b82f6, #2563eb);
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 700;
+    font-size: 13px;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+}
+
+.read-btn:hover {
+    background: linear-gradient(135deg, #2563eb, #1d4ed8);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+}
+
+.replied-btn {
+    flex: 1;
+    background: linear-gradient(135deg, #10b981, #059669);
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 700;
+    font-size: 13px;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+}
+
+.replied-btn:hover {
+    background: linear-gradient(135deg, #059669, #047857);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+}
+
 /* Custom Scrollbar */
 .reports-container::-webkit-scrollbar {
     width: 6px;
@@ -1316,12 +1820,12 @@ onUnmounted(() => {
 }
 
 .reports-container::-webkit-scrollbar-thumb {
-    background: #ff8c42;
+    background: #888;
     border-radius: 3px;
 }
 
 .reports-container::-webkit-scrollbar-thumb:hover {
-    background: #e6763a;
+    background: #666;
 }
 
 /* Responsive */

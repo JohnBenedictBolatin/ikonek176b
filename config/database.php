@@ -59,7 +59,14 @@ return [
             'engine' => null,
             'options' => extension_loaded('pdo_mysql') ? array_filter([
                 PDO::MYSQL_ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
+                PDO::ATTR_TIMEOUT => 300, // 5 minutes timeout
+                PDO::ATTR_PERSISTENT => false, // Don't use persistent connections
             ]) : [],
+            'dump' => [
+                'dump_binary_path' => env('DB_DUMP_PATH', ''),
+                'use_single_transaction' => false,
+                'timeout' => 300,
+            ],
         ],
 
         'mariadb' => [

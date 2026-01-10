@@ -16,12 +16,29 @@ class User extends Authenticatable
         'first_name',
         'middle_name',
         'suffix',
+        'house_number',
+        'street',
+        'phase',
+        'package',
+        'barangay',
+        'city',
+        'province',
         'sex',
         'birthdate',
+        'place_of_birth',
+        'religion',
+        'nationality',
+        'occupation',
         'civil_status',
-        'address',
-        'profile_description',
         'fk_role_id',
+        'profile_description',
+        'profile_pic',
+        'created_at',
+    ];
+
+    protected $casts = [
+        'birthdate' => 'date',
+        'created_at' => 'datetime',
     ];
 
     protected $appends = ['name'];
@@ -36,9 +53,15 @@ class User extends Authenticatable
         return preg_replace('/\s+/', ' ', $fullName);
     }
 
-    // make sure belongsTo uses fk_role_id (local) -> role_id (owner on RoleCategory)
+    // role relationship
     public function roleCategory()
     {
         return $this->belongsTo(\App\Models\RoleCategory::class, 'fk_role_id', 'role_id');
+    }
+
+    // link to credentials table
+    public function credential()
+    {
+        return $this->hasOne(\App\Models\UserCredential::class, 'fk_user_id', 'user_id');
     }
 }

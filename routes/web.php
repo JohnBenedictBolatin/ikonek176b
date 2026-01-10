@@ -11,8 +11,20 @@ use App\Http\Controllers\RegisterRequestController;
 use Illuminate\Support\Facades\DB;  
 use App\Http\Controllers\RegisterResidentController;
 use App\Http\Controllers\RegisterOfficialController;
+use App\Http\Controllers\OtpController;
 use App\Http\Controllers\PaymentController;
-use App\Http\Controllers\EventAssistanceController;
+use App\Http\Controllers\EventAssistanceRequestController;
+use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\PostController;
+use App\Http\Controllers\DiscussionController;
+use App\Http\Controllers\EmployeeDiscussionController;
+use App\Http\Controllers\AnnouncementController;
+use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\ResidentAnnouncementController;
+use App\Http\Controllers\PostReactionController;
+use App\Http\Controllers\PostCommentController;
+use App\Http\Controllers\ReportController;
+use App\Http\Controllers\HelpCenterController;
 
 Route::get('/calendar-static', function () {
     return Inertia::render('CalendarStatic');
@@ -24,6 +36,36 @@ Route::get('/check-db', function () {
         return "Not connected to any database.";
     }
 });
+
+Route::get('/fix-post-header-column', function () {
+    try {
+        if (!\Illuminate\Support\Facades\Schema::hasColumn('posts', 'post_header')) {
+            \Illuminate\Support\Facades\DB::statement("ALTER TABLE posts ADD COLUMN post_header VARCHAR(255) NULL AFTER fk_post_author_id");
+            return "✅ Column 'post_header' has been added successfully!";
+        } else {
+            $columns = \Illuminate\Support\Facades\DB::select("SHOW COLUMNS FROM posts WHERE Field = 'post_header'");
+            return "✅ Column already exists. Definition: " . json_encode($columns[0]);
+        }
+    } catch (\Exception $e) {
+        if (strpos($e->getMessage(), 'Duplicate column') !== false) {
+            return "✅ Column already exists (duplicate error caught)";
+        }
+        return "❌ Error: " . $e->getMessage();
+    }
+});
+
+// routes/web.php (temporary)
+Route::get('/phpinfo-debug', function () {
+    return response()->json([
+        'loaded_ini' => php_ini_loaded_file(), // the exact ini file PHP loaded
+        'upload_max_filesize' => ini_get('upload_max_filesize'),
+        'post_max_size' => ini_get('post_max_size'),
+        'memory_limit' => ini_get('memory_limit'),
+        'max_file_uploads' => ini_get('max_file_uploads'),
+        'upload_tmp_dir' => ini_get('upload_tmp_dir'),
+    ]);
+});
+
 
 
 Route::inertia("/", 'Welcome')->name('welcome');
@@ -42,14 +84,28 @@ Route::inertia("/login_treasurer", 'Admin/Login_Treasurer')->name('login_treasur
 Route::inertia("/login_admin", 'Admin/Login_Admin')->name('login_admin');
 
 Route::inertia('/find_account_user', 'Find_Account_User')->name('find_account_user');
+Route::get('/account/find', [AccountController::class, 'find'])->name('account.find');
 Route::post('/account/update', [AccountController::class, 'update'])->name('account.update');
 
-Route::inertia("/register_employee", 'Auth/Register_Employee')->name('registration_employee');
-Route::post('/register-employee', [RegisterOfficialController::class, 'store'])->name('register_employee.store');
+Route::inertia("/register_employee", 'Auth/Register_Employee')
+    ->name('registration_employee')
+    ->middleware('auth');
+Route::post('/register-employee', [RegisterOfficialController::class, 'store'])
+    ->name('register_employee.store')
+    ->middleware('auth');
 
 Route::inertia("/register_resident", 'Auth/Register_Resident')->name('registration_resident');
 Route::post('/register-resident', [RegisterResidentController::class, 'store'])->name('register_resident.store');
+
+// OTP routes for phone verification
+Route::post('/otp/send', [OtpController::class, 'send'])->name('otp.send');
+Route::post('/otp/verify', [OtpController::class, 'verify'])->name('otp.verify');
+Route::post('/otp/check', [OtpController::class, 'checkVerification'])->name('otp.check');
 // Route::post("/register_resident", [UsersController::class, 'store'])->name('register_resident.store');
+
+// OTP routes for registration
+Route::post('/otp/send', [\App\Http\Controllers\OtpController::class, 'send'])->name('otp.send');
+Route::post('/otp/verify', [\App\Http\Controllers\OtpController::class, 'verify'])->name('otp.verify');
 
 Route::inertia("/guest_discussion", 'Guest_Discussion')->name('guest_discussion');
 
@@ -57,19 +113,27 @@ Route::inertia("/guest_announcement", 'Guest_Announcement')->name('guest_announc
 
 
 // Resident Routes
-Route::inertia("/r_discussion", 'User/Resident/R_Discussion')->name('discussion_resident');
+// Authenticated routes
+Route::middleware('auth')->group(function () {
 
-Route::inertia("/r_discussion_addpost", 'User/Resident/R_Discussion_AddPost')->name('discussion_addpost_resident');
+    // Announcements (Resident – view only)
+    Route::get('/resident/announcements', [ResidentAnnouncementController::class, 'index'])->name('announcement_resident');
+    Route::get('/resident/announcements/{id}', [ResidentAnnouncementController::class, 'show'])->name('announcement_clickpost_resident');
 
-Route::inertia("/r_announcement", 'User/Resident/R_Announcement')->name('announcement_resident');
+    // Discussion routes (Resident and Employee – can post)
+    Route::get('/discussion', [DiscussionController::class, 'index'])->name('discussion_resident');
+    Route::get('/discussion/create', [DiscussionController::class, 'create'])->name('discussion_addpost_resident');
+    Route::post('/discussion/store', [DiscussionController::class, 'store'])->name('posts.store');
 
-Route::inertia("/r_announcement_clickpost", 'User/Resident/R_Announcement_ClickPost')->name('announcement_clickpost_resident');
+    // General posts
+    Route::post('/posts', [PostController::class, 'store'])->name('posts.store');
+});
+
 
 Route::inertia("/r_document_request_select", 'User/Resident/R_Document_Request_Select')->name('document_request_select_resident');
 Route::middleware(['auth'])->group(function () {
     Route::post('/requests', [DocumentRequestController::class, 'store'])->name('requests.store');
 });
-
 
 Route::inertia("/r_document_request_description", 'User/Resident/R_Document_Request_Description')->name('document_request_description_resident');
 
@@ -78,41 +142,64 @@ Route::inertia("/r_document_request_form", 'User/Resident/R_Document_Request_For
 Route::inertia("/r_document_request_submission", 'User/Resident/R_Document_Request_Submission')->name('document_request_submission_resident');
 
 Route::inertia("/r_event_assist", 'User/Resident/R_Event_Assist')->name('event_assistance_resident');
-// Route::get('/r_event_assist', [EventAssistanceController::class, 'create'])
-//     ->name('event_assistance.create');
-
-// // store submission
-// Route::post('/r_event_assist', [EventAssistanceController::class, 'store'])
-//     ->name('event_assistance.store');
+Route::middleware(['auth'])->group(function () {
+    Route::post('/event-assistance', [EventAssistanceRequestController::class, 'store'])
+        ->name('event_assist.store');
+});
 
 Route::inertia("/r_notification_activities", 'User/Resident/R_Notification_Activities')->name('notification_activities_resident');
 
-Route::inertia("/r_notification_request", 'User/Resident/R_Notification_Request')->name('notification_request_resident');
 Route::middleware(['auth'])->group(function () {
-    // single route that renders via controller and is protected
     Route::get('/r_notification_request', [NotificationRequestController::class, 'index'])
          ->name('notification_request_resident');
 });
+
 Route::post('/payments', [PaymentController::class, 'store'])->name('payments.store');
 
 Route::inertia("/r_notification_pick_info", 'User/Resident/R_Notification_Pick_Info')->name('notification_pick_info_resident');
 
 Route::inertia("/r_payment", 'User/Resident/R_Payment')->name('payment_resident');
 
-Route::inertia("/r_profile", 'User/Resident/R_Profile')->name('profile_resident');
+Route::middleware(['auth', 'verified'])->group(function () {
+    Route::get('/r_profile', [ProfileController::class, 'edit'])->name('profile_resident');
+    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::post('/profile/update-picture', [ProfileController::class, 'updateProfilePicture'])->name('profile.update_picture');
+});
+
 
 Route::inertia("/r_help_center", 'User/Resident/R_Help_Center')->name('help_center_resident');
 
 // Employee Routes
-Route::inertia("/e_discussion", 'User/Employee/E_Discussion')->name('discussion_employee');
+// Redirect old paths to new controller routes
+Route::get('/e_announcement', function () {
+    return redirect()->route('announcement_employee');
+})->middleware('auth');
 
-Route::inertia("/e_discussion_addpost", 'User/Employee/E_Discussion_AddPost')->name('discussion_addpost_employee');
+Route::get('/e_discussion', function () {
+    return redirect()->route('discussion_resident');
+})->middleware('auth');
 
-Route::inertia("/e_announcement", 'User/Employee/E_Announcement')->name('announcement_employee');
+Route::middleware('auth')->group(function () {
+    // Redirect old employee discussion route to main discussion route
+    Route::get('/employee/discussion', function () {
+        return redirect()->route('discussion_resident');
+    })->name('discussion_employee');
+    
+    // Employee discussion create/store routes - redirect to main discussion routes
+    Route::get('/employee/discussion/create', function () {
+        return redirect()->route('discussion_addpost_resident');
+    })->name('discussion_addpost_employee');
+    
+    Route::post('/employee/discussion/store', [DiscussionController::class, 'store'])->name('posts_employee.store');
 
-Route::inertia("/e_announcement_addpost", 'User/Employee/E_Announcement_AddPost')->name('announcement_addpost_employee');
+    Route::get('/employee/announcement', [AnnouncementController::class, 'index'])->name('announcement_employee');
+    Route::get('/employee/announcement/create', [AnnouncementController::class, 'create'])->name('announcement_addpost_employee');
+    Route::post('/employee/announcement/store', [AnnouncementController::class, 'store'])->name('announcement_employee.store');
+    Route::get('/employee/announcement/{id}', [AnnouncementController::class, 'show'])->name('announcement_clickpost_employee');
 
-Route::inertia("/e_announcement_clickpost", 'User/Employee/E_Announcement_ClickPost')->name('announcement_clickpost_employee');
+    Route::post('/posts', [PostController::class, 'store'])->name('posts.store');
+});
 
 Route::inertia("/e_document_request_select", 'User/Employee/E_Document_Request_Select')->name('document_request_select_employee');
 
@@ -126,7 +213,6 @@ Route::inertia("/e_event_assist", 'User/Employee/E_Event_Assist')->name('event_a
 
 Route::inertia("/e_notification_activities", 'User/Employee/E_Notification_Activities')->name('notification_activities_employee');
 
-Route::inertia("/e_notification_request", 'User/Employee/E_Notification_Request')->name('notification_request_employee');
 Route::middleware(['auth'])->group(function () {
     Route::get('/e_notification_request', [NotificationRequestController::class, 'OfficialReq'])
          ->name('notification_request_employee');
@@ -136,9 +222,30 @@ Route::inertia("/e_notification_pick_info", 'User/Employee/E_Notification_Pick_I
 
 Route::inertia("/e_payment", 'User/Employee/E_Payment')->name('payment_employee');
 
-Route::inertia("/e_profile", 'User/Employee/E_Profile')->name('profile_employee');
+Route::middleware(['auth'])->group(function () {
+    Route::get('/e_profile', [ProfileController::class, 'employeeProfile'])->name('profile_employee');
+    Route::post('/e_profile/update-picture', [ProfileController::class, 'updateProfilePicture'])->name('profile_employee.update_picture');
+    
+    // Post reactions
+    Route::post('/posts/{postId}/reactions', [PostReactionController::class, 'toggle'])->name('posts.reactions.toggle');
+    Route::get('/posts/{postId}/reactions', [PostReactionController::class, 'getReactions'])->name('posts.reactions.get');
+    
+    // Post comments
+    Route::post('/posts/{postId}/comments', [PostCommentController::class, 'store'])->name('posts.comments.store');
+    Route::get('/posts/{postId}/comments', [PostCommentController::class, 'getComments'])->name('posts.comments.get');
+    Route::get('/posts/{postId}/comments/count', [PostCommentController::class, 'getCommentCount'])->name('posts.comments.count');
+});
 
 Route::inertia("/e_help_center", 'User/Employee/E_Help_Center')->name('help_center_employee');
+
+// Help Center Contact Form (authenticated users)
+Route::post('/help-center/contact', [HelpCenterController::class, 'submitMessage'])
+    ->name('help_center.contact')
+    ->middleware('auth');
+
+// Landing Page Contact Form (guest users)
+Route::post('/contact', [HelpCenterController::class, 'submitMessage'])
+    ->name('contact.submit');
 
 // Approver Routes
 Route::inertia("/a_dashboard", 'Admin/Approver/A_Dashboard')->name('dashboard_approver');
@@ -148,6 +255,11 @@ Route::get('/a_document_request', [DocumentRequestController::class, 'docuReq'])
      ->middleware(['auth']) // make sure it matches your auth middleware
      ->name('document_request_approver');
 
+// GET /document-requests/{id}/valid-id
+Route::get('/document-requests/{id}/valid-id', [DocumentRequestController::class, 'validIdContent'])
+    ->name('document_requests.valid_id')
+    ->middleware(['auth']);
+
 Route::post('/document-requests/{id}/approve', [DocumentRequestController::class, 'approve'])
     ->name('document_requests.approve')
     ->middleware(['auth']);
@@ -156,7 +268,19 @@ Route::post('/document-requests/{id}/reject', [DocumentRequestController::class,
     ->name('document_requests.reject')
     ->middleware(['auth']);
 
+Route::get('/document-requests/{id}/download/{format}', [DocumentRequestController::class, 'download'])
+    ->name('document_requests.download')
+    ->where('format', 'pdf|docx')
+    ->middleware(['auth']);
+
 Route::inertia("/a_event_request", 'Admin/Approver/A_Event_Request')->name('event_request_approver');
+Route::get('/a_event_request', [EventAssistanceRequestController::class, 'index'])
+    ->middleware(['auth'])
+    ->name('event_request_approver');
+
+// keep or remove the existing controller route if you don't need both:
+Route::get('/approver/event-requests', [EventAssistanceRequestController::class,'index'])
+    ->name('approver.event_requests');
 
 Route::inertia("/a_history", 'Admin/Approver/A_History')->name('history_approver');
 
@@ -164,11 +288,33 @@ Route::inertia("/a_history", 'Admin/Approver/A_History')->name('history_approver
 Route::inertia("/t_dashboard", 'Admin/Treasurer/T_Dashboard')->name('dashboard_treasurer');
 
 Route::inertia("/t_view_payment", 'Admin/Treasurer/T_View_Payment')->name('view_payment_treasurer');
+Route::get('/t_view_payment', [PaymentController::class, 'index'])
+    ->name('view_payment_treasurer');
+Route::post('/payments/{payment}/status', [PaymentController::class, 'updateStatus'])
+    ->name('payments.update_status')
+    ->middleware('auth');
 
 Route::inertia("/t_history", 'Admin/Treasurer/T_History')->name('history_treasurer');
+Route::get('/t_history', [PaymentController::class, 'history'])
+    ->name('history_treasurer');
 
 // System Admin Route
-Route::inertia("/s_dashboard", 'Admin/System_Admin/S_Dashboard')->name('dashboard_admin');
+Route::get("/s_dashboard", [DashboardController::class, 'index'])
+    ->name('dashboard_admin')
+    ->middleware('auth');
+
+// User management actions
+Route::post('/admin/users/{userId}/restrict', [DashboardController::class, 'restrictUser'])
+    ->name('admin.users.restrict')
+    ->middleware('auth');
+
+Route::post('/admin/users/{userId}/password', [DashboardController::class, 'changePassword'])
+    ->name('admin.users.password')
+    ->middleware('auth');
+
+Route::delete('/admin/users/{userId}', [DashboardController::class, 'deleteUser'])
+    ->name('admin.users.delete')
+    ->middleware('auth');
 
 Route::inertia("/s_history", 'Admin/System_Admin/S_History')->name('history_admin');
 
@@ -179,16 +325,39 @@ Route::get('/s_register_request', [RegisterRequestController::class, 'index'])
     ->name('register_request_admin')
     ->middleware('auth'); // keep auth middleware if you use it
 
-// Approve / Reject actions called from the Vue component
-Route::post('/admin/register_requests/{id}/approve', [RegisterRequestController::class, 'approve'])
+// Approve / Reject endpoints used by the Vue front-end
+Route::post('/admin/register-requests/{id}/approve', [RegisterRequestController::class, 'approve'])
     ->name('admin.register_requests.approve')
     ->middleware('auth');
 
-Route::post('/admin/register_requests/{id}/reject', [RegisterRequestController::class, 'reject'])
+Route::post('/admin/register-requests/{id}/reject', [RegisterRequestController::class, 'reject'])
     ->name('admin.register_requests.reject')
     ->middleware('auth');
 
+// Approve / Reject actions called from the Vue component
+// GET /approver/event-requests/{id}/valid-id
+Route::get('/approver/event-requests/{id}/valid-id', [EventAssistanceRequestController::class, 'validId'])
+    ->name('event_requests.valid_id')
+    ->middleware(['auth']);
+
+Route::post('/approver/event-requests/{id}/approve', [EventAssistanceRequestController::class, 'approve'])
+    ->name('approver.event_requests.approve');
+
+Route::post('/approver/event-requests/{id}/reject', [EventAssistanceRequestController::class, 'reject'])
+    ->name('approver.event_requests.reject');
+
+
 Route::inertia("/s_records", 'Admin/System_Admin/S_Records')->name('records_admin');
 
-Route::inertia("/s_report", 'Admin/System_Admin/S_Report')->name('report_admin');
+Route::get('/s_report', [ReportController::class, 'index'])
+    ->name('report_admin')
+    ->middleware('auth');
+
+// Report routes
+Route::middleware(['auth'])->group(function () {
+    Route::post('/reports', [ReportController::class, 'store'])->name('reports.store');
+    Route::post('/reports/{id}/dismiss', [ReportController::class, 'dismiss'])->name('reports.dismiss');
+    Route::delete('/admin/posts/{postId}', [ReportController::class, 'deletePost'])->name('admin.posts.delete');
+    Route::post('/admin/contact-messages/{id}/update', [ReportController::class, 'updateContactMessage'])->name('admin.contact_messages.update');
+});
 

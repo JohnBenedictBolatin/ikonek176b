@@ -3,6 +3,7 @@ import { Link } from '@inertiajs/vue3'
 import { Head } from '@inertiajs/vue3'
 import { ref, onMounted, onUnmounted } from 'vue';
 import { router } from '@inertiajs/vue3'
+import { useForm } from '@inertiajs/vue3'
 
 // Hero carousel state
 const currentSlide = ref(0);
@@ -31,6 +32,41 @@ const discussionImages = [
 let heroInterval;
 let announcementInterval;
 let discussionInterval;
+
+// Contact form
+const contactForm = useForm({
+    first_name: '',
+    last_name: '',
+    email: '',
+    message: ''
+})
+
+const submitContact = () => {
+    if (!contactForm.first_name.trim() || !contactForm.last_name.trim() || !contactForm.email.trim() || !contactForm.message.trim()) {
+        alert('Please fill in all required fields.')
+        return
+    }
+
+    if (contactForm.message.trim().length < 10) {
+        alert('Please enter a message with at least 10 characters.')
+        return
+    }
+
+    contactForm.post(route('contact.submit'), {
+        preserveScroll: true,
+        onSuccess: () => {
+            alert('Thank you for your message! We will get back to you as soon as possible.')
+            contactForm.reset()
+        },
+        onError: (errors) => {
+            if (errors.message) {
+                alert('Error: ' + errors.message)
+            } else {
+                alert('An error occurred while submitting your message. Please try again.')
+            }
+        }
+    })
+}
 
 // Hero carousel functions
 const nextSlide = () => {
@@ -238,22 +274,28 @@ onUnmounted(() => {
             <div class="form-row">
               <div class="form-group">
                 <label>Last Name*</label>
-                <input type="text" />
+                <input type="text" v-model="contactForm.last_name" />
+                <div v-if="contactForm.errors.last_name" class="error-text">{{ contactForm.errors.last_name }}</div>
               </div>
               <div class="form-group">
                 <label>First Name*</label>
-                <input type="text" />
+                <input type="text" v-model="contactForm.first_name" />
+                <div v-if="contactForm.errors.first_name" class="error-text">{{ contactForm.errors.first_name }}</div>
               </div>
             </div>
             <div class="form-group">
               <label>Email Address*</label>
-              <input type="email" />
+              <input type="email" v-model="contactForm.email" />
+              <div v-if="contactForm.errors.email" class="error-text">{{ contactForm.errors.email }}</div>
             </div>
             <div class="form-group">
               <label>Message*</label>
-              <textarea rows="4"></textarea>
+              <textarea rows="4" v-model="contactForm.message"></textarea>
+              <div v-if="contactForm.errors.message" class="error-text">{{ contactForm.errors.message }}</div>
             </div>
-            <button type="button" class="submit-btn">SUBMIT</button>
+            <button type="button" class="submit-btn" @click="submitContact" :disabled="contactForm.processing">
+              {{ contactForm.processing ? 'SUBMITTING...' : 'SUBMIT' }}
+            </button>
           </div>
         </div>
       </div>
@@ -665,6 +707,21 @@ onUnmounted(() => {
   cursor: pointer;
   font-size: 16px;
   transition: background-color 0.3s;
+}
+
+.submit-btn:hover {
+  background-color: #e55a2b;
+}
+
+.submit-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.error-text {
+  color: #ff6b6b;
+  font-size: 12px;
+  margin-top: 5px;
 }
 /* Responsive Design */
 @media (max-width: 768px) {

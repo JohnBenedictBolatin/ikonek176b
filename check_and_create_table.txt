@@ -1,0 +1,36 @@
+STEP-BY-STEP COMMANDS TO CHECK AND CREATE TABLE
+===============================================
+
+1. Open tinker:
+   php artisan tinker
+
+2. Check the actual structure of post_reports table:
+   DB::select("SHOW CREATE TABLE post_reports");
+
+3. Check just the report_id column:
+   DB::select("SHOW COLUMNS FROM post_reports WHERE Field = 'report_id'");
+
+4. Based on the result, create the table with matching type.
+   If report_id is BIGINT UNSIGNED, use:
+   DB::statement("CREATE TABLE IF NOT EXISTS `post_report_reasons` (`id` bigint unsigned NOT NULL AUTO_INCREMENT, `fk_report_id` bigint unsigned NOT NULL, `reason` enum('spam','harassment','hate','violence','inappropriate','false','other') NOT NULL, `created_at` timestamp NULL DEFAULT NULL, `updated_at` timestamp NULL DEFAULT NULL, PRIMARY KEY (`id`), KEY `fk_report_id` (`fk_report_id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+
+   If report_id is INT UNSIGNED, use:
+   DB::statement("CREATE TABLE IF NOT EXISTS `post_report_reasons` (`id` bigint unsigned NOT NULL AUTO_INCREMENT, `fk_report_id` int unsigned NOT NULL, `reason` enum('spam','harassment','hate','violence','inappropriate','false','other') NOT NULL, `created_at` timestamp NULL DEFAULT NULL, `updated_at` timestamp NULL DEFAULT NULL, PRIMARY KEY (`id`), KEY `fk_report_id` (`fk_report_id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+
+5. Try adding foreign key WITHOUT the constraint name first:
+   DB::statement("ALTER TABLE `post_report_reasons` ADD FOREIGN KEY (`fk_report_id`) REFERENCES `post_reports` (`report_id`) ON DELETE CASCADE");
+
+6. If that fails, skip the foreign key for now (the app will still work):
+   (Just leave it without foreign key - the relationship will work via Eloquent)
+
+7. Verify table exists:
+   DB::select("SHOW TABLES LIKE 'post_report_reasons'");
+
+8. Exit:
+   exit
+
+
+
+
+
+

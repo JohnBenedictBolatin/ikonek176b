@@ -14,7 +14,7 @@
 
         <div class="tabs">
             <Link href="#" class="active">ANNOUNCEMENTS</Link>
-            <Link :href="route('discussion_employee')">DISCUSSIONS</Link>
+            <Link :href="route('discussion_resident')">DISCUSSIONS</Link>
         </div>
 
         <Link :href="route('announcement_employee')">

@@ -1,199 +1,499 @@
-<script setup>
-  import { Link } from '@inertiajs/vue3'
-  import { Head } from '@inertiajs/vue3'
-  import { ref, computed, onMounted } from 'vue';
-  import { router } from '@inertiajs/vue3'
-  import LayoutEmployee  from '@/Layouts/LayoutEmployee.vue';
-
-const postContent = ref('')
-const tags = ref([])
-const tagInput = ref('')
-const drafts = ref([])
-const showDrafts = ref(false)
-
-const wordCount = computed(() => {
-  const words = postContent.value.trim().split(/\s+/).filter(Boolean)
-  return `${words.length} / 250 words`
-})
-
-function handlePostInput() {
-  const words = postContent.value.trim().split(/\s+/).filter(Boolean)
-  if (words.length > 250) {
-    postContent.value = words.slice(0, 250).join(' ')
-  }
-}
-
-function handleTagKeydown(e) {
-  if (e.key === 'Enter' && tagInput.value.trim() !== '') {
-    e.preventDefault()
-    addTag(tagInput.value.trim())
-    tagInput.value = ''
-  }
-}
-
-function addTag(tagText) {
-  if (!tags.value.includes(tagText)) {
-    tags.value.push(tagText)
-  }
-}
-
-function removeTag(index) {
-  tags.value.splice(index, 1)
-}
-
-function submitPost() {
-  if (!postContent.value.trim()) {
-    alert('Please enter some text before submitting.')
-    return
-  }
-
-  alert('Post submitted successfully!')
-  resetPostForm()
-}
-
-function saveDraft() {
-  if (!postContent.value.trim()) {
-    alert('Nothing to save. Enter content first.')
-    return
-  }
-
-  drafts.value.push({
-    content: postContent.value,
-    tags: [...tags.value],
-  })
-
-  showDrafts.value = true
-  resetPostForm()
-}
-
-function resetPostForm() {
-  postContent.value = ''
-  tags.value = []
-  tagInput.value = ''
-}
-
-/* Added utility methods referenced by template */
-function goToAddTag() {
-  // focus the tag input if present in DOM
-  const el = document.querySelector('.tag-input')
-  if (el) el.focus()
-}
-
-function loadDraft(i) {
-  const d = drafts.value[i]
-  if (!d) return
-  postContent.value = d.content
-  tags.value = [...d.tags]
-  // Optionally remove draft after loading - keep it for now
-}
-
-function deleteDraft(i) {
-  drafts.value.splice(i, 1)
-  if (drafts.value.length === 0) showDrafts.value = false
-}
-</script>
-
 <template>
-  <LayoutEmployee>
-    <div class="main-content">
-      <div class="discussions-header">
-        <div class="discussions-title">
-          <h2>Create Announcement</h2>
-        </div>
-        <button class="add-tags-btn" type="button" @click="goToAddTag">ADD TAG</button>
-      </div>
+    <Head>
+        <title>Create Announcement</title>
+    </Head>
 
-      <div class="add-post-section">
-        <div class="back-btn">
-          <Link :href="route('announcement_employee')" class="back-link">← BACK TO POST</Link>
-        </div>
-
-        <!-- Top tabs -->
-        <div class="nav-menu" style="display:flex; gap:8px; padding:10px 15px; margin-bottom:20px;">
-          <Link :href="route('announcement_employee')" class="nav-item" style="margin-right:8px;">ANNOUNCEMENTS</Link>
-          <Link :href="route('discussion_employee')" class="nav-item">DISCUSSIONS</Link>
-        </div>
-
-        <div class="post-input-container">
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-            <div style="font-weight:700">Create an Announcement Post</div>
-            <div class="char-count">{{ wordCount }}</div>
-          </div>
-
-          <textarea
-            v-model="postContent"
-            placeholder="Write your post..."
-            @input="handlePostInput"
-            class="post-textarea"
-          ></textarea>
-
-          <div class="post-actions" style="margin-top:12px;">
-            <label class="attach-btn" style="display:inline-flex; align-items:center; gap:8px; cursor:pointer;">
-              📎 Attach File
-              <input type="file" class="file-input-hidden" />
-            </label>
-
-            <div class="tags-section" style="display:flex; align-items:center; gap:12px;">
-              <div class="tags-label">Tags</div>
-              <div class="tag-input-wrap" style="flex:1;">
-                <input
-                  v-model="tagInput"
-                  placeholder="Type a tag and press Enter"
-                  @keydown="handleTagKeydown"
-                  class="tag-input"
-                  style="width:100%; padding:8px 10px; border-radius:8px; border:1px solid #e0e0e0;"
-                />
-              </div>
+    <div class="app-container">
+        <!-- Orange Header with Logo and Settings -->
+        <div class="header-bar">
+            <div class="header-content">
+                <div class="logo-section">
+                    <img src="/assets/LOGO.png" alt="Logo" class="header-logo" />
+                </div>
+                <div class="header-actions">
+                    <img src="/assets/SETTINGS.png" alt="Settings" class="settings-btn-img" @click="toggleSettings" />
+                    <div v-if="showSettings" class="settings-dropdown">
+                        <Link href="#" class="settings-item" @click="closeSettings">Help Center</Link>
+                        <Link href="#" class="settings-item" @click="closeSettings">Terms & Conditions</Link>
+                        <Link href="#" class="settings-item" @click="logout">Sign Out</Link>
+                    </div>
+                </div>
             </div>
-          </div>
-
-          <div class="selected-tags" style="margin-top:12px;">
-            <span
-              v-for="(t, i) in tags"
-              :key="i"
-              class="tag-chip general"
-              style="display:inline-flex; align-items:center; gap:8px; margin-right:8px;"
-            >
-              #{{ t }}
-              <button class="remove-tag-btn" @click="removeTag(i)">×</button>
-            </span>
-          </div>
-
-          <div style="display:flex; gap:12px; margin-top:18px;">
-            <button class="publish-btn" @click="submitPost" style="width:auto; padding:10px 18px;">Submit</button>
-            <button class="attach-btn" @click="saveDraft" style="background:transparent; color:#239640; border:1px solid #239640; padding:10px 18px;">Save as Draft</button>
-          </div>
         </div>
 
-        <!-- Drafts area -->
-        <div class="drafts-section" v-show="showDrafts" style="margin-top:26px;">
-          <div class="drafts-title">Saved Drafts</div>
+        <!-- Main Layout -->
+        <div class="main-layout">
+            <!-- Profile Card and Navigation Sidebar -->
+            <div class="sidebar">
+                <div class="profile-card">
+                    <img :src="profilePictureUrl" alt="Profile" class="profile-avatar" />
+                    <div class="profile-info">
+                        <div class="profile-name">{{ user.name || 'Unknown User' }}</div>
+                        <div class="profile-role">{{ displayRole }}</div>
+                    </div>
+                </div>
 
-          <div v-if="drafts.length === 0" class="no-drafts">No drafts saved.</div>
+                <div class="nav-menu">
+                    <Link 
+                        href="#" 
+                        class="nav-item active"
+                        :class="{ active: activeTab === 'posts' }"
+                        @click="setActiveTab('posts')"
+                    >
+                        📋 Posts
+                    </Link>
+                    <Link 
+                        href="#" 
+                        class="nav-item"
+                        :class="{ active: activeTab === 'documents' }"
+                        @click="navigateToDocuments"
+                    >
+                        📄 Document Request
+                    </Link>
+                    <Link 
+                        href="#" 
+                        class="nav-item"
+                        :class="{ active: activeTab === 'events' }"
+                        @click="navigateToEvents"
+                    >
+                        🤝 Event Assistance
+                    </Link>
+                    <Link 
+                        href="#" 
+                        class="nav-item"
+                        :class="{ active: activeTab === 'notifications' }"
+                        @click="navigateToNotifications"
+                    >
+                        🔔 Notifications
+                    </Link>
+                    <Link 
+                        href="#" 
+                        class="nav-item"
+                        :class="{ active: activeTab === 'profile' }"
+                        @click="navigateToProfile"
+                    >
+                        👤 Profile
+                    </Link>
+                </div>
 
-          <div v-for="(d, i) in drafts" :key="i" class="draft-card" style="margin-top:12px;">
-            <div class="draft-text">{{ d.content }}</div>
-            <div class="draft-preview" style="margin-top:8px;">
-              <div class="draft-tags" style="margin-bottom:8px;">
-                <span class="draft-tag" v-for="(tg, j) in d.tags" :key="j" style="margin-right:8px; font-weight:600;">#{{ tg }}</span>
-              </div>
+                <button class="faq-btn" @click="openFAQ">
+                    ❓ FAQs & Help Center
+                </button>
             </div>
-            <div class="draft-footer" style="margin-top:12px;">
-              <div class="draft-date">Draft {{ i + 1 }}</div>
-              <div>
-                <button class="btn-link" @click="loadDraft(i)" style="margin-right:10px; background:none; border:none; color:#239640; cursor:pointer;">Load</button>
-                <button class="btn-link danger" @click="deleteDraft(i)" style="background:none; border:none; color:#dc3545; cursor:pointer;">Delete</button>
-              </div>
+
+            <!-- Content Area -->
+            <div class="content-area">
+                <div class="main-content">
+                    <!-- Announcements Header -->
+                    <div class="discussions-header">
+                        <div class="discussions-title">
+                            <h2>Create Announcement</h2>
+                        </div>
+                        <div class="header-icon">
+                            <img src="/assets/ICON.png" alt="iKONEK" class="small-logo" />
+                        </div>
+                    </div>
+
+                    <!-- Add Post Section -->
+                    <div class="add-post-section">
+                        <button class="back-btn" @click="backToPosts">
+                            ◀ BACK TO ANNOUNCEMENTS
+                        </button>
+
+                        <button class="add-tags-btn" @click="openTagsModal">
+                            # ADD TAGS
+                        </button>
+
+                        <!-- Post Input Area -->
+                        <div class="post-input-container">
+                            <input 
+                                v-model="postHeader"
+                                type="text"
+                                placeholder="Add a post header (optional)..."
+                                class="post-header-input"
+                                maxlength="255"
+                            />
+                            <textarea 
+                                v-model="postContent"
+                                placeholder="Write your announcement..."
+                                class="post-textarea"
+                                @input="updateCharCount"
+                            ></textarea>
+
+                            <div class="post-actions">
+                                <button class="attach-btn" @click="triggerFileUpload">
+                                    ATTACH
+                                </button>
+                                <span class="char-count">{{ charCount }}/1000</span>
+                                <input 
+                                    type="file" 
+                                    ref="fileInput" 
+                                    @change="handleFileUpload" 
+                                    class="file-input-hidden"
+                                    accept="image/*"
+                                    multiple
+                                />
+                            </div>
+
+                            <!-- Uploaded Files Preview -->
+                            <div v-if="uploadedFiles.length > 0" class="uploaded-files">
+                                <div 
+                                    v-for="(file, index) in uploadedFiles" 
+                                    :key="index"
+                                    class="file-preview"
+                                >
+                                    <img :src="file.preview" alt="Preview" class="file-preview-img" />
+                                    <button class="remove-file-btn" @click="removeFile(index)">✕</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Tags Selection -->
+                        <div class="tags-section">
+                            <span class="tags-label">TAGS:</span>
+                            <div class="selected-tags">
+                                <span 
+                                    v-for="tag in selectedTagsData" 
+                                    :key="tag.tag_id"
+                                    class="tag-chip"
+                                    :class="getTagClass(tag.tag_name)"
+                                >
+                                    #{{ tag.tag_name }}
+                                    <button class="remove-tag-btn" @click="removeTag(tag.tag_id)">⊖</button>
+                                </span>
+                                <span v-if="selectedTagsData.length === 0" class="no-tags-text">
+                                    No tags selected
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- Publish Button -->
+                        <button class="publish-btn" @click="publishPost" :disabled="form.processing">
+                            {{ form.processing ? 'PUBLISHING...' : 'PUBLISH ANNOUNCEMENT' }}
+                        </button>
+
+                        <!-- Drafts Section -->
+                        <div class="drafts-section">
+                            <h3 class="drafts-title">DRAFTS</h3>
+                            
+                            <div 
+                                v-for="draft in drafts" 
+                                :key="draft.id"
+                                class="draft-card"
+                            >
+                                <div class="draft-content">
+                                    <h4 class="draft-text">{{ draft.title }}</h4>
+                                    <p class="draft-preview">{{ draft.content }}</p>
+                                </div>
+                                <div class="draft-footer">
+                                    <span class="draft-date">{{ draft.date }}</span>
+                                    <button class="delete-draft-btn" @click="deleteDraft(draft.id)">🗑</button>
+                                </div>
+                            </div>
+
+                            <div v-if="drafts.length === 0" class="no-drafts">
+                                <p>No drafts available</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
-          </div>
         </div>
 
-      </div>
+        <!-- Tags Modal Popup -->
+        <div v-if="showTagsModal" class="modal-overlay" @click="closeTagsModal">
+            <div class="modal-content" @click.stop>
+                <div class="modal-header">
+                    <h3>Select Tags</h3>
+                    <button class="modal-close-btn" @click="closeTagsModal">✕</button>
+                </div>
+                <div class="modal-body">
+                    <div v-if="availableTags && availableTags.length > 0" class="tags-grid">
+                        <button 
+                            v-for="tag in availableTags" 
+                            :key="tag.tag_id"
+                            class="tag-option"
+                            :class="{ selected: isTagSelected(tag.tag_id) }"
+                            @click="toggleTag(tag)"
+                        >
+                            <span class="tag-checkbox">
+                                {{ isTagSelected(tag.tag_id) ? '✓' : '' }}
+                            </span>
+                            {{ tag.tag_name }}
+                        </button>
+                    </div>
+                    <div v-else class="no-tags-available">
+                        <p>No tags available. Please contact administrator.</p>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="modal-cancel-btn" @click="closeTagsModal">Cancel</button>
+                    <button class="modal-confirm-btn" @click="confirmTags">Confirm</button>
+                </div>
+            </div>
+        </div>
     </div>
-  </LayoutEmployee>
 </template>
 
+<script setup>
+import { Link, usePage } from '@inertiajs/vue3'
+import { Head } from '@inertiajs/vue3'
+import { ref, onMounted, onUnmounted, computed } from 'vue'
+import { useForm, router } from '@inertiajs/vue3'
+
+const props = defineProps({
+    availableTags: {
+        type: Array,
+        default: () => []
+    }
+})
+
+// Get page props
+const page = usePage()
+
+// SAFE user access - prioritize prop, fallback to page.props
+const user = computed(() => {
+    const authUser = page?.props?.auth?.user
+    
+    if (!authUser) {
+        return {
+            user_id: null,
+            name: 'Guest',
+            avatar: '/assets/DEFAULT.jpg',
+            role: 'Employee',
+            fk_role_id: 2
+        }
+    }
+    
+    return authUser
+})
+
+// Map of role_id -> role_name
+const roleMap = {
+    1: 'Resident',
+    2: 'Barangay Captain',
+    3: 'Barangay Secretary',
+    4: 'Barangay Treasurer',
+    5: 'Barangay Kagawad',
+    6: 'Sangguniang Kabataan Chairman',
+    7: 'Sangguniang Kabataan Kagawad',
+    9: 'System Admin',
+}
+
+// Computed display role
+const displayRole = computed(() => {
+    const id = user.value?.fk_role_id ?? 2
+    return roleMap[id] ?? 'Employee'
+})
+
+// Profile picture URL
+const profilePictureUrl = computed(() => {
+    if (user.value?.profile_pic) {
+        const pic = user.value.profile_pic
+        // If it's a full URL, return as is
+        if (pic.startsWith('http')) {
+            return pic
+        }
+        // If it already has /storage/, return as is
+        if (pic.startsWith('/storage/')) {
+            return pic
+        }
+        // Otherwise prepend storage path
+        return `/storage/${pic}`
+    }
+    return '/assets/DEFAULT.jpg'
+})
+
+const showSettings = ref(false)
+const activeTab = ref('posts')
+const postHeader = ref('')
+const postContent = ref('')
+const charCount = ref(0)
+const selectedTagIds = ref([])
+const showTagsModal = ref(false)
+const uploadedFiles = ref([])
+const fileInput = ref(null)
+
+const drafts = ref([])
+
+// computed to map selected IDs to tag objects
+const selectedTagsData = computed(() => {
+    if (!props.availableTags || !Array.isArray(props.availableTags)) return []
+    return props.availableTags.filter(tag => selectedTagIds.value.includes(tag.tag_id))
+})
+
+const form = useForm({
+    header: '',
+    content: '',
+    tag_ids: [],      // will be an array of tag ids
+    image: null,
+    video_content: null,
+    is_poll: 0,
+})
+
+// Helper function to normalize tag names for CSS classes
+const getTagClass = (tagName) => {
+    if (!tagName) return ''
+    let normalized = String(tagName).toLowerCase().trim().replace(/\s+/g, '').replace(/[^a-z0-9]/g, '')
+    
+    if (normalized === 'business') return 'business'
+    if (normalized === 'education') return 'education'
+    if (normalized === 'emergency') return 'emergency'
+    if (normalized === 'employment') return 'employment'
+    if (normalized === 'environment' || normalized === 'env') return 'environment'
+    if (normalized === 'governance') return 'governance'
+    if (normalized === 'health' || normalized === 'medical') return 'health'
+    if (normalized === 'incident') return 'incident'
+    if (normalized === 'infrastructure') return 'infrastructure'
+    if (normalized === 'inquiries' || normalized === 'inquiry') return 'inquiries'
+    if (normalized === 'livelihood') return 'livelihood'
+    if (normalized === 'maintenance') return 'maintenance'
+    if (normalized === 'sanitation') return 'sanitation'
+    if (normalized === 'sports') return 'sports'
+    if (normalized === 'traffic') return 'traffic'
+    if (normalized === 'weather') return 'weather'
+    if (normalized === 'welfare') return 'welfare'
+    if (normalized === 'youth') return 'youth'
+    
+    return normalized
+}
+
+const toggleSettings = () => showSettings.value = !showSettings.value
+const closeSettings = () => showSettings.value = false
+const logout = () => { showSettings.value = false; router.visit(route('login')) }
+const setActiveTab = (tab) => activeTab.value = tab
+const navigateToDocuments = () => { activeTab.value = 'documents'; router.visit(route('document_request_select_employee')) }
+const navigateToProfile = () => { activeTab.value = 'profile'; router.visit(route('profile_employee')) }
+const navigateToEvents = () => { activeTab.value = 'events'; router.visit(route('event_assistance_employee')) }
+const navigateToNotifications = () => { activeTab.value = 'notifications'; router.visit(route('notification_request_employee')) }
+const backToPosts = () => router.visit(route('announcement_employee'))
+
+const openTagsModal = () => { showTagsModal.value = true }
+const closeTagsModal = () => { showTagsModal.value = false }
+
+const isTagSelected = (tagId) => selectedTagIds.value.includes(tagId)
+
+const toggleTag = (tag) => {
+    const idx = selectedTagIds.value.indexOf(tag.tag_id)
+    if (idx > -1) selectedTagIds.value.splice(idx, 1)
+    else selectedTagIds.value.push(tag.tag_id)
+}
+
+const removeTag = (tagId) => {
+    const idx = selectedTagIds.value.indexOf(tagId)
+    if (idx > -1) selectedTagIds.value.splice(idx, 1)
+}
+
+const confirmTags = () => {
+    closeTagsModal()
+}
+
+const updateCharCount = () => charCount.value = postContent.value.length
+const triggerFileUpload = () => fileInput.value && fileInput.value.click()
+
+const handleFileUpload = (event) => {
+    const files = Array.from(event.target.files || [])
+    files.forEach(file => {
+        const reader = new FileReader()
+        reader.onload = (e) => {
+            uploadedFiles.value.push({ file, preview: e.target.result })
+        }
+        reader.readAsDataURL(file)
+    })
+}
+
+const removeFile = (index) => uploadedFiles.value.splice(index, 1)
+
+const publishPost = () => {
+    if (!postContent.value.trim()) {
+        alert('Please write something before publishing')
+        return
+    }
+    if (selectedTagIds.value.length === 0) {
+        alert('Please select at least one tag')
+        return
+    }
+
+    // prepare form
+    form.clearErrors()
+    form.header = postHeader.value.trim()
+    form.content = postContent.value
+    form.tag_ids = selectedTagIds.value.slice()
+
+    // include first file if available
+    if (uploadedFiles.value.length > 0) {
+        form.image = uploadedFiles.value[0].file
+    } else {
+        form.image = null
+    }
+
+    form.post(route('announcement_employee.store'), {
+        preserveState: false,
+        onStart: () => console.log('Publishing announcement...'),
+        onSuccess: (page) => {
+            console.log('Announcement published, clearing form')
+            // reset local UI state
+            postHeader.value = ''
+            postContent.value = ''
+            charCount.value = 0
+            selectedTagIds.value = []
+            uploadedFiles.value = []
+            form.reset()
+            // redirect to announcement index
+            router.visit(route('announcement_employee'))
+        },
+        onError: (errors) => {
+            console.error('Server validation errors', errors)
+            if (errors.content) alert(errors.content[0])
+            if (errors.tag_ids) alert(errors.tag_ids[0])
+        }
+    })
+}
+
+const deleteDraft = (draftId) => {
+    const idx = drafts.value.findIndex(d => d.id === draftId)
+    if (idx > -1) drafts.value.splice(idx, 1)
+}
+
+const openFAQ = () => {
+    router.visit(route('help_center_employee'))
+}
+
+const handleClickOutside = (event) => {
+    if (!event.target.closest('.header-actions')) showSettings.value = false
+}
+
+onMounted(() => {
+    document.addEventListener('click', handleClickOutside)
+    activeTab.value = 'posts'
+})
+
+onUnmounted(() => document.removeEventListener('click', handleClickOutside))
+</script>
+
 <style scoped>
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0,0,0,0.4);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+}
+
+.modal-content {
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    width: 350px;
+    max-height: 80vh;
+    overflow-y: auto;
+}
+
 * {
     margin: 0;
     padding: 0;
@@ -212,7 +512,7 @@ function deleteDraft(i) {
 }
 
 .header-bar {
-    background: linear-gradient(135deg, #ff8c42, #ff7a28);
+    background: linear-gradient(135deg, #2e2e2e, #2e2e2e);
     color: white;
     padding: 5px 0;
     box-shadow: 0 4px 15px rgba(255, 140, 66, 0.3);
@@ -254,7 +554,9 @@ function deleteDraft(i) {
     width: 30px;
     cursor: pointer;
 }
-
+.settings-btn-img:hover {
+    transform: scale(1.1);
+}
 .settings-dropdown {
     position: absolute;
     top: 100%;
@@ -307,7 +609,7 @@ function deleteDraft(i) {
 }
 
 .profile-card {
-    background: linear-gradient(135deg, #ff8c42, #ff7a28);
+    background: linear-gradient(135deg, #2e2e2e, #2e2e2e);
     border-radius: 15px;
     padding: 20px;
     color: white;
@@ -335,12 +637,14 @@ function deleteDraft(i) {
 
 .profile-role {
     font-size: 12px;
-    background:#239640;
+    background: linear-gradient(135deg, #ff8c42, #ff7a28);
+    color: white;
     padding: 4px 12px;
     border-radius: 15px;
     display: inline-block;
     font-weight: 600;
-    backdrop-filter: blur(10px);
+    text-transform: uppercase;
+    box-shadow: 0 2px 8px rgba(255, 140, 66, 0.3);
 }
 
 .nav-menu {
@@ -388,14 +692,13 @@ function deleteDraft(i) {
     border-radius: 12px;
     font-weight: 600;
     cursor: pointer;
-    box-shadow: 0 6px 20px rgba(43, 178, 74, 0.3);
     transition: all 0.3s ease;
     font-size: 14px;
 }
 
 .faq-btn:hover {
     transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(43, 178, 74, 0.4);
+    box-shadow: 0 4px 12px rgba(43, 178, 74, 0.3);
 }
 
 .content-area {
@@ -475,7 +778,6 @@ function deleteDraft(i) {
     font-size: 13px;
     font-weight: 700;
     cursor: pointer;
-    box-shadow: 0 4px 12px rgba(255, 140, 66, 0.3);
     transition: all 0.3s;
 }
 
@@ -489,6 +791,24 @@ function deleteDraft(i) {
     border-radius: 12px;
     padding: 20px;
     margin-bottom: 25px;
+}
+
+.post-header-input {
+    width: 100%;
+    padding: 15px;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 600;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: white;
+    margin-bottom: 15px;
+    transition: border-color 0.2s;
+}
+
+.post-header-input:focus {
+    outline: none;
+    border-color: #ff8c42;
 }
 
 .post-textarea {
@@ -613,19 +933,106 @@ function deleteDraft(i) {
     border-radius: 20px;
     font-weight: 700;
     color: white;
+    text-transform: uppercase;
     box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    /* Default background for unmatched tags */
+    background: linear-gradient(135deg, #95a5a6, #7f8c8d);
 }
 
-.tag-chip.question {
-    background: linear-gradient(135deg, #ff9800, #f57c00);
+.tag-chip:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
 }
 
-.tag-chip.help {
-    background: linear-gradient(135deg, #e91e63, #c2185b);
+/* Business - Blue/Purple */
+.tag-chip.business {
+    background: linear-gradient(135deg, #6c5ce7, #5f3dc4) !important;
 }
 
-.tag-chip.general {
-    background: linear-gradient(135deg, #9c27b0, #7b1fa2);
+/* Education - Blue */
+.tag-chip.education {
+    background: linear-gradient(135deg, #3498db, #2980b9) !important;
+}
+
+/* Emergency - Red */
+.tag-chip.emergency {
+    background: linear-gradient(135deg, #e74c3c, #c0392b) !important;
+}
+
+/* Employment - Green */
+.tag-chip.employment {
+    background: linear-gradient(135deg, #27ae60, #229954) !important;
+}
+
+/* Environment - Green */
+.tag-chip.environment {
+    background: linear-gradient(135deg, #2ecc71, #27ae60) !important;
+}
+
+/* Governance - Purple */
+.tag-chip.governance {
+    background: linear-gradient(135deg, #9b59b6, #8e44ad) !important;
+}
+
+/* Health - Red/Pink */
+.tag-chip.health {
+    background: linear-gradient(135deg, #e91e63, #c2185b) !important;
+}
+
+/* Incident - Dark Red */
+.tag-chip.incident {
+    background: linear-gradient(135deg, #c0392b, #a93226) !important;
+}
+
+/* Infrastructure - Orange */
+.tag-chip.infrastructure {
+    background: linear-gradient(135deg, #f39c12, #e67e22) !important;
+}
+
+/* Inquiries - Yellow/Orange */
+.tag-chip.inquiries {
+    background: linear-gradient(135deg, #f1c40f, #f39c12) !important;
+}
+
+/* Livelihood - Teal */
+.tag-chip.livelihood {
+    background: linear-gradient(135deg, #1abc9c, #16a085) !important;
+}
+
+/* Maintenance - Brown/Orange */
+.tag-chip.maintenance {
+    background: linear-gradient(135deg, #d35400, #ba4a00) !important;
+}
+
+/* Sanitation - Cyan */
+.tag-chip.sanitation {
+    background: linear-gradient(135deg, #00bcd4, #0097a7) !important;
+}
+
+/* Sports - Green */
+.tag-chip.sports {
+    background: linear-gradient(135deg, #4caf50, #388e3c) !important;
+}
+
+/* Traffic - Yellow */
+.tag-chip.traffic {
+    background: linear-gradient(135deg, #ffc107, #ff9800) !important;
+}
+
+/* Weather - Light Blue */
+.tag-chip.weather {
+    background: linear-gradient(135deg, #03a9f4, #0288d1) !important;
+}
+
+/* Welfare - Pink */
+.tag-chip.welfare {
+    background: linear-gradient(135deg, #e91e63, #c2185b) !important;
+}
+
+/* Youth - Magenta */
+.tag-chip.youth {
+    background: linear-gradient(135deg, #e91e63, #ad1457) !important;
 }
 
 .remove-tag-btn {
@@ -642,46 +1049,9 @@ function deleteDraft(i) {
     transition: all 0.2s;
 }
 
-
-.tags-dropdown {
-    position: absolute;
-    top: 100%;
-    left: 50px;
-    background: white;
-    border-radius: 10px;
-    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
-    padding: 10px;
-    z-index: 100;
-    margin-top: 10px;
-    border: 1px solid rgba(0,0,0,0.1);
-}
-
-.tag-option {
-    display: block;
-    width: 100%;
-    padding: 10px 15px;
-    background: none;
-    border: none;
-    text-align: left;
-    color: #333;
-    cursor: pointer;
-    transition: background 0.2s;
-    font-weight: 600;
-    border-radius: 6px;
-    margin-bottom: 5px;
-}
-
-.tag-option:hover {
-    background: #f8f9fa;
-}
-
-.tag-option.selected {
-    background: #fff7ef;
-    color: #ff8c42;
-}
-
 .publish-btn {
-    width: 30%;
+    width: auto;
+    min-width: 200px;
     background: linear-gradient(135deg, #ff8c42, #ff7a28);
     color: white;
     border: none;
@@ -690,15 +1060,20 @@ function deleteDraft(i) {
     font-size: 16px;
     font-weight: 700;
     cursor: pointer;
-    box-shadow: 0 4px 15px rgba(255, 140, 66, 0.3);
     transition: all 0.3s;
     margin-bottom: 40px;
-    margin-left: 970px;
+    margin-left: auto;
+    display: block;
 }
 
-.publish-btn:hover {
+.publish-btn:hover:not(:disabled) {
     transform: translateY(-2px);
     box-shadow: 0 6px 20px rgba(255, 140, 66, 0.4);
+}
+
+.publish-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
 }
 
 .drafts-section {
@@ -773,6 +1148,11 @@ function deleteDraft(i) {
     font-size: 14px;
 }
 
+.no-tags-text {
+    color: #999;
+    font-style: italic;
+}
+
 .add-post-section::-webkit-scrollbar {
     width: 6px;
 }
@@ -783,12 +1163,156 @@ function deleteDraft(i) {
 }
 
 .add-post-section::-webkit-scrollbar-thumb {
-    background: #ff8c42;
+    background: #888;
     border-radius: 3px;
 }
 
 .add-post-section::-webkit-scrollbar-thumb:hover {
-    background: #e6763a;
+    background: #666;
+}
+
+.modal-content {
+    background: white;
+    border-radius: 15px;
+    width: 90%;
+    max-width: 600px;
+    max-height: 80vh;
+    overflow: hidden;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+    display: flex;
+    flex-direction: column;
+}
+
+.modal-header {
+    background: linear-gradient(135deg, #2bb24a, #239640);
+    color: white;
+    padding: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modal-header h3 {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 700;
+}
+
+.modal-close-btn {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 24px;
+    cursor: pointer;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: background 0.2s;
+}
+
+.modal-close-btn:hover {
+    background: rgba(255,255,255,0.2);
+}
+
+.modal-body {
+    padding: 20px;
+    overflow-y: auto;
+    flex: 1;
+}
+
+.tags-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 10px;
+}
+
+.tag-option {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 15px;
+    background: #f8f9fa;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-weight: 600;
+    text-align: left;
+}
+
+.tag-option:hover {
+    background: #fff7ef;
+    border-color: #ff8c42;
+}
+
+.tag-option.selected {
+    background: linear-gradient(135deg, #fff7ef, #ffede0);
+    border-color: #ff8c42;
+    color: #ff8c42;
+}
+
+.tag-checkbox {
+    width: 20px;
+    height: 20px;
+    border: 2px solid #ccc;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    color: #ff8c42;
+}
+
+.tag-option.selected .tag-checkbox {
+    border-color: #ff8c42;
+    background: #ff8c42;
+    color: white;
+}
+
+.no-tags-available {
+    text-align: center;
+    padding: 40px;
+    color: #999;
+}
+
+.modal-footer {
+    padding: 20px;
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    border-top: 1px solid #e0e0e0;
+}
+
+.modal-cancel-btn,
+.modal-confirm-btn {
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: none;
+}
+
+.modal-cancel-btn {
+    background: #f8f9fa;
+    color: #333;
+}
+
+.modal-cancel-btn:hover {
+    background: #e9ecef;
+}
+
+.modal-confirm-btn {
+    background: linear-gradient(135deg, #2bb24a, #239640);
+    color: white;
+}
+
+.modal-confirm-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(43, 178, 74, 0.3);
 }
 
 @media (max-width: 1024px) {
@@ -835,5 +1359,26 @@ function deleteDraft(i) {
         padding: 15px;
     }
 }
-</style>
 
+/* Global scrollbar styling */
+body::-webkit-scrollbar,
+html::-webkit-scrollbar {
+    width: 8px;
+}
+
+body::-webkit-scrollbar-track,
+html::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+body::-webkit-scrollbar-thumb,
+html::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 4px;
+}
+
+body::-webkit-scrollbar-thumb:hover,
+html::-webkit-scrollbar-thumb:hover {
+    background: #666;
+}
+</style>

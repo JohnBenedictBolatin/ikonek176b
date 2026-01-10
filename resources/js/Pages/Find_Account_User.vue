@@ -13,7 +13,7 @@
       <p class="justified-text">
 All information collected is used only to verify your identity, process your account recovery request, and improve our services. We ensure that your data is stored securely and protected against unauthorized access. While we take appropriate security measures, please note that no system can guarantee absolute security.
 We do not sell or share your personal data with third parties, except with authorized barangay personnel or government agencies when required by law. As a user, you have the right to access, correct, or delete your personal information, or to withdraw your consent at any time by contacting us at ikonek176b@dev.ph
-<p></p>Our website uses cookies to improve user experience.
+Our website uses cookies to improve user experience.
       </p>
       <p class="justified-text">
         By using iKonek176B, you agree to the terms of this Privacy Policy.
@@ -37,22 +37,26 @@ For any concerns, contact us at ikonek176b@dev.ph, +639193076338, or visit the B
         <h1>Find Account - Change Password</h1>
       </div>
 
+      <!-- Search form + update form combined -->
       <form @submit.prevent="submitForm" class="registration-form">
-        <!-- Account Details Section -->
+        <!-- Account Details Section (these fields are used for searching & verification) -->
         <div class="form-section full-width">
           <h3 class="section-title">
             👤 Account Details
           </h3>
-          
-          <div class="form-group">
+
+          <div class="form-group search-row">
             <input v-model="form.last_name" placeholder="Last Name" class="form-input" required />
+            <button type="button" class="search-btn" @click="findAccount" :disabled="searching">
+              {{ searching ? 'SEARCHING...' : 'SEARCH' }}
+            </button>
           </div>
 
           <div class="form-row">
             <div class="form-group half">
               <input v-model="form.first_name" placeholder="First Name" class="form-input" required />
             </div>
-            
+
             <div class="form-group half">
               <input v-model="form.middle_name" placeholder="Middle Name" class="form-input" />
             </div>
@@ -75,7 +79,7 @@ For any concerns, contact us at ikonek176b@dev.ph, +639193076338, or visit the B
           <h3 class="section-title">
             📁 Proof of Ownership
           </h3>
-          
+
           <div class="form-row">
             <div class="form-group flex-grow">
               <select v-model="form.proofType" class="form-input" required>
@@ -97,11 +101,11 @@ For any concerns, contact us at ikonek176b@dev.ph, +639193076338, or visit the B
           <h3 class="section-title">
             📞 Register New Contact Number
           </h3>
-          
+
           <div class="form-group">
             <div class="phone-input">
               <span class="country-code">+63</span>
-              <input v-model="form.contact_number" placeholder="Primary Number" maxlength="10" class="form-input" required />
+              <input v-model="form.contact_number" placeholder="Primary Number" maxlength="10" class="form-input" />
             </div>
           </div>
 
@@ -113,27 +117,56 @@ For any concerns, contact us at ikonek176b@dev.ph, +639193076338, or visit the B
           </div>
         </div>
 
+        <!-- Search Results (displayed after search) -->
+        <div v-if="searchResults.length" class="form-section full-width">
+          <h3 class="section-title">🔎 Search Results</h3>
+
+          <div class="results-list">
+            <div v-for="(r, idx) in searchResults" :key="r.user_cred_id" class="result-item">
+              <label class="result-label">
+                <input type="radio" :value="r.user_cred_id" v-model="selectedCredId" @change="selectResult(r)" />
+                <div class="result-info">
+                  <div><strong>{{ r.first_name }} {{ r.middle_name }} {{ r.last_name }} {{ r.suffix }}</strong></div>
+                  <div>Primary: +63{{ r.contact_number }} <span v-if="r.secondary_contact_number">• Secondary: +63{{ r.secondary_contact_number }}</span></div>
+                  <div class="small">User Credential ID: {{ r.user_cred_id }}</div>
+                </div>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <div v-else-if="searchedOnce && !searching" class="no-results">
+          No matches found. Please refine your search.
+        </div>
+
         <!-- New Password Section -->
         <div class="form-section full-width">
           <h3 class="section-title">
             🔒 Set New Password
           </h3>
-          
+
           <div class="form-group">
             <input type="password" v-model="form.password" placeholder="New Password" class="form-input" required />
           </div>
 
           <div class="form-group">
             <input type="password" v-model="form.password_confirmation" placeholder="Confirm New Password" class="form-input" required />
+            <!-- Alert if password does not match -->
+            <p v-if="passwordMismatch" class="alert-text">
+              ⚠️ Confirm password does not match the password.
+            </p>
           </div>
         </div>
+
+        <!-- Hidden field for selected credential -->
+        <input type="hidden" v-model="form.user_cred_id" />
 
         <!-- Action Buttons -->
         <div class="form-actions">
           <Link :href="route('login')" class="back-btn">
             BACK TO LOGIN
           </Link>
-          <button class="register-btn" :disabled="form.processing" type="submit">
+          <button class="register-btn" :disabled="form.processing || !form.user_cred_id" type="submit">
             CONFIRM
           </button>
         </div>
@@ -185,7 +218,9 @@ watch(showPrivacy, (val) => {
 // cleanup in case component unmounts
 onBeforeUnmount(() => { document.body.style.overflow = '' })
 
+// form used for password update (and contains identifying fields used for verification)
 const form = useForm({
+  user_cred_id: '',
   last_name: '',
   first_name: '',
   middle_name: '',
@@ -197,13 +232,97 @@ const form = useForm({
   password_confirmation: ''
 })
 
+// search state
+const searchResults = ref([])
+const searching = ref(false)
+const searchedOnce = ref(false)
+const selectedCredId = ref(null)
+
 function uploadProof() {
   alert('Upload functionality not implemented yet.')
 }
 
-function submitForm() {
-  form.post(route('account.update'))
+// Find accounts via your controller (GET /account/find)
+async function findAccount() {
+  searching.value = true
+  searchedOnce.value = false
+  searchResults.value = []
+  selectedCredId.value = null
+  form.user_cred_id = ''
+
+  // Build query params from name/contact fields (only include fields that have values)
+  const params = {}
+  if (form.last_name) params.last_name = form.last_name
+  if (form.first_name) params.first_name = form.first_name
+  if (form.middle_name) params.middle_name = form.middle_name
+  if (form.suffix) params.suffix = form.suffix
+  if (form.contact_number) params.contact_number = form.contact_number
+
+  try {
+    const url = route('account.find') + '?' + new URLSearchParams(params).toString()
+    const res = await fetch(url, { headers: { 'Accept': 'application/json' } })
+    if (!res.ok) throw new Error('Search request failed')
+    const data = await res.json()
+    // Expect array of results (user + user_credentials fields)
+    searchResults.value = Array.isArray(data) ? data : []
+  } catch (err) {
+    console.error(err)
+    // show no results on error for now
+    searchResults.value = []
+  } finally {
+    searching.value = false
+    searchedOnce.value = true
+  }
 }
+
+// When user selects a search result
+function selectResult(r) {
+  // r is an object returned from your controller's select (user + credential fields)
+  selectedCredId.value = r.user_cred_id
+  form.user_cred_id = r.user_cred_id
+  // populate contact fields so user can optionally update them (or keep existing)
+  form.contact_number = r.contact_number ?? ''
+  form.secondary_contact = r.secondary_contact_number ?? ''
+  // populate name fields (for double-checking/verification)
+  form.last_name = r.last_name ?? form.last_name
+  form.first_name = r.first_name ?? form.first_name
+  form.middle_name = r.middle_name ?? form.middle_name
+  form.suffix = r.suffix ?? form.suffix
+}
+
+// submit update (change password)
+function submitForm() {
+  form.clearErrors();
+
+  if (!form.password || !form.password_confirmation) {
+    form.setErrors({ password: 'Password and confirmation are required.' });
+    return;
+  }
+
+  if (form.password !== form.password_confirmation) {
+    form.setErrors({ password_confirmation: 'Passwords do not match.' });
+    return;
+  }
+
+  if (!form.user_cred_id) {
+    form.setErrors({ user_cred_id: 'Please select an account from the search results.' });
+    return;
+  }
+
+  form.post(route('account.update'), {
+    onSuccess: () => {
+      alert('Password changed successfully. You will be redirected to the login page.')
+    },
+    onError: (errors) => {
+      console.error('Validation errors:', errors)
+    }
+  });
+}
+
+// Computed property to check password match
+const passwordMismatch = computed(() => {
+  return form.password_confirmation && form.password !== form.password_confirmation;
+});
 
 // optional: ensure modal shows on first mount (helps if server-side rendered state differs)
 onMounted(() => {
@@ -223,6 +342,16 @@ html, body {
 * {
   box-sizing: border-box;
 }
+
+.search-row { display:flex; gap:8px; align-items:center; }
+.search-btn { padding:8px 12px; }
+.results-list { margin-top: 8px; border: 1px solid #ddd; padding: 8px; border-radius: 4px; }
+.result-item { padding: 8px 4px; border-bottom: 1px dashed #eee; }
+.result-item:last-child { border-bottom: none; }
+.result-label { display:flex; gap:8px; align-items:flex-start; }
+.result-info { margin-left:8px; }
+.small { font-size: 0.8rem; color: #666; }
+.no-results { color: #b00; padding: 8px 0; }
 
 /* Main page container - fixed and unscrollable */
 .page-container {

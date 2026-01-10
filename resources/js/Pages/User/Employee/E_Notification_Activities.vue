@@ -485,11 +485,14 @@ onUnmounted(() => {
 
 .profile-role {
     font-size: 12px;
-    background: #239640;
+    background: linear-gradient(135deg, #ff8c42, #ff7a28);
+    color: white;
     padding: 4px 12px;
     border-radius: 15px;
     display: inline-block;
     font-weight: 600;
+    text-transform: uppercase;
+    box-shadow: 0 2px 8px rgba(255, 140, 66, 0.3);
 }
 
 .nav-menu {
@@ -1110,12 +1113,12 @@ onUnmounted(() => {
 }
 
 .notifications-container::-webkit-scrollbar-thumb {
-    background: #ff8c42;
+    background: #888;
     border-radius: 3px;
 }
 
 .notifications-container::-webkit-scrollbar-thumb:hover {
-    background: #e6763a;
+    background: #666;
 }
 
 /* Responsive Design */

@@ -70,6 +70,12 @@
                     >
                         🚩 Report
                     </Link>
+                    <Link 
+                        :href="route('registration_employee')" 
+                        class="nav-item"
+                    >
+                        👔 Register Official
+                    </Link>
                 </div>
 
             </div>
@@ -403,11 +409,6 @@ const roleMap = {
   9: 'System Admin',
 }
 
-// computed display role (safe if user is null)
-const displayRole = computed(() => {
-  const id = user.value?.fk_role_id ?? user.value?.role_id ?? null
-  return id ? (roleMap[id] ?? `Role ${id}`) : 'Resident' // fallback to 'Resident' or whatever you prefer
-})
 
 // Reactive data
 const showSettings = ref(false)
@@ -960,7 +961,7 @@ onUnmounted(() => {
 .filter-dropdown-btn {
     padding: 8px 15px;
     border: 1px solid #ddd;
-    border-radius: 8px;
+    border-radius: 20px;
     font-size: 12px;
     font-weight: 600;
     cursor: pointer;
@@ -971,10 +972,11 @@ onUnmounted(() => {
     gap: 8px;
     min-width: 120px;
     justify-content: space-between;
+    color: #333;
 }
 
 .filter-dropdown-btn:hover {
-    border-color: #239640;
+    border-color: #ff8c42;
 }
 
 .filter-arrow {
@@ -1015,12 +1017,12 @@ onUnmounted(() => {
 }
 
 .filter-dropdown-menu button:hover {
-    background: #e8f8ed;
+    background: #fff7ef;
 }
 
 .filter-dropdown-menu button.active {
-    background: #e8f8ed;
-    color: #239640;
+    background: #fff7ef;
+    color: #ff8c42;
     font-weight: 600;
 }
 
@@ -1032,29 +1034,48 @@ onUnmounted(() => {
 
 .search-container {
     display: flex;
-    gap: 5px;
+    align-items: center;
+    gap: 0;
     background: white;
-    border-radius: 8px;
-    padding: 2px;
+    border-radius: 20px;
+    overflow: hidden;
     border: 1px solid #ddd;
+    transition: all 0.2s;
+}
+
+.search-container:focus-within {
+    border-color: #ff8c42;
+    box-shadow: 0 0 0 3px rgba(255,140,66,0.1);
 }
 
 .search-input {
     padding: 8px 15px;
     border: none;
-    border-radius: 6px;
     width: 220px;
-    font-size: 12px;
+    font-size: 13px;
     outline: none;
+    background: transparent;
+    color: #333;
+}
+
+.search-input::placeholder {
+    color: #999;
 }
 
 .search-btn {
-    background: #f8f9fa;
+    background: transparent;
     border: none;
     padding: 8px 12px;
-    border-radius: 6px;
     cursor: pointer;
-    transition: background 0.2s;
+    transition: all 0.2s;
+    color: #666;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.search-btn:hover {
+    color: #ff8c42;
 }
 
 .search-btn:hover {
@@ -1305,8 +1326,8 @@ onUnmounted(() => {
 }
 
 .modal-close:hover {
-    background: rgba(255,255,255,0.3);
-    transform: rotate(90deg);
+    background: #f8f9fa;
+    color: #333;
 }
 
 .modal-body {
@@ -1550,13 +1571,13 @@ onUnmounted(() => {
 
 .users-container::-webkit-scrollbar-thumb,
 .modal-body::-webkit-scrollbar-thumb {
-    background: #ff8c42;
+    background: #888;
     border-radius: 3px;
 }
 
 .users-container::-webkit-scrollbar-thumb:hover,
 .modal-body::-webkit-scrollbar-thumb:hover {
-    background: #e6763a;
+    background: #666;
 }
 
 /* Responsive */

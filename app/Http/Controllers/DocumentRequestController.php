@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Schema;
 use Inertia\Inertia;
 use Carbon\Carbon;
 
@@ -16,6 +17,10 @@ use App\Models\DocumentRequest;
 use App\Models\DocumentType;
 use App\Models\UserCredential;
 use App\Models\User;
+use App\Models\DocumentRequestAttachment;
+use App\Services\DocumentGenerationService;
+use App\Services\OtpService;
+use Symfony\Component\HttpFoundation\Response;
 
 class DocumentRequestController extends Controller
 {
@@ -55,7 +60,6 @@ class DocumentRequestController extends Controller
 
         if (! $userId) {
             \Log::warning('DocumentRequestController@index - cannot resolve user id for authenticated user; aborting.');
-            // Return empty props to default (R) component for compatibility
             return Inertia::render('User/Resident/R_Notification_Request', [
                 'documentRequests' => [],
                 'document_requests' => [],
@@ -64,8 +68,8 @@ class DocumentRequestController extends Controller
             ]);
         }
 
-        // fetch all rows for this user
-        $rows = \App\Models\DocumentRequest::with('documentType')
+        // Eager-load related tables: documentType, user, userCredential
+        $rows = DocumentRequest::with(['documentType', 'user', 'userCredential'])
             ->where('fk_user_id', $userId)
             ->orderBy('created_at', 'desc')
             ->get();
@@ -74,51 +78,100 @@ class DocumentRequestController extends Controller
 
         // helper to map a raw row -> shared presentation array
         $mapRow = function ($r) {
+            // processing_fee accessor already handles applied_processing_fee / documentType lookup
             $amountNumeric = $r->processing_fee ?? $r->applied_processing_fee ?? ($r->documentType?->processing_fee ?? null);
+
+            // Name fallback: prefer the column on document_requests, otherwise fall back to users table via relation
+            $firstName = $r->first_name ?? $r->user?->first_name ?? null;
+            $middleName = $r->middle_name ?? $r->user?->middle_name ?? null;
+            $lastName = $r->last_name ?? $r->user?->last_name ?? null;
+            $suffix = $r->suffix ?? $r->user?->suffix ?? null;
+
+            // Build display name (Title case)
+            $normalize = function ($s) {
+                $s = trim((string) $s);
+                if ($s === '') return null;
+                $parts = preg_split('/\s+/', $s, -1, PREG_SPLIT_NO_EMPTY);
+                $parts = array_map(function ($w) {
+                    $w = mb_strtolower($w);
+                    $first = mb_strtoupper(mb_substr($w, 0, 1));
+                    $rest  = mb_substr($w, 1);
+                    return $first . $rest;
+                }, $parts);
+                return implode(' ', $parts);
+            };
+
+            $parts = array_filter([
+                $normalize($firstName),
+                $normalize($middleName),
+                $normalize($lastName),
+                $normalize($suffix),
+            ]);
+
+            $displayName = implode(' ', $parts);
+
+            // Contact number fallback: document_request -> userCredential -> users table
+            $contactNumber = $r->contact_number
+                ?? $r->userCredential?->contact_number
+                ?? $r->user?->contact_number
+                ?? null;
+
+            // Determine title: for documents use document_name, for events use event_type from extra_fields
+            $title = null;
+            if ($r->documentType?->document_name) {
+                $title = $r->documentType->document_name;
+            } elseif (!$r->fk_document_type_id) {
+                // This is an event assistance request - check extra_fields for event_type
+                $extraFields = $r->extra_fields ?? [];
+                $eventType = is_array($extraFields) ? ($extraFields['event_type'] ?? null) : null;
+                $title = $eventType ?? $r->purpose ?? 'Request';
+            } else {
+                $title = $r->purpose ?? 'Request';
+            }
+
             return [
                 'id' => $r->doc_request_id,
                 'requestNumber' => $r->doc_request_ticket,
                 'doc_request_ticket' => $r->doc_request_ticket,
-                'title' => $r->documentType?->document_name ?? $r->purpose ?? 'Request',
+                'title' => $title,
                 'date' => $r->created_at?->format('M d, Y'),
                 'time' => $r->created_at?->format('g:i A'),
-                'status' => strtoupper($r->status ?? 'PENDING'),
+                'status' => $r->status,
                 'type' => $r->fk_document_type_id ? 'document' : 'event',
-                // formatted amount string for display (or null if no fee)
                 'amount' => $amountNumeric !== null ? number_format((float)$amountNumeric, 2, '.', '') : null,
-                // also include raw numeric processing fee for client-side fallback if needed:
                 'processing_fee' => $amountNumeric !== null ? (float)$amountNumeric : null,
-                // optionally include a minimal documentType object for debug or future uses:
                 'document_type' => $r->documentType ? [
                     'document_type_id' => $r->documentType->document_type_id,
                     'document_name' => $r->documentType->document_name,
                     'processing_fee' => $r->documentType->processing_fee,
                 ] : null,
+                // include user-facing info
+                'name' => $displayName,
+                'first_name' => $firstName,
+                'middle_name' => $middleName,
+                'last_name' => $lastName,
+                'suffix' => $suffix,
+                'contact_number' => $contactNumber,
             ];
         };
 
         // split rows into documents and events
-        $documents = $rows->filter(function ($r) { return (bool) $r->fk_document_type_id; })
+        $documents = $rows->filter(fn($r) => (bool) $r->fk_document_type_id)
             ->map($mapRow)
             ->values();
 
-        $events = $rows->filter(function ($r) { return ! (bool) $r->fk_document_type_id; })
+        $events = $rows->filter(fn($r) => ! (bool) $r->fk_document_type_id)
             ->map($mapRow)
             ->values();
 
-        // decide which Vue/Inertia component to render:
-        // - query param 'target=event' -> E_Notification_Request
-        // - otherwise -> R_Notification_Request
         $target = $request->query('target', $request->route('target') ?: 'document');
         $component = ($target === 'event' || $target === 'events')
             ? 'User/Resident/E_Notification_Request'
             : 'User/Resident/R_Notification_Request';
 
-        // Keep multiple keys for backward compatibility
         return Inertia::render($component, [
             'documentRequests' => $documents,
             'document_requests' => $documents,
-
             'eventRequests' => $events,
             'event_requests' => $events,
         ]);
@@ -129,7 +182,7 @@ class DocumentRequestController extends Controller
         $authUser = $request->user();
 
         // Quick role check (adjust allowed roles to your app)
-        $allowedRoles = [3]; // approver role id(s)
+        $allowedRoles = [3, 9]; // approver role id (3) and system admin role id (9)
         $userRole = $authUser->fk_role_id ?? $authUser->role_id ?? null;
 
         if (! in_array($userRole, $allowedRoles, true)) {
@@ -137,13 +190,18 @@ class DocumentRequestController extends Controller
         }
 
         $requestedStatus = $request->query('status', 'Pending');
+        
+        // If this is an API request (JSON), return JSON response
+        if ($request->wantsJson() || $request->expectsJson()) {
+            return $this->docuReqJson($request);
+        }
 
-        // Eager-load documentType relationship and optionally filter by status
-        $query = DocumentRequest::with('documentType')->orderBy('created_at', 'desc');
+        // Eager-load documentType, user, userCredential, and attachments relationships
+        $query = DocumentRequest::with(['documentType', 'user', 'userCredential', 'attachments'])->orderBy('created_at', 'desc');
 
         if (is_string($requestedStatus) && strtolower($requestedStatus) !== 'all') {
-            // Normalize to the same case as stored in DB if needed — here we assume uppercase convention
-            $statusFilter = strtoupper($requestedStatus);
+            // Normalize status: capitalize first letter, rest lowercase (Pending, Approved, Rejected)
+            $statusFilter = ucfirst(strtolower($requestedStatus));
             $query->where('status', $statusFilter);
         }
 
@@ -156,38 +214,31 @@ class DocumentRequestController extends Controller
         $documentTypesMap = $allDocumentTypes->pluck('document_name', 'document_type_id')->toArray();
 
         $documentRequests = $rows->map(function ($r) {
-            // get relationship (may be null)
+            // relationship shortcuts
             $docType = $r->documentType;
+            $user = $r->user;
+            $credential = $r->userCredential;
 
             // build a small object for document_type
-            $documentTypeObj = null;
-            if ($docType) {
-                $documentTypeObj = [
-                    'id' => $docType->document_type_id,
-                    'name' => $docType->document_name,
-                    'processing_fee' => isset($docType->processing_fee) ? (float)$docType->processing_fee : null,
-                ];
-            } else {
-                // fallback: null or supply default
-                $documentTypeObj = [
-                    'id' => $r->fk_document_type_id,
-                    'name' => null,
-                    'processing_fee' => null,
-                ];
-            }
+            $documentTypeObj = $docType ? [
+                'id' => $docType->document_type_id,
+                'name' => $docType->document_name,
+                'processing_fee' => isset($docType->processing_fee) ? (float)$docType->processing_fee : null,
+            ] : [
+                'id' => $r->fk_document_type_id,
+                'name' => null,
+                'processing_fee' => null,
+            ];
 
-            // --- Name normalization/fix starts here ---
-            $rawFirst  = trim((string) ($r->first_name ?? ''));
-            $rawMiddle = trim((string) ($r->middle_name ?? ''));
-            $rawLast   = trim((string) ($r->last_name ?? ''));
-            $rawSuffix = trim((string) ($r->suffix ?? ''));
+            // --- Name normalization/fix with fallback to user table ---
+            $rawFirst  = trim((string) ($r->first_name ?? $user?->first_name ?? ''));
+            $rawMiddle = trim((string) ($r->middle_name ?? $user?->middle_name ?? ''));
+            $rawLast   = trim((string) ($r->last_name ?? $user?->last_name ?? ''));
+            $rawSuffix = trim((string) ($r->suffix ?? $user?->suffix ?? ''));
 
-            // If first contains multiple words and last is empty, or the first contains the last again,
-            // attempt to split first into [first, middle..., last]
             if ($rawFirst !== '') {
                 $parts = preg_split('/\s+/', $rawFirst, -1, PREG_SPLIT_NO_EMPTY);
                 if (count($parts) > 1 && empty($rawLast)) {
-                    // assign first -> first element, last -> last element, middle -> join(remaining)
                     $firstCandidate = array_shift($parts);
                     $lastCandidate  = array_pop($parts);
                     $middleCandidate = count($parts) ? implode(' ', $parts) : $rawMiddle;
@@ -198,20 +249,16 @@ class DocumentRequestController extends Controller
                         $rawMiddle = $middleCandidate;
                     }
                 } elseif (count($parts) > 1 && $rawLast !== '' ) {
-                    // Sometimes first contains "First Last" and last also present; if so, remove duplicate from first
-                    // e.g. first = "josh jocson", last = "jocson" -> keep only the first token as first name
                     if (strcasecmp(end($parts), $rawLast) === 0) {
                         $rawFirst = array_shift($parts);
                         if (empty($rawMiddle) && count($parts) > 0) {
-                            // remaining parts aside from the popped last may be middle
-                            array_pop($parts); // remove the duplicate-last we already checked
+                            array_pop($parts);
                             $rawMiddle = count($parts) ? implode(' ', $parts) : $rawMiddle;
                         }
                     }
                 }
             }
 
-            // If middle ends with last (duplicate), strip the trailing last from middle
             if ($rawMiddle !== '' && $rawLast !== '') {
                 $pattern = '/\b' . preg_quote($rawLast, '/') . '$/i';
                 if (preg_match($pattern, $rawMiddle)) {
@@ -219,7 +266,6 @@ class DocumentRequestController extends Controller
                 }
             }
 
-            // Title-case each part (multibyte-safe)
             $normalize = function ($s) {
                 $s = trim((string) $s);
                 if ($s === '') return '';
@@ -238,42 +284,151 @@ class DocumentRequestController extends Controller
             $last   = $normalize($rawLast);
             $suffix = $normalize($rawSuffix);
 
-            // Build a clean "First Middle Last [Suffix]" name:
             $nameParts = array_filter([$first, $middle, $last, $suffix], function ($p) {
                 return $p !== '' && $p !== null;
             });
             $displayName = implode(' ', $nameParts);
             // --- Name normalization/fix ends here ---
 
+            // Contact number fallback: explicit -> credential -> user
+            $contactNumber = $r->contact_number ?? $credential?->contact_number ?? $user?->contact_number ?? null;
+
+            // Get user registration information
+            $userInfo = [
+                'user_id' => $user?->user_id,
+                'email' => $user?->email,
+                'house_number' => $user?->house_number,
+                'street' => $user?->street,
+                'phase' => $user?->phase,
+                'package' => $user?->package,
+                'barangay' => $user?->barangay,
+                'city' => $user?->city,
+                'province' => $user?->province,
+                'zip_code' => $user?->zip_code,
+                'profile_pic' => $user?->profile_pic,
+            ];
+
+            // Get credential information
+            $credentialInfo = $credential ? [
+                'contact_number' => $credential->contact_number,
+                'secondary_contact_number' => $credential->secondary_contact_number,
+            ] : null;
+
+            // Process attachments - use the file_url accessor for consistent URLs
+            // Clean file names to ensure valid UTF-8
+            $attachments = [];
+            if ($r->attachments && $r->attachments->count() > 0) {
+                $attachments = $r->attachments->map(function ($attachment) {
+                    $fileName = $attachment->file_name ?? '';
+                    // Clean file name to ensure valid UTF-8
+                    if (!mb_check_encoding($fileName, 'UTF-8')) {
+                        $fileName = mb_convert_encoding($fileName, 'UTF-8', 'UTF-8');
+                    }
+                    if (function_exists('iconv')) {
+                        $fileName = @iconv('UTF-8', 'UTF-8//IGNORE', $fileName);
+                        if ($fileName === false) {
+                            $fileName = '';
+                        }
+                    }
+                    
+                    return [
+                        'attachment_id' => $attachment->attachment_id,
+                        'field_name' => $attachment->field_name,
+                        'file_name' => $fileName,
+                        'file_path' => $attachment->file_path,
+                        'file_type' => $attachment->file_type,
+                        'file_size' => $attachment->file_size,
+                        'file_url' => $attachment->file_url, // Use the accessor for consistent URL generation
+                        'created_at' => $attachment->created_at?->toDateTimeString(),
+                    ];
+                })->toArray();
+            }
+            
+            // Log attachments for debugging
+            \Log::info('Document Request Attachments', [
+                'doc_request_id' => $r->doc_request_id,
+                'attachments_count' => count($attachments),
+                'attachments' => $attachments,
+            ]);
+
+            // Get extra_fields (dynamic fields) - clean for JSON encoding
+            $extraFields = $r->extra_fields ?? [];
+            if (is_string($extraFields)) {
+                // If it's a JSON string, decode and clean it
+                try {
+                    $decoded = json_decode($extraFields, true);
+                    if (json_last_error() === JSON_ERROR_NONE) {
+                        $extraFields = $this->cleanArrayForJson($decoded);
+                    }
+                } catch (\Exception $e) {
+                    \Log::warning('Failed to decode extra_fields: ' . $e->getMessage());
+                    $extraFields = [];
+                }
+            } elseif (is_array($extraFields)) {
+                $extraFields = $this->cleanArrayForJson($extraFields);
+            }
+
+            // Clean string fields to ensure valid UTF-8 for JSON encoding
+            $cleanString = function($value) {
+                if (!is_string($value) || empty($value)) {
+                    return $value;
+                }
+                if (!mb_check_encoding($value, 'UTF-8')) {
+                    $value = mb_convert_encoding($value, 'UTF-8', 'UTF-8');
+                }
+                if (function_exists('iconv')) {
+                    $value = @iconv('UTF-8', 'UTF-8//IGNORE', $value);
+                    if ($value === false) {
+                        $value = '';
+                    }
+                }
+                return $value;
+            };
+            
             return [
                 'doc_request_id' => $r->doc_request_id,
-                'doc_request_ticket' => $r->doc_request_ticket,
+                'doc_request_ticket' => $cleanString($r->doc_request_ticket ?? ''),
                 'fk_user_id' => $r->fk_user_id,
-                'last_name' => $r->last_name,
-                'first_name' => $r->first_name,
-                'middle_name' => $r->middle_name,
-                'suffix' => $r->suffix,
+                'last_name' => $cleanString($last),
+                'first_name' => $cleanString($first),
+                'middle_name' => $cleanString($middle),
+                'suffix' => $cleanString($suffix),
                 // Send the normalized display name (First Middle Last [Suffix])
-                'name' => $displayName,
-                'birthdate' => $r->birthdate,
-                'sex' => $r->sex,
-                'civil_status' => $r->civil_status,
-                'address' => $r->address,
-                'contact_number' => $r->contact_number,
-                'valid_id_path' => $r->valid_id_path,
+                'name' => $cleanString($displayName),
+                'birthdate' => $r->birthdate ?? $user?->birthdate,
+                'sex' => $cleanString($r->sex ?? $user?->sex ?? ''),
+                'civil_status' => $cleanString($r->civil_status ?? $user?->civil_status ?? ''),
+                'address' => $cleanString($r->address ?? ($user?->house_number ? ($user->house_number . ' ' . ($user->street ?? '')) : null) ?? ''),
+                'contact_number' => $cleanString($contactNumber),
+                // model column is valid_id_content (not valid_id_path)
+                // 'valid_id_content' => $r->valid_id_content,
+                'has_valid_id' => !empty($r->valid_id_content),
+                'valid_id_url' => url("/document-requests/{$r->doc_request_id}/valid-id"),
+                'valid_id_type' => $r->fk_valid_id_type_id,
+                'valid_id_number' => $cleanString($r->valid_id_number ?? ''),
+
                 'applied_processing_fee' => $r->applied_processing_fee,
-                'purpose' => $r->purpose,
-                'pickup_item' => $r->pickup_item,
-                'pickup_location' => $r->pickup_location,
+                'purpose' => $cleanString($r->purpose ?? ''),
+                'reason_type' => $cleanString($r->reason_type ?? null ?? ''),
+                'pickup_item' => $cleanString($r->pickup_item ?? ''),
+                'pickup_location' => $cleanString($r->pickup_location ?? ''),
                 'pickup_start' => $r->pickup_start,
                 'pickup_end' => $r->pickup_end,
-                'person_to_look' => $r->person_to_look,
-                'status' => $r->status,
+                'person_to_look' => $cleanString($r->person_to_look ?? ''),
+                'status' => $cleanString($r->status ?? ''),
                 'fk_approver_id' => $r->fk_approver_id,
                 'reviewed_at' => $r->reviewed_at,
+                'admin_feedback' => $cleanString($r->admin_feedback ?? ''),
                 'created_at' => $r->created_at?->toDateTimeString(),
                 // Attach the document type object derived from DocumentType model
                 'document_type' => $documentTypeObj,
+                // Include extra_fields (dynamic fields)
+                'extra_fields' => $extraFields,
+                // Include attachments
+                'attachments' => $attachments,
+                // Include full user registration information
+                'user_info' => $userInfo,
+                'credential_info' => $credentialInfo,
             ];
         });
 
@@ -285,8 +440,336 @@ class DocumentRequestController extends Controller
         ]);
     }
 
+    // JSON API endpoint for history/filtering
+    private function docuReqJson(Request $request)
+    {
+        $authUser = $request->user();
+        $allowedRoles = [3, 9]; // approver role id (3) and system admin role id (9)
+        $userRole = $authUser->fk_role_id ?? $authUser->role_id ?? null;
+
+        if (! in_array($userRole, $allowedRoles, true)) {
+            return response()->json(['error' => 'Unauthorized'], 403);
+        }
+
+        $requestedStatus = $request->query('status', 'Pending');
+        $query = DocumentRequest::with(['documentType', 'user', 'userCredential', 'attachments', 'approver'])->orderBy('created_at', 'desc');
+
+        if (is_string($requestedStatus) && strtolower($requestedStatus) !== 'all') {
+            $statusFilter = ucfirst(strtolower($requestedStatus));
+            $query->where('status', $statusFilter);
+        }
+
+        $rows = $query->get();
+
+        $documentRequests = $rows->map(function ($r) {
+            $docType = $r->documentType;
+            $user = $r->user;
+            $credential = $r->userCredential;
+
+            $documentTypeObj = $docType ? [
+                'id' => $docType->document_type_id,
+                'name' => $docType->document_name,
+                'processing_fee' => isset($docType->processing_fee) ? (float)$docType->processing_fee : null,
+            ] : [
+                'id' => $r->fk_document_type_id,
+                'name' => null,
+                'processing_fee' => null,
+            ];
+
+            // Name normalization (same as docuReq)
+            $rawFirst  = trim((string) ($r->first_name ?? $user?->first_name ?? ''));
+            $rawMiddle = trim((string) ($r->middle_name ?? $user?->middle_name ?? ''));
+            $rawLast   = trim((string) ($r->last_name ?? $user?->last_name ?? ''));
+            $rawSuffix = trim((string) ($r->suffix ?? $user?->suffix ?? ''));
+
+            if ($rawFirst !== '') {
+                $parts = preg_split('/\s+/', $rawFirst, -1, PREG_SPLIT_NO_EMPTY);
+                if (count($parts) > 1 && empty($rawLast)) {
+                    $firstCandidate = array_shift($parts);
+                    $lastCandidate  = array_pop($parts);
+                    $middleCandidate = count($parts) ? implode(' ', $parts) : $rawMiddle;
+                    $rawFirst  = $firstCandidate;
+                    $rawLast   = $lastCandidate;
+                    if (empty($rawMiddle)) {
+                        $rawMiddle = $middleCandidate;
+                    }
+                } elseif (count($parts) > 1 && $rawLast !== '' ) {
+                    if (strcasecmp(end($parts), $rawLast) === 0) {
+                        $rawFirst = array_shift($parts);
+                        if (empty($rawMiddle) && count($parts) > 0) {
+                            array_pop($parts);
+                            $rawMiddle = count($parts) ? implode(' ', $parts) : $rawMiddle;
+                        }
+                    }
+                }
+            }
+
+            if ($rawMiddle !== '' && $rawLast !== '') {
+                $pattern = '/\b' . preg_quote($rawLast, '/') . '$/i';
+                if (preg_match($pattern, $rawMiddle)) {
+                    $rawMiddle = trim(preg_replace($pattern, '', $rawMiddle));
+                }
+            }
+
+            $normalize = function ($s) {
+                $s = trim((string) $s);
+                if ($s === '') return '';
+                $words = preg_split('/\s+/', $s, -1, PREG_SPLIT_NO_EMPTY);
+                $words = array_map(function ($w) {
+                    $w = mb_strtolower($w);
+                    $first = mb_strtoupper(mb_substr($w, 0, 1));
+                    $rest  = mb_substr($w, 1);
+                    return $first . $rest;
+                }, $words);
+                return implode(' ', $words);
+            };
+
+            $first  = $normalize($rawFirst);
+            $middle = $normalize($rawMiddle);
+            $last   = $normalize($rawLast);
+            $suffix = $normalize($rawSuffix);
+
+            $nameParts = array_filter([$first, $middle, $last, $suffix], function ($p) {
+                return $p !== '' && $p !== null;
+            });
+            $displayName = implode(' ', $nameParts);
+
+            $contactNumber = $r->contact_number ?? $credential?->contact_number ?? $user?->contact_number ?? null;
+
+            $userInfo = [
+                'user_id' => $user?->user_id,
+                'email' => $user?->email,
+                'house_number' => $user?->house_number,
+                'street' => $user?->street,
+                'phase' => $user?->phase,
+                'package' => $user?->package,
+                'barangay' => $user?->barangay,
+                'city' => $user?->city,
+                'province' => $user?->province,
+                'zip_code' => $user?->zip_code,
+                'profile_pic' => $user?->profile_pic,
+                'fk_role_id' => $user?->fk_role_id,
+                'role_id' => $user?->role_id,
+            ];
+
+            $credentialInfo = $credential ? [
+                'contact_number' => $credential->contact_number,
+                'secondary_contact_number' => $credential->secondary_contact_number,
+            ] : null;
+
+            // Get approver information
+            $approver = $r->approver;
+            $approverInfo = null;
+            if ($approver) {
+                $approverFirst = trim((string) ($approver->first_name ?? ''));
+                $approverLast = trim((string) ($approver->last_name ?? ''));
+                
+                $normalizeApprover = function ($s) {
+                    $s = trim((string) $s);
+                    if ($s === '') return '';
+                    $words = preg_split('/\s+/', $s, -1, PREG_SPLIT_NO_EMPTY);
+                    $words = array_map(function ($w) {
+                        $w = mb_strtolower($w);
+                        $first = mb_strtoupper(mb_substr($w, 0, 1));
+                        $rest  = mb_substr($w, 1);
+                        return $first . $rest;
+                    }, $words);
+                    return implode(' ', $words);
+                };
+                
+                $approverFirst = $normalizeApprover($approverFirst);
+                $approverLast = $normalizeApprover($approverLast);
+                
+                // Format as "First L." or just "First" if no last name
+                $approverDisplayName = $approverFirst;
+                if ($approverLast) {
+                    $approverDisplayName .= ' ' . mb_substr($approverLast, 0, 1) . '.';
+                }
+                
+                $approverInfo = [
+                    'user_id' => $approver->user_id,
+                    'name' => $approverDisplayName,
+                    'first_name' => $approverFirst,
+                    'last_name' => $approverLast,
+                ];
+            }
+
+            // Process attachments - clean file names for JSON encoding
+            $attachments = [];
+            if ($r->attachments && $r->attachments->count() > 0) {
+                $attachments = $r->attachments->map(function ($attachment) {
+                    $fileName = $attachment->file_name ?? '';
+                    // Clean file name to ensure valid UTF-8
+                    if (!mb_check_encoding($fileName, 'UTF-8')) {
+                        $fileName = mb_convert_encoding($fileName, 'UTF-8', 'UTF-8');
+                    }
+                    if (function_exists('iconv')) {
+                        $fileName = @iconv('UTF-8', 'UTF-8//IGNORE', $fileName);
+                        if ($fileName === false) {
+                            $fileName = '';
+                        }
+                    }
+                    
+                    return [
+                        'attachment_id' => $attachment->attachment_id,
+                        'field_name' => $attachment->field_name,
+                        'file_name' => $fileName,
+                        'file_path' => $attachment->file_path,
+                        'file_type' => $attachment->file_type,
+                        'file_size' => $attachment->file_size,
+                        'file_url' => $attachment->file_url,
+                        'created_at' => $attachment->created_at?->toDateTimeString(),
+                    ];
+                })->toArray();
+            }
+
+            // Get extra_fields (dynamic fields) - clean for JSON encoding
+            $extraFields = $r->extra_fields ?? [];
+            if (is_string($extraFields)) {
+                // If it's a JSON string, decode and clean it
+                try {
+                    $decoded = json_decode($extraFields, true);
+                    if (json_last_error() === JSON_ERROR_NONE) {
+                        $extraFields = $this->cleanArrayForJson($decoded);
+                    }
+                } catch (\Exception $e) {
+                    \Log::warning('Failed to decode extra_fields in docuReqJson: ' . $e->getMessage());
+                    $extraFields = [];
+                }
+            } elseif (is_array($extraFields)) {
+                $extraFields = $this->cleanArrayForJson($extraFields);
+            }
+
+            return [
+                'doc_request_id' => $r->doc_request_id,
+                'doc_request_ticket' => $r->doc_request_ticket,
+                'fk_user_id' => $r->fk_user_id,
+                'last_name' => $last,
+                'first_name' => $first,
+                'middle_name' => $middle,
+                'suffix' => $suffix,
+                'name' => $displayName,
+                'birthdate' => $r->birthdate ?? $user?->birthdate,
+                'sex' => $r->sex ?? $user?->sex,
+                'civil_status' => $r->civil_status ?? $user?->civil_status,
+                'address' => $r->address ?? ($user?->house_number ? ($user->house_number . ' ' . ($user->street ?? '')) : null),
+                'contact_number' => $contactNumber,
+                'has_valid_id' => !empty($r->valid_id_content),
+                'valid_id_url' => url("/document-requests/{$r->doc_request_id}/valid-id"),
+                'valid_id_type' => $r->fk_valid_id_type_id,
+                'valid_id_number' => $r->valid_id_number,
+                'applied_processing_fee' => $r->applied_processing_fee,
+                'purpose' => $r->purpose,
+                'reason_type' => $r->reason_type ?? null,
+                'pickup_item' => $r->pickup_item,
+                'pickup_location' => $r->pickup_location,
+                'pickup_start' => $r->pickup_start,
+                'pickup_end' => $r->pickup_end,
+                'person_to_look' => $r->person_to_look,
+                'status' => $r->status,
+                'fk_approver_id' => $r->fk_approver_id,
+                'reviewed_at' => $r->reviewed_at,
+                'admin_feedback' => $r->admin_feedback,
+                'created_at' => $r->created_at?->toDateTimeString(),
+                'document_type' => $documentTypeObj,
+                'extra_fields' => $extraFields,
+                'attachments' => $attachments,
+                'user_info' => $userInfo,
+                'credential_info' => $credentialInfo,
+                'approver_info' => $approverInfo,
+            ];
+        });
+
+        // Clean the response data to ensure valid UTF-8
+        $cleanedRequests = array_map(function($request) {
+            return $this->cleanArrayForJson($request);
+        }, $documentRequests->toArray());
+        
+        return response()->json([
+            'document_requests' => $cleanedRequests,
+        ], 200, [], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_INVALID_UTF8_IGNORE);
+    }
+
+    private function looksLikeBase64(string $s): bool
+    {
+        // Strict base64 check (no false positives)
+        if ($s === '') return false;
+        if (!preg_match('/^[A-Za-z0-9+\/=\r\n]+$/', $s)) return false;
+        $decoded = base64_decode($s, true);
+        return $decoded !== false;
+    }
+
+    /**
+     * Clean array data to ensure valid UTF-8 for JSON encoding
+     */
+    private function cleanArrayForJson($data)
+    {
+        if (is_array($data)) {
+            return array_map([$this, 'cleanArrayForJson'], $data);
+        } elseif (is_string($data)) {
+            // Remove invalid UTF-8 characters
+            if (!mb_check_encoding($data, 'UTF-8')) {
+                $data = mb_convert_encoding($data, 'UTF-8', 'UTF-8');
+            }
+            // Use iconv to remove any remaining invalid characters
+            if (function_exists('iconv')) {
+                $data = @iconv('UTF-8', 'UTF-8//IGNORE', $data);
+                if ($data === false) {
+                    $data = '';
+                }
+            }
+            return $data;
+        }
+        return $data;
+    }
+
+    /**
+     * Return the stored valid_id_content as an inline file (image/pdf/other).
+     */
+    public function validIdContent(Request $request, $id)
+    {
+        $r = \App\Models\DocumentRequest::findOrFail($id);
+
+        $content = $r->valid_id_content;
+        if (empty($content)) {
+            abort(404, 'No valid id uploaded for this request.');
+        }
+
+        // If the content is a data URI: data:<mime>;base64,<data>
+        if (preg_match('/^data:(.*?);base64,(.*)$/s', $content, $m)) {
+            $mime = $m[1] ?: 'application/octet-stream';
+            $binary = base64_decode($m[2]);
+        } elseif ($this->looksLikeBase64($content)) {
+            // Plain base64 stored in DB
+            $binary = base64_decode($content);
+            $finfo = new \finfo(FILEINFO_MIME_TYPE);
+            $mime = $finfo->buffer($binary) ?: 'application/octet-stream';
+        } else {
+            // Binary blob stored directly
+            $binary = $content; // may already be binary
+            $finfo = new \finfo(FILEINFO_MIME_TYPE);
+            $mime = $finfo->buffer($binary) ?: 'application/octet-stream';
+        }
+
+        // derive extension for filename
+        $ext = explode('/', $mime)[1] ?? 'bin';
+        $safeName = preg_replace('/[^A-Za-z0-9_\-\.]/', '_', ($r->doc_request_ticket ?? "valid_id_{$id}"));
+
+        return response($binary, 200, [
+            'Content-Type' => $mime,
+            'Content-Disposition' => "inline; filename=\"{$safeName}.{$ext}\"",
+            'Cache-Control' => 'no-cache, must-revalidate',
+        ]);
+    }
+
+
     public function approve(Request $request, $id)
     {
+        \Log::info('=== DOCUMENT REQUEST APPROVE METHOD CALLED ===', [
+            'doc_request_id' => $id,
+            'timestamp' => now()->toDateTimeString(),
+        ]);
+
         $authUser = $request->user();
         if (! $authUser) {
             return response()->json(['error' => 'Unauthenticated'], 401);
@@ -301,9 +784,10 @@ class DocumentRequestController extends Controller
             'status'          => ['required', 'string', 'in:Approved,Rejected,Pending'],
             'fk_approver_id'  => ['nullable'],
             'reviewed_at'     => ['nullable', 'date_format:Y-m-d H:i:s'],
+            'admin_feedback'  => ['nullable', 'string'],
         ]);
 
-        $doc = \App\Models\DocumentRequest::where('doc_request_id', $id)->firstOrFail();
+        $doc = DocumentRequest::where('doc_request_id', $id)->firstOrFail();
 
         $update = [
             'pickup_item'     => $data['pickup_item'] ?? $doc->pickup_item,
@@ -314,77 +798,359 @@ class DocumentRequestController extends Controller
             'status'          => $data['status'],
             'fk_approver_id'  => $data['fk_approver_id'] ?? $authUser->getKey(),
             'reviewed_at'     => $data['reviewed_at'] ?? Carbon::now()->toDateTimeString(),
+            'admin_feedback'  => $data['admin_feedback'] ?? $doc->admin_feedback,
         ];
 
         DB::transaction(function () use ($doc, $update) {
             $doc->update($update);
         });
 
-        // refresh model to return latest fields
         $doc = $doc->fresh();
 
-        // Return the updated resource to client (frontend onSuccess will receive this)
+        // Generate document if approved
+        $documentData = null;
+        if ($data['status'] === 'Approved') {
+            try {
+                $documentService = new DocumentGenerationService();
+                $documentData = $documentService->generateDocument($doc);
+                
+                \Log::info('Document generated successfully', [
+                    'doc_request_id' => $doc->doc_request_id,
+                    'docx_path' => $documentData['docx_path'],
+                    'pdf_path' => $documentData['pdf_path'],
+                ]);
+            } catch (\Exception $e) {
+                \Log::error('Failed to generate document: ' . $e->getMessage(), [
+                    'doc_request_id' => $doc->doc_request_id,
+                    'error' => $e->getTraceAsString(),
+                    'file' => $e->getFile(),
+                    'line' => $e->getLine(),
+                ]);
+                
+                // Don't fail the approval if document generation fails
+                // Just log the error and continue - approval is more important than document generation
+            }
+        }
+
+        \Log::info('Transaction completed, preparing SMS notification for document request', [
+            'doc_request_id' => $id,
+            'status' => $data['status'],
+        ]);
+
+        // Send SMS notification based on status (outside transaction)
+        try {
+            // Load user and credential relationships
+            $doc = DocumentRequest::with(['user', 'user.credential'])->findOrFail($id);
+            $user = $doc->user;
+            $credential = $user?->credential;
+            
+            // Get phone number - try document request contact_number first, then credential, then user
+            $phoneNumber = $doc->contact_number ?? $credential?->contact_number ?? $credential?->secondary_contact_number ?? null;
+            
+            \Log::info('Document request status SMS attempt', [
+                'doc_request_id' => $id,
+                'status' => $data['status'],
+                'has_user' => !empty($user),
+                'has_credential' => !empty($credential),
+                'has_phone' => !empty($phoneNumber),
+                'phone' => $phoneNumber ? substr($phoneNumber, 0, 4) . '****' : null,
+            ]);
+            
+            if ($phoneNumber && $user) {
+                $fullName = trim(implode(' ', array_filter([
+                    $user->first_name ?? $doc->first_name ?? '',
+                    $user->middle_name ?? $doc->middle_name ?? '',
+                    $user->last_name ?? $doc->last_name ?? '',
+                    $user->suffix ?? $doc->suffix ?? '',
+                ]))) ?: 'User';
+                
+                $ticket = $doc->doc_request_ticket ?? 'N/A';
+                $documentType = $doc->documentType?->document_name ?? 'document';
+                
+                if ($data['status'] === 'Approved') {
+                    $message = "Hello {$fullName}, your {$documentType} request (Ticket: {$ticket}) has been APPROVED.";
+                    if (!empty($data['admin_feedback'])) {
+                        $message .= " " . substr($data['admin_feedback'], 0, 100);
+                    }
+                    if (!empty($doc->pickup_location)) {
+                        $message .= " Pickup location: {$doc->pickup_location}.";
+                    }
+                    $message .= " Thank you!";
+                } elseif ($data['status'] === 'Rejected') {
+                    $message = "Hello {$fullName}, your {$documentType} request (Ticket: {$ticket}) has been REJECTED.";
+                    if (!empty($data['admin_feedback'])) {
+                        $message .= " Reason: " . substr($data['admin_feedback'], 0, 100);
+                    }
+                    $message .= " Please contact the barangay office for more information. Thank you.";
+                } else {
+                    // Status is Pending or other - skip SMS
+                    $message = null;
+                }
+                
+                if ($message) {
+                    \Log::info('Calling SMS service for document request status', [
+                        'phone' => substr($phoneNumber, 0, 4) . '****',
+                        'message_length' => strlen($message),
+                        'message_preview' => substr($message, 0, 50) . '...',
+                        'full_message' => $message,
+                    ]);
+                    
+                    $smsService = new OtpService();
+                    \Log::info('About to call sendSms method for document request', [
+                        'phone' => substr($phoneNumber, 0, 4) . '****',
+                        'status' => $data['status'],
+                    ]);
+                    $smsResult = $smsService->sendSms($phoneNumber, $message);
+                    \Log::info('sendSms method returned for document request', [
+                        'result' => $smsResult,
+                        'status' => $data['status'],
+                    ]);
+                    
+                    if (!$smsResult['success']) {
+                        \Log::warning('Failed to send document request status SMS', [
+                            'phone' => substr($phoneNumber, 0, 4) . '****',
+                            'error' => $smsResult['message'] ?? 'Unknown error',
+                            'doc_request_id' => $id,
+                            'status' => $data['status'],
+                        ]);
+                    }
+                }
+            } else {
+                \Log::warning('No phone number or user available for document request status SMS', [
+                    'doc_request_id' => $id,
+                    'has_user' => !empty($user),
+                    'has_phone' => !empty($phoneNumber),
+                    'status' => $data['status'],
+                ]);
+            }
+        } catch (\Throwable $smsEx) {
+            // Don't fail the approval/rejection if SMS fails
+            \Log::error('SMS notification error during document request status change', [
+                'error' => $smsEx->getMessage(),
+                'trace' => $smsEx->getTraceAsString(),
+                'doc_request_id' => $id,
+                'status' => $data['status'] ?? 'unknown',
+            ]);
+        }
+
+        $responseData = [
+            'doc_request_id'  => $doc->doc_request_id,
+            'doc_request_ticket' => $doc->doc_request_ticket,
+            'status' => $doc->status,
+            'pickup_item' => $doc->pickup_item,
+            'pickup_location' => $doc->pickup_location,
+            'pickup_start' => $doc->pickup_start,
+            'pickup_end' => $doc->pickup_end,
+            'person_to_look' => $doc->person_to_look,
+            'fk_approver_id' => $doc->fk_approver_id,
+            'reviewed_at' => $doc->reviewed_at,
+            'admin_feedback' => $doc->admin_feedback,
+            'updated_at' => $doc->updated_at?->toDateTimeString(),
+        ];
+
+        // Add document URLs if document was generated
+        if ($documentData) {
+            $responseData['document_url'] = $documentData['pdf_url'];
+            $responseData['document_docx_url'] = $documentData['docx_url'];
+            $responseData['filename'] = $documentData['pdf_filename'];
+            
+            // Also include base64 for immediate display (optional - can be large)
+            // We'll skip base64 for now and use URL instead
+        }
+
         return response()->json([
             'success' => true,
             'message' => 'Request approved successfully.',
-            'data'    => [
-                'doc_request_id'  => $doc->doc_request_id,
-                'doc_request_ticket' => $doc->doc_request_ticket,
-                'status' => $doc->status,
-                'pickup_item' => $doc->pickup_item,
-                'pickup_location' => $doc->pickup_location,
-                'pickup_start' => $doc->pickup_start,
-                'pickup_end' => $doc->pickup_end,
-                'person_to_look' => $doc->person_to_look,
-                'fk_approver_id' => $doc->fk_approver_id,
-                'reviewed_at' => $doc->reviewed_at,
-                'updated_at' => $doc->updated_at?->toDateTimeString(),
-            ],
+            'data' => $responseData,
         ]);
     }
 
     public function reject(Request $request, $id)
     {
+        \Log::info('=== DOCUMENT REQUEST REJECT METHOD CALLED ===', [
+            'doc_request_id' => $id,
+            'timestamp' => now()->toDateTimeString(),
+        ]);
+
         $authUser = $request->user();
         if (! $authUser) {
-            return response()->json(['error' => 'Unauthenticated'], 401);
+            return redirect()->back()->with('error', 'Unauthenticated');
         }
 
         $data = $request->validate([
             'status'         => ['required', 'string', 'in:Approved,Rejected,Pending'],
             'fk_approver_id' => ['nullable'],
             'reviewed_at'    => ['nullable', 'date_format:Y-m-d H:i:s'],
-            // optionally validate rejection_reason if you add that in front-end payload
+            'rejection_reason' => ['nullable', 'string'],
+            'admin_feedback'  => ['nullable', 'string'],
         ]);
 
-        $doc = \App\Models\DocumentRequest::where('doc_request_id', $id)->firstOrFail();
+        try {
+            $doc = DocumentRequest::where('doc_request_id', $id)->firstOrFail();
 
-        $update = [
-            'status'         => $data['status'],
-            'fk_approver_id' => $data['fk_approver_id'] ?? $authUser->getKey(),
-            'reviewed_at'    => $data['reviewed_at'] ?? Carbon::now()->toDateTimeString(),
-        ];
+            // Use rejection_reason or admin_feedback, prioritizing rejection_reason
+            $feedback = $data['rejection_reason'] ?? $data['admin_feedback'] ?? null;
 
-        DB::transaction(function () use ($doc, $update) {
-            $doc->update($update);
-        });
+            $update = [
+                'status'         => $data['status'],
+                'fk_approver_id' => $data['fk_approver_id'] ?? $authUser->getKey(),
+                'reviewed_at'    => $data['reviewed_at'] ?? Carbon::now()->toDateTimeString(),
+                'admin_feedback' => $feedback,
+            ];
 
-        $doc = $doc->fresh();
+            DB::transaction(function () use ($doc, $update) {
+                $doc->update($update);
+            });
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Request rejected successfully.',
-            'data'    => [
-                'doc_request_id' => $doc->doc_request_id,
-                'doc_request_ticket' => $doc->doc_request_ticket,
-                'status' => $doc->status,
-                'fk_approver_id' => $doc->fk_approver_id,
-                'reviewed_at' => $doc->reviewed_at,
-                'updated_at' => $doc->updated_at?->toDateTimeString(),
-            ],
+            \Log::info('Transaction completed, preparing SMS notification for document request rejection', [
+                'doc_request_id' => $id,
+            ]);
+
+            // Send SMS notification for rejection (outside transaction)
+            try {
+                // Load user and credential relationships
+                $doc = DocumentRequest::with(['user', 'user.credential'])->findOrFail($id);
+                $user = $doc->user;
+                $credential = $user?->credential;
+                
+                // Get phone number - try document request contact_number first, then credential, then user
+                $phoneNumber = $doc->contact_number ?? $credential?->contact_number ?? $credential?->secondary_contact_number ?? null;
+                
+                \Log::info('Document request rejection SMS attempt', [
+                    'doc_request_id' => $id,
+                    'has_user' => !empty($user),
+                    'has_credential' => !empty($credential),
+                    'has_phone' => !empty($phoneNumber),
+                    'phone' => $phoneNumber ? substr($phoneNumber, 0, 4) . '****' : null,
+                ]);
+                
+                if ($phoneNumber && $user) {
+                    $fullName = trim(implode(' ', array_filter([
+                        $user->first_name ?? $doc->first_name ?? '',
+                        $user->middle_name ?? $doc->middle_name ?? '',
+                        $user->last_name ?? $doc->last_name ?? '',
+                        $user->suffix ?? $doc->suffix ?? '',
+                    ]))) ?: 'User';
+                    
+                    $ticket = $doc->doc_request_ticket ?? 'N/A';
+                    $documentType = $doc->documentType?->document_name ?? 'document';
+                    $message = "Hello {$fullName}, your {$documentType} request (Ticket: {$ticket}) has been REJECTED.";
+                    if (!empty($feedback)) {
+                        $message .= " Reason: " . substr($feedback, 0, 100);
+                    }
+                    $message .= " Please contact the barangay office for more information. Thank you.";
+                    
+                    \Log::info('Calling SMS service for document request rejection', [
+                        'phone' => substr($phoneNumber, 0, 4) . '****',
+                        'message_length' => strlen($message),
+                        'message_preview' => substr($message, 0, 50) . '...',
+                        'full_message' => $message,
+                    ]);
+                    
+                    $smsService = new OtpService();
+                    \Log::info('About to call sendSms method for document request rejection', [
+                        'phone' => substr($phoneNumber, 0, 4) . '****',
+                    ]);
+                    $smsResult = $smsService->sendSms($phoneNumber, $message);
+                    \Log::info('sendSms method returned for document request rejection', [
+                        'result' => $smsResult,
+                    ]);
+                    
+                    if (!$smsResult['success']) {
+                        \Log::warning('Failed to send document request rejection SMS', [
+                            'phone' => substr($phoneNumber, 0, 4) . '****',
+                            'error' => $smsResult['message'] ?? 'Unknown error',
+                            'doc_request_id' => $id,
+                        ]);
+                    }
+                } else {
+                    \Log::warning('No phone number or user available for document request rejection SMS', [
+                        'doc_request_id' => $id,
+                        'has_user' => !empty($user),
+                        'has_phone' => !empty($phoneNumber),
+                    ]);
+                }
+            } catch (\Throwable $smsEx) {
+                // Don't fail the rejection if SMS fails
+                \Log::error('SMS notification error during document request rejection', [
+                    'error' => $smsEx->getMessage(),
+                    'trace' => $smsEx->getTraceAsString(),
+                    'doc_request_id' => $id,
+                ]);
+            }
+
+            return redirect()->back()->with('success', 'Request rejected successfully.');
+        } catch (\Throwable $ex) {
+            \Log::error('Reject exception: ' . $ex->getMessage());
+            return redirect()->back()->with('error', 'Failed to reject the request.');
+        }
+    }
+
+    /**
+     * Download generated document
+     */
+    public function download(Request $request, $id, $format = 'pdf')
+    {
+        $authUser = $request->user();
+        if (!$authUser) {
+            return response()->json(['error' => 'Unauthenticated'], 401);
+        }
+
+        // Validate format
+        if (!in_array($format, ['pdf', 'docx'])) {
+            return response()->json(['error' => 'Invalid format. Use pdf or docx'], 400);
+        }
+
+        $doc = DocumentRequest::where('doc_request_id', $id)->firstOrFail();
+
+        // Check if user has permission (approver or request owner)
+        $userRole = $authUser->fk_role_id ?? $authUser->role_id ?? null;
+        $isApprover = in_array($userRole, [3, 9]); // Approver role IDs
+        $isOwner = ($doc->fk_user_id == ($authUser->user_id ?? $authUser->id));
+
+        if (!$isApprover && !$isOwner) {
+            return response()->json(['error' => 'Unauthorized'], 403);
+        }
+
+        // Check if document exists
+        $documentService = new DocumentGenerationService();
+        $filePath = $documentService->getDocumentPath($doc, $format);
+
+        // If PDF doesn't exist but DOCX does, serve DOCX instead
+        $isFallbackToDocx = false;
+        if ((!$filePath || !file_exists($filePath)) && $format === 'pdf') {
+            $docxPath = $documentService->getDocumentPath($doc, 'docx');
+            if ($docxPath && file_exists($docxPath)) {
+                \Log::info('PDF not found, serving DOCX instead', [
+                    'doc_request_id' => $id,
+                ]);
+                $filePath = $docxPath;
+                $isFallbackToDocx = true;
+            }
+        }
+
+        if (!$filePath || !file_exists($filePath)) {
+            return response()->json(['error' => 'Document not found. Please regenerate the document.'], 404);
+        }
+
+        // Determine MIME type - use actual file type if we're serving DOCX for PDF request
+        if ($isFallbackToDocx) {
+            $mimeType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+            $filename = $documentService->generateFileName($doc, 'docx');
+        } else {
+            $mimeType = $format === 'pdf' ? 'application/pdf' : 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+            $filename = $documentService->generateFileName($doc, $format);
+        }
+
+        // Serve file with proper headers for iframe embedding
+        return response()->file($filePath, [
+            'Content-Type' => $mimeType,
+            'Content-Disposition' => 'inline; filename="' . $filename . '"',
+            'X-Content-Type-Options' => 'nosniff',
+            'Cache-Control' => 'private, max-age=3600',
         ]);
     }
-    
+
     public function create()
     {
         $user = Auth::user();
@@ -399,13 +1165,21 @@ class DocumentRequestController extends Controller
         return Inertia::render('Document/Create', [
             'user' => $user,
             'userCredential' => $credential ? $credential->only(['contact_number', 'secondary_contact_number']) : null,
-            // any other props you need...
         ]);
     }
 
     public function store(Request $request)
     {
-        $request->validate([
+        \Log::info('=== DOCUMENT REQUEST STORE CALLED ===', [
+            'user_id' => Auth::id(),
+            'has_file' => $request->hasFile('valid_id_content'),
+            'input_keys' => array_keys($request->all()),
+            'all_files_count' => count($request->allFiles()),
+            'all_files_keys' => array_keys($request->allFiles()),
+        ]);
+        
+        try {
+            $request->validate([
             'fk_document_type_id' => ['nullable', 'integer', 'exists:document_types,document_type_id'],
             'document_name' => ['nullable', 'string', 'max:150'],
             'last_name' => ['nullable', 'string', 'max:50'],
@@ -417,22 +1191,58 @@ class DocumentRequestController extends Controller
             'civil_status' => ['nullable', Rule::in(['Single','Married','Widowed','Separated'])],
             'address' => ['nullable', 'string', 'max:255'],
             'contact_number' => ['nullable', 'string', 'max:50'],
-            'purpose' => ['nullable', 'string'],
+            'purpose' => ['required', 'string'],
+            'reason_type' => ['nullable', 'string', 'max:100'],
             'id_type' => ['nullable', 'string', 'max:100'],
-            'document' => ['nullable', 'file', 'mimes:jpg,jpeg,png,pdf,doc,docx','max:10240'],
+
+            // Accept the uploaded file(s). Limit set to 20MB for better MySQL compatibility
+            'valid_id_content' => ['nullable', 'file', 'mimes:jpg,jpeg,png,pdf','max:20480'], // 20MB
+            // keep legacy fields if frontend still sends them
+            'id_front' => ['nullable', 'file', 'mimes:jpg,jpeg,png,pdf','max:20480'], // 20MB
+            'id_back'  => ['nullable', 'file', 'mimes:jpg,jpeg,png,pdf','max:20480'], // 20MB
+
+            // id number fields
+            'valid_id_number' => ['nullable', 'string', 'max:255'],
+            'id_number' => ['nullable', 'string', 'max:255'],
+
             'pickup_item'         => ['nullable', 'string', 'max:255'],
             'pickup_location'     => ['nullable', 'string', 'max:255'],
             'pickup_start'        => ['nullable', 'date'],
             'pickup_end'          => ['nullable', 'date'],
             'person_to_look'      => ['nullable', 'string', 'max:255'],
-        ]);
+            
+            // Dynamic extra_fields - can contain text values and file objects
+            // Files in extra_fields come as "extra_fields[fieldName]" in FormData
+            'extra_fields' => ['nullable', 'array'],
+            'extra_fields.*' => ['nullable'], // Allow any nested values (files or text)
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            \Log::error('Validation failed for document request', [
+                'errors' => $e->errors(),
+                'input' => $request->all(),
+            ]);
+            
+            // Return JSON for AJAX/axios requests
+            if ($request->wantsJson() || $request->ajax() || !$request->header('X-Inertia')) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Validation failed',
+                    'errors' => $e->errors()
+                ], 422);
+            }
+            
+            return back()
+                ->withInput()
+                ->withErrors($e->errors());
+        }
+
+        \Log::info('Validation passed, proceeding with document request creation');
 
         $user = Auth::user();
         if (! $user) {
             return redirect()->route('login');
         }
 
-        // Determine the user's id robustly (in case your User PK is user_id)
         $fk_user_id = $user->user_id ?? $user->id ?? Auth::id();
 
         // Resolve document type id by name if necessary
@@ -446,8 +1256,9 @@ class DocumentRequestController extends Controller
 
         // Contact number priority
         $contactNumber = $request->input('contact_number');
+        $credential = $user->credential ?? UserCredential::where('fk_user_id', $fk_user_id)->first();
+
         if (empty($contactNumber)) {
-            $credential = UserCredential::where('fk_user_id', $fk_user_id)->first();
             if ($credential && !empty($credential->contact_number)) {
                 $contactNumber = $credential->contact_number;
             } elseif (!empty($user->contact_number)) {
@@ -456,15 +1267,89 @@ class DocumentRequestController extends Controller
         }
 
         if (empty($contactNumber)) {
+            // Return JSON for AJAX/axios requests
+            if ($request->wantsJson() || $request->ajax() || !$request->header('X-Inertia')) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Contact number is required. Please provide it in the form or add it to your profile.',
+                    'errors' => ['contact_number' => ['Contact number is required. Please provide it in the form or add it to your profile.']]
+                ], 422);
+            }
+            
             return back()
                 ->withInput()
                 ->withErrors(['contact_number' => 'Contact number is required. Please provide it in the form or add it to your profile.']);
         }
 
-        // Handle file upload
-        $validIdPath = null;
-        if ($request->hasFile('document')) {
-            $validIdPath = $request->file('document')->store('valid_ids', 'public');
+        // ===== Read raw bytes for the valid_id_content LONGBLOB column =====
+        // IMPORTANT: This is BINARY data, NOT text - never sanitize as UTF-8
+        $validIdContentBinary = null;
+        
+        // Maximum file size: 20MB (reduced for better MySQL compatibility)
+        $maxFileSize = 20 * 1024 * 1024; // 20MB in bytes
+
+        // Priority: 'valid_id_content' (sent by frontend) -> 'id_front' -> 'id_back'
+        if ($request->hasFile('valid_id_content')) {
+            $uploaded = $request->file('valid_id_content');
+            if ($uploaded && $uploaded->isValid()) {
+                $fileSize = $uploaded->getSize();
+                if ($fileSize > $maxFileSize) {
+                    // Return JSON for AJAX/axios requests
+                    if ($request->wantsJson() || $request->ajax() || !$request->header('X-Inertia')) {
+                        return response()->json([
+                            'success' => false,
+                            'message' => 'File size exceeds maximum allowed size of 20MB. Please compress or resize the image.',
+                            'errors' => ['valid_id_content' => ['File size exceeds maximum allowed size of 20MB. Please compress or resize the image.']]
+                        ], 422);
+                    }
+                    
+                    return back()
+                        ->withInput()
+                        ->withErrors(['valid_id_content' => 'File size exceeds maximum allowed size of 20MB. Please compress or resize the image.']);
+                }
+                // Read as binary - do NOT treat as UTF-8 string
+                $validIdContentBinary = file_get_contents($uploaded->getRealPath(), FILE_BINARY);
+            }
+        } elseif ($request->hasFile('id_front')) {
+            $uploaded = $request->file('id_front');
+            if ($uploaded && $uploaded->isValid()) {
+                $fileSize = $uploaded->getSize();
+                if ($fileSize > $maxFileSize) {
+                    // Return JSON for AJAX/axios requests
+                    if ($request->wantsJson() || $request->ajax() || !$request->header('X-Inertia')) {
+                        return response()->json([
+                            'success' => false,
+                            'message' => 'File size exceeds maximum allowed size of 20MB. Please compress or resize the image.',
+                            'errors' => ['id_front' => ['File size exceeds maximum allowed size of 20MB. Please compress or resize the image.']]
+                        ], 422);
+                    }
+                    
+                    return back()
+                        ->withInput()
+                        ->withErrors(['id_front' => 'File size exceeds maximum allowed size of 20MB. Please compress or resize the image.']);
+                }
+                $validIdContentBinary = file_get_contents($uploaded->getRealPath(), FILE_BINARY);
+            }
+        } elseif ($request->hasFile('id_back')) {
+            $uploaded = $request->file('id_back');
+            if ($uploaded && $uploaded->isValid()) {
+                $fileSize = $uploaded->getSize();
+                if ($fileSize > $maxFileSize) {
+                    // Return JSON for AJAX/axios requests
+                    if ($request->wantsJson() || $request->ajax() || !$request->header('X-Inertia')) {
+                        return response()->json([
+                            'success' => false,
+                            'message' => 'File size exceeds maximum allowed size of 20MB. Please compress or resize the image.',
+                            'errors' => ['id_back' => ['File size exceeds maximum allowed size of 20MB. Please compress or resize the image.']]
+                        ], 422);
+                    }
+                    
+                    return back()
+                        ->withInput()
+                        ->withErrors(['id_back' => 'File size exceeds maximum allowed size of 20MB. Please compress or resize the image.']);
+                }
+                $validIdContentBinary = file_get_contents($uploaded->getRealPath(), FILE_BINARY);
+            }
         }
 
         $appliedFee = 0.00;
@@ -472,13 +1357,11 @@ class DocumentRequestController extends Controller
             $appliedFee = optional(DocumentType::find($fk_document_type_id))->processing_fee ?? 0.00;
         }
 
+        // Temporary random token (replaced inside transaction with sequential ticket)
         $ticket = strtoupper(Str::random(10));
-
         $docRequest = null;
 
-        
-
-        // Build the base data array (doc_request_ticket will be set inside the transaction)
+        // Build the base data array with values we want to populate.
         $data = [
             'doc_request_ticket'     => $ticket,
             'fk_user_id'             => $fk_user_id,
@@ -490,42 +1373,251 @@ class DocumentRequestController extends Controller
             'birthdate'              => $request->input('birthdate') ?? $user->birthdate ?? null,
             'sex'                    => $request->input('sex') ?? $user->sex ?? null,
             'civil_status'           => $request->input('civil_status') ?? $user->civil_status ?? null,
-            'address'                => $request->input('address') ?? $user->address ?? null,
+            'house_number'           => $request->input('house_number') ?? $user->house_number ?? null,
+            'phase'                  => $request->input('phase') ?? $user->phase ?? null,
+            'package'                => $request->input('package') ?? $user->package ?? null,
+            'address'                => $request->input('address') ?? ($user->house_number ? ($user->house_number . ' ' . ($user->street ?? '')) : null),
             'contact_number'         => $contactNumber,
-            'valid_id_path'          => $validIdPath,
+            'email'                  => $request->input('email') ?? $credential?->email ?? $user->email ?? null,
+
+            // IMPORTANT: put the RAW binary into the data array so it goes into the LONGBLOB column
+            'valid_id_content'       => $validIdContentBinary,
+
+            // store ID number (prefer valid_id_number input, fallback to id_number)
+            'valid_id_number'        => $request->input('valid_id_number') ?? $request->input('id_number') ?? null,
+
             'applied_processing_fee' => $appliedFee,
             'purpose'                => $request->input('purpose'),
+            'reason_type'            => $request->input('reason_type') ?: null,
             'pickup_item'            => $request->input('pickup_item', 'To be confirmed'),
             'pickup_location'        => $request->input('pickup_location', 'To be confirmed'),
-            'pickup_start'           => $request->input('pickup_start', now()),
-            'pickup_end'             => $request->input('pickup_end', now()->addDay()),
+            'pickup_start'           => $request->input('pickup_start') ? $request->input('pickup_start') : now(),
+            'pickup_end'             => $request->input('pickup_end') ? $request->input('pickup_end') : now()->addDay(),
             'person_to_look'         => $request->input('person_to_look', 'To be assigned'),
             'status'                 => 'Pending',
         ];
 
-        // after $data is built, add:
-if (empty($data['first_name']) && !empty($user->name)) {
-    $parts = preg_split('/\s+/', trim($user->name));
-    if (count($parts) === 1) {
-        $data['first_name'] = $parts[0];
-    } elseif (count($parts) === 2) {
-        $data['first_name'] = $parts[0];
-        $data['last_name']  = $parts[1];
-    } else {
-        $data['first_name']  = array_shift($parts);
-        $data['last_name']   = array_pop($parts);
-        if (empty($data['middle_name'])) {
-            $data['middle_name'] = implode(' ', $parts);
+        // if first_name still empty, derive from user->name
+        if (empty($data['first_name']) && !empty($user->name)) {
+            $parts = preg_split('/\s+/', trim($user->name));
+            if (count($parts) === 1) {
+                $data['first_name'] = $parts[0];
+            } elseif (count($parts) === 2) {
+                $data['first_name'] = $parts[0];
+                $data['last_name']  = $parts[1];
+            } else {
+                $data['first_name']  = array_shift($parts);
+                $data['last_name']   = array_pop($parts);
+                if (empty($data['middle_name'])) {
+                    $data['middle_name'] = implode(' ', $parts);
+                }
+            }
         }
-    }
-}
 
+        // Process extra_fields: separate files from text values
+        // When using forceFormData, Inertia sends nested objects as "extra_fields[fieldName]"
+        $extraFieldsData = [];
+        $fileAttachments = [];
+        
+        // Get all files from the request
+        $allFiles = $request->allFiles();
+        
+        \Log::info('Document Request - All files received:', [
+            'file_keys' => array_keys($allFiles),
+            'file_count' => count($allFiles),
+            'all_input_keys' => array_keys($request->all()),
+        ]);
+        
+        // Check for files in extra_fields structure
+        // Files come as "extra_fields[fieldName]" in FormData when nested in an object
+        foreach ($allFiles as $key => $file) {
+            \Log::info('Processing file key:', [
+                'key' => $key, 
+                'is_array' => is_array($file),
+                'is_uploaded_file' => $file instanceof \Illuminate\Http\UploadedFile,
+            ]);
+            
+            // Handle extra_fields as an array of files (nested structure)
+            if ($key === 'extra_fields' && is_array($file)) {
+                // extra_fields is an array of files, iterate through them
+                foreach ($file as $fieldName => $fieldFile) {
+                    if ($fieldFile instanceof \Illuminate\Http\UploadedFile) {
+                        $fileAttachments[$fieldName] = $fieldFile;
+                        \Log::info('Found extra_fields file (nested array):', [
+                            'field_name' => $fieldName,
+                            'file_name' => $fieldFile->getClientOriginalName(),
+                        ]);
+                    } elseif (is_array($fieldFile)) {
+                        // Handle array of files for the same field
+                        foreach ($fieldFile as $idx => $f) {
+                            if ($f instanceof \Illuminate\Http\UploadedFile) {
+                                $fileAttachments[$fieldName . '_' . $idx] = $f;
+                                \Log::info('Found extra_fields file (nested array with index):', [
+                                    'field_name' => $fieldName . '_' . $idx,
+                                    'file_name' => $f->getClientOriginalName(),
+                                ]);
+                            }
+                        }
+                    }
+                }
+            }
+            // Check if this is an extra_fields file: "extra_fields[fieldName]"
+            elseif (preg_match('/^extra_fields\[(.+)\]$/', $key, $matches)) {
+                $fieldName = $matches[1];
+                $fileAttachments[$fieldName] = is_array($file) ? $file[0] : $file;
+                \Log::info('Found extra_fields file (bracket format):', [
+                    'field_name' => $fieldName,
+                    'file_name' => is_array($file) ? $file[0]->getClientOriginalName() : $file->getClientOriginalName(),
+                ]);
+            } elseif (strpos($key, 'extra_fields_') === 0) {
+                // Alternative format: extra_fields_fieldName
+                $fieldName = substr($key, 13); // Remove "extra_fields_" prefix
+                $fileAttachments[$fieldName] = is_array($file) ? $file[0] : $file;
+                \Log::info('Found extra_fields file (prefix format):', [
+                    'field_name' => $fieldName,
+                    'file_name' => is_array($file) ? $file[0]->getClientOriginalName() : $file->getClientOriginalName(),
+                ]);
+            } elseif (!in_array($key, ['valid_id_content', 'id_front', 'id_back', 'document'])) {
+                // Also check for direct field names that might be attachment fields
+                // Common attachment field names from the frontend
+                $attachmentFields = ['2x2_photo', 'photo', 'supporting_documents', 'cedula', 'tax_declaration', 
+                                     'income_statement', 'birth_certificate', 'proof_of_residency', 
+                                     'lease_contract', 'barangay_clearance', 'dti_registration'];
+                if (in_array($key, $attachmentFields)) {
+                    $fileAttachments[$key] = is_array($file) ? $file[0] : $file;
+                    \Log::info('Found direct attachment field:', [
+                        'field_name' => $key,
+                        'file_name' => is_array($file) ? $file[0]->getClientOriginalName() : $file->getClientOriginalName(),
+                    ]);
+                } else {
+                    \Log::info('File key not recognized as attachment:', ['key' => $key]);
+                }
+            }
+        }
+        
+        \Log::info('Document Request - File attachments detected:', [
+            'count' => count($fileAttachments),
+            'field_names' => array_keys($fileAttachments),
+            'file_attachments_details' => array_map(function($file, $fieldName) {
+                return [
+                    'field_name' => $fieldName,
+                    'file_name' => $file instanceof \Illuminate\Http\UploadedFile ? $file->getClientOriginalName() : 'unknown',
+                    'file_size' => $file instanceof \Illuminate\Http\UploadedFile ? $file->getSize() : 0,
+                    'is_valid' => $file instanceof \Illuminate\Http\UploadedFile ? $file->isValid() : false,
+                ];
+            }, $fileAttachments, array_keys($fileAttachments)),
+        ]);
+        
+        // Process text values from extra_fields
+        // Get the extra_fields array from input (excluding files which are in allFiles)
+        $extraFields = $request->input('extra_fields', []);
+        if (is_array($extraFields)) {
+            foreach ($extraFields as $fieldName => $fieldValue) {
+                // Skip if this field is a file (already handled above)
+                if (isset($fileAttachments[$fieldName])) {
+                    continue;
+                }
+                
+                // It's a text value, store in extra_fields JSON
+                // Handle arrays (for checkboxes) and other types
+                if (is_array($fieldValue)) {
+                    if (!empty($fieldValue)) {
+                        // Sanitize array values
+                        $extraFieldsData[$fieldName] = $fieldValue;
+                    }
+                } elseif ($fieldValue !== null && $fieldValue !== '') {
+                    $extraFieldsData[$fieldName] = $fieldValue;
+                }
+            }
+        }
 
-        // Transaction: compute next sequential numeric ticket (no 'Req' prefix) and create the record.
-        // Resulting ticket format: zero-padded 3 digits (e.g. "001", "002", "123").
-        DB::transaction(function () use (&$docRequest, $data) {
-            // Lock only rows that contain at least one digit (safer than relying on a specific prefix).
-            // Then compute the max numeric portion in PHP using preg_match — compatible with most MySQL versions.
+        // Log file attachments BEFORE transaction to verify they're detected
+        \Log::info('Document Request - BEFORE TRANSACTION - File attachments detected:', [
+            'count' => count($fileAttachments),
+            'field_names' => array_keys($fileAttachments),
+            'file_attachments_details' => array_map(function($file, $fieldName) {
+                if ($file instanceof \Illuminate\Http\UploadedFile) {
+                    return [
+                        'field_name' => $fieldName,
+                        'file_name' => $file->getClientOriginalName(),
+                        'file_size' => $file->getSize(),
+                        'is_valid' => $file->isValid(),
+                    ];
+                }
+                return ['field_name' => $fieldName, 'type' => gettype($file)];
+            }, $fileAttachments, array_keys($fileAttachments)),
+        ]);
+        
+        // Make a copy of fileAttachments to ensure it's captured correctly in the closure
+        $fileAttachmentsForTransaction = $fileAttachments;
+        
+        // Set MySQL max_allowed_packet to handle large file uploads (64MB)
+        // This prevents "MySQL server has gone away" errors with large files
+        try {
+            // Ensure we have a fresh connection
+            DB::reconnect();
+            
+            // Check current max_allowed_packet setting first
+            $currentSetting = DB::selectOne("SHOW VARIABLES LIKE 'max_allowed_packet'");
+            $currentValue = $currentSetting->Value ?? 0;
+            $currentValueMB = round($currentValue / 1024 / 1024, 2);
+            
+            \Log::info('Current MySQL max_allowed_packet: ' . $currentValue . ' bytes (' . $currentValueMB . ' MB)');
+            
+            // Only set if it's less than what we need
+            if ($currentValue < 67108864) {
+                \Log::warning('MySQL max_allowed_packet is too low (' . $currentValueMB . ' MB). Attempting to increase...');
+                
+                // Try to set GLOBAL first (requires SUPER privilege, but persists)
+                try {
+                    DB::statement('SET GLOBAL max_allowed_packet = 67108864');
+                    \Log::info('Successfully set GLOBAL max_allowed_packet to 64MB');
+                } catch (\Exception $globalException) {
+                    \Log::warning('Could not set GLOBAL max_allowed_packet (may require SUPER privilege): ' . $globalException->getMessage());
+                    
+                    // Fall back to SESSION (only affects current connection)
+                    try {
+                        DB::statement('SET SESSION max_allowed_packet = 67108864');
+                        \Log::info('Set SESSION max_allowed_packet to 64MB (session only)');
+                    } catch (\Exception $sessionException) {
+                        \Log::error('Could not set SESSION max_allowed_packet: ' . $sessionException->getMessage());
+                        // Continue anyway - might still work if server default is high enough
+                    }
+                }
+            }
+            
+            // Set timeouts
+            try {
+                DB::statement('SET SESSION wait_timeout = 600'); // 10 minutes
+                DB::statement('SET SESSION interactive_timeout = 600'); // 10 minutes
+            } catch (\Exception $e) {
+                \Log::warning('Could not set timeout variables: ' . $e->getMessage());
+            }
+            
+            // Verify the setting was applied
+            $verifySetting = DB::selectOne("SHOW VARIABLES LIKE 'max_allowed_packet'");
+            if ($verifySetting) {
+                $finalValue = $verifySetting->Value ?? 0;
+                $finalValueMB = round($finalValue / 1024 / 1024, 2);
+                \Log::info('Final MySQL max_allowed_packet: ' . $finalValue . ' bytes (' . $finalValueMB . ' MB)');
+                
+                if ($finalValue < 16777216) { // Less than 16MB
+                    \Log::error('⚠️  CRITICAL: MySQL max_allowed_packet is still too low (' . $finalValueMB . ' MB). File uploads may fail.');
+                    \Log::error('Please run: php check_mysql_settings.php to diagnose and fix MySQL configuration.');
+                }
+            }
+        } catch (\Exception $e) {
+            \Log::error('Error setting MySQL session variables: ' . $e->getMessage());
+            \Log::error('Stack trace: ' . $e->getTraceAsString());
+            // Continue anyway - the server might have a higher default
+        }
+        
+        // Transaction: compute next sequential numeric ticket and create the record.
+        // Initialize $docRequest to null before transaction
+        $docRequest = null;
+        
+        try {
+            DB::transaction(function () use (&$docRequest, $data, $user, $credential, $extraFieldsData, &$fileAttachmentsForTransaction, $request) {
             $tickets = DB::table('document_requests')
                 ->whereRaw("doc_request_ticket REGEXP '[0-9]+'")
                 ->lockForUpdate()
@@ -540,66 +1632,766 @@ if (empty($data['first_name']) && !empty($user->name)) {
             }
 
             $next = $maxNum + 1;
-            // pad to 3 digits as requested (001, 002, ...). Increase pad length if you want more digits later.
-            $ticket = str_pad($next, 3, '0', STR_PAD_LEFT);
+            $ticket = 'DOC-' . str_pad($next, 3, '0', STR_PAD_LEFT);
 
-            $dataWithTicket = $data;
-            $dataWithTicket['doc_request_ticket'] = $ticket;
+            $model = new DocumentRequest();
+            $fillable = $model->getFillable();
+            $casts = $model->getCasts();
 
-            $docRequest = DocumentRequest::create($dataWithTicket);
+            $dataWithTicket = [];
+            foreach ($fillable as $col) {
+                if ($col === 'doc_request_ticket') {
+                    $dataWithTicket[$col] = $ticket;
+                    continue;
+                }
+
+                // Skip created_at - let Laravel handle it automatically via timestamps
+                if ($col === 'created_at') {
+                    continue;
+                }
+
+                if ($col === 'extra_fields') {
+                    // Store non-file extra_fields as JSON with UTF-8 safe encoding
+                    if (!empty($extraFieldsData)) {
+                        // Clean extra_fields data to ensure valid UTF-8
+                        $cleanedExtraFields = $this->cleanArrayForJson($extraFieldsData);
+                        $json = json_encode($cleanedExtraFields, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_INVALID_UTF8_IGNORE);
+                        if (json_last_error() !== JSON_ERROR_NONE) {
+                            // Final fallback: try encoding with all error flags
+                            $json = json_encode($cleanedExtraFields, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_INVALID_UTF8_IGNORE | JSON_PARTIAL_OUTPUT_ON_ERROR);
+                        }
+                        $dataWithTicket[$col] = $json;
+                    } else {
+                        $dataWithTicket[$col] = null;
+                    }
+                    continue;
+                }
+                
+                // reason_type is included in fillable and should be saved
+                // Check if column exists in database before including it
+                if ($col === 'reason_type') {
+                    // Check if the column exists in the database
+                    try {
+                        if (!Schema::hasColumn('document_requests', 'reason_type')) {
+                            \Log::warning('reason_type column does not exist. Skipping. Please run migration: php artisan migrate');
+                            continue; // Skip this column if it doesn't exist
+                        }
+                    } catch (\Exception $e) {
+                        \Log::warning('Could not check for reason_type column: ' . $e->getMessage());
+                        continue; // Skip to be safe
+                    }
+                    
+                    // Column exists, include it
+                    $value = $data['reason_type'] ?? null;
+                    $dataWithTicket[$col] = $value;
+                    continue;
+                }
+
+                if (array_key_exists($col, $data)) {
+                    $value = $data[$col];
+                } elseif (isset($user->{$col})) {
+                    $value = $user->{$col};
+                } elseif ($credential && isset($credential->{$col})) {
+                    $value = $credential->{$col};
+                } else {
+                    if (isset($casts[$col])) {
+                        $cast = strtolower($casts[$col]);
+                        if (strpos($cast, 'bool') !== false || $cast === 'boolean') {
+                            $value = false;
+                        } elseif (strpos($cast, 'float') !== false || strpos($cast, 'double') !== false) {
+                            $value = 0.0;
+                        } elseif ($cast === 'int' || $cast === 'integer') {
+                            $value = 0;
+                        } elseif (in_array($cast, ['date','datetime','immutable_date','immutable_datetime'])) {
+                            $value = null;
+                        } else {
+                            $value = '';
+                        }
+                    } elseif (preg_match('/_id$/', $col)) {
+                        $value = null;
+                    } else {
+                        $value = '';
+                    }
+                }
+
+                $dataWithTicket[$col] = $value;
+            }
+
+            // Log reason_type to verify it's being saved
+            \Log::info('Document Request - reason_type value before save:', [
+                'reason_type' => $dataWithTicket['reason_type'] ?? 'NOT SET',
+                'reason_type_from_request' => $request->input('reason_type'),
+            ]);
+            
+            
+            // Final sanitization pass - ensure all string values are valid UTF-8
+            // CRITICAL: Skip binary data completely - never sanitize valid_id_content
+            foreach ($dataWithTicket as $key => $value) {
+                // Skip binary data (LONGBLOB) - NEVER sanitize this
+                if ($key === 'valid_id_content') {
+                    // This is binary file data - keep as-is, never process as UTF-8
+                    continue;
+                }
+                
+                // Skip extra_fields (already JSON encoded)
+                if ($key === 'extra_fields') {
+                    continue;
+                }
+                
+                // Skip non-string values
+                if (!is_string($value)) {
+                    continue;
+                }
+                
+                // Skip empty strings, but keep reason_type even if empty (it should be null, not empty string)
+                if ($value === '' && $key !== 'reason_type') {
+                    continue;
+                }
+                
+                // Convert empty reason_type to null
+                if ($key === 'reason_type' && $value === '') {
+                    $dataWithTicket[$key] = null;
+                    continue;
+                }
+                
+                // Keep value as-is
+                $dataWithTicket[$key] = $value;
+            }
+            
+            // Ensure database connection uses UTF-8
+            try {
+                DB::statement('SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci');
+            } catch (\Exception $e) {
+                // Ignore if statement fails, connection might already be set
+            }
+            
+            // Check and set MySQL session variables again inside transaction
+            try {
+                // Check current setting first
+                $currentSetting = DB::selectOne("SHOW VARIABLES LIKE 'max_allowed_packet'");
+                $currentValue = $currentSetting->Value ?? 0;
+                
+                if ($currentValue < 67108864) {
+                    // Try to set GLOBAL first (persists until restart)
+                    try {
+                        DB::statement('SET GLOBAL max_allowed_packet = 67108864');
+                        \Log::info('Set GLOBAL max_allowed_packet to 64MB');
+                    } catch (\Exception $globalException) {
+                        // If GLOBAL fails, try SESSION (only for this connection)
+                        try {
+                            DB::statement('SET SESSION max_allowed_packet = 67108864');
+                            \Log::info('Set SESSION max_allowed_packet to 64MB (session only)');
+                        } catch (\Exception $sessionException) {
+                            \Log::warning('Could not set max_allowed_packet: ' . $sessionException->getMessage());
+                        }
+                    }
+                }
+                
+                DB::statement('SET SESSION wait_timeout = 600');
+                DB::statement('SET SESSION interactive_timeout = 600');
+            } catch (\Exception $e) {
+                \Log::warning('Could not set MySQL session variables inside transaction: ' . $e->getMessage());
+            }
+            
+            // create the record using only fillable columns
+            // Use raw PDO for binary data to avoid UTF-8 validation
+            try {
+                // If we have binary data, use a two-step process
+                if (isset($dataWithTicket['valid_id_content']) && $dataWithTicket['valid_id_content'] !== null) {
+                    $binaryData = $dataWithTicket['valid_id_content'];
+                    $fileSize = strlen($binaryData);
+                    \Log::info('Attempting to save binary data', ['size_bytes' => $fileSize, 'size_mb' => round($fileSize / 1024 / 1024, 2)]);
+                    
+                    // Remove binary data from array for initial insert
+                    unset($dataWithTicket['valid_id_content']);
+                    
+                    // Create record without binary data first
+                    try {
+                        $docRequest = DocumentRequest::create($dataWithTicket);
+                        
+                        \Log::info('Document Request - Created in DB (with binary, step 1):', [
+                            'doc_request_id' => $docRequest->doc_request_id ?? 'NOT SET',
+                            'doc_request_ticket' => $docRequest->doc_request_ticket ?? 'NOT SET',
+                        ]);
+                        
+                        // Verify the record was actually created
+                        if (!$docRequest || !$docRequest->doc_request_id) {
+                            \Log::error('DocumentRequest::create() returned null or no ID (binary path)', [
+                                'docRequest_is_null' => is_null($docRequest),
+                                'data_keys' => array_keys($dataWithTicket),
+                                'fk_user_id' => $dataWithTicket['fk_user_id'] ?? null,
+                                'purpose' => isset($dataWithTicket['purpose']) ? substr($dataWithTicket['purpose'], 0, 50) : null,
+                            ]);
+                            throw new \Exception('Failed to create document request - no ID returned');
+                        }
+                    } catch (\Illuminate\Database\QueryException $e) {
+                        \Log::error('QueryException creating document request (binary path)', [
+                            'message' => $e->getMessage(),
+                            'sql' => $e->getSql(),
+                            'bindings' => $e->getBindings(),
+                        ]);
+                        throw new \Exception('Database error: ' . $e->getMessage());
+                    } catch (\Exception $e) {
+                        \Log::error('Exception creating document request (binary path)', [
+                            'message' => $e->getMessage(),
+                            'class' => get_class($e),
+                        ]);
+                        throw $e;
+                    }
+                    
+                    // Then update with binary data using raw PDO
+                    // IMPORTANT: Don't reconnect inside transaction - use the same connection
+                    if ($docRequest && $docRequest->doc_request_id) {
+                        try {
+                            // Verify max_allowed_packet is sufficient (using current connection)
+                            $verifySetting = DB::selectOne("SHOW VARIABLES LIKE 'max_allowed_packet'");
+                            $verifyValue = $verifySetting->Value ?? 0;
+                            
+                            if ($verifyValue < $fileSize) {
+                                \Log::error('MySQL max_allowed_packet (' . round($verifyValue / 1024 / 1024, 2) . ' MB) is smaller than file size (' . round($fileSize / 1024 / 1024, 2) . ' MB)');
+                                
+                                // Try to increase it on current connection (SESSION only, don't reconnect)
+                                try {
+                                    DB::statement('SET SESSION max_allowed_packet = 67108864');
+                                    \Log::info('Set SESSION max_allowed_packet to 64MB');
+                                } catch (\Exception $e) {
+                                    \Log::warning('Could not set SESSION max_allowed_packet: ' . $e->getMessage());
+                                }
+                            }
+                            
+                            // Use the current connection's PDO (don't reconnect - stay in transaction)
+                            $pdo = DB::connection()->getPdo();
+                            
+                            // Prepare and execute the update
+                            $stmt = $pdo->prepare('UPDATE document_requests SET valid_id_content = ? WHERE doc_request_id = ?');
+                            $stmt->bindValue(1, $binaryData, \PDO::PARAM_LOB);
+                            $stmt->bindValue(2, $docRequest->doc_request_id, \PDO::PARAM_INT);
+                            
+                            \Log::info('Executing PDO update for binary data...');
+                            $stmt->execute();
+                            \Log::info('PDO update successful');
+                            
+                            // Refresh to get updated data
+                            $docRequest = $docRequest->fresh();
+                        } catch (\PDOException $pdoException) {
+                            $errorCode = $pdoException->getCode();
+                            $errorMessage = $pdoException->getMessage();
+                            
+                            \Log::error('PDO error updating binary data', [
+                                'code' => $errorCode,
+                                'message' => $errorMessage,
+                                'file_size' => $fileSize,
+                                'file_size_mb' => round($fileSize / 1024 / 1024, 2)
+                            ]);
+                            
+                            // Check if it's a "MySQL server has gone away" error
+                            if ($errorCode == 2006 || stripos($errorMessage, 'MySQL server has gone away') !== false) {
+                                \Log::error('MySQL server has gone away - file may be too large for current connection');
+                                
+                                // Don't reconnect inside transaction - just throw with helpful message
+                                // The transaction will roll back automatically
+                                $currentSetting = DB::selectOne("SHOW VARIABLES LIKE 'max_allowed_packet'");
+                                $currentValueMB = $currentSetting ? round($currentSetting->Value / 1024 / 1024, 2) : 'unknown';
+                                
+                                throw new \Exception(
+                                    "File upload failed. The file may be too large for the current database configuration. " .
+                                    "Your MySQL server's max_allowed_packet is currently {$currentValueMB} MB. " .
+                                    "Please try with a smaller file (under 20MB) or contact your database administrator."
+                                );
+                            } else {
+                                // Other PDO errors - rethrow
+                                throw $pdoException;
+                            }
+                        }
+                    }
+                } else {
+                    // No binary data, create normally
+                    try {
+                        \Log::info('Attempting to create DocumentRequest (no binary data)', [
+                            'data_keys' => array_keys($dataWithTicket),
+                            'fk_user_id' => $dataWithTicket['fk_user_id'] ?? null,
+                            'doc_request_ticket' => $dataWithTicket['doc_request_ticket'] ?? null,
+                        ]);
+                        
+                        $docRequest = DocumentRequest::create($dataWithTicket);
+                        
+                        \Log::info('Document Request - Created in DB (no binary):', [
+                            'doc_request_id' => $docRequest->doc_request_id ?? 'NOT SET',
+                            'doc_request_ticket' => $docRequest->doc_request_ticket ?? 'NOT SET',
+                        ]);
+                        
+                        // Verify the record was actually created
+                        if (!$docRequest || !$docRequest->doc_request_id) {
+                            \Log::error('DocumentRequest::create() returned null or no ID (no binary path)', [
+                                'docRequest_is_null' => is_null($docRequest),
+                                'data_keys' => array_keys($dataWithTicket),
+                                'fk_user_id' => $dataWithTicket['fk_user_id'] ?? null,
+                                'purpose' => isset($dataWithTicket['purpose']) ? substr($dataWithTicket['purpose'], 0, 50) : null,
+                            ]);
+                            throw new \Exception('Failed to create document request - no ID returned');
+                        }
+                    } catch (\Illuminate\Database\QueryException $e) {
+                        \Log::error('QueryException creating document request (no binary path)', [
+                            'message' => $e->getMessage(),
+                            'sql' => $e->getSql(),
+                            'bindings' => $e->getBindings(),
+                        ]);
+                        throw new \Exception('Database error: ' . $e->getMessage());
+                    } catch (\Exception $e) {
+                        \Log::error('Exception creating document request (no binary path)', [
+                            'message' => $e->getMessage(),
+                            'class' => get_class($e),
+                        ]);
+                        throw $e;
+                    }
+                }
+            } catch (\PDOException $pdoException) {
+                $errorMessage = $pdoException->getMessage();
+                \Log::error('PDO error creating document request: ' . $errorMessage);
+                
+                // Check if it's a "MySQL server has gone away" error
+                if (stripos($errorMessage, 'MySQL server has gone away') !== false || stripos($errorMessage, '2006') !== false || $pdoException->getCode() == 2006) {
+                    \Log::error('MySQL server has gone away (PDOException) - attempting to reconnect and retry');
+                    
+                    // Reconnect to database
+                    try {
+                        DB::reconnect();
+                        // Set session variables again after reconnection
+                        DB::statement('SET SESSION max_allowed_packet = 67108864');
+                        DB::statement('SET SESSION wait_timeout = 600');
+                        DB::statement('SET SESSION interactive_timeout = 600');
+                        
+                        // Retry the insert
+                        if (isset($dataWithTicket['valid_id_content']) && $dataWithTicket['valid_id_content'] !== null) {
+                            $binaryData = $dataWithTicket['valid_id_content'];
+                            unset($dataWithTicket['valid_id_content']);
+                            $docRequest = DocumentRequest::create($dataWithTicket);
+                            
+                            if ($docRequest && $docRequest->doc_request_id) {
+                                $pdo = DB::connection()->getPdo();
+                                $stmt = $pdo->prepare('UPDATE document_requests SET valid_id_content = ? WHERE doc_request_id = ?');
+                                $stmt->bindValue(1, $binaryData, \PDO::PARAM_LOB);
+                                $stmt->bindValue(2, $docRequest->doc_request_id, \PDO::PARAM_INT);
+                                $stmt->execute();
+                                $docRequest = $docRequest->fresh();
+                            }
+                        } else {
+                            $docRequest = DocumentRequest::create($dataWithTicket);
+                        }
+                        
+                        if (!$docRequest || !$docRequest->doc_request_id) {
+                            throw new \Exception('Failed to create document request after reconnection');
+                        }
+                        
+                        \Log::info('Successfully created document request after PDO reconnection');
+                    } catch (\Exception $retryException) {
+                        \Log::error('Failed to retry after PDO MySQL reconnection: ' . $retryException->getMessage());
+                        throw new \Exception('File upload failed due to database connection issue. Please try again with a smaller file (maximum 20MB) or compress/resize the image.');
+                    }
+                } else {
+                    // Re-throw other PDO errors
+                    throw $pdoException;
+                }
+            } catch (\Illuminate\Database\QueryException $e) {
+                $errorMessage = $e->getMessage();
+                \Log::error('Database error creating document request: ' . $errorMessage);
+                
+                // Check if it's a "MySQL server has gone away" error
+                if (stripos($errorMessage, 'MySQL server has gone away') !== false || stripos($errorMessage, '2006') !== false) {
+                    \Log::error('MySQL server has gone away - attempting to reconnect and retry');
+                    
+                    // Reconnect to database
+                    try {
+                        DB::reconnect();
+                        // Set session variables again after reconnection
+                        DB::statement('SET SESSION max_allowed_packet = 67108864');
+                        DB::statement('SET SESSION wait_timeout = 600');
+                        DB::statement('SET SESSION interactive_timeout = 600');
+                        
+                        // Retry the insert
+                        if (isset($dataWithTicket['valid_id_content']) && $dataWithTicket['valid_id_content'] !== null) {
+                            $binaryData = $dataWithTicket['valid_id_content'];
+                            unset($dataWithTicket['valid_id_content']);
+                            $docRequest = DocumentRequest::create($dataWithTicket);
+                            
+                            if ($docRequest && $docRequest->doc_request_id) {
+                                $pdo = DB::connection()->getPdo();
+                                $stmt = $pdo->prepare('UPDATE document_requests SET valid_id_content = ? WHERE doc_request_id = ?');
+                                $stmt->bindValue(1, $binaryData, \PDO::PARAM_LOB);
+                                $stmt->bindValue(2, $docRequest->doc_request_id, \PDO::PARAM_INT);
+                                $stmt->execute();
+                                $docRequest = $docRequest->fresh();
+                            }
+                        } else {
+                            $docRequest = DocumentRequest::create($dataWithTicket);
+                        }
+                        
+                        if (!$docRequest || !$docRequest->doc_request_id) {
+                            throw new \Exception('Failed to create document request after reconnection');
+                        }
+                        
+                        \Log::info('Successfully created document request after reconnection');
+                    } catch (\Exception $retryException) {
+                        \Log::error('Failed to retry after MySQL reconnection: ' . $retryException->getMessage());
+                        throw new \Exception('File upload failed due to database connection issue. Please try again with a smaller file (maximum 20MB) or compress/resize the image.');
+                    }
+                }
+                // Check if it's a UTF-8 encoding error
+                elseif (stripos($errorMessage, 'utf8') !== false || stripos($errorMessage, 'malformed') !== false || stripos($errorMessage, 'incorrectly encoded') !== false) {
+                    // Try to identify which TEXT field is causing the issue (NOT binary fields)
+                    foreach ($dataWithTicket as $key => $value) {
+                        // Skip binary data - it should never be checked as UTF-8
+                        if ($key === 'valid_id_content') {
+                            continue;
+                        }
+                        
+                        // Only check string values
+                        if (is_string($value) && $value !== '') {
+                            if (!mb_check_encoding($value, 'UTF-8')) {
+                                \Log::error("Invalid UTF-8 in TEXT field: {$key}, fixing...");
+                                // Try to fix it
+                                $dataWithTicket[$key] = mb_convert_encoding($value, 'UTF-8', 'UTF-8');
+                                if (function_exists('iconv')) {
+                                    $fixed = @iconv('UTF-8', 'UTF-8//IGNORE', $dataWithTicket[$key]);
+                                    if ($fixed !== false) {
+                                        $dataWithTicket[$key] = $fixed;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    // Retry once after fixing
+                    try {
+                        $docRequest = DocumentRequest::create($dataWithTicket);
+                        if ($docRequest && $docRequest->doc_request_id) {
+                            \Log::info('Document request created successfully after UTF-8 fix');
+                        } else {
+                            throw $e; // Re-throw if still fails
+                        }
+                    } catch (\Exception $retryError) {
+                        \Log::error('Retry after UTF-8 fix also failed: ' . $retryError->getMessage());
+                        throw $e; // Throw original error
+                    }
+                } else {
+                    // Not a UTF-8 error, throw as-is
+                    throw $e;
+                }
+            } catch (\Exception $e) {
+                \Log::error('Error creating document request: ' . $e->getMessage());
+                throw $e;
+            }
+
+            // Save ID front and back as separate attachments if they exist
+            // Only save if they're not already in fileAttachmentsForTransaction (to avoid duplicates)
+            if ($request->hasFile('id_front') && !isset($fileAttachmentsForTransaction['id_front'])) {
+                $idFrontFile = $request->file('id_front');
+                if ($idFrontFile && $idFrontFile->isValid()) {
+                    try {
+                        $path = $idFrontFile->store('document_request_attachments', 'public');
+                        if ($path && $docRequest && $docRequest->doc_request_id) {
+                            DocumentRequestAttachment::create([
+                                'fk_doc_request_id' => $docRequest->doc_request_id,
+                                'field_name' => 'id_front',
+                                'file_name' => $idFrontFile->getClientOriginalName(),
+                                'file_path' => $path,
+                                'file_type' => $idFrontFile->getMimeType(),
+                                'file_size' => $idFrontFile->getSize(),
+                            ]);
+                            \Log::info('Saved ID front as attachment');
+                        }
+                    } catch (\Exception $e) {
+                        \Log::error('Failed to save ID front attachment: ' . $e->getMessage());
+                        // Don't throw - attachment failure shouldn't prevent document request creation
+                        // But log it for debugging
+                    }
+                }
+            }
+            
+            if ($request->hasFile('id_back') && !isset($fileAttachmentsForTransaction['id_back'])) {
+                $idBackFile = $request->file('id_back');
+                if ($idBackFile && $idBackFile->isValid()) {
+                    try {
+                        $path = $idBackFile->store('document_request_attachments', 'public');
+                        if ($path && $docRequest && $docRequest->doc_request_id) {
+                            DocumentRequestAttachment::create([
+                                'fk_doc_request_id' => $docRequest->doc_request_id,
+                                'field_name' => 'id_back',
+                                'file_name' => $idBackFile->getClientOriginalName(),
+                                'file_path' => $path,
+                                'file_type' => $idBackFile->getMimeType(),
+                                'file_size' => $idBackFile->getSize(),
+                            ]);
+                            \Log::info('Saved ID back as attachment');
+                        }
+                    } catch (\Exception $e) {
+                        \Log::error('Failed to save ID back attachment: ' . $e->getMessage());
+                        // Don't throw - attachment failure shouldn't prevent document request creation
+                        // But log it for debugging
+                    }
+                }
+            }
+
+            // Save file attachments AFTER the document request is created
+            \Log::info('Document Request - About to save attachments (INSIDE TRANSACTION):', [
+                'doc_request_id' => $docRequest->doc_request_id ?? 'NOT SET',
+                'fileAttachmentsForTransaction_empty_check' => empty($fileAttachmentsForTransaction),
+                'fileAttachmentsForTransaction_count' => count($fileAttachmentsForTransaction),
+                'fileAttachmentsForTransaction_keys' => array_keys($fileAttachmentsForTransaction),
+                'fileAttachmentsForTransaction_is_array' => is_array($fileAttachmentsForTransaction),
+            ]);
+            
+            $savedAttachments = [];
+            if (!empty($fileAttachmentsForTransaction) && is_array($fileAttachmentsForTransaction) && count($fileAttachmentsForTransaction) > 0) {
+                \Log::info('Document Request - Starting to save attachments:', [
+                    'doc_request_id' => $docRequest->doc_request_id ?? 'NOT SET',
+                    'file_count' => count($fileAttachmentsForTransaction),
+                    'field_names' => array_keys($fileAttachmentsForTransaction),
+                ]);
+                
+                foreach ($fileAttachmentsForTransaction as $fieldName => $file) {
+                    if (!$file) {
+                        \Log::warning('Null file for field:', ['field_name' => $fieldName]);
+                        continue;
+                    }
+                    
+                    if (!($file instanceof \Illuminate\Http\UploadedFile)) {
+                        \Log::warning('File is not UploadedFile instance:', [
+                            'field_name' => $fieldName,
+                            'file_type' => gettype($file),
+                        ]);
+                        continue;
+                    }
+                    
+                    if (!$file->isValid()) {
+                        \Log::warning('Invalid file skipped:', [
+                            'field_name' => $fieldName,
+                            'error' => $file->getError(),
+                            'error_message' => $file->getErrorMessage(),
+                        ]);
+                        continue;
+                    }
+                    
+                    try {
+                        // Store file in storage
+                        $path = $file->store('document_request_attachments', 'public');
+                        
+                        if (!$path) {
+                            \Log::error('File storage returned empty path:', ['field_name' => $fieldName]);
+                            continue;
+                        }
+                        
+                        // Only create attachment if docRequest exists
+                        if ($docRequest && $docRequest->doc_request_id) {
+                            // Create attachment record
+                            $attachment = DocumentRequestAttachment::create([
+                                'fk_doc_request_id' => $docRequest->doc_request_id,
+                                'field_name' => $fieldName,
+                                'file_name' => $file->getClientOriginalName(),
+                                'file_path' => $path,
+                                'file_type' => $file->getMimeType(),
+                                'file_size' => $file->getSize(),
+                            ]);
+                            
+                            $savedAttachments[] = $attachment->attachment_id;
+                            \Log::info('Successfully saved attachment:', [
+                                'attachment_id' => $attachment->attachment_id,
+                                'field_name' => $fieldName,
+                                'file_name' => $file->getClientOriginalName(),
+                                'file_path' => $path,
+                                'file_size' => $file->getSize(),
+                            ]);
+                        } else {
+                            \Log::warning('Cannot save attachment - docRequest is null or missing ID:', [
+                                'field_name' => $fieldName,
+                            ]);
+                        }
+                    } catch (\Exception $e) {
+                        \Log::error('Failed to save attachment:', [
+                            'field_name' => $fieldName,
+                            'error' => $e->getMessage(),
+                            'trace' => $e->getTraceAsString(),
+                        ]);
+                    }
+                }
+                
+                \Log::info('Document Request - Attachments save process completed:', [
+                    'doc_request_id' => $docRequest->doc_request_id ?? 'NOT SET',
+                    'saved_count' => count($savedAttachments),
+                    'attachment_ids' => $savedAttachments,
+                ]);
+            } else {
+                \Log::info('Document Request - No file attachments to save:', [
+                    'doc_request_id' => $docRequest->doc_request_id ?? 'NOT SET',
+                ]);
+            }
+            
+            // Verify attachments were saved
+            if ($docRequest && $docRequest->doc_request_id) {
+                $verifyAttachments = DocumentRequestAttachment::where('fk_doc_request_id', $docRequest->doc_request_id)->get();
+                \Log::info('Document Request - Verified attachments in DB:', [
+                    'doc_request_id' => $docRequest->doc_request_id,
+                    'count' => $verifyAttachments->count(),
+                    'attachments' => $verifyAttachments->map(function($a) {
+                        return [
+                            'id' => $a->attachment_id,
+                            'field_name' => $a->field_name,
+                            'file_name' => $a->file_name,
+                            'file_path' => $a->file_path,
+                        ];
+                    })->toArray(),
+                ]);
+            }
+            
+            \Log::info('Document Request - Transaction about to complete:', [
+                'doc_request_id' => $docRequest->doc_request_id ?? 'NOT SET',
+                'attachments_saved_count' => count($savedAttachments),
+            ]);
         });
+        
+        \Log::info('Document Request - Transaction completed successfully:', [
+            'doc_request_id' => $docRequest->doc_request_id ?? 'NOT SET',
+            'doc_request_ticket' => $docRequest->doc_request_ticket ?? 'NOT SET',
+        ]);
+        
+        } catch (\Illuminate\Database\QueryException $e) {
+            $errorMessage = $e->getMessage();
+            
+            // Handle "MySQL server has gone away" error
+            if (stripos($errorMessage, 'MySQL server has gone away') !== false || stripos($errorMessage, '2006') !== false) {
+                \Log::error('MySQL server has gone away during transaction - file may be too large');
+                
+                // Return JSON for AJAX/axios requests
+                if ($request->wantsJson() || $request->ajax() || !$request->header('X-Inertia')) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'File upload failed due to database connection issue. The file may be too large. Please try with a smaller file (under 50MB) or contact support.',
+                        'errors' => ['valid_id_content' => ['File upload failed due to database connection issue. The file may be too large. Please try with a smaller file (under 50MB) or contact support.']]
+                    ], 500);
+                }
+                
+                return back()
+                    ->withInput()
+                    ->withErrors(['valid_id_content' => 'File upload failed due to database connection issue. The file may be too large. Please try with a smaller file (under 50MB) or contact support.']);
+            }
+            
+            // Re-throw other database errors to be caught by the general exception handler
+            throw $e;
+        } catch (\Exception $e) {
+            \Log::error('Unexpected error in document request transaction: ' . $e->getMessage(), [
+                'exception' => get_class($e),
+                'trace' => $e->getTraceAsString(),
+                'docRequest_is_null' => is_null($docRequest),
+                'docRequest_id' => $docRequest->doc_request_id ?? 'NOT SET',
+            ]);
+            
+            // Return JSON for AJAX/axios requests
+            if ($request->wantsJson() || $request->ajax() || !$request->header('X-Inertia')) {
+                $errorMessage = $e->getMessage() ?: 'An error occurred while processing your request. Please try again.';
+                
+                // Provide more user-friendly messages for common errors
+                if (stripos($errorMessage, 'max_allowed_packet') !== false) {
+                    $errorMessage = 'File upload failed. The file may be too large. Please try with a smaller file (under 20MB) or compress/resize the image.';
+                } elseif (stripos($errorMessage, 'MySQL server has gone away') !== false) {
+                    $errorMessage = 'File upload failed due to database connection issue. Please try again with a smaller file.';
+                } elseif (stripos($errorMessage, 'file') !== false || stripos($errorMessage, 'upload') !== false) {
+                    $errorMessage = 'File upload failed. Please check the file and try again.';
+                } elseif (stripos($errorMessage, 'Database configuration') !== false) {
+                    // Keep the detailed error message for database configuration issues
+                    // $errorMessage is already set from the exception
+                }
+                
+                return response()->json([
+                    'success' => false,
+                    'message' => $errorMessage,
+                    'errors' => ['general' => [$errorMessage]]
+                ], 500);
+            }
+            
+            // For non-AJAX requests, re-throw to let Laravel handle it
+            throw $e;
+        }
+        
+        // Verify docRequest was created successfully after transaction
+        if (!$docRequest || !$docRequest->doc_request_id) {
+            \Log::error('Document request was not created after transaction - docRequest is null or missing ID', [
+                'docRequest_is_null' => is_null($docRequest),
+                'docRequest_id' => $docRequest->doc_request_id ?? 'NOT SET',
+            ]);
+            
+            // Return JSON for AJAX/axios requests
+            if ($request->wantsJson() || $request->ajax() || !$request->header('X-Inertia')) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Failed to create document request. Please try again.',
+                    'errors' => ['general' => ['Failed to create document request. Please try again.']]
+                ], 500);
+            }
+            
+            return back()
+                ->withInput()
+                ->withErrors(['general' => 'Failed to create document request. Please try again.']);
+        }
 
         // after $docRequest is created:
+        if (!$docRequest || !$docRequest->doc_request_id) {
+            \Log::error('Document request was not created - docRequest is null or missing ID');
+            
+            // Return JSON for AJAX/axios requests
+            if ($request->wantsJson() || $request->ajax() || !$request->header('X-Inertia')) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Failed to create document request. Please try again.',
+                    'errors' => ['general' => ['Failed to create document request. Please try again.']]
+                ], 500);
+            }
+            
+            return back()
+                ->withInput()
+                ->withErrors(['general' => 'Failed to create document request. Please try again.']);
+        }
+
         $ticket = $docRequest->doc_request_ticket;
 
-        // If the request is an Inertia navigation, render the same component and include the ticket prop:
+        // Check if this is an AJAX/axios request (not Inertia)
+        if ($request->wantsJson() || $request->ajax() || !$request->header('X-Inertia')) {
+            try {
+                // Ensure ticket is valid UTF-8 before encoding
+                $ticketSafe = $ticket;
+                if (!mb_check_encoding($ticketSafe, 'UTF-8')) {
+                    $ticketSafe = mb_convert_encoding($ticketSafe, 'UTF-8', 'UTF-8');
+                }
+                
+                $responseData = [
+                    'success' => true,
+                    'ticket' => $ticketSafe,
+                    'message' => 'Document request submitted successfully.'
+                ];
+                
+                // Use JSON encoding flags to handle invalid UTF-8
+                return response()->json($responseData, 201, [], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_INVALID_UTF8_IGNORE);
+            } catch (\Exception $e) {
+                \Log::error('Error encoding JSON response: ' . $e->getMessage());
+                // Fallback response with safe values
+                return response()->json([
+                    'success' => true,
+                    'ticket' => preg_replace('/[^\x20-\x7E]/', '', $ticket), // ASCII only fallback
+                    'message' => 'Document request submitted successfully.'
+                ], 201, [], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_INVALID_UTF8_IGNORE);
+            }
+        }
+
+        // Inertia request
         if ($request->header('X-Inertia')) {
             return Inertia::render('User/Resident/R_Document_Request_Select', [
-                // include any props your page expects (user, etc.). Minimal example:
                 'ticket' => $ticket,
-                // optional: you can also pass the authenticated user and other required props here
-                // 'user' => Auth::user(),
             ])->with('success', 'Document request submitted.');
         }
 
-        // Always flash the ticket and redirect to the document-request page so Inertia receives it.
-        // Use the named route that renders the R_Document_Request_Select view (adjust route name if needed).
-        $flashData = ['success' => 'Document request submitted.', 'ticket' => $docRequest->doc_request_ticket];
+        return redirect()->back()
+            ->with('success', 'Document request submitted.')
+            ->with('ticket', $docRequest->doc_request_ticket);
+    }
 
-        // If this is an Inertia request, redirect to the same Inertia page (Inertia will follow the redirect)
-        if ($request->header('X-Inertia')) {
-            return redirect()->route('document_request_select_resident')->with($flashData);
-        }
 
-        // // If it's an AJAX/JSON request (e.g., not Inertia but an XHR), return JSON containing the ticket.
-        // if ($request->wantsJson() || $request->ajax() || $request->header('Accept') === 'application/json') {
-        //     return response()->json([
-        //         'success' => true,
-        //         'message' => 'Document request submitted.',
-        //         'ticket' => $docRequest->doc_request_ticket,
-        //         'data' => ['doc_request_id' => $docRequest->doc_request_id],
-        //     ]);
-        // }
 
-        // // Determine role (adjust to match your database)
-        // $userRole = $user->fk_role_id ?? $user->role_id ?? null;
-
-        // // If employee/approver, redirect to their page
-        // if (in_array($userRole, [2, 3])) { // change IDs if needed
-        //     if ($request->header('X-Inertia')) {
-        //         return redirect()->route('document_request_employee')->with($flashData);
-        //     }
-        //     return redirect()->route('document_request_employee')
-        //             ->with($flashData);
-        // }
-
-        // // Otherwise, default resident redirect
-        // if ($request->header('X-Inertia')) {
-        //     return redirect()->route('document_request_select_resident')->with($flashData);
-        // }
-
-            return redirect()->back()
-                ->with('success', 'Document request submitted.')
-                ->with('ticket', $docRequest->doc_request_ticket);
-    } 
 }

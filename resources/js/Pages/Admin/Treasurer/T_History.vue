@@ -41,13 +41,19 @@
                         class="nav-item"
                         @click="navigateToViewPayment"
                     >
-                        💰 View Payment
+                        <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 003 15h-.75M15 10.5a3 3 0 11-6 0 3 3 0 016 0zm3 0h.008v.008H18V10.5zm-12 0h.008v.008H6V10.5z" />
+                        </svg>
+                        View Payment
                     </Link>
                     <Link 
                         href="#" 
                         class="nav-item active"
                     >
-                        📜 History
+                        <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        History
                     </Link>
                 </div>
             </div>
@@ -73,23 +79,27 @@
                             <div class="filter-dropdown-wrapper">
                                 <button class="filter-dropdown-btn" @click="toggleSortDropdown">
                                     {{ sortOption.toUpperCase() }}
-                                    <span class="filter-arrow" :class="{ rotated: showSortDropdown }">▼</span>
+                                    <svg class="filter-arrow" :class="{ rotated: showSortDropdown }" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width: 12px; height: 12px;">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+                                    </svg>
                                 </button>
                                 <div v-if="showSortDropdown" class="filter-dropdown-menu">
                                     <button @click="selectSort('newest')" :class="{ active: sortOption === 'newest' }">NEWEST</button>
                                     <button @click="selectSort('oldest')" :class="{ active: sortOption === 'oldest' }">OLDEST</button>
-                                    <button @click="selectSort('amount-high')" :class="{ active: sortOption === 'amount-high' }">AMOUNT (HIGH-LOW)</button>
+                                    <button @click="selectSort('relevant')" :class="{ active: sortOption === 'relevant' }">RELEVANT</button>
                                 </div>
                             </div>
                             <div class="filter-dropdown-wrapper">
                                 <button class="filter-dropdown-btn" @click="toggleFilterDropdown">
                                     {{ filterOption.toUpperCase() }}
-                                    <span class="filter-arrow" :class="{ rotated: showFilterDropdown }">▼</span>
+                                    <svg class="filter-arrow" :class="{ rotated: showFilterDropdown }" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width: 12px; height: 12px;">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+                                    </svg>
                                 </button>
                                 <div v-if="showFilterDropdown" class="filter-dropdown-menu">
                                     <button @click="selectFilter('all')" :class="{ active: filterOption === 'all' }">ALL</button>
-                                    <button @click="selectFilter('onsite')" :class="{ active: filterOption === 'onsite' }">ONSITE</button>
-                                    <button @click="selectFilter('online')" :class="{ active: filterOption === 'online' }">ONLINE</button>
+                                    <button @click="selectFilter('approved')" :class="{ active: filterOption === 'approved' }">APPROVED</button>
+                                    <button @click="selectFilter('rejected')" :class="{ active: filterOption === 'rejected' }">REJECTED</button>
                                 </div>
                             </div>
                         </div>
@@ -102,7 +112,11 @@
                                     placeholder="SEARCH..." 
                                     class="search-input" 
                                 />
-                                <button class="search-btn" @click="performSearch">🔍</button>
+                                <button class="search-btn" @click="performSearch">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width: 18px; height: 18px;">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                    </svg>
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -112,13 +126,16 @@
                         <table class="users-table">
                             <thead>
                                 <tr>
-                                    <th style="width: 150px;">Payment No.</th>
-                                    <th style="width: 180px;">Requestor</th>
-                                    <th style="width: 200px;">Document Type</th>
-                                    <th style="width: 120px;">Amount</th>
-                                    <th style="width: 120px;">Method</th>
-                                    <th style="width: 120px;">Date</th>
-                                    <th style="width: 140px;">Actions</th>
+                                    <th style="width: 70px; text-align: center;">Profile</th>
+                                    <th style="width: 180px; text-align: left; padding-left: 20px;">Full Name</th>
+                                    <th style="width: 200px; text-align: center;">Role</th>
+                                    <th style="width: 200px; text-align: left; padding-left: 25px;">Document Type</th>
+                                    <th style="width: 120px; text-align: center;">Payment No.</th>
+                                    <th style="width: 110px; text-align: center;">Amount</th>
+                                    <th style="width: 100px; text-align: center;">Method</th>
+                                    <th style="width: 110px; text-align: center;">Date</th>
+                                    <th style="width: 100px; text-align: center;">Status</th>
+                                    <th style="width: 120px; text-align: center;">Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -127,19 +144,32 @@
                                     :key="payment.id"
                                     class="user-row"
                                 >
-                                    <td class="payment-no">{{ payment.payment_no }}</td>
-                                    <td class="user-name">{{ payment.name }}</td>
-                                    <td style="text-align: left;">{{ payment.doc_type }}</td>
-                                    <td class="amount-cell">₱{{ payment.amount.toFixed(2) }}</td>
-                                    <td style="text-align: center;">
-                                        <span class="method-badge" :class="payment.method">
-                                            {{ payment.method.toUpperCase() }}
+                                    <td style="text-align: center; padding: 15px 8px;">
+                                        <img :src="payment.profileImg || '/assets/DEFAULT.jpg'" :alt="payment.name" class="user-avatar" />
+                                    </td>
+                                    <td style="text-align: left; padding: 15px 12px 15px 20px;" class="user-name">{{ payment.name }}</td>
+                                    <td style="text-align: center; padding: 15px 15px;">
+                                        <span class="role-badge" :class="getRoleClass(payment.role)">
+                                            {{ payment.role.toUpperCase() }}
                                         </span>
                                     </td>
-                                    <td style="text-align: center;">{{ payment.date }}</td>
-                                    <td style="text-align: center;">
+                                    <td style="text-align: left; padding: 15px 12px 15px 25px;">{{ payment.doc_type }}</td>
+                                    <td style="text-align: center; padding: 15px 12px;" class="payment-no">{{ payment.payment_no }}</td>
+                                    <td style="text-align: center; padding: 15px 12px;" class="amount-cell">₱{{ payment.amount.toFixed(2) }}</td>
+                                    <td style="text-align: center; padding: 15px 12px;">
+                                        <span class="method-badge" :class="payment.method">
+                                            {{ payment.paymentMethod || payment.method.toUpperCase() }}
+                                        </span>
+                                    </td>
+                                    <td style="text-align: center; padding: 15px 12px;">{{ payment.date }}</td>
+                                    <td style="text-align: center; padding: 15px 12px;">
+                                        <span class="action-badge" :class="getActionClass(payment.status)">
+                                            {{ payment.status || 'APPROVED' }}
+                                        </span>
+                                    </td>
+                                    <td style="text-align: center; padding: 15px 12px;">
                                         <button
-                                            v-if="payment.method === 'online'"
+                                            v-if="payment.receiptImage"
                                             class="receipt-btn"
                                             @click="openReceipt(payment)"
                                         >
@@ -169,7 +199,11 @@
         <!-- Receipt Modal -->
         <div v-if="showReceipt" class="modal-overlay" @click="closeReceipt">
             <div class="receipt-modal-container" @click.stop>
-                <button @click="closeReceipt" class="modal-close">✕</button>
+                <button @click="closeReceipt" class="modal-close">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width: 20px; height: 20px;">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
                 
                 <div class="receipt-modal-content">
                     <h3 class="receipt-title">Digital Receipt</h3>
@@ -197,20 +231,39 @@
                         </div>
                         <div class="receipt-row">
                             <span class="receipt-label">Payment Method:</span>
-                            <span class="receipt-value">{{ selectedReceipt.method.toUpperCase() }}</span>
+                            <span class="receipt-value">{{ selectedReceipt.paymentMethod || selectedReceipt.method?.toUpperCase() || 'N/A' }}</span>
+                        </div>
+                        <div class="receipt-row" v-if="selectedReceipt.transactionId && selectedReceipt.transactionId !== 'N/A'">
+                            <span class="receipt-label">Transaction ID:</span>
+                            <span class="receipt-value">{{ selectedReceipt.transactionId }}</span>
+                        </div>
+                        <div class="receipt-row">
+                            <span class="receipt-label">Status:</span>
+                            <span class="receipt-value" :style="{ color: selectedReceipt.status === 'APPROVED' ? '#239640' : '#dc3545' }">
+                                {{ selectedReceipt.status || 'APPROVED' }}
+                            </span>
                         </div>
                     </div>
 
-                    <div class="receipt-image-container">
-                        <p class="receipt-image-label">Payment Screenshot:</p>
-                        <img src="/assets/receipt-sample.jpg" alt="Payment Receipt" class="receipt-image" />
+                    <div class="receipt-image-container" v-if="selectedReceipt.receiptImage">
+                        <p class="receipt-image-label">Proof of Payment:</p>
+                        <img :src="selectedReceipt.receiptImage" alt="Payment Receipt" class="receipt-image" @error="handleImageError" />
+                    </div>
+                    <div v-else class="no-receipt-container">
+                        <p class="no-receipt-message">No proof of payment available</p>
                     </div>
 
                     <div class="receipt-note">
-                        <p>Thank you for your payment. This digital receipt is proof of payment issued by Barangay Commonwealth.</p>
+                        <p>Thank you for your payment. This digital receipt is proof of payment issued by the Barangay.</p>
                     </div>
 
                     <div class="receipt-actions">
+                        <button class="download-receipt-btn" @click="downloadReceipt">
+                            Download
+                        </button>
+                        <button class="print-receipt-btn" @click="printReceipt">
+                            Print
+                        </button>
                         <button class="close-receipt-btn" @click="closeReceipt">Close</button>
                     </div>
                 </div>
@@ -257,69 +310,50 @@ const searchQuery = ref('')
 const showReceipt = ref(false)
 const selectedReceipt = ref(null)
 
-// Sample payment history data
-const payments = ref([
-    {
-        id: 1,
-        payment_no: 'PAY-000213',
-        doc_type: 'Cedula',
-        date: '09/28/2025',
-        dateObj: new Date('2025-09-28'),
-        name: 'Juan Dela Cruz',
-        amount: 50,
-        method: 'onsite'
-    },
-    {
-        id: 2,
-        payment_no: 'PAY-000214',
-        doc_type: 'Barangay Certificate',
-        date: '09/27/2025',
-        dateObj: new Date('2025-09-27'),
-        name: 'Maria Gomez',
-        amount: 100,
-        method: 'online'
-    },
-    {
-        id: 3,
-        payment_no: 'PAY-000215',
-        doc_type: 'Certificate of Residency',
-        date: '09/26/2025',
-        dateObj: new Date('2025-09-26'),
-        name: 'Roberto Santos',
-        amount: 75,
-        method: 'online'
-    },
-    {
-        id: 4,
-        payment_no: 'PAY-000216',
-        doc_type: 'Barangay Clearance',
-        date: '09/25/2025',
-        dateObj: new Date('2025-09-25'),
-        name: 'Ana Reyes',
-        amount: 150,
-        method: 'onsite'
-    },
-    {
-        id: 5,
-        payment_no: 'PAY-000217',
-        doc_type: 'Business Permit',
-        date: '09/24/2025',
-        dateObj: new Date('2025-09-24'),
-        name: 'Carlos Mendoza',
-        amount: 500,
-        method: 'online'
-    },
-    {
-        id: 6,
-        payment_no: 'PAY-000218',
-        doc_type: 'Barangay ID',
-        date: '09/23/2025',
-        dateObj: new Date('2025-09-23'),
-        name: 'Elena Rodriguez',
-        amount: 100,
-        method: 'onsite'
+// Get payments from server (Inertia props)
+const serverPayments = computed(() => {
+  return page?.props?.value?.payments ?? page?.props?.payments ?? []
+})
+
+// Convert server payments into the shape the UI expects
+const payments = ref([])
+
+const initializePaymentsFromServer = () => {
+  payments.value = (serverPayments.value || []).map(p => {
+    // Compute dateObj safely
+    let dateObj = null
+    try {
+      dateObj = p.date_iso ? new Date(p.date_iso) : (p.date ? new Date(p.date) : new Date())
+    } catch (e) {
+      dateObj = new Date()
     }
-])
+
+    return {
+      id: p.id,
+      payment_no: p.payment_no || p.transactionId || 'N/A',
+      name: p.name || 'Unknown',
+      doc_type: p.doc_type || 'N/A',
+      document: p.document || 'N/A',
+      amount: Number(p.amount ?? 0),
+      date: p.date || (dateObj.toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' })),
+      dateObj: dateObj,
+      method: p.method || 'onsite',
+      paymentMethod: p.paymentMethod || 'ONSITE',
+      status: p.status || 'APPROVED',
+      receiptImage: p.receiptImage || null,
+      transactionId: p.transactionId || p.payment_no || 'N/A',
+      paymentTime: p.paymentTime || p.date || 'N/A',
+      profileImg: p.profileImg || '/assets/DEFAULT.jpg',
+      role: p.role || 'Resident',
+      roleId: p.roleId || 1,
+    }
+  })
+}
+
+// Initialize on mount
+onMounted(() => {
+  initializePaymentsFromServer()
+})
 
 // Computed filtered history
 const filteredHistory = computed(() => {
@@ -331,14 +365,17 @@ const filteredHistory = computed(() => {
         filtered = filtered.filter(item => 
             item.name.toLowerCase().includes(query) ||
             item.payment_no.toLowerCase().includes(query) ||
-            item.doc_type.toLowerCase().includes(query)
+            item.doc_type.toLowerCase().includes(query) ||
+            item.document.toLowerCase().includes(query) ||
+            item.role.toLowerCase().includes(query) ||
+            (item.transactionId && item.transactionId.toLowerCase().includes(query))
         )
     }
 
-    // Method filter
+    // Status filter
     if (filterOption.value !== 'all') {
         filtered = filtered.filter(item => 
-            item.method.toLowerCase() === filterOption.value.toLowerCase()
+            item.status.toLowerCase() === filterOption.value.toLowerCase()
         )
     }
 
@@ -347,8 +384,14 @@ const filteredHistory = computed(() => {
         filtered.sort((a, b) => b.dateObj - a.dateObj)
     } else if (sortOption.value === 'oldest') {
         filtered.sort((a, b) => a.dateObj - b.dateObj)
-    } else if (sortOption.value === 'amount-high') {
-        filtered.sort((a, b) => b.amount - a.amount)
+    } else if (sortOption.value === 'relevant') {
+        // Sort by status priority: Rejected > Approved
+        const priority = { 'rejected': 1, 'approved': 2 }
+        filtered.sort((a, b) => {
+            const aPriority = priority[a.status.toLowerCase()] || 3
+            const bPriority = priority[b.status.toLowerCase()] || 3
+            return aPriority - bPriority
+        })
     }
 
     return filtered
@@ -393,7 +436,7 @@ const performSearch = () => {
 }
 
 const openReceipt = (payment) => {
-    if (payment.method !== 'online') return
+    if (!payment.receiptImage) return
     selectedReceipt.value = payment
     showReceipt.value = true
 }
@@ -405,6 +448,393 @@ const closeReceipt = () => {
 
 const navigateToViewPayment = () => {
     router.visit(route('view_payment_treasurer'))
+}
+
+const handleImageError = (event) => {
+    event.target.style.display = 'none'
+    const container = event.target.closest('.receipt-image-container')
+    if (container) {
+        container.innerHTML = '<p class="no-receipt-message">Failed to load image</p>'
+    }
+}
+
+const printReceipt = () => {
+    if (!selectedReceipt.value) return
+    
+    // Create a new window with the receipt content for printing
+    const printWindow = window.open('', '_blank')
+    const receipt = selectedReceipt.value
+    
+    const receiptImageHtml = receipt.receiptImage 
+        ? `<div class="receipt-image-container">
+            <p class="receipt-image-label">Proof of Payment:</p>
+            <img src="${receipt.receiptImage}" alt="Payment Receipt" class="receipt-image" />
+           </div>`
+        : '<div class="no-receipt-container"><p class="no-receipt-message">No proof of payment available</p></div>'
+    
+    printWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Payment Receipt - ${receipt.payment_no || 'N/A'}</title>
+            <meta charset="UTF-8">
+            <style>
+                @media print {
+                    @page {
+                        margin: 20mm;
+                        size: A4;
+                    }
+                }
+                body {
+                    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                    padding: 40px;
+                    max-width: 800px;
+                    margin: 0 auto;
+                    background: white;
+                }
+                .receipt-header {
+                    text-align: center;
+                    margin-bottom: 30px;
+                    border-bottom: 3px solid #ff8c42;
+                    padding-bottom: 20px;
+                }
+                .receipt-title {
+                    font-size: 28px;
+                    font-weight: 700;
+                    color: #ff8c42;
+                    margin: 0 0 10px 0;
+                }
+                .receipt-details-box {
+                    background: #f8f9fa;
+                    padding: 25px;
+                    border-radius: 12px;
+                    margin-bottom: 25px;
+                }
+                .receipt-row {
+                    display: flex;
+                    justify-content: space-between;
+                    padding: 10px 0;
+                    border-bottom: 1px dashed #e0e0e0;
+                }
+                .receipt-row:last-child {
+                    border-bottom: none;
+                }
+                .receipt-label {
+                    font-weight: 600;
+                    color: #666;
+                    font-size: 14px;
+                }
+                .receipt-value {
+                    font-weight: 600;
+                    color: #333;
+                    font-size: 14px;
+                }
+                .receipt-value.amount {
+                    color: #239640;
+                    font-size: 20px;
+                    font-family: 'Courier New', monospace;
+                }
+                .receipt-image-container {
+                    margin: 25px 0;
+                    text-align: center;
+                }
+                .receipt-image-label {
+                    font-weight: 600;
+                    color: #666;
+                    font-size: 14px;
+                    margin-bottom: 10px;
+                }
+                .receipt-image {
+                    max-width: 100%;
+                    height: auto;
+                    border-radius: 8px;
+                    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+                }
+                .no-receipt-container {
+                    background: #f8f9fa;
+                    padding: 40px;
+                    border-radius: 12px;
+                    text-align: center;
+                }
+                .no-receipt-message {
+                    color: #999;
+                    font-size: 14px;
+                    font-style: italic;
+                    margin: 0;
+                }
+                .receipt-note {
+                    background: #fff3cd;
+                    border-left: 4px solid #ffc107;
+                    padding: 15px;
+                    border-radius: 8px;
+                    margin: 25px 0;
+                }
+                .receipt-note p {
+                    margin: 0;
+                    font-size: 13px;
+                    color: #856404;
+                    line-height: 1.6;
+                }
+            </style>
+        </head>
+        <body>
+            <div class="receipt-header">
+                <h1 class="receipt-title">Payment Receipt</h1>
+                <p style="color: #666; margin: 0;">Barangay</p>
+            </div>
+            <div class="receipt-details-box">
+                <div class="receipt-row">
+                    <span class="receipt-label">Payment No:</span>
+                    <span class="receipt-value">${receipt.payment_no || 'N/A'}</span>
+                </div>
+                <div class="receipt-row">
+                    <span class="receipt-label">Document:</span>
+                    <span class="receipt-value">${receipt.doc_type || 'N/A'}</span>
+                </div>
+                <div class="receipt-row">
+                    <span class="receipt-label">Date:</span>
+                    <span class="receipt-value">${receipt.date || 'N/A'}</span>
+                </div>
+                <div class="receipt-row">
+                    <span class="receipt-label">Payer:</span>
+                    <span class="receipt-value">${receipt.name || 'N/A'}</span>
+                </div>
+                <div class="receipt-row">
+                    <span class="receipt-label">Amount Paid:</span>
+                    <span class="receipt-value amount">₱${receipt.amount?.toFixed(2) || '0.00'}</span>
+                </div>
+                <div class="receipt-row">
+                    <span class="receipt-label">Payment Method:</span>
+                    <span class="receipt-value">${receipt.paymentMethod || receipt.method?.toUpperCase() || 'N/A'}</span>
+                </div>
+                ${receipt.transactionId && receipt.transactionId !== 'N/A' ? `
+                <div class="receipt-row">
+                    <span class="receipt-label">Transaction ID:</span>
+                    <span class="receipt-value">${receipt.transactionId}</span>
+                </div>
+                ` : ''}
+                <div class="receipt-row">
+                    <span class="receipt-label">Status:</span>
+                    <span class="receipt-value" style="color: ${receipt.status === 'APPROVED' ? '#239640' : '#dc3545'}">
+                        ${receipt.status || 'APPROVED'}
+                    </span>
+                </div>
+            </div>
+            ${receiptImageHtml}
+            <div class="receipt-note">
+                <p>Thank you for your payment. This digital receipt is proof of payment issued by Barangay.</p>
+            </div>
+        </body>
+        </html>
+    `)
+    
+    printWindow.document.close()
+    printWindow.focus()
+    
+    // Wait for images to load before printing
+    setTimeout(() => {
+        printWindow.print()
+        // Don't close immediately - let user see the print dialog
+    }, 500)
+}
+
+const downloadReceipt = async () => {
+    try {
+        if (!selectedReceipt.value) return
+        
+        // Create a clean HTML receipt for download
+        const receipt = selectedReceipt.value
+        const receiptImageHtml = receipt.receiptImage 
+            ? `<div class="receipt-image-container">
+                <p class="receipt-image-label">Proof of Payment:</p>
+                <img src="${receipt.receiptImage}" alt="Payment Receipt" class="receipt-image" />
+               </div>`
+            : '<div class="no-receipt-container"><p class="no-receipt-message">No proof of payment available</p></div>'
+        
+        const printContent = `
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>Payment Receipt - ${receipt.payment_no || 'N/A'}</title>
+                <meta charset="UTF-8">
+                <style>
+                    @media print {
+                        @page {
+                            margin: 20mm;
+                            size: A4;
+                        }
+                    }
+                    body {
+                        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                        padding: 40px;
+                        max-width: 800px;
+                        margin: 0 auto;
+                        background: white;
+                    }
+                    .receipt-header {
+                        text-align: center;
+                        margin-bottom: 30px;
+                        border-bottom: 3px solid #ff8c42;
+                        padding-bottom: 20px;
+                    }
+                    .receipt-title {
+                        font-size: 28px;
+                        font-weight: 700;
+                        color: #ff8c42;
+                        margin: 0 0 10px 0;
+                    }
+                    .receipt-details-box {
+                        background: #f8f9fa;
+                        padding: 25px;
+                        border-radius: 12px;
+                        margin-bottom: 25px;
+                    }
+                    .receipt-row {
+                        display: flex;
+                        justify-content: space-between;
+                        padding: 10px 0;
+                        border-bottom: 1px dashed #e0e0e0;
+                    }
+                    .receipt-row:last-child {
+                        border-bottom: none;
+                    }
+                    .receipt-label {
+                        font-weight: 600;
+                        color: #666;
+                        font-size: 14px;
+                    }
+                    .receipt-value {
+                        font-weight: 600;
+                        color: #333;
+                        font-size: 14px;
+                    }
+                    .receipt-value.amount {
+                        color: #239640;
+                        font-size: 20px;
+                        font-family: 'Courier New', monospace;
+                    }
+                    .receipt-image-container {
+                        margin: 25px 0;
+                        text-align: center;
+                    }
+                    .receipt-image-label {
+                        font-weight: 600;
+                        color: #666;
+                        font-size: 14px;
+                        margin-bottom: 10px;
+                    }
+                    .receipt-image {
+                        max-width: 100%;
+                        height: auto;
+                        border-radius: 8px;
+                        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+                    }
+                    .no-receipt-container {
+                        background: #f8f9fa;
+                        padding: 40px;
+                        border-radius: 12px;
+                        text-align: center;
+                    }
+                    .no-receipt-message {
+                        color: #999;
+                        font-size: 14px;
+                        font-style: italic;
+                        margin: 0;
+                    }
+                    .receipt-note {
+                        background: #fff3cd;
+                        border-left: 4px solid #ffc107;
+                        padding: 15px;
+                        border-radius: 8px;
+                        margin: 25px 0;
+                    }
+                    .receipt-note p {
+                        margin: 0;
+                        font-size: 13px;
+                        color: #856404;
+                        line-height: 1.6;
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="receipt-header">
+                    <h1 class="receipt-title">Payment Receipt</h1>
+                    <p style="color: #666; margin: 0;">Barangay</p>
+                </div>
+                <div class="receipt-details-box">
+                    <div class="receipt-row">
+                        <span class="receipt-label">Payment No:</span>
+                        <span class="receipt-value">${receipt.payment_no || 'N/A'}</span>
+                    </div>
+                    <div class="receipt-row">
+                        <span class="receipt-label">Document:</span>
+                        <span class="receipt-value">${receipt.doc_type || 'N/A'}</span>
+                    </div>
+                    <div class="receipt-row">
+                        <span class="receipt-label">Date:</span>
+                        <span class="receipt-value">${receipt.date || 'N/A'}</span>
+                    </div>
+                    <div class="receipt-row">
+                        <span class="receipt-label">Payer:</span>
+                        <span class="receipt-value">${receipt.name || 'N/A'}</span>
+                    </div>
+                    <div class="receipt-row">
+                        <span class="receipt-label">Amount Paid:</span>
+                        <span class="receipt-value amount">₱${receipt.amount?.toFixed(2) || '0.00'}</span>
+                    </div>
+                    <div class="receipt-row">
+                        <span class="receipt-label">Payment Method:</span>
+                        <span class="receipt-value">${receipt.paymentMethod || receipt.method?.toUpperCase() || 'N/A'}</span>
+                    </div>
+                    ${receipt.transactionId && receipt.transactionId !== 'N/A' ? `
+                    <div class="receipt-row">
+                        <span class="receipt-label">Transaction ID:</span>
+                        <span class="receipt-value">${receipt.transactionId}</span>
+                    </div>
+                    ` : ''}
+                    <div class="receipt-row">
+                        <span class="receipt-label">Status:</span>
+                        <span class="receipt-value" style="color: ${receipt.status === 'APPROVED' ? '#239640' : '#dc3545'}">
+                            ${receipt.status || 'APPROVED'}
+                        </span>
+                    </div>
+                </div>
+                ${receiptImageHtml}
+                <div class="receipt-note">
+                    <p>Thank you for your payment. This digital receipt is proof of payment issued by Barangay.</p>
+                </div>
+            </body>
+            </html>
+        `
+        
+        const blob = new Blob([printContent], { type: 'text/html' })
+        const url = URL.createObjectURL(blob)
+        const link = document.createElement('a')
+        link.href = url
+        link.download = `payment-receipt-${receipt.payment_no || 'receipt'}-${Date.now()}.html`
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+        URL.revokeObjectURL(url)
+    } catch (error) {
+        console.error('Error downloading receipt:', error)
+        alert('Failed to download receipt. Please try printing instead.')
+    }
+}
+
+const getActionClass = (status) => {
+    const statusLower = status?.toLowerCase() || 'approved'
+    if (statusLower === 'approved') return 'approved'
+    if (statusLower === 'rejected') return 'rejected'
+    return 'default'
+}
+
+const getRoleClass = (role) => {
+    const roleLower = role?.toLowerCase().replace(/\s+/g, '-') || 'resident'
+    // Check if it's a resident (role_id 1)
+    if (roleLower === 'resident') return 'resident'
+    // All other roles are officials
+    return 'official'
 }
 
 // Close dropdowns when clicking outside
@@ -597,7 +1027,9 @@ onUnmounted(() => {
 }
 
 .nav-item {
-    display: block;
+    display: flex;
+    align-items: center;
+    gap: 12px;
     padding: 15px 20px;
     text-decoration: none;
     color: #333;
@@ -605,6 +1037,12 @@ onUnmounted(() => {
     transition: all 0.3s ease;
     cursor: pointer;
     font-weight: 500;
+}
+
+.nav-icon {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
 }
 
 .nav-item:last-child {
@@ -711,8 +1149,8 @@ onUnmounted(() => {
 }
 
 .filter-arrow {
-    font-size: 10px;
     transition: transform 0.3s ease;
+    flex-shrink: 0;
 }
 
 .filter-arrow.rotated {
@@ -726,7 +1164,7 @@ onUnmounted(() => {
     background: white;
     border-radius: 10px;
     box-shadow: 0 8px 25px rgba(0,0,0,0.15);
-    min-width: 200px;
+    min-width: 180px;
     z-index: 1000;
     margin-top: 5px;
     overflow: hidden;
@@ -788,10 +1226,19 @@ onUnmounted(() => {
     border-radius: 6px;
     cursor: pointer;
     transition: background 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #666;
 }
 
 .search-btn:hover {
     background: #e9ecef;
+}
+
+.search-btn svg {
+    width: 18px;
+    height: 18px;
 }
 
 /* Table Container */
@@ -808,7 +1255,7 @@ onUnmounted(() => {
 }
 
 .users-table thead {
-    background: #9c9b9b;
+    background: #2e2e2e;
     color: white;
     position: sticky;
     top: 0;
@@ -817,12 +1264,23 @@ onUnmounted(() => {
 
 .users-table th {
     padding: 12px 8px;
-    text-align: center;
+    text-align: left;
     font-weight: 600;
     font-size: 13px;
     text-transform: uppercase;
     letter-spacing: 0.5px;
     vertical-align: middle;
+}
+
+.users-table th:nth-child(1),
+.users-table th:nth-child(3),
+.users-table th:nth-child(5),
+.users-table th:nth-child(6),
+.users-table th:nth-child(7),
+.users-table th:nth-child(8),
+.users-table th:nth-child(9),
+.users-table th:nth-child(10) {
+    text-align: center;
 }
 
 .users-table tbody tr {
@@ -839,13 +1297,28 @@ onUnmounted(() => {
     font-size: 13px;
     color: #555;
     vertical-align: middle;
+    text-align: left;
 }
 
-.payment-no {
-    font-family: 'Courier New', monospace;
-    font-weight: 600;
-    color: #333;
+.users-table td:nth-child(1),
+.users-table td:nth-child(3),
+.users-table td:nth-child(5),
+.users-table td:nth-child(6),
+.users-table td:nth-child(7),
+.users-table td:nth-child(8),
+.users-table td:nth-child(9),
+.users-table td:nth-child(10) {
     text-align: center;
+}
+
+.user-avatar {
+    width: 45px;
+    height: 45px;
+    border-radius: 10px;
+    object-fit: cover;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    display: block;
+    margin: 0 auto;
 }
 
 .user-name {
@@ -854,10 +1327,37 @@ onUnmounted(() => {
     text-align: left;
 }
 
+.role-badge {
+    font-size: 11px;
+    padding: 5px 12px;
+    border-radius: 12px;
+    font-weight: 600;
+    display: inline-block;
+    text-transform: uppercase;
+    color: white;
+}
+
+.role-badge.resident {
+    background: #239640;
+}
+
+.role-badge.official {
+    background: linear-gradient(135deg, #ff8c42, #ff7a28);
+}
+
+.role-badge:not(.resident):not(.official) {
+    background: linear-gradient(135deg, #6b7280, #4b5563);
+}
+
+.payment-no {
+    font-family: 'Courier New', monospace;
+    font-weight: 600;
+    color: #333;
+}
+
 .amount-cell {
     font-weight: 700;
     color: #239640;
-    text-align: right;
     font-family: 'Courier New', monospace;
 }
 
@@ -877,6 +1377,28 @@ onUnmounted(() => {
 
 .method-badge.online {
     background: linear-gradient(135deg, #10b981, #059669);
+}
+
+.action-badge {
+    font-size: 11px;
+    padding: 5px 12px;
+    border-radius: 12px;
+    font-weight: 600;
+    display: inline-block;
+    text-transform: uppercase;
+    color: white;
+}
+
+.action-badge.approved {
+    background: linear-gradient(135deg, #10b981, #059669);
+}
+
+.action-badge.rejected {
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+}
+
+.action-badge.default {
+    background: linear-gradient(135deg, #6b7280, #4b5563);
 }
 
 .receipt-btn {
@@ -951,7 +1473,11 @@ onUnmounted(() => {
     height: 35px;
     border-radius: 50%;
     cursor: pointer;
-    font-size: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #666;
+    transition: all 0.2s;
     line-height: 35px;
     color: #666;
     transition: all 0.2s;
@@ -961,9 +1487,8 @@ onUnmounted(() => {
 }
 
 .modal-close:hover {
-    background: #ff4444;
-    color: white;
-    transform: rotate(90deg);
+    background: #f8f9fa;
+    color: #333;
 }
 
 .receipt-modal-content {
@@ -1043,6 +1568,20 @@ onUnmounted(() => {
     margin: 0 auto;
 }
 
+.no-receipt-container {
+    background: #f8f9fa;
+    padding: 40px;
+    border-radius: 12px;
+    text-align: center;
+}
+
+.no-receipt-message {
+    color: #999;
+    font-size: 14px;
+    font-style: italic;
+    margin: 0;
+}
+
 .receipt-note {
     background: #fff3cd;
     border-left: 4px solid #ffc107;
@@ -1062,23 +1601,53 @@ onUnmounted(() => {
     justify-content: center;
     gap: 12px;
     margin-top: 10px;
+    flex-wrap: wrap;
 }
 
+.download-receipt-btn,
+.print-receipt-btn,
 .close-receipt-btn {
-    background: #ff8c42;
-    color: white;
     border: none;
-    padding: 12px 30px;
+    padding: 12px 24px;
     border-radius: 10px;
     cursor: pointer;
     font-weight: 600;
     font-size: 14px;
     transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+
+.download-receipt-btn {
+    background: #239640;
+    color: white;
+    box-shadow: 0 2px 8px rgba(35, 150, 64, 0.3);
+}
+
+.download-receipt-btn:hover {
+    background: #1e7d36;
+    transform: translateY(-1px);
+}
+
+.print-receipt-btn {
+    background: #007DFF;
+    color: white;
+    box-shadow: 0 2px 8px rgba(0, 125, 255, 0.3);
+}
+
+.print-receipt-btn:hover {
+    background: #0062CC;
+    transform: translateY(-1px);
+}
+
+.close-receipt-btn {
+    background: #ff8c42;
+    color: white;
     box-shadow: 0 2px 8px rgba(255, 140, 66, 0.3);
 }
 
 .close-receipt-btn:hover {
     background: #e67a2d;
+    transform: translateY(-1px);
 }
 
 /* Custom Scrollbar */
@@ -1095,13 +1664,13 @@ onUnmounted(() => {
 
 .users-container::-webkit-scrollbar-thumb,
 .receipt-modal-container::-webkit-scrollbar-thumb {
-    background: #ff8c42;
+    background: #888;
     border-radius: 3px;
 }
 
 .users-container::-webkit-scrollbar-thumb:hover,
 .receipt-modal-container::-webkit-scrollbar-thumb:hover {
-    background: #e6763a;
+    background: #666;
 }
 
 /* Responsive */

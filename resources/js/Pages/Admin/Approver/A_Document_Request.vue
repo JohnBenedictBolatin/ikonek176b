@@ -40,21 +40,30 @@
                         href="#" 
                         class="nav-item active"
                     >
-                        📄 Document Request
+                        <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        Document Request
                     </Link>
                     <Link 
                         href="#" 
                         class="nav-item"
                         @click="navigateToRegisterRequest"
                     >
-                        📝 Event Assistance Request
+                        <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                        </svg>
+                        Event Assistance Request
                     </Link>
                     <Link 
                         href="#" 
                         class="nav-item"
                         @click="navigateToHistory"
                     >
-                        📜 History
+                        <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        History
                     </Link>
                 </div>
             </div>
@@ -80,7 +89,9 @@
                             <div class="filter-dropdown-wrapper">
                                 <button class="filter-dropdown-btn" @click="toggleSortDropdown">
                                     {{ sortOption.toUpperCase() }}
-                                    <span class="filter-arrow" :class="{ rotated: showSortDropdown }">▼</span>
+                                    <svg class="filter-arrow" :class="{ rotated: showSortDropdown }" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width: 12px; height: 12px;">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+                                    </svg>
                                 </button>
                                 <div v-if="showSortDropdown" class="filter-dropdown-menu">
                                     <button @click="selectSort('newest')" :class="{ active: sortOption === 'newest' }">NEWEST</button>
@@ -91,7 +102,9 @@
                             <div class="filter-dropdown-wrapper">
                                 <button class="filter-dropdown-btn" @click="toggleFilterDropdown">
                                     {{ filterOption.toUpperCase() }}
-                                    <span class="filter-arrow" :class="{ rotated: showFilterDropdown }">▼</span>
+                                    <svg class="filter-arrow" :class="{ rotated: showFilterDropdown }" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width: 12px; height: 12px;">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+                                    </svg>
                                 </button>
                                 <div v-if="showFilterDropdown" class="filter-dropdown-menu">
                                     <button @click="selectFilter('all')" :class="{ active: filterOption === 'all' }">ALL</button>
@@ -111,7 +124,11 @@
                                     placeholder="SEARCH..." 
                                     class="search-input" 
                                 />
-                                <button class="search-btn" @click="performSearch">🔍</button>
+                                <button class="search-btn" @click="performSearch">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width: 18px; height: 18px;">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                    </svg>
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -119,13 +136,13 @@
                     <!-- Requests Container -->
                     <div class="requests-container">
                         <div 
-                            v-for="request in filteredRequests" 
-                            :key="request.id"
+                            v-for="(request, index) in filteredRequests" 
+                            :key="request.doc_request_id || request.referenceCode || index"
                             class="request-card"
                         >
                             <div class="request-content">
                                 <div class="request-left">
-                                    <img src="/assets/DEFAULT.jpg" alt="Profile" class="modal-avatar" />
+                                    <img :src="request.profileImg || '/assets/DEFAULT.jpg'" alt="Profile" class="modal-avatar" />
                                     <div class="request-info">
                                         <h3 class="request-name">{{ request.name }}</h3>
                                         <p class="request-doc-type">{{ request.documentType }}</p>
@@ -134,15 +151,19 @@
                                 </div>
                                 <div class="request-right">
                                     <p class="request-date">{{ request.date }}</p>
-                                    <button @click="openModal(request)" class="view-btn">
-                                        View Request
+                                    <button 
+                                        @click.stop="viewRequestDetails(request)" 
+                                        class="view-btn" 
+                                        type="button"
+                                    >
+                                        View Request Details
                                     </button>
                                 </div>
                             </div>
                         </div>
 
                         <!-- No requests message -->
-                        <div v-if="filteredRequests.length === 0" class="no-requests">
+                        <div v-if="filteredRequests.length === 0" class="no-requests" style="grid-column: 1 / -1;">
                             <p>No document requests found matching your criteria.</p>
                         </div>
                     </div>
@@ -154,88 +175,410 @@
         <div v-if="isModalOpen" class="modal-overlay" @click="closeModal">
             <div class="modal-container" @click.stop>
                 <!-- Close Button -->
-                <button @click="closeModal" class="modal-close">✕</button>
+                <button @click="closeModal" class="modal-close">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width: 20px; height: 20px;">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
 
-                <div class="modal-content">
-                    <!-- Top Section -->
-                    <div class="modal-top">
-                        <div class="modal-user-section">
-                            <img src="/assets/DEFAULT.jpg" alt="Profile" class="modal-avatar" />
-                            <div>
-                                <h3 class="modal-name">{{ selectedRequest.name }}</h3>
-                                <p class="modal-label">Document Request</p>
-                                <p class="modal-ref">{{ selectedRequest.referenceCode }}</p>
+                <div v-if="selectedRequest" class="modal-content">
+                        <!-- Top Section -->
+                        <div class="modal-top" style="grid-template-columns: 1fr 1fr; gap: 15px; align-items: start;">
+                            <div class="modal-user-section" style="display: flex; align-items: center; gap: 12px;">
+                                <img :src="selectedRequest?.profileImg || '/assets/DEFAULT.jpg'" alt="Profile" class="modal-avatar" style="width: 60px; height: 60px; flex-shrink: 0;" />
+                                <div style="flex: 1; min-width: 0;">
+                                    <h3 class="modal-name" style="font-size: 18px; margin-bottom: 4px;">{{ selectedRequest?.name || 'Unknown' }}</h3>
+                                    <p class="modal-label" style="font-size: 12px; margin: 0;">Document Request</p>
+                                </div>
                             </div>
-                        </div>
-                        <div class="modal-doc-section">
-                            <h3 class="modal-doc-type">{{ selectedRequest.documentType }}</h3>
-                            <p class="modal-purpose">Purpose: {{ selectedRequest.purpose }}</p>
-                        </div>
-                        <div class="modal-upload-section">
-                            <button class="upload-btn">
-                                View Upload
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Details Section -->
-                    <div class="modal-details">
-                        <!-- Request Description -->
-                        <div class="detail-description">
-                            <p class="detail-label">Request Details:</p>
-                            <p class="detail-value">{{ selectedRequest.description }}</p>
-                        </div>
-
-                        <!-- Personal Information Grid -->
-                        <div class="details-grid">
-                            <div class="detail-item">
-                                <p class="detail-label">Birthdate:</p>
-                                <p class="detail-value">{{ selectedRequest.birthdate }}</p>
-                            </div>
-                            <div class="detail-item">
-                                <p class="detail-label">Age:</p>
-                                <p class="detail-value">{{ selectedRequest.age }}</p>
-                            </div>
-                            <div class="detail-item">
-                                <p class="detail-label">Sex:</p>
-                                <p class="detail-value">{{ selectedRequest.sex }}</p>
-                            </div>
-                            <div class="detail-item">
-                                <p class="detail-label">Civil Status:</p>
-                                <p class="detail-value">{{ selectedRequest.civilStatus }}</p>
-                            </div>
-                            <div class="detail-item">
-                                <p class="detail-label">Contact Number:</p>
-                                <p class="detail-value">{{ selectedRequest.contact }}</p>
+                            <div style="display: flex; flex-direction: row; gap: 15px; align-items: center; justify-content: space-between; background: linear-gradient(135deg, #ff8c42 0%, #ff7a28 100%); color: white; padding: 10px 15px; border-radius: 10px; box-shadow: 0 3px 10px rgba(255, 122, 40, 0.3); min-height: fit-content;">
+                                <div style="flex: 1;">
+                                    <p style="font-size: 8px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px; margin: 0 0 3px 0; opacity: 0.9;">Document Type</p>
+                                    <h3 style="font-size: 15px; font-weight: 700; margin: 0; text-shadow: 0 1px 3px rgba(0,0,0,0.2); line-height: 1.2;">{{ selectedRequest.documentType || 'Unknown Document Type' }}</h3>
+                                </div>
+                                <div style="width: 1px; height: 30px; background: rgba(255,255,255,0.3); flex-shrink: 0;"></div>
+                                <div style="flex: 0 0 auto; text-align: right;">
+                                    <p style="font-size: 8px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px; margin: 0 0 3px 0; opacity: 0.9;">Request Number</p>
+                                    <p style="font-size: 13px; font-weight: 700; margin: 0; font-family: monospace; letter-spacing: 0.8px; text-shadow: 0 1px 2px rgba(0,0,0,0.2);">{{ selectedRequest.referenceCode }}</p>
+                                </div>
                             </div>
                         </div>
 
-                        <!-- Address -->
-                        <div class="detail-item-full">
-                            <p class="detail-label">Home Address:</p>
-                            <p class="detail-value">{{ selectedRequest.address }}</p>
+                        <!-- Details Section -->
+                        <div class="modal-details">
+                        <!-- Request Information - Compact -->
+                        <div class="detail-section" style="margin-bottom: 15px;">
+                            <h4 class="section-title" style="margin-bottom: 10px; font-size: 16px;">Request Information</h4>
+                            <div class="details-grid" style="grid-template-columns: auto 1fr; gap: 12px 15px; align-items: start;">
+                                <div v-if="getRequestCategory(selectedRequest)" class="detail-item" style="margin: 0; min-width: 120px;">
+                                    <p class="detail-label" style="font-size: 12px; margin-bottom: 3px;">Category:</p>
+                                    <p class="detail-value" style="font-size: 13px; font-weight: 600; color: #239640; margin: 0;">
+                                        {{ getRequestCategory(selectedRequest) }}
+                                    </p>
+                                </div>
+                                <div v-if="getRequestPurpose(selectedRequest)" class="detail-item" style="margin: 0; flex: 1;">
+                                    <p class="detail-label" style="font-size: 12px; margin-bottom: 3px;">Purpose:</p>
+                                    <p class="detail-value" style="font-size: 13px; margin: 0; line-height: 1.4; text-align: left; word-wrap: break-word;">{{ getRequestPurpose(selectedRequest) }}</p>
+                                </div>
+                            </div>
                         </div>
 
-                        <!-- Comment Section -->
-                        <div class="comment-section">
-                            <textarea 
-                                v-model="comment"
-                                placeholder="Leave a comment or note..." 
-                                class="comment-textarea"
-                                rows="4"
-                            ></textarea>
+                        <!-- User & Personal Information - Merged -->
+                        <div class="detail-section" style="margin-bottom: 15px;">
+                            <h4 class="section-title" style="margin-bottom: 10px; font-size: 16px;">User Information</h4>
+                            <div class="details-grid" style="grid-template-columns: repeat(4, 1fr); gap: 8px 12px;">
+                                <!-- Personal Info -->
+                                <div v-if="selectedRequest.first_name" class="detail-item" style="margin: 0;">
+                                    <p class="detail-label" style="font-size: 11px; margin-bottom: 2px; color: #666;">First Name:</p>
+                                    <p class="detail-value" style="font-size: 12px; margin: 0;">{{ selectedRequest.first_name }}</p>
+                                </div>
+                                <div v-if="selectedRequest.middle_name" class="detail-item" style="margin: 0;">
+                                    <p class="detail-label" style="font-size: 11px; margin-bottom: 2px; color: #666;">Middle Name:</p>
+                                    <p class="detail-value" style="font-size: 12px; margin: 0;">{{ selectedRequest.middle_name }}</p>
+                                </div>
+                                <div v-if="selectedRequest.last_name" class="detail-item" style="margin: 0;">
+                                    <p class="detail-label" style="font-size: 11px; margin-bottom: 2px; color: #666;">Last Name:</p>
+                                    <p class="detail-value" style="font-size: 12px; margin: 0;">{{ selectedRequest.last_name }}</p>
+                                </div>
+                                <div v-if="selectedRequest.suffix" class="detail-item" style="margin: 0;">
+                                    <p class="detail-label" style="font-size: 11px; margin-bottom: 2px; color: #666;">Suffix:</p>
+                                    <p class="detail-value" style="font-size: 12px; margin: 0;">{{ selectedRequest.suffix }}</p>
+                                </div>
+                                <div v-if="selectedRequest.birthdate" class="detail-item" style="margin: 0;">
+                                    <p class="detail-label" style="font-size: 11px; margin-bottom: 2px; color: #666;">Birthdate:</p>
+                                    <p class="detail-value" style="font-size: 12px; margin: 0;">{{ selectedRequest.birthdate }}</p>
+                                </div>
+                                <div v-if="selectedRequest.age" class="detail-item" style="margin: 0;">
+                                    <p class="detail-label" style="font-size: 11px; margin-bottom: 2px; color: #666;">Age:</p>
+                                    <p class="detail-value" style="font-size: 12px; margin: 0;">{{ selectedRequest.age }}</p>
+                                </div>
+                                <div v-if="selectedRequest.sex" class="detail-item" style="margin: 0;">
+                                    <p class="detail-label" style="font-size: 11px; margin-bottom: 2px; color: #666;">Sex:</p>
+                                    <p class="detail-value" style="font-size: 12px; margin: 0;">{{ selectedRequest.sex }}</p>
+                                </div>
+                                <div v-if="selectedRequest.civilStatus" class="detail-item" style="margin: 0;">
+                                    <p class="detail-label" style="font-size: 11px; margin-bottom: 2px; color: #666;">Civil Status:</p>
+                                    <p class="detail-value" style="font-size: 12px; margin: 0;">{{ selectedRequest.civilStatus }}</p>
+                                </div>
+                                
+                                <!-- Contact Info -->
+                                <div v-if="selectedRequest.credential_info?.contact_number || selectedRequest.contact" class="detail-item" style="margin: 0;">
+                                    <p class="detail-label" style="font-size: 11px; margin-bottom: 2px; color: #666;">Contact:</p>
+                                    <p class="detail-value" style="font-size: 12px; margin: 0;">{{ selectedRequest.credential_info?.contact_number || selectedRequest.contact }}</p>
+                                </div>
+                                <div v-if="selectedRequest.credential_info?.secondary_contact_number" class="detail-item" style="margin: 0;">
+                                    <p class="detail-label" style="font-size: 11px; margin-bottom: 2px; color: #666;">Secondary:</p>
+                                    <p class="detail-value" style="font-size: 12px; margin: 0;">{{ selectedRequest.credential_info.secondary_contact_number }}</p>
+                                </div>
+                                <div v-if="selectedRequest.user_info?.email" class="detail-item" style="margin: 0;">
+                                    <p class="detail-label" style="font-size: 11px; margin-bottom: 2px; color: #666;">Email:</p>
+                                    <p class="detail-value" style="font-size: 12px; margin: 0;">{{ selectedRequest.user_info.email }}</p>
+                                </div>
+                                
+                                <!-- Address Info (Compact) -->
+                                <div v-if="selectedRequest.user_info?.house_number || selectedRequest.user_info?.street" class="detail-item" style="grid-column: span 2; margin: 0;">
+                                    <p class="detail-label" style="font-size: 11px; margin-bottom: 2px; color: #666;">Address:</p>
+                                    <p class="detail-value" style="font-size: 12px; margin: 0; line-height: 1.3;">
+                                        {{ [selectedRequest.user_info?.house_number, selectedRequest.user_info?.street].filter(Boolean).join(' ') }}
+                                    </p>
+                                </div>
+                                <div v-if="selectedRequest.user_info?.phase || selectedRequest.user_info?.package" class="detail-item" style="margin: 0;">
+                                    <p class="detail-label" style="font-size: 11px; margin-bottom: 2px; color: #666;">Phase/Package:</p>
+                                    <p class="detail-value" style="font-size: 12px; margin: 0;">
+                                        {{ [selectedRequest.user_info?.phase, selectedRequest.user_info?.package].filter(Boolean).join(' / ') }}
+                                    </p>
+                                </div>
+                                <div v-if="selectedRequest.user_info?.barangay || selectedRequest.user_info?.city" class="detail-item" style="margin: 0;">
+                                    <p class="detail-label" style="font-size: 11px; margin-bottom: 2px; color: #666;">Location:</p>
+                                    <p class="detail-value" style="font-size: 12px; margin: 0;">
+                                        {{ [selectedRequest.user_info?.barangay, selectedRequest.user_info?.city].filter(Boolean).join(', ') }}
+                                    </p>
+                                </div>
+                                <div v-if="selectedRequest.user_info?.province || selectedRequest.user_info?.zip_code" class="detail-item" style="margin: 0;">
+                                    <p class="detail-label" style="font-size: 11px; margin-bottom: 2px; color: #666;">Province/Zip:</p>
+                                    <p class="detail-value" style="font-size: 12px; margin: 0;">
+                                        {{ [selectedRequest.user_info?.province, selectedRequest.user_info?.zip_code].filter(Boolean).join(' ') }}
+                                    </p>
+                                </div>
+                                
+                            </div>
                         </div>
 
-                        <!-- Action Buttons -->
-                        <div class="modal-actions">
-                            <button @click="openApprovalModal" class="approve-btn">
+                        <!-- Extra Fields (Dynamic Fields) -->
+                        <div v-if="(selectedRequest.extra_fields && getExtraFieldsCount(selectedRequest.extra_fields) > 0) || selectedRequest.valid_id_type || selectedRequest.valid_id_number" class="detail-section" style="margin-bottom: 15px;">
+                            <h4 class="section-title" style="margin-bottom: 10px; font-size: 16px;">Additional Information</h4>
+                            <div class="details-grid" style="grid-template-columns: repeat(4, 1fr); gap: 8px 12px;">
+                                <!-- ID Type and ID Number -->
+                                <div v-if="selectedRequest.valid_id_type" class="detail-item" style="margin: 0; padding: 8px 10px;">
+                                    <p class="detail-label" style="font-size: 11px; margin-bottom: 2px; color: #666;">ID Type:</p>
+                                    <p class="detail-value" style="font-size: 12px; margin: 0; line-height: 1.3;">{{ getValidIdTypeName(selectedRequest.valid_id_type) }}</p>
+                                </div>
+                                <div v-if="selectedRequest.valid_id_number" class="detail-item" style="margin: 0; padding: 8px 10px;">
+                                    <p class="detail-label" style="font-size: 11px; margin-bottom: 2px; color: #666;">ID Number:</p>
+                                    <p class="detail-value" style="font-size: 12px; margin: 0; line-height: 1.3;">{{ selectedRequest.valid_id_number }}</p>
+                                </div>
+                                
+                                <!-- Dynamic Extra Fields -->
+                                <template v-for="(value, key) in getExtraFieldsObject(selectedRequest.extra_fields)" :key="key">
+                                    <div class="detail-item" v-if="isValidExtraFieldValue(value)" style="margin: 0; padding: 8px 10px;">
+                                        <p class="detail-label" style="font-size: 11px; margin-bottom: 2px; color: #666;">{{ formatFieldName(key) }}:</p>
+                                        <p class="detail-value" style="font-size: 12px; margin: 0; line-height: 1.3;">
+                                            <span v-if="Array.isArray(value)">{{ value.length > 0 ? value.join(', ') : 'Not provided' }}</span>
+                                            <span v-else-if="typeof value === 'object' && value !== null && !(value instanceof File)">{{ JSON.stringify(value) }}</span>
+                                            <span v-else>{{ String(value) }}</span>
+                                        </p>
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+
+                        <!-- Valid ID Attachments Section -->
+                        <div v-if="idAttachments.length > 0 || (selectedRequest.valid_id_url || selectedRequest.has_valid_id)" class="detail-section" style="margin-bottom: 15px;">
+                            <h4 class="section-title" style="margin-bottom: 10px; font-size: 16px;">Valid Identification</h4>
+                            
+                            <!-- ID Front and Back Attachments -->
+                            <template v-if="idAttachments.length > 0">
+                                <div style="margin-top: 10px;">
+                                    <div class="attachments-list" style="display: grid; gap: 10px;">
+                                        <div 
+                                            v-for="(attachment, index) in idAttachments" 
+                                            :key="attachment.attachment_id || attachment.field_name || index" 
+                                            class="attachment-item"
+                                            style="background: #f8f9fa; border: 1px solid #e0e0e0; border-radius: 8px; padding: 10px; display: flex; flex-direction: column; gap: 8px;"
+                                        >
+                                            <div class="attachment-info" style="text-align: center;">
+                                                <p class="attachment-label" style="font-size: 12px; font-weight: 700; color: #239640; margin: 0 0 5px 0; text-transform: uppercase;">
+                                                    {{ formatFieldName(attachment.field_name || 'Unknown') }}
+                                                </p>
+                                                <p class="attachment-filename" style="font-size: 14px; color: #333; font-weight: 600; margin: 0 0 5px 0; display: flex; align-items: center; gap: 6px;">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width: 16px; height: 16px; flex-shrink: 0;">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                                    </svg>
+                                                    {{ attachment.file_name || 'Unnamed file' }}
+                                                </p>
+                                                <p v-if="attachment.file_size" class="attachment-size" style="font-size: 11px; color: #666; margin: 0;">
+                                                    Size: {{ formatFileSize(attachment.file_size) }}
+                                                </p>
+                                                
+                                                <!-- Image Preview -->
+                                                <div v-if="isImageFile(attachment.file_type)" class="attachment-preview-inline" style="margin-top: 10px; text-align: center;">
+                                                    <img 
+                                                        :src="getAttachmentUrl(attachment)" 
+                                                        :alt="attachment.file_name"
+                                                        class="attachment-image-inline-small"
+                                                        style="max-width: 100%; max-height: 300px; border-radius: 8px; border: 1px solid #ddd; box-shadow: 0 2px 8px rgba(0,0,0,0.1); display: block; margin: 0 auto;"
+                                                        @error="handleImageError"
+                                                        @load="() => {}"
+                                                    />
+                                                </div>
+                                                
+                                                <!-- PDF Preview Link -->
+                                                <div v-else-if="isPdfFile(attachment.file_type)" class="attachment-preview-inline" style="margin-top: 10px; text-align: center; padding: 20px; background: #fff; border-radius: 8px; border: 1px solid #ddd;">
+                                                    <a :href="getAttachmentUrl(attachment)" target="_blank" class="pdf-preview-link" style="display: inline-block; padding: 10px 20px; background: #dc3545; color: white; text-decoration: none; border-radius: 6px; font-weight: 600;">
+                                                        View PDF Document
+                                                    </a>
+                                                </div>
+                                            </div>
+                                            
+                                            <div style="text-align: center; margin-top: 10px;">
+                                                <a 
+                                                    :href="getAttachmentUrl(attachment)" 
+                                                    target="_blank" 
+                                                    class="attachment-download-btn"
+                                                    style="display: inline-block; text-align: center; padding: 10px 20px; background: #239640; color: white; text-decoration: none; border-radius: 6px; font-weight: 600; transition: all 0.3s ease;"
+                                                >
+                                                    View/Download File
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </template>
+                            
+                            <!-- Fallback: Valid ID Image Preview (if no separate attachments but has valid_id_content) -->
+                            <template v-else-if="selectedRequest.valid_id_url || selectedRequest.has_valid_id">
+                                <div class="attachment-preview-section" style="margin-top: 15px;">
+                                    <p class="detail-label" style="font-size: 12px; font-weight: 700; color: #666; margin: 0 0 10px 0; text-transform: uppercase;">Valid ID Image:</p>
+                                    <div class="image-preview-container-inline">
+                                        <img 
+                                            v-if="validIdImageUrl"
+                                            :src="validIdImageUrl" 
+                                            alt="Valid ID" 
+                                            class="attachment-image-inline"
+                                            style="max-width: 100%; max-height: 400px; border-radius: 8px; border: 1px solid #ddd; box-shadow: 0 2px 8px rgba(0,0,0,0.1);"
+                                            @error="handleImageError"
+                                            @load="handleImageLoad"
+                                        />
+                                        <div v-else-if="selectedRequest.valid_id_url" class="loading-placeholder">
+                                            <p style="color: #999; padding: 20px; text-align: center;">Loading valid ID image...</p>
+                                        </div>
+                                        <div v-else class="loading-placeholder">
+                                            <p style="color: #999; padding: 20px; text-align: center;">No valid ID image available</p>
+                                        </div>
+                                    </div>
+                                    <div class="attachment-actions-inline" style="margin-top: 10px;">
+                                        <a 
+                                            v-if="validIdImageUrl"
+                                            :href="validIdImageUrl" 
+                                            :download="`valid_id_${selectedRequest.referenceCode || 'attachment'}.jpg`" 
+                                            class="attachment-download-btn"
+                                            style="display: inline-block; text-align: center; padding: 10px 20px; background: #239640; color: white; text-decoration: none; border-radius: 6px; font-weight: 600; transition: all 0.3s ease;"
+                                            target="_blank"
+                                        >
+                                            Download Valid ID
+                                        </a>
+                                        <a 
+                                            v-else-if="selectedRequest.valid_id_url"
+                                            :href="selectedRequest.valid_id_url" 
+                                            :download="`valid_id_${selectedRequest.referenceCode || 'attachment'}.jpg`" 
+                                            class="attachment-download-btn"
+                                            style="display: inline-block; text-align: center; padding: 10px 20px; background: #239640; color: white; text-decoration: none; border-radius: 6px; font-weight: 600; transition: all 0.3s ease;"
+                                            target="_blank"
+                                        >
+                                            Download Valid ID
+                                        </a>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+                            
+                        <!-- Other Attachments -->
+                        <div class="detail-section" style="margin-bottom: 15px;">
+                            <h4 class="section-title" style="margin-bottom: 10px; font-size: 16px;">Other Uploaded Files</h4>
+                            
+                            <!-- Show attachments if available (excluding ID front/back which are shown separately) -->
+                            <div v-if="otherAttachments && Array.isArray(otherAttachments) && otherAttachments.length > 0" class="attachments-list" style="display: grid; gap: 10px; margin-top: 10px;">
+                                <div 
+                                    v-for="(attachment, index) in otherAttachments" 
+                                    :key="attachment.attachment_id || attachment.field_name || index" 
+                                    class="attachment-item"
+                                    style="background: #f8f9fa; border: 1px solid #e0e0e0; border-radius: 8px; padding: 10px; display: flex; flex-direction: column; gap: 8px;"
+                                >
+                                    <div class="attachment-info" style="text-align: center;">
+                                        <p class="attachment-label" style="font-size: 12px; font-weight: 700; color: #239640; margin: 0 0 5px 0; text-transform: uppercase;">
+                                            {{ formatFieldName(attachment.field_name || 'Unknown') }}
+                                        </p>
+                                        <p class="attachment-filename" style="font-size: 14px; color: #333; font-weight: 600; margin: 0 0 5px 0; display: flex; align-items: center; gap: 6px;">
+                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width: 16px; height: 16px; flex-shrink: 0;">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                            </svg>
+                                            {{ attachment.file_name || 'Unnamed file' }}
+                                        </p>
+                                        <p v-if="attachment.file_size" class="attachment-size" style="font-size: 11px; color: #666; margin: 0;">
+                                            Size: {{ formatFileSize(attachment.file_size) }}
+                                        </p>
+                                        
+                                        <!-- Image Preview -->
+                                        <div v-if="isImageFile(attachment.file_type)" class="attachment-preview-inline" style="margin-top: 10px; text-align: center;">
+                                            <img 
+                                                :src="getAttachmentUrl(attachment)" 
+                                                :alt="attachment.file_name"
+                                                class="attachment-image-inline-small"
+                                                style="max-width: 100%; max-height: 300px; border-radius: 8px; border: 1px solid #ddd; box-shadow: 0 2px 8px rgba(0,0,0,0.1); display: block; margin: 0 auto;"
+                                                @error="handleImageError"
+                                                @load="() => {}"
+                                            />
+                                        </div>
+                                        
+                                        <!-- PDF Preview Link -->
+                                        <div v-else-if="isPdfFile(attachment.file_type)" class="attachment-preview-inline" style="margin-top: 10px; text-align: center; padding: 20px; background: #fff; border-radius: 8px; border: 1px solid #ddd;">
+                                            <a :href="getAttachmentUrl(attachment)" target="_blank" class="pdf-preview-link" style="display: inline-block; padding: 10px 20px; background: #dc3545; color: white; text-decoration: none; border-radius: 6px; font-weight: 600;">
+                                                View PDF Document
+                                            </a>
+                                        </div>
+                                        
+                                        <!-- Other file types -->
+                                        <div v-else class="attachment-preview-inline" style="margin-top: 10px; text-align: center; padding: 20px; background: #fff; border-radius: 8px; border: 1px solid #ddd;">
+                                            <p style="color: #666; margin: 0;">File type: {{ attachment.file_type || 'Unknown' }}</p>
+                                        </div>
+                                    </div>
+                                    
+                                    <div style="text-align: center; margin-top: 10px;">
+                                        <a 
+                                            :href="getAttachmentUrl(attachment)" 
+                                            target="_blank" 
+                                            class="attachment-download-btn"
+                                            style="display: inline-block; text-align: center; padding: 10px 20px; background: #239640; color: white; text-decoration: none; border-radius: 6px; font-weight: 600; transition: all 0.3s ease;"
+                                                >
+                                                    View/Download File
+                                                </a>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Show message if no attachments -->
+                            <div v-else class="no-attachments-message" style="padding: 30px; text-align: center; background: #f8f9fa; border-radius: 10px; border: 1px dashed #ddd;">
+                                <p class="detail-value" style="color: #999; font-size: 14px; margin: 0; display: flex; align-items: center; gap: 6px; justify-content: center;">
+                                    <span v-if="!selectedRequest.attachments" style="display: flex; align-items: center; gap: 6px;">
+                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width: 18px; height: 18px; flex-shrink: 0;">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                        </svg>
+                                        No attachments data available.
+                                    </span>
+                                    <span v-else-if="!Array.isArray(selectedRequest.attachments)" style="display: flex; align-items: center; gap: 6px;">
+                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width: 18px; height: 18px; flex-shrink: 0;">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                        </svg>
+                                        Attachments data format error (not an array).
+                                    </span>
+                                    <span v-else style="display: flex; align-items: center; gap: 6px;">
+                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width: 18px; height: 18px; flex-shrink: 0;">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+                                        </svg>
+                                        No additional attachments uploaded for this request.
+                                    </span>
+                                </p>
+                            </div>
+                        </div>
+
+                        <!-- Admin Feedback/Rejection Reason (if already reviewed) -->
+                        <div v-if="selectedRequest.admin_feedback" class="detail-section">
+                            <h4 class="section-title">Admin Feedback</h4>
+                            <div class="detail-item-full">
+                                <p class="detail-value">{{ selectedRequest.admin_feedback }}</p>
+                            </div>
+                        </div>
+
+                        <!-- Review Status (if already reviewed) -->
+                        <div v-if="selectedRequest.status !== 'Pending'" class="detail-section">
+                            <h4 class="section-title">Review Status</h4>
+                            <div class="details-grid">
+                                <div class="detail-item">
+                                    <p class="detail-label">Status:</p>
+                                    <p class="detail-value" :style="{ color: selectedRequest.status === 'Approved' ? '#239640' : '#ef4444' }">
+                                        {{ selectedRequest.status }}
+                                    </p>
+                                </div>
+                                <div v-if="selectedRequest.reviewed_at" class="detail-item">
+                                    <p class="detail-label">Reviewed At:</p>
+                                    <p class="detail-value">{{ formatDate(selectedRequest.reviewed_at) }}</p>
+                                </div>
+                                <div v-if="selectedRequest.fk_approver_id" class="detail-item">
+                                    <p class="detail-label">Reviewed By:</p>
+                                    <p class="detail-value">Approver ID: {{ selectedRequest.fk_approver_id }}</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Action Buttons (only show if pending) -->
+                        <div v-if="selectedRequest.status === 'Pending'" class="modal-actions">
+                            <button @click.stop="openApprovalModal" class="approve-btn" type="button">
                                 Approve
                             </button>
-                            <button @click="openRejectionModal" class="reject-btn">
+                            <button @click.stop.prevent="handleRejectClick" class="reject-btn" type="button">
                                 Reject
                             </button>
                         </div>
+                        <div v-else class="modal-actions">
+                            <button @click="closeModal" class="cancel-btn" style="width: 100%;">
+                                Close
+                            </button>
+                        </div>
                     </div>
+                </div>
+                <div v-else class="modal-content" style="padding: 40px; text-align: center;">
+                    <p style="font-size: 16px; color: #666;">Loading request details...</p>
+                    <p style="font-size: 14px; color: #999; margin-top: 10px;">If this message persists, please refresh the page.</p>
                 </div>
             </div>
         </div>
@@ -243,7 +586,11 @@
         <!-- Approval Modal (Pickup Details) -->
         <div v-if="isApprovalModalOpen" class="modal-overlay" @click="closeApprovalModal">
             <div class="modal-container approval-modal" @click.stop>
-                <button @click="closeApprovalModal" class="modal-close">✕</button>
+                <button @click="closeApprovalModal" class="modal-close">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width: 20px; height: 20px;">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
 
                 <div class="modal-content">
                 <h2 class="approval-title">Set Pickup Details</h2>
@@ -257,18 +604,37 @@
                         v-model="pickupItem"
                         class="form-input"
                         placeholder="e.g. Barangay Clearance (certified)"
-                        required
+                        readonly
+                        disabled
+                        style="background-color: #f5f5f5; cursor: not-allowed;"
                     />
                     </div>
 
                     <div class="form-group">
                     <label class="form-label">Pickup Location</label>
-                    <input
-                        type="text"
+                    <select
                         v-model="pickupLocation"
                         class="form-input"
-                        placeholder="e.g. Barangay Hall - Records Office"
+                        @change="handleLocationChange"
                         required
+                        style="appearance: none; background-image: url('data:image/svg+xml;charset=UTF-8,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' fill=\'none\' viewBox=\'0 0 24 24\' stroke=\'currentColor\' stroke-width=\'2\'%3E%3Cpath stroke-linecap=\'round\' stroke-linejoin=\'round\' d=\'m19.5 8.25-7.5 7.5-7.5-7.5\' /%3E%3C/svg%3E'); background-repeat: no-repeat; background-position: right 12px center; background-size: 16px; padding-right: 40px;"
+                    >
+                        <option value="" disabled>Select pickup location</option>
+                        <option value="Barangay Hall - Records Office">Barangay Hall - Records Office</option>
+                        <option value="Barangay Hall - Main Office">Barangay Hall - Main Office</option>
+                        <option value="Barangay Hall - Front Desk">Barangay Hall - Front Desk</option>
+                        <option value="Barangay Hall - Treasurer's Office">Barangay Hall - Treasurer's Office</option>
+                        <option value="Barangay Hall - Secretary's Office">Barangay Hall - Secretary's Office</option>
+                        <option value="other">Other (specify)</option>
+                    </select>
+                    <input
+                        v-if="pickupLocation === 'other'"
+                        type="text"
+                        v-model="customPickupLocation"
+                        class="form-input"
+                        placeholder="Enter custom pickup location"
+                        required
+                        style="margin-top: 10px;"
                     />
                     </div>
 
@@ -335,19 +701,26 @@
                     </button>
                     </div>
                 </div>
-                </div>
             </div>
         </div>
 
-
-        <!-- Rejection Modal -->
-        <div v-if="isRejectionModalOpen" class="modal-overlay" @click="closeRejectionModal">
-            <div class="modal-container rejection-modal" @click.stop>
-                <button @click="closeRejectionModal" class="modal-close">✕</button>
-                
+        <!-- Rejection Modal - Using Teleport to render at body level -->
+        <Teleport to="body">
+            <div 
+                v-if="isRejectionModalOpen"
+                class="modal-overlay rejection-modal-overlay" 
+                @click="closeRejectionModal"
+                style="position: fixed !important; inset: 0 !important; background: rgba(0, 0, 0, 0.6) !important; display: flex !important; align-items: center !important; justify-content: center !important; z-index: 99999 !important; visibility: visible !important; opacity: 1 !important;"
+            >
+            <div class="modal-container rejection-modal" @click.stop style="background: white !important; border-radius: 20px; padding: 30px; width: 90%; max-width: 600px; position: relative !important; z-index: 100000 !important;">
+                <button @click="closeRejectionModal" class="modal-close">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width: 20px; height: 20px;">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
                 <div class="modal-content">
                     <h2 class="rejection-title">Reason for Rejection</h2>
-                    <p class="rejection-subtitle">Please provide a clear reason for rejecting this request</p>
+                    <p class="rejection-subtitle">Please provide a clear reason for rejecting this assistance request</p>
 
                     <div class="rejection-form">
                         <div class="form-group">
@@ -362,28 +735,132 @@
                         </div>
 
                         <div class="rejection-actions">
-                            <button
-                            @click="confirmRejection"
-                            class="confirm-reject-btn"
-                            :disabled="isRejecting"
-                            :aria-busy="isRejecting ? 'true' : 'false'"
+                            <button 
+                                @click="confirmRejection"
+                                class="confirm-reject-btn"
+                                :disabled="isRejecting"
                             >
-                            <span v-if="isRejecting">Processing…</span>
-                            <span v-else>Confirm Rejection</span>
+                                {{ isRejecting ? 'Processing…' : 'Confirm Rejection' }}
                             </button>
-                            <button @click="closeRejectionModal" class="cancel-btn">
-                                Cancel
-                            </button>
+                            <button @click="closeRejectionModal" class="cancel-btn">Cancel</button>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
+        </Teleport>
 
         <!-- Frontend-generated Document Modal -->
+        <!-- Attachment Viewer Modal -->
+        <div v-if="isAttachmentModalOpen" class="modal-overlay" @click="closeAttachmentModal">
+            <div class="modal-container attachment-modal" @click.stop style="max-width: 90vw; max-height: 90vh; overflow-y: auto;">
+                <button @click="closeAttachmentModal" class="modal-close">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width: 20px; height: 20px;">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+                <div class="modal-content">
+                    <h2 class="document-title">Uploaded Attachments</h2>
+                    
+                    <!-- Valid ID Information -->
+                    <div v-if="selectedRequestForAttachments" class="attachment-section">
+                        <h3 class="section-title" style="margin-top: 0;">Valid Identification</h3>
+                        <div class="details-grid">
+                            <div v-if="selectedRequestForAttachments.valid_id_type" class="detail-item">
+                                <p class="detail-label">ID Type:</p>
+                                <p class="detail-value">{{ getValidIdTypeName(selectedRequestForAttachments.valid_id_type) }}</p>
+                            </div>
+                            <div v-if="selectedRequestForAttachments.valid_id_number" class="detail-item">
+                                <p class="detail-label">ID Number:</p>
+                                <p class="detail-value">{{ selectedRequestForAttachments.valid_id_number }}</p>
+                            </div>
+                        </div>
+                        
+                        <!-- Valid ID Content Display -->
+                        <div v-if="validIdImageUrl" class="attachment-preview" style="margin-top: 15px;">
+                            <h4 class="attachment-label">Valid ID Image:</h4>
+                            <div class="image-preview-container">
+                                <img 
+                                    :src="validIdImageUrl" 
+                                    alt="Valid ID" 
+                                    class="attachment-image"
+                                    @error="handleImageError"
+                                />
+                            </div>
+                            <div class="attachment-actions" style="margin-top: 10px;">
+                                <a :href="validIdImageUrl" :download="`valid_id_${selectedRequestForAttachments.referenceCode || 'attachment'}.jpg`" class="download-btn">
+                                    Download Valid ID
+                                </a>
+                            </div>
+                        </div>
+                        <div v-else-if="selectedRequestForAttachments.has_valid_id" class="attachment-preview" style="margin-top: 15px;">
+                            <p class="detail-value" style="color: #999;">Loading valid ID...</p>
+                        </div>
+                    </div>
+
+                    <!-- Other Attachments -->
+                    <div v-if="selectedRequestForAttachments && selectedRequestForAttachments.attachments && selectedRequestForAttachments.attachments.length > 0" class="attachment-section" style="margin-top: 30px;">
+                        <h3 class="section-title">Other Uploaded Files</h3>
+                        <div class="attachments-grid">
+                            <div v-for="attachment in selectedRequestForAttachments.attachments" :key="attachment.attachment_id || attachment.field_name" class="attachment-card">
+                                <div class="attachment-header">
+                                    <h4 class="attachment-label">{{ formatFieldName(attachment.field_name) }}</h4>
+                                    <p class="attachment-filename">{{ attachment.file_name || 'Unnamed file' }}</p>
+                                    <p v-if="attachment.file_size" class="attachment-size">{{ formatFileSize(attachment.file_size) }}</p>
+                                </div>
+                                
+                                <!-- Image Preview -->
+                                <div v-if="isImageFile(attachment.file_type)" class="attachment-preview">
+                                    <img 
+                                        :src="getAttachmentUrl(attachment)" 
+                                        :alt="attachment.file_name"
+                                        class="attachment-image"
+                                        @error="handleImageError"
+                                    />
+                                </div>
+                                
+                                <!-- PDF Preview -->
+                                <div v-else-if="isPdfFile(attachment.file_type)" class="attachment-preview">
+                                    <iframe 
+                                        :src="getAttachmentUrl(attachment)" 
+                                        class="attachment-iframe"
+                                        style="width: 100%; height: 400px; border: 1px solid #ddd;"
+                                    ></iframe>
+                                </div>
+                                
+                                <!-- Download Button -->
+                                <div class="attachment-actions">
+                                    <a 
+                                        :href="getAttachmentUrl(attachment)" 
+                                        target="_blank" 
+                                        class="download-btn"
+                                    >
+                                        View/Download
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div v-else-if="selectedRequestForAttachments && (!selectedRequestForAttachments.attachments || selectedRequestForAttachments.attachments.length === 0)" class="attachment-section" style="margin-top: 30px;">
+                        <p class="detail-value" style="color: #999;">No additional attachments uploaded.</p>
+                    </div>
+
+                    <div class="document-actions" style="margin-top: 20px;">
+                        <button @click="closeAttachmentModal" class="close-btn">Close</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Generated Document Modal (for other uses) -->
         <div v-if="isDocumentModalOpen" class="modal-overlay" @click="closeFrontendDocumentModal">
             <div class="modal-container document-modal" @click.stop>
-                <button @click="closeFrontendDocumentModal" class="modal-close">✕</button>
+                <button @click="closeFrontendDocumentModal" class="modal-close">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width: 20px; height: 20px;">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
                 <div class="modal-content">
                 <h2 class="document-title">Generated Document</h2>
                 <p v-if="generatedDocumentFilename" class="document-filename">{{ generatedDocumentFilename }}</p>
@@ -391,20 +868,34 @@
                 <div class="document-preview" style="min-height:60vh;">
                     <iframe
                     id="doc-preview-iframe"
-                    v-if="generatedDocumentObjectUrl"
-                    :src="generatedDocumentObjectUrl"
+                    v-if="generatedDocumentObjectUrl || generatedDocumentUrl"
+                    :src="generatedDocumentObjectUrl || generatedDocumentUrl"
                     style="width:100%; height:60vh; border:0;"
+                    @load="handleIframeLoad"
+                    @error="handleIframeError"
                     ></iframe>
 
-                    <div v-else class="no-document">
+                    <div v-if="iframeError" class="no-document" style="padding: 40px; text-align: center;">
+                        <p style="color: #dc3545; margin-bottom: 20px;">Failed to load PDF document in preview.</p>
+                        <a 
+                            :href="generatedDocumentObjectUrl || generatedDocumentUrl" 
+                            target="_blank" 
+                            class="download-btn"
+                            style="display: inline-block; padding: 10px 20px; background: #007bff; color: white; text-decoration: none; border-radius: 6px;"
+                        >
+                            Open PDF in New Tab
+                        </a>
+                    </div>
+
+                    <div v-else-if="!(generatedDocumentObjectUrl || generatedDocumentUrl)" class="no-document">
                     <p>No generated document available yet.</p>
                     </div>
                 </div>
 
                 <div class="document-actions" style="margin-top:12px; display:flex; gap:8px;">
                     <a
-                    v-if="generatedDocumentObjectUrl"
-                    :href="generatedDocumentObjectUrl"
+                    v-if="generatedDocumentObjectUrl || generatedDocumentUrl"
+                    :href="generatedDocumentObjectUrl || generatedDocumentUrl"
                     :download="generatedDocumentFilename || ''"
                     class="download-btn"
                     >
@@ -412,34 +903,33 @@
                     </a>
 
                     <button
-                    v-if="generatedDocumentObjectUrl"
+                    v-if="generatedDocumentObjectUrl || generatedDocumentUrl"
                     @click="printGeneratedDocument"
                     class="print-btn"
                     >
                     Print / Save as PDF
                     </button>
 
+                    <button @click="closeFrontendDocumentModal" class="close-btn">Close</button>
                 </div>
                 </div>
             </div>
         </div>
     </div>
+    </div>
 </template>
-
 
 <script setup>
 import { Link } from '@inertiajs/vue3'
 import { Head, usePage } from '@inertiajs/vue3'
-import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { router } from '@inertiajs/vue3'
 import axios from 'axios'
 
 // --- Inertia-shared auth user ---
 const page = usePage()
 const user = computed(() => page?.props?.value?.auth?.user ?? page?.props?.auth?.user ?? null)
-const closeFrontendDocumentModal = () => {
-    isDocumentModalOpen.value = false
-}
+
 // map of role_id -> role_name
 const roleMap = {
   1: 'Resident',
@@ -475,6 +965,45 @@ const buildUrl = (routeName, id) => {
   return '/'
 }
 
+// Helper function to get attachment URL consistently (like profile pictures)
+const getAttachmentUrl = (attachment) => {
+  if (!attachment) return null
+  
+  // Prefer file_url if available (from accessor)
+  if (attachment.file_url) {
+    const url = attachment.file_url
+    // If it's already a full URL, return as is
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+      return url
+    }
+    // If it already has /storage/, return as is
+    if (url.startsWith('/storage/')) {
+      return url
+    }
+    // Otherwise prepend /storage/
+    return `/storage/${url}`
+  }
+  
+  // Fallback to file_path
+  if (attachment.file_path) {
+    const path = attachment.file_path
+    // If it's already a full URL, return as is
+    if (path.startsWith('http://') || path.startsWith('https://')) {
+      return path
+    }
+    // If it already has /storage/, return as is
+    if (path.startsWith('/storage/')) {
+      return path
+    }
+    // Remove 'public/' prefix if present
+    const cleanPath = path.startsWith('public/') ? path.substring(7) : path
+    // Prepend /storage/
+    return `/storage/${cleanPath}`
+  }
+  
+  return null
+}
+
 // Reactive UI state
 const showSettings = ref(false)
 const showSortDropdown = ref(false)
@@ -486,14 +1015,17 @@ const isModalOpen = ref(false)
 const isApprovalModalOpen = ref(false)
 const isRejectionModalOpen = ref(false)
 const isDocumentModalOpen = ref(false) // NEW
+const isAttachmentModalOpen = ref(false) // Attachment viewer modal
+const selectedRequestForAttachments = ref(null) // Request data for attachment viewer
+const validIdImageUrl = ref('') // URL for valid ID image
 const selectedRequest = ref(null)
-const comment = ref('')
 const pickupDate = ref('')
 const pickupTime = ref('')
 const rejectionReason = ref('')
 
 const pickupItem = ref('')
 const pickupLocation = ref('')
+const customPickupLocation = ref('')
 const pickupEndDate = ref('')
 const pickupEndTime = ref('')
 const personToLook = ref('')
@@ -506,6 +1038,163 @@ const generatedDocumentObjectUrl = ref('')   // object URL created from base64 b
 const generatedDocumentFilename = ref('')    // optional filename from backend or front-end generated
 const generatedDocumentMime = ref('application/pdf') // default
 const generatedDocumentBase64 = ref('')      // store base64 optionally
+const iframeLoaded = ref(false)              // track if iframe has loaded
+const iframeError = ref(false)               // track if iframe failed to load
+
+// computed helper to detect image mime types
+const isImage = computed(() => {
+  try {
+    return generatedDocumentMime.value && generatedDocumentMime.value.startsWith('image/')
+  } catch (e) {
+    return false
+  }
+})
+
+// helper: show blob in modal (reuses your cleanup helpers)
+const showGeneratedDocumentFromBlob = (blob, filename = '') => {
+  cleanupGeneratedDocument()
+  const objUrl = URL.createObjectURL(blob)
+  generatedDocumentObjectUrl.value = objUrl
+  generatedDocumentFilename.value = filename || ''
+  generatedDocumentMime.value = blob.type || 'application/octet-stream'
+  isDocumentModalOpen.value = true
+}
+
+// Fetch and display all attachments including valid ID
+// NOTE: This should ONLY be called when user explicitly clicks "View Upload" button
+// This function opens the attachment modal WITHOUT closing the main request details modal
+const viewValidId = async (request) => {
+  try {
+    // Use selectedRequest if request is not provided
+    const req = request || selectedRequest.value
+    
+    if (!req) {
+      console.error('No request provided and selectedRequest is null')
+      alert('No request selected. Please select a request first.')
+      return
+    }
+    
+    // Check for doc_request_id in various possible locations
+    const requestId = req.doc_request_id || req.id || req.docRequestId
+    if (!requestId) {
+      console.error('Request missing ID:', req)
+      console.error('Available keys:', Object.keys(req))
+      alert('Request data is incomplete. Please refresh and try again.')
+      return
+    }
+    
+    // IMPORTANT: Do NOT close the main modal (isModalOpen) - keep it open so user can review
+    // Only close approval/rejection modals if they're open
+    isApprovalModalOpen.value = false
+    isRejectionModalOpen.value = false
+    isDocumentModalOpen.value = false
+    
+    // Set the request data for the attachment viewer
+    selectedRequestForAttachments.value = { ...req }
+    validIdImageUrl.value = ''
+    
+    const id = requestId
+
+    // Fetch valid ID image if available
+    if (req.has_valid_id || req.valid_id_url) {
+      try {
+        // build route (try Ziggy route() if present, otherwise fallback)
+        let url = ''
+        try {
+          if (typeof route === 'function') {
+            url = route('document_requests.valid_id', { id })
+          } else {
+            url = `/document-requests/${id}/valid-id`
+          }
+        } catch (e) {
+          url = `/document-requests/${id}/valid-id`
+        }
+
+        const res = await axios.get(url, { responseType: 'blob' })
+        const blob = res.data
+        const objUrl = URL.createObjectURL(blob)
+        validIdImageUrl.value = objUrl
+      } catch (err) {
+        console.error('Failed to fetch valid id:', err)
+        // Don't show alert, just continue without valid ID image
+      }
+    }
+    
+    // Open attachment modal - use nextTick to ensure DOM updates
+    await nextTick()
+    isAttachmentModalOpen.value = true
+  } catch (error) {
+    console.error('Error in viewValidId:', error)
+    alert('An error occurred while opening attachments. Please check the console for details.')
+  }
+}
+
+// Close attachment modal and cleanup
+// This keeps the main request details modal open
+const closeAttachmentModal = () => {
+  isAttachmentModalOpen.value = false
+  selectedRequestForAttachments.value = null
+  // Cleanup valid ID image URL
+  if (validIdImageUrl.value) {
+    try {
+      URL.revokeObjectURL(validIdImageUrl.value)
+    } catch (e) {
+      // Ignore cleanup errors
+    }
+    validIdImageUrl.value = ''
+  }
+  // Note: We intentionally do NOT close isModalOpen here
+  // so the user can continue reviewing the request details
+}
+
+// Helper to get valid ID type name
+const getValidIdTypeName = (typeId) => {
+  if (!typeId) return 'Not specified'
+  // Map of common valid ID types (adjust based on your database)
+  const idTypes = {
+    1: 'National ID',
+    2: "Driver's License",
+    3: 'Passport',
+    4: "Voter's ID",
+    5: 'SSS ID',
+    6: 'UMID',
+    7: 'PhilHealth ID',
+    8: 'TIN ID',
+  }
+  return idTypes[typeId] || `ID Type ${typeId}`
+}
+
+// Helper to check if file is an image
+const isImageFile = (mimeType) => {
+  if (!mimeType) return false
+  return mimeType.startsWith('image/')
+}
+
+// Helper to check if file is a PDF
+const isPdfFile = (mimeType) => {
+  if (!mimeType) return false
+  return mimeType === 'application/pdf' || mimeType === 'application/x-pdf'
+}
+
+// Handle image load errors
+const handleImageError = (event) => {
+  console.error('Failed to load image:', event)
+  event.target.style.display = 'none'
+  const parent = event.target.parentElement
+  if (parent) {
+    const errorMsg = document.createElement('p')
+    errorMsg.textContent = 'Failed to load image'
+    errorMsg.style.color = '#999'
+    errorMsg.style.padding = '20px'
+    errorMsg.style.textAlign = 'center'
+    parent.appendChild(errorMsg)
+  }
+}
+
+// Handle successful image load
+const handleImageLoad = (event) => {
+  // Image loaded successfully
+}
 
 const pageProps = page?.props ?? {}
 
@@ -514,14 +1203,63 @@ const serverRequests = computed(() => {
   return page?.props?.value?.document_requests ?? page?.props?.document_requests ?? []
 })
 
+// Helper to get request category (reason_type) from various possible locations
+const getRequestCategory = (request) => {
+  if (!request) return null
+  
+  // Priority 1: Check direct property on request object
+  if (request.reason_type && String(request.reason_type).trim() !== '') {
+    return String(request.reason_type).trim()
+  }
+  
+  // Priority 2: Check original object (server response)
+  if (request.original) {
+    if (request.original.reason_type && String(request.original.reason_type).trim() !== '') {
+      return String(request.original.reason_type).trim()
+    }
+  }
+  
+  // Priority 3: Check if it's nested in user_info or other nested objects (unlikely but safe)
+  // This shouldn't be necessary, but checking for completeness
+  
+  return null
+}
+
+// Helper to get request purpose from various possible locations
+const getRequestPurpose = (request) => {
+  if (!request) return null
+  // Check direct properties first
+  if (request.purpose) return request.purpose
+  if (request.description) return request.description
+  // Check original object
+  if (request.original?.purpose) return request.original.purpose
+  if (request.original?.description) return request.original.description
+  return null
+}
+
 const formatDate = (dateStr) => {
   if (!dateStr) return ''
-  const d = new Date(dateStr)
-  if (Number.isNaN(d.getTime())) return dateStr
-  const mm = String(d.getMonth() + 1).padStart(2, '0')
-  const dd = String(d.getDate()).padStart(2, '0')
-  const yyyy = d.getFullYear()
-  return `${mm}/${dd}/${yyyy}`
+  try {
+    const d = new Date(dateStr)
+    if (Number.isNaN(d.getTime())) return dateStr
+    
+    // Use Intl.DateTimeFormat to format in Philippines timezone
+    const formatter = new Intl.DateTimeFormat('en-US', {
+      timeZone: 'Asia/Manila',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    })
+    
+    const parts = formatter.formatToParts(d)
+    const mm = parts.find(p => p.type === 'month').value
+    const dd = parts.find(p => p.type === 'day').value
+    const yyyy = parts.find(p => p.type === 'year').value
+    
+    return `${mm}/${dd}/${yyyy}`
+  } catch (e) {
+    return dateStr || ''
+  }
 }
 
 const computeAge = (birthStr) => {
@@ -535,6 +1273,71 @@ const computeAge = (birthStr) => {
     age--
   }
   return String(age)
+}
+
+const formatFieldName = (fieldName) => {
+  if (!fieldName) return ''
+  
+  // Special cases for ID fields
+  if (fieldName === 'id_front') return 'ID Front'
+  if (fieldName === 'id_back') return 'ID Back'
+  
+  return fieldName
+    .replace(/_/g, ' ')
+    .replace(/([A-Z])/g, ' $1')
+    .trim()
+    .split(' ')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(' ')
+}
+
+// Helper function to safely get extra_fields as an object
+const getExtraFieldsObject = (extraFields) => {
+  if (!extraFields) return {}
+  
+  // If it's already an object, return it
+  if (typeof extraFields === 'object' && !Array.isArray(extraFields)) {
+    return extraFields
+  }
+  
+  // If it's a string, try to parse it
+  if (typeof extraFields === 'string') {
+    try {
+      const parsed = JSON.parse(extraFields)
+      return typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {}
+    } catch (e) {
+      console.warn('Failed to parse extra_fields string:', e)
+      return {}
+    }
+  }
+  
+  return {}
+}
+
+// Helper function to count valid extra_fields
+const getExtraFieldsCount = (extraFields) => {
+  const obj = getExtraFieldsObject(extraFields)
+  return Object.keys(obj).filter(key => {
+    const value = obj[key]
+    return isValidExtraFieldValue(value)
+  }).length
+}
+
+// Helper function to check if a value is valid for display
+const isValidExtraFieldValue = (value) => {
+  if (value === null || value === undefined) return false
+  if (value === '') return false
+  if (Array.isArray(value) && value.length === 0) return false
+  if (typeof value === 'object' && Object.keys(value).length === 0) return false
+  return true
+}
+
+const formatFileSize = (bytes) => {
+  if (!bytes || bytes === 0) return '0 Bytes'
+  const k = 1024
+  const sizes = ['Bytes', 'KB', 'MB', 'GB']
+  const i = Math.floor(Math.log(bytes) / Math.log(k))
+  return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i]
 }
 
 const titleCase = (s = '') =>
@@ -584,16 +1387,30 @@ const mapServerRow = (r) => {
 
   const createdAt = r.created_at ?? r.createdAt ?? r.created_date ?? null
 
+  // Build profile image URL
+  let profileImgUrl = '/assets/DEFAULT.jpg'
+  if (r.user_info?.profile_pic) {
+    const profilePic = r.user_info.profile_pic
+    if (String(profilePic).startsWith('http')) {
+      profileImgUrl = profilePic
+    } else {
+      profileImgUrl = `/storage/${profilePic}`.replace('//', '/')
+    }
+  } else if (uploadedFileUrl) {
+    profileImgUrl = uploadedFileUrl
+  }
+
   return {
     doc_request_id: r.doc_request_id ?? r.id ?? null,
     referenceCode: r.doc_request_ticket ?? r.doc_request_code ?? r.reference_code ?? '',
     name: fullName,
-    profileImg: uploadedFileUrl || '/assets/default_profile.png',
+    profileImg: profileImgUrl,
     documentType: docType,
     date: formatDate(createdAt),
     dateObj: createdAt ? new Date(createdAt) : new Date(),
     purpose: r.purpose ?? '',
     description: r.purpose ?? r.description ?? '',
+    reason_type: r.reason_type ?? null,
     birthdate: formatDate(r.birthdate),
     age: computeAge(r.birthdate),
     sex: r.sex ?? '',
@@ -602,10 +1419,13 @@ const mapServerRow = (r) => {
     address: r.address ?? '',
     uploadedFile: r.valid_id_path ?? '',
     uploadedFileUrl,
-    original: r,
-    status: r.status ?? '',
+    valid_id_type: r.valid_id_type ?? null,
+    valid_id_number: r.valid_id_number ?? null,
+    original: r, // Keep original for reference
+    status: (r.status ?? 'Pending').trim(),
     fk_approver_id: r.fk_approver_id ?? null,
     reviewed_at: r.reviewed_at ?? null,
+    admin_feedback: r.admin_feedback ?? null,
     applied_processing_fee: r.applied_processing_fee ?? null,
     pickup_item: r.pickup_item ?? null,
     pickup_location: r.pickup_location ?? null,
@@ -613,6 +1433,33 @@ const mapServerRow = (r) => {
     pickup_end: r.pickup_end ?? null,
     person_to_look: r.person_to_look ?? null,
     created_at: createdAt,
+    // Include all fields from server response
+    // Parse extra_fields if it's a string, otherwise use as-is
+    extra_fields: (() => {
+      const fields = r.extra_fields ?? {}
+      if (typeof fields === 'string') {
+        try {
+          return JSON.parse(fields)
+        } catch (e) {
+          console.warn('Failed to parse extra_fields:', e)
+          return {}
+        }
+      }
+      return fields || {}
+    })(),
+    attachments: r.attachments ?? [],
+    user_info: r.user_info ?? {},
+    credential_info: r.credential_info ?? null,
+    // Ensure reason_type is explicitly included from the server response
+    reason_type: r.reason_type ?? null,
+    // Include additional fields that might be in the original response
+    first_name: r.first_name ?? null,
+    middle_name: r.middle_name ?? null,
+    last_name: r.last_name ?? null,
+    suffix: r.suffix ?? null,
+    email: r.email ?? r.user_info?.email ?? null,
+    fk_document_type_id: r.fk_document_type_id ?? null,
+    document_type: r.document_type ?? null,
   }
 }
 
@@ -630,7 +1477,10 @@ const syncRequests = () => {
 watch(serverRequests, syncRequests, { immediate: true })
 
 const filteredRequests = computed(() => {
-  let filtered = [...localRequests.value]
+  // Only show Pending requests in the document request tab
+  let filtered = localRequests.value.filter(item => 
+    (item.status || 'Pending').trim() === 'Pending'
+  )
 
   if (searchQuery.value.trim()) {
     const query = searchQuery.value.toLowerCase()
@@ -673,27 +1523,191 @@ const toggleFilterDropdown = () => { showFilterDropdown.value = !showFilterDropd
 const selectSort = (option) => { sortOption.value = option; showSortDropdown.value = false }
 const selectFilter = (option) => { filterOption.value = option; showFilterDropdown.value = false }
 const logout = () => { showSettings.value = false; router.visit(route('login')) }
-const performSearch = () => { console.log('Performing search:', searchQuery.value) }
+const performSearch = () => {
+  // Perform search functionality
+}
 
-const openModal = (request) => {
-  selectedRequest.value = request
-  comment.value = ''
+// New function to view request details - simpler and more reliable
+const viewRequestDetails = async (request) => {
+  // Ensure document modal is closed when opening request details
+  isDocumentModalOpen.value = false
+  cleanupGeneratedDocument()
+  
+  if (!request) {
+    console.error('Request is null or undefined')
+    alert('Error: Request data is missing')
+    return
+  }
+  
+  // Set the selected request - create a new object to ensure reactivity
+  // Parse extra_fields if needed
+  let parsedExtraFields = {}
+  if (request.extra_fields) {
+    if (typeof request.extra_fields === 'string') {
+      try {
+        parsedExtraFields = JSON.parse(request.extra_fields)
+      } catch (e) {
+        console.warn('Failed to parse extra_fields in viewRequestDetails:', e)
+        parsedExtraFields = {}
+      }
+    } else if (typeof request.extra_fields === 'object' && !Array.isArray(request.extra_fields)) {
+      parsedExtraFields = { ...request.extra_fields }
+    }
+  }
+  
+  // Get attachments from original request object if available
+  let requestAttachments = []
+  
+  // Try multiple sources for attachments
+  if (request.attachments && Array.isArray(request.attachments) && request.attachments.length > 0) {
+    // First priority: attachments from mapped request
+    requestAttachments = [...request.attachments]
+  } else if (request.original && request.original.attachments && Array.isArray(request.original.attachments)) {
+    // Second priority: attachments from original server response
+    requestAttachments = [...request.original.attachments]
+  } else if (request.original?.attachments && Array.isArray(request.original.attachments)) {
+    requestAttachments = [...request.original.attachments]
+  } else {
+    requestAttachments = []
+  }
+  
+  selectedRequest.value = {
+    ...request,
+    // Ensure all nested objects are properly spread
+    user_info: request.user_info ? { ...request.user_info } : {},
+    credential_info: request.credential_info ? { ...request.credential_info } : null,
+    extra_fields: parsedExtraFields,
+    attachments: requestAttachments, // Explicitly set attachments
+    // Explicitly include reason_type from request or original - check all possible locations
+    reason_type: (() => {
+      // Check direct property first
+      if (request.reason_type && String(request.reason_type).trim() !== '') {
+        return String(request.reason_type).trim()
+      }
+      // Check original object
+      if (request.original?.reason_type && String(request.original.reason_type).trim() !== '') {
+        return String(request.original.reason_type).trim()
+      }
+      return null
+    })(),
+    purpose: request.purpose ?? request.original?.purpose ?? request.description ?? null,
+    // Also preserve original for debugging
+    original: request.original || request,
+  }
+  
+  // Reset form fields
+  rejectionReason.value = ''
+  
+  // Load valid ID image if available
+  validIdImageUrl.value = ''
+  if (request.has_valid_id || request.valid_id_url) {
+    const requestId = request.doc_request_id || request.id || request.docRequestId
+    if (requestId) {
+      try {
+        let url = ''
+        try {
+          if (typeof route === 'function') {
+            url = route('document_requests.valid_id', { id: requestId })
+          } else {
+            url = `/document-requests/${requestId}/valid-id`
+          }
+        } catch (e) {
+          url = `/document-requests/${requestId}/valid-id`
+        }
+        
+        const res = await axios.get(url, { responseType: 'blob' })
+        const blob = res.data
+        if (blob && blob.size > 0) {
+          const objUrl = URL.createObjectURL(blob)
+          validIdImageUrl.value = objUrl
+        }
+      } catch (err) {
+        console.error('Failed to fetch valid id:', err)
+        // Continue without valid ID image
+      }
+    }
+  }
+  
+  // Open the modal
   isModalOpen.value = true
+  
+  // Use nextTick to ensure DOM is updated
+  await nextTick()
+}
+
+// Keep old function for backward compatibility
+const openModal = (request) => {
+  viewRequestDetails(request)
 }
 
 const closeModal = () => {
   isModalOpen.value = false
   selectedRequest.value = null
-  comment.value = ''
+  // Cleanup valid ID image URL when closing modal
+  if (validIdImageUrl.value) {
+    try {
+      URL.revokeObjectURL(validIdImageUrl.value)
+    } catch (e) {
+      // Ignore cleanup errors
+    }
+    validIdImageUrl.value = ''
+  }
 }
+
+// --- add this helper somewhere near your other helpers ---
+// safer close helper — DOES NOT navigate to about:blank
+const closeAllTabs = () => {
+  try {
+    // If your app keeps references to windows it opened, close them first
+    if (window.openedWindows && Array.isArray(window.openedWindows)) {
+      window.openedWindows.forEach(w => {
+        try { w.close() } catch(e) { /* ignore */ }
+      })
+    }
+
+    // Heuristic: window.opener is non-null when this window was opened via window.open()
+    // Some apps also set window.name when opening a window; check that too.
+    const isScriptOpened = !!(window.opener) || (window.name && window.name.startsWith('app_window_'))
+
+    if (isScriptOpened) {
+      try {
+        // Attempt to close this tab/window (works only when script-opened)
+        window.open('', '_self') // some browsers require this first
+        window.close()
+        return
+      } catch (e) {
+        // fall through to redirect fallback below
+        console.warn('window.close() blocked or failed', e)
+      }
+    }
+
+    // Not a script-opened window or close was blocked — redirect to a safe page in-app
+    try {
+      router.visit(route('document_request_approver'))
+    } catch (e) {
+      // As ultimate fallback: change location.href (should be same app)
+      try { window.location.href = '/' } catch (ee) { /* ignore */ }
+    }
+  } catch (err) {
+    console.warn('closeAllTabs: error', err)
+  }
+}
+
 
 /**
  * Optional parameter `reopenMain` controls whether closing the smaller modal re-opens the main modal view.
  * Default `true` keeps previous behaviour for Cancel/overlay clicks. Pass `false` when you want everything closed.
  */
 const openApprovalModal = () => {
+  // Ensure all other modals are closed (including attachment modal)
+  isDocumentModalOpen.value = false
+  isAttachmentModalOpen.value = false
+  cleanupGeneratedDocument()
+  
+  // Close main modal and open approval modal
   isModalOpen.value = false
   isApprovalModalOpen.value = true
+  
   // defaults
   const tomorrow = new Date()
   tomorrow.setDate(tomorrow.getDate() + 1)
@@ -703,8 +1717,14 @@ const openApprovalModal = () => {
   pickupEndTime.value = ''
   pickupItem.value = selectedRequest.value?.documentType ?? ''
   pickupLocation.value = ''
+  customPickupLocation.value = ''
   personToLook.value = ''
-  comment.value = ''
+}
+
+const handleLocationChange = () => {
+  if (pickupLocation.value !== 'other') {
+    customPickupLocation.value = ''
+  }
 }
 
 const closeApprovalModal = (reopenMain = true) => {
@@ -715,8 +1735,8 @@ const closeApprovalModal = (reopenMain = true) => {
   pickupEndTime.value = ''
   pickupItem.value = ''
   pickupLocation.value = ''
+  customPickupLocation.value = ''
   personToLook.value = ''
-  comment.value = ''
   if (reopenMain) {
     // only reopen the main modal when user cancelled or clicked overlay
     isModalOpen.value = true
@@ -754,17 +1774,47 @@ const cleanupGeneratedDocument = () => {
 }
 
 /**
- * NEW: generate HTML document on the front-end (used as fallback when server does not return a document)
- * You can customize this HTML template as needed.
+ * Generate HTML document matching the official Barangay Certification template
  */
 const generateDocumentHtml = (request, pickupPayload) => {
-  const now = new Date().toLocaleString()
-  const refCode = request?.referenceCode ?? ''
-  const name = request?.name ?? ''
-  const docType = request?.documentType ?? ''
-  const purpose = request?.purpose ?? ''
-  const address = request?.address ?? ''
-  const approver = user.value?.name ?? (user.value?.email ?? 'Approver')
+  // Build full name
+  const firstName = request?.first_name || ''
+  const middleName = request?.middle_name || ''
+  const lastName = request?.last_name || ''
+  const suffix = request?.suffix || ''
+  const fullName = [firstName, middleName, lastName, suffix].filter(Boolean).join(' ') || request?.name || 'N/A'
+  
+  const docType = request?.document_type?.document_name || request?.documentType || request?.title || 'Barangay Certificate'
+  const refCode = request?.doc_request_ticket || request?.referenceCode || 'N/A'
+  const purpose = request?.purpose || 'N/A'
+    const houseNumber = request?.house_number || ''
+    const phase = request?.phase || ''
+    const packageValue = request?.package || ''
+    const fullAddress = [houseNumber, phase, packageValue].filter(Boolean).join(' ') || request?.address || 'N/A'
+  
+  // Get duration of residency from extra_fields
+  const extraFields = request?.extra_fields || {}
+  const durationOfResidency = extraFields.duration_of_residency || extraFields['Duration of Residency'] || '[Duration of Residency]'
+  
+  // Format dates
+  const reviewedAt = pickupPayload?.reviewed_at ? new Date(pickupPayload.reviewed_at) : new Date()
+  const dayApproved = reviewedAt.getDate().toString().padStart(2, '0')
+  const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
+  const monthApproved = monthNames[reviewedAt.getMonth()]
+  const yearApproved = reviewedAt.getFullYear()
+  
+  const approver = user.value?.name || user.value?.first_name + ' ' + (user.value?.last_name || '') || (user.value?.email ?? 'Approver')
+  
+  // Format pickup dates
+  const formatDateTime = (dateStr) => {
+    if (!dateStr) return ''
+    try {
+      const d = new Date(dateStr)
+      return d.toLocaleString('en-US', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })
+    } catch {
+      return dateStr
+    }
+  }
 
   return `
   <!doctype html>
@@ -773,44 +1823,195 @@ const generateDocumentHtml = (request, pickupPayload) => {
     <meta charset="utf-8" />
     <title>${docType} - ${refCode}</title>
     <style>
-      body { font-family: Arial, Helvetica, sans-serif; margin: 36px; color:#111; }
-      header { text-align:center; margin-bottom:20px; }
-      h1 { margin:0; font-size:20px; }
-      .meta { margin-bottom: 18px; }
-      .row { display:flex; gap:10px; margin-bottom:8px; }
-      .label { width:160px; font-weight:600; color:#333; }
-      .value { flex:1; }
-      .footer { margin-top:40px; font-size:13px; color:#555; }
-      .box { border:1px solid #ccc; padding:12px; border-radius:4px }
+      @page {
+        size: A4;
+        margin: 1in;
+      }
+      body { 
+        font-family: 'Times New Roman', Times, serif; 
+        margin: 0;
+        padding: 40px 60px;
+        color: #000;
+        line-height: 1.6;
+        background: white;
+      }
+      .document-container {
+        max-width: 8.5in;
+        margin: 0 auto;
+        position: relative;
+      }
+      .header {
+        text-align: center;
+        margin-bottom: 25px;
+        position: relative;
+      }
+      .header-text {
+        margin: 0;
+        font-size: 12pt;
+        font-weight: bold;
+        margin-bottom: 5px;
+        letter-spacing: 0.5px;
+      }
+      .barangay-info {
+        font-size: 11pt;
+        margin: 3px 0;
+        font-weight: bold;
+      }
+      .document-title {
+        text-align: center;
+        font-size: 16pt;
+        font-weight: bold;
+        text-decoration: underline;
+        margin: 30px 0 25px 0;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+      }
+      .salutation {
+        margin: 25px 0 20px 0;
+        font-size: 12pt;
+        font-weight: bold;
+      }
+      .certification-text {
+        text-align: justify;
+        font-size: 12pt;
+        margin: 18px 0;
+        line-height: 1.9;
+        text-indent: 0.5in;
+      }
+      .certification-text strong {
+        font-weight: bold;
+        text-decoration: underline;
+      }
+      .issuance-date {
+        margin: 25px 0;
+        font-size: 12pt;
+        line-height: 1.8;
+      }
+      .issuance-date strong {
+        font-weight: bold;
+        text-decoration: underline;
+      }
+      .signature-block {
+        text-align: right;
+        margin-top: 80px;
+        margin-right: 60px;
+      }
+      .certified-by {
+        font-size: 12pt;
+        margin-bottom: 50px;
+        font-weight: bold;
+      }
+      .signatory-name {
+        font-size: 12pt;
+        margin-top: 50px;
+        border-top: 1px solid #000;
+        padding-top: 5px;
+        display: inline-block;
+        min-width: 250px;
+        text-align: center;
+        font-weight: bold;
+      }
+      .signatory-title {
+        font-size: 11pt;
+        margin-top: 5px;
+        font-style: italic;
+      }
+      .meta-section {
+        margin: 30px 0;
+        padding: 15px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        background: #f9f9f9;
+        font-size: 11pt;
+      }
+      .meta-row {
+        display: flex;
+        margin-bottom: 8px;
+      }
+      .meta-label {
+        width: 180px;
+        font-weight: 600;
+        color: #333;
+      }
+      .meta-value {
+        flex: 1;
+      }
+      .separator {
+        border-top: 1px solid #ddd;
+        margin: 15px 0;
+      }
+      .footer-info {
+        margin-top: 30px;
+        font-size: 11pt;
+        color: #555;
+      }
     </style>
   </head>
   <body>
-    <header>
-      <h1>${docType}</h1>
-      <div>${refCode}</div>
-    </header>
-
-    <section class="box">
-      <div class="meta">
-        <div class="row"><div class="label">Name</div><div class="value">${name}</div></div>
-        <div class="row"><div class="label">Purpose</div><div class="value">${purpose}</div></div>
-        <div class="row"><div class="label">Address</div><div class="value">${address}</div></div>
+    <div class="document-container">
+      <div class="header">
+        <div class="header-text">REPUBLIC OF THE PHILIPPINES</div>
+        <div class="barangay-info">Barangay 176-B</div>
+        <div class="barangay-info">Zone 15 District 1</div>
+        <div class="barangay-info">Caloocan City</div>
       </div>
 
-      <hr />
+      <div class="document-title">${docType.toUpperCase().replace('BARANGAY ', 'BARANGAY ')}</div>
 
-      <div class="meta">
-        <div class="row"><div class="label">Pickup Item</div><div class="value">${pickupPayload.pickup_item ?? ''}</div></div>
-        <div class="row"><div class="label">Pickup Location</div><div class="value">${pickupPayload.pickup_location ?? ''}</div></div>
-        <div class="row"><div class="label">Pickup Start</div><div class="value">${pickupPayload.pickup_start ?? ''}</div></div>
-        <div class="row"><div class="label">Pickup End</div><div class="value">${pickupPayload.pickup_end ?? ''}</div></div>
-        <div class="row"><div class="label">Person to Look For</div><div class="value">${pickupPayload.person_to_look ?? ''}</div></div>
+      <div class="salutation">TO WHOM IT MAY CONCERN,</div>
+
+      <div class="certification-text">
+        This is to certify that <strong>${fullName}</strong> of legal age, with postal address at <strong>${fullAddress}</strong> Zip Code (1428). Is a Bonafide resident for <strong>${durationOfResidency}</strong> and he/she has no derogatory record on file of this date.
       </div>
-    </section>
 
-    <div class="footer">
-      <div>Approved by: ${approver}</div>
-      <div>Reviewed at: ${pickupPayload.reviewed_at ?? now}</div>
+      <div class="certification-text">
+        This certification is issued upon request of <strong>${fullName}</strong> for the purpose of <strong>${purpose}</strong> and/or whatever legal purposes and intents this may serve.
+      </div>
+
+      <div class="issuance-date">
+        Issued this <strong>${dayApproved}</strong> day of <strong>${monthApproved}</strong>, <strong>${yearApproved}</strong><br>
+        City of Caloocan.
+      </div>
+
+      <div class="signature-block">
+        <div class="certified-by">Certified by:</div>
+        <div class="signatory-name">${approver}</div>
+        <div class="signatory-title">Barangay Chairman</div>
+      </div>
+
+      <!-- Additional Information Section (for reference) -->
+      <div class="meta-section">
+        <div class="meta-row">
+          <div class="meta-label">Document Ticket:</div>
+          <div class="meta-value">${refCode}</div>
+        </div>
+        <div class="separator"></div>
+        <div style="font-weight: bold; margin-bottom: 10px;">Pickup Information:</div>
+        <div class="meta-row">
+          <div class="meta-label">Pickup Item:</div>
+          <div class="meta-value">${pickupPayload?.pickup_item || 'N/A'}</div>
+        </div>
+        <div class="meta-row">
+          <div class="meta-label">Pickup Location:</div>
+          <div class="meta-value">${pickupPayload?.pickup_location || 'N/A'}</div>
+        </div>
+        <div class="meta-row">
+          <div class="meta-label">Pickup Start:</div>
+          <div class="meta-value">${formatDateTime(pickupPayload?.pickup_start) || 'N/A'}</div>
+        </div>
+        <div class="meta-row">
+          <div class="meta-label">Pickup End:</div>
+          <div class="meta-value">${formatDateTime(pickupPayload?.pickup_end) || 'N/A'}</div>
+        </div>
+        <div class="meta-row">
+          <div class="meta-label">Person to Look For:</div>
+          <div class="meta-value">${pickupPayload?.person_to_look || 'N/A'}</div>
+        </div>
+      </div>
+
+      <div class="footer-info">
+        <div>Reviewed at: ${reviewedAt.toLocaleString('en-US', { timeZone: 'Asia/Manila' })}</div>
+      </div>
     </div>
   </body>
   </html>
@@ -820,19 +2021,24 @@ const generateDocumentHtml = (request, pickupPayload) => {
 /**
  * Show generated HTML in modal (creates object URL, sets filename)
  */
-const showGeneratedDocumentFromHtml = (htmlString, filename = 'document.html') => {
+const showGeneratedDocumentFromHtml = async (htmlString, filename = 'document.html') => {
   cleanupGeneratedDocument()
   const blob = new Blob([htmlString], { type: 'text/html' })
   const url = URL.createObjectURL(blob)
   generatedDocumentObjectUrl.value = url
   generatedDocumentFilename.value = filename
   isDocumentModalOpen.value = true
+  // Show print prompt after document loads
+  await nextTick()
+  setTimeout(() => {
+    askToPrint()
+  }, 1500)
 }
 
 /**
  * existing helpers for server-returned documents
  */
-const showGeneratedDocumentFromBase64 = (base64, filename = 'document.pdf', mime = 'application/pdf') => {
+const showGeneratedDocumentFromBase64 = async (base64, filename = 'document.pdf', mime = 'application/pdf') => {
   cleanupGeneratedDocument()
   generatedDocumentBase64.value = base64
   generatedDocumentMime.value = mime || 'application/pdf'
@@ -843,6 +2049,11 @@ const showGeneratedDocumentFromBase64 = (base64, filename = 'document.pdf', mime
     generatedDocumentObjectUrl.value = objUrl
     // now open modal
     isDocumentModalOpen.value = true
+    // Show print prompt after document loads
+    await nextTick()
+    setTimeout(() => {
+      askToPrint()
+    }, 1500)
   } catch (e) {
     console.error('Failed to build blob from base64', e)
     // still open modal so user sees message
@@ -850,11 +2061,85 @@ const showGeneratedDocumentFromBase64 = (base64, filename = 'document.pdf', mime
   }
 }
 
-const showGeneratedDocumentFromUrl = (url, filename = '') => {
+const showGeneratedDocumentFromUrl = async (url, filename = '') => {
   cleanupGeneratedDocument()
-  generatedDocumentUrl.value = url
   generatedDocumentFilename.value = filename || ''
+  
+  // Try to fetch and create object URL for better compatibility
+  try {
+    console.log('📄 Fetching document from URL:', url)
+    const response = await fetch(url, {
+      credentials: 'include', // Include cookies for authentication
+      headers: {
+        'Accept': 'application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,*/*'
+      }
+    })
+    
+    console.log('📊 Fetch response:', {
+      status: response.status,
+      statusText: response.statusText,
+      contentType: response.headers.get('Content-Type'),
+      contentLength: response.headers.get('Content-Length')
+    })
+    
+    if (response.ok) {
+      const blob = await response.blob()
+      console.log('📦 Blob created:', {
+        size: blob.size,
+        type: blob.type
+      })
+      
+      // Ensure blob type is set correctly for PDFs
+      if (!blob.type || blob.type === 'application/octet-stream') {
+        // Try to determine type from filename
+        if (filename.toLowerCase().endsWith('.pdf')) {
+          const typedBlob = new Blob([blob], { type: 'application/pdf' })
+          const objUrl = URL.createObjectURL(typedBlob)
+          generatedDocumentObjectUrl.value = objUrl
+          generatedDocumentMime.value = 'application/pdf'
+          console.log('✅ Created PDF blob URL')
+        } else if (filename.toLowerCase().endsWith('.docx')) {
+          const typedBlob = new Blob([blob], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' })
+          const objUrl = URL.createObjectURL(typedBlob)
+          generatedDocumentObjectUrl.value = objUrl
+          generatedDocumentMime.value = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+          console.log('✅ Created DOCX blob URL')
+        } else {
+          const objUrl = URL.createObjectURL(blob)
+          generatedDocumentObjectUrl.value = objUrl
+          generatedDocumentMime.value = blob.type || 'application/pdf'
+        }
+      } else {
+        const objUrl = URL.createObjectURL(blob)
+        generatedDocumentObjectUrl.value = objUrl
+        generatedDocumentMime.value = blob.type || 'application/pdf'
+        console.log('✅ Created blob URL with type:', blob.type)
+      }
+    } else {
+      console.error('❌ Fetch failed:', response.status, response.statusText)
+      const errorText = await response.text()
+      console.error('Error response:', errorText.substring(0, 200))
+      // Fallback to direct URL if fetch fails
+      generatedDocumentUrl.value = url
+    }
+  } catch (e) {
+    console.error('❌ Exception fetching document:', e)
+    // Fallback to direct URL
+    generatedDocumentUrl.value = url
+  }
+  
   isDocumentModalOpen.value = true
+  
+  // Show print prompt after document loads - wait longer for iframe to render
+  await nextTick()
+  setTimeout(() => {
+    askToPrint()
+  }, 1500) // Wait longer for iframe to load PDF
+}
+
+const closeFrontendDocumentModal = () => {
+  // reuse the existing cleanup/close helper
+  closeDocumentModal()
 }
 
 const closeDocumentModal = () => {
@@ -864,18 +2149,104 @@ const closeDocumentModal = () => {
 }
 
 const printGeneratedDocument = () => {
-  // iframe id used in template below: 'doc-preview-iframe'
+  // Try iframe method first
   const iframe = document.getElementById('doc-preview-iframe')
-  if (!iframe) {
-    alert('Preview not available for printing yet.')
-    return
+  
+  if (iframe) {
+    try {
+      // Wait for iframe to load if it hasn't
+      const tryPrint = () => {
+        try {
+          iframe.contentWindow.focus()
+          iframe.contentWindow.print()
+        } catch (e) {
+          // If iframe method fails, try opening in new window
+          openDocumentForPrinting()
+        }
+      }
+      
+      // Check if iframe is loaded
+      if (iframe.contentDocument && iframe.contentDocument.readyState === 'complete') {
+        tryPrint()
+      } else {
+        // Wait for iframe to load
+        iframe.onload = () => {
+          setTimeout(tryPrint, 500)
+        }
+        // Also try after a timeout
+        setTimeout(tryPrint, 1000)
+      }
+    } catch (e) {
+      console.error('Print failed via iframe:', e)
+      openDocumentForPrinting()
+    }
+  } else {
+    // If iframe doesn't exist, try direct URL method
+    openDocumentForPrinting()
   }
-  try {
-    iframe.contentWindow.focus()
-    iframe.contentWindow.print()
-  } catch (e) {
-    console.error('Print failed', e)
-    alert('Could not open print dialog. You can download the file instead.')
+}
+
+// Alternative method: open document in new window for printing
+const openDocumentForPrinting = () => {
+  const documentUrl = generatedDocumentObjectUrl.value || generatedDocumentUrl.value
+  if (documentUrl) {
+    try {
+      const printWindow = window.open(documentUrl, '_blank')
+      if (printWindow) {
+        printWindow.onload = () => {
+          setTimeout(() => {
+            printWindow.print()
+          }, 500)
+        }
+      } else {
+        alert('Please allow pop-ups for this site to print the document, or use the Download button.')
+      }
+    } catch (e) {
+      console.error('Failed to open print window:', e)
+      alert('Could not open print dialog. Please use the Download button to save and print the document.')
+    }
+  } else {
+    alert('Document URL not available. Please try downloading the document instead.')
+  }
+}
+
+// Handle iframe load event
+const handleIframeLoad = () => {
+  iframeLoaded.value = true
+  iframeError.value = false
+  
+  // Check if iframe actually loaded content (PDFs in blob URLs sometimes fail silently)
+  setTimeout(() => {
+    const iframe = document.getElementById('doc-preview-iframe')
+    if (iframe) {
+      try {
+        // Try to access iframe content - if it fails, the PDF might not have loaded
+        const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document
+        if (!iframeDoc || iframeDoc.body?.innerText?.includes('Failed to load PDF')) {
+          iframeError.value = true
+        }
+      } catch (e) {
+        // Cross-origin or other error - assume it's loading
+        // PDFs in blob URLs should work, so we'll assume success
+        console.log('Iframe load check:', e.message)
+      }
+    }
+  }, 1000)
+}
+
+const handleIframeError = () => {
+  console.error('Iframe failed to load document')
+  iframeError.value = true
+}
+
+// Ask user if they want to print the document
+const askToPrint = () => {
+  const userWantsToPrint = confirm('Document generated successfully! Would you like to print it now?')
+  if (userWantsToPrint) {
+    // Give iframe more time to load before attempting print
+    setTimeout(() => {
+      printGeneratedDocument()
+    }, 1000)
   }
 }
 
@@ -888,10 +2259,40 @@ const downloadHref = computed(() => {
   return generatedDocumentObjectUrl.value || generatedDocumentUrl.value || ''
 })
 
+// Separate ID attachments (id_front, id_back) from other attachments
+const idAttachments = computed(() => {
+  if (!selectedRequest.value || !selectedRequest.value.attachments) return []
+  if (!Array.isArray(selectedRequest.value.attachments)) return []
+  
+  return selectedRequest.value.attachments.filter(att => {
+    const fieldName = att.field_name || ''
+    return fieldName === 'id_front' || fieldName === 'id_back'
+  })
+})
+
+// Other attachments (excluding ID front/back)
+const otherAttachments = computed(() => {
+  if (!selectedRequest.value || !selectedRequest.value.attachments) return []
+  if (!Array.isArray(selectedRequest.value.attachments)) return []
+  
+  return selectedRequest.value.attachments.filter(att => {
+    const fieldName = att.field_name || ''
+    return fieldName !== 'id_front' && fieldName !== 'id_back'
+  })
+})
+
 // CONFIRM APPROVAL (modified only for showing generated document - all other logic kept)
 const confirmApproval = async () => {
   if (!pickupDate.value || !pickupTime.value) {
     alert('Please set both pickup date and time')
+    return
+  }
+  if (!pickupLocation.value) {
+    alert('Please select a pickup location')
+    return
+  }
+  if (pickupLocation.value === 'other' && !customPickupLocation.value) {
+    alert('Please enter a custom pickup location')
     return
   }
   if (!selectedRequest.value || !selectedRequest.value.doc_request_id) {
@@ -901,13 +2302,14 @@ const confirmApproval = async () => {
 
   const payload = {
     pickup_item: pickupItem.value || null,
-    pickup_location: pickupLocation.value || null,
+    pickup_location: (pickupLocation.value === 'other' ? customPickupLocation.value : pickupLocation.value) || null,
     pickup_start: buildDateTime(pickupDate.value, pickupTime.value),
     pickup_end: (pickupEndDate.value && pickupEndTime.value) ? buildDateTime(pickupEndDate.value, pickupEndTime.value) : null,
     person_to_look: personToLook.value || null,
     status: 'Approved',
     fk_approver_id: user.value?.id ?? user.value?.user_id ?? null,
     reviewed_at: new Date().toISOString().slice(0, 19).replace('T', ' '),
+    admin_feedback: null,
   }
 
   isApproving.value = true
@@ -915,71 +2317,55 @@ const confirmApproval = async () => {
 
   try {
     const res = await axios.post(url, payload)
-    // assume backend returns JSON { success: true, data: { ... }, message: '...' }
     if (res?.data?.success) {
+      // Remove the request from localRequests since it's now approved (should be in history)
       const idx = localRequests.value.findIndex(r => r.doc_request_id === selectedRequest.value.doc_request_id)
       if (idx > -1) {
-        localRequests.value[idx] = {
-          ...localRequests.value[idx],
-          status: payload.status,
-          fk_approver_id: payload.fk_approver_id,
-          reviewed_at: payload.reviewed_at,
-          pickup_item: payload.pickup_item,
-          pickup_location: payload.pickup_location,
-          pickup_start: payload.pickup_start,
-          pickup_end: payload.pickup_end,
-          person_to_look: payload.person_to_look,
-        }
+        localRequests.value.splice(idx, 1)
       }
-      // show alert first (per your UX request)
-      alert(res.data.message ?? 'Request approved successfully!')
 
-      // Try to extract the returned document; support multiple server shapes:
+      // show the exact alert text you requested
+      alert('Request is approved')
+
+      // (existing document handling) — try to show server-returned document or fallback HTML
       const maybeDoc = res.data.document_base64 || (res.data.data && res.data.data.document_base64) || null
       const maybeDocUrl = res.data.document_url || (res.data.data && res.data.data.document_url) || null
       const maybeFilename = res.data.filename || (res.data.data && res.data.data.filename) || `${selectedRequest.value.referenceCode || 'document'}.pdf`
       const maybeMime = res.data.mime || (res.data.data && res.data.data.mime) || 'application/pdf'
 
       if (maybeDoc) {
-        // server returned base64 PDF/data -> show via object URL
-        // if server included data URL prefix (data:...;base64,), strip it
         let base64 = maybeDoc
         const dataPrefixMatch = base64.match(/^data:(.*);base64,(.*)$/)
         if (dataPrefixMatch) {
           base64 = dataPrefixMatch[2]
         }
-        showGeneratedDocumentFromBase64(base64, maybeFilename, maybeMime)
+        await showGeneratedDocumentFromBase64(base64, maybeFilename, maybeMime)
+        // Print prompt is already handled in showGeneratedDocumentFromBase64
       } else if (maybeDocUrl) {
-        // server returned a direct URL -> open preview using that URL
-        // ensure URL is absolute
         let finalUrl = maybeDocUrl
         if (!/^https?:\/\//i.test(finalUrl) && finalUrl.startsWith('/')) {
           finalUrl = window.location.origin + finalUrl
         }
-        showGeneratedDocumentFromUrl(finalUrl, maybeFilename)
+        await showGeneratedDocumentFromUrl(finalUrl, maybeFilename)
+        // Print prompt is already handled in showGeneratedDocumentFromUrl
       } else {
-        // SERVER DID NOT RETURN A DOCUMENT -> FALLBACK: generate on FRONTEND and show it
         const html = generateDocumentHtml(selectedRequest.value, payload)
         const filename = `${selectedRequest.value.referenceCode || 'document'}.html`
-        showGeneratedDocumentFromHtml(html, filename)
-        // keep selectedRequest for context while showing generated doc
+        await showGeneratedDocumentFromHtml(html, filename)
+        // Print prompt is already handled in showGeneratedDocumentFromHtml
       }
 
-      // close the approval modal (we already opened the doc modal if applicable)
-      // but we used closeApprovalModal(false) only if no doc; otherwise approval modal should be closed now
-      if (!isDocumentModalOpen.value) {
-        closeApprovalModal(false)
-      } else {
-        // approval modal already closed by UI flow; ensure selectedRequest is kept so user can reference it with doc
-        // we intentionally do NOT clear selectedRequest here to preserve context while user views document
-      }
+      // close approval modal and clear selection (do NOT attempt to close browser tabs)
+      // pass false so the main modal is not re-opened
+      closeApprovalModal(false)
+
+      // IMPORTANT: NO closeAllTabs() call here — user will manually close the document modal.
+      // Rejection flow still keeps automatic close behavior as before.
     } else {
-      // handle unexpected responses gracefully
       alert(res?.data?.message ?? 'Approval completed, but server returned unexpected response.')
     }
   } catch (err) {
     console.error('Approval error:', err)
-    // Laravel validation errors are usually in err.response.data.errors
     const errors = err?.response?.data?.errors
     if (errors) {
       const flat = Object.values(errors).flat().join('\n')
@@ -993,74 +2379,167 @@ const confirmApproval = async () => {
   }
 }
 
-const openRejectionModal = () => {
-  isModalOpen.value = false
-  isRejectionModalOpen.value = true
-}
-
-const closeRejectionModal = (reopenMain = true) => {
-  isRejectionModalOpen.value = false
-  rejectionReason.value = ''
-  if (reopenMain) {
-    isModalOpen.value = true
-  } else {
-    isModalOpen.value = false
-    selectedRequest.value = null
+const handleRejectClick = async (event) => {
+  // Explicitly stop all event propagation
+  if (event) {
+    event.preventDefault()
+    event.stopPropagation()
+    event.stopImmediatePropagation()
   }
-}
-
-const confirmRejection = async () => {
-  if (!rejectionReason.value.trim()) {
-    alert('Please provide a reason for rejection')
-    return
-  }
+  
+  // Check if request is selected
   if (!selectedRequest.value || !selectedRequest.value.doc_request_id) {
     alert('No request selected')
+    return
+  }
+  
+  // Get rejection reason from user via prompt
+  const rejectionReason = prompt('Please provide a reason for rejecting this request:')
+  
+  if (!rejectionReason || !rejectionReason.trim()) {
+    // User cancelled or entered empty reason
+    if (rejectionReason !== null) {
+      alert('Rejection reason is required. Request not rejected.')
+    }
+    return
+  }
+  
+  // Confirm rejection
+  const confirmed = confirm(`Are you sure you want to reject this request?\n\nReason: ${rejectionReason.trim()}`)
+  
+  if (!confirmed) {
+    console.log('Rejection cancelled by user')
+    return
+  }
+  
+  // Submit the rejection
+  await submitRejection(rejectionReason.trim())
+}
+
+const submitRejection = async (reason) => {
+  if (isRejecting.value) return
+  isRejecting.value = true
+
+  if (!reason || !reason.trim()) {
+    alert("Rejection reason is required")
+    isRejecting.value = false
+    return
+  }
+
+  if (!selectedRequest.value || !selectedRequest.value.doc_request_id) {
+    alert('No request selected')
+    isRejecting.value = false
     return
   }
 
   const payload = {
     status: 'Rejected',
-    fk_approver_id: user.value?.id ?? user.value?.user_id ?? null,
-    reviewed_at: new Date().toISOString().slice(0, 19).replace('T', ' '),
-    rejection_reason: rejectionReason.value.trim(),
+    rejection_reason: reason.trim(),
+    admin_feedback: reason.trim(),
   }
 
-  isRejecting.value = true
-  const url = buildUrl('document_requests.reject', selectedRequest.value.doc_request_id)
-
   try {
-    const res = await axios.post(url, payload)
-    if (res?.data?.success) {
-      const idx = localRequests.value.findIndex(r => r.doc_request_id === selectedRequest.value.doc_request_id)
-      if (idx > -1) {
-        localRequests.value[idx] = {
-          ...localRequests.value[idx],
-          status: payload.status,
-          fk_approver_id: payload.fk_approver_id,
-          reviewed_at: payload.reviewed_at,
+    console.log('Submitting rejection with reason:', reason.trim())
+    await router.post(
+      `/document-requests/${selectedRequest.value.doc_request_id}/reject`,
+      payload,
+      {
+        preserveState: false,
+        onSuccess: () => {
+          // Remove the request from localRequests since it's now rejected (should be in history)
+          const idx = localRequests.value.findIndex(r => r.doc_request_id === selectedRequest.value.doc_request_id)
+          if (idx > -1) {
+            localRequests.value.splice(idx, 1)
+          }
+
+          // Close modal and reset
+          isModalOpen.value = false
+          selectedRequest.value = null
+
+          // Show success message
+          alert('Request rejected successfully.')
+          console.log('Rejection successful')
+          router.reload()
+        },
+        onError: (errors) => {
+          console.error('Rejection error', errors)
+          const errorMessages = Object.values(errors).flat().join('\n')
+          alert('Failed to reject request:\n' + (errorMessages || 'Unknown error occurred'))
         }
       }
-      alert(res.data.message ?? 'Request rejected successfully!')
-      closeRejectionModal(false)
-    } else {
-      alert(res?.data?.message ?? 'Rejection completed, but server returned unexpected response.')
-    }
+    )
   } catch (err) {
-    console.error('Rejection error:', err)
-    const errors = err?.response?.data?.errors
-    if (errors) {
-      const flat = Object.values(errors).flat().join('\n')
-      alert('Rejection failed:\n' + flat)
-    } else {
-      const msg = err?.response?.data?.message ?? err.message ?? 'Network or server error'
-      alert('Rejection failed: ' + msg)
-    }
+    console.error('Reject exception', err)
+    alert('An error occurred while rejecting the request.')
   } finally {
     isRejecting.value = false
   }
 }
 
+const closeRejectionModal = () => {
+  isRejectionModalOpen.value = false
+  rejectionReason.value = ''
+  // Main modal stays open (no need to reopen it)
+}
+
+const confirmRejection = async () => {
+  if (isRejecting.value) return
+  isRejecting.value = true
+
+  if (!rejectionReason.value.trim()) {
+    alert("Please provide a reason for rejection")
+    isRejecting.value = false
+    return
+  }
+
+  if (!selectedRequest.value || !selectedRequest.value.doc_request_id) {
+    alert('No request selected')
+    isRejecting.value = false
+    return
+  }
+
+  const payload = {
+    status: 'Rejected',
+    rejection_reason: rejectionReason.value.trim(),
+    admin_feedback: rejectionReason.value.trim(),
+  }
+
+  try {
+    await router.post(
+      `/document-requests/${selectedRequest.value.doc_request_id}/reject`,
+      payload,
+      {
+        preserveState: false,
+        onSuccess: () => {
+          // Remove the request from localRequests since it's now rejected (should be in history)
+          const idx = localRequests.value.findIndex(r => r.doc_request_id === selectedRequest.value.doc_request_id)
+          if (idx > -1) {
+            localRequests.value.splice(idx, 1)
+          }
+
+          // close modals / reset local fields
+          isRejectionModalOpen.value = false
+          selectedRequest.value = null
+          rejectionReason.value = ''
+
+          // show alert and refresh
+          alert('Request rejected successfully.')
+          router.reload()
+        },
+        onError: (errors) => {
+          console.error('Rejection error', errors)
+          const errorMessages = Object.values(errors).flat().join('\n')
+          alert('Failed to reject request:\n' + (errorMessages || 'Unknown error occurred'))
+        }
+      }
+    )
+  } catch (err) {
+    console.error('Reject exception', err)
+    alert('An error occurred while rejecting the request.')
+  } finally {
+    isRejecting.value = false
+  }
+}
 
 const navigateToDashboard = () => {
   router.visit(route('dashboard_approver'))
@@ -1266,7 +2745,9 @@ onUnmounted(() => {
 }
 
 .nav-item {
-    display: block;
+    display: flex;
+    align-items: center;
+    gap: 10px;
     padding: 15px 20px;
     text-decoration: none;
     color: #333;
@@ -1274,6 +2755,12 @@ onUnmounted(() => {
     transition: all 0.3s ease;
     cursor: pointer;
     font-weight: 500;
+}
+
+.nav-icon {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
 }
 
 .nav-item:last-child {
@@ -1373,15 +2860,16 @@ onUnmounted(() => {
     gap: 8px;
     min-width: 120px;
     justify-content: space-between;
+    color: #333;
 }
 
 .filter-dropdown-btn:hover {
-    border-color: #239640;
+    border-color: #ff8c42;
 }
 
 .filter-arrow {
-    font-size: 10px;
     transition: transform 0.3s ease;
+    flex-shrink: 0;
 }
 
 .filter-arrow.rotated {
@@ -1417,12 +2905,12 @@ onUnmounted(() => {
 }
 
 .filter-dropdown-menu button:hover {
-    background: #e8f8ed;
+    background: #fff7ef;
 }
 
 .filter-dropdown-menu button.active {
-    background: #e8f8ed;
-    color: #239640;
+    background: #fff7ef;
+    color: #ff8c42;
     font-weight: 600;
 }
 
@@ -1450,6 +2938,10 @@ onUnmounted(() => {
     outline: none;
 }
 
+.search-input::placeholder {
+    color: #999;
+}
+
 .search-btn {
     background: #f8f9fa;
     border: none;
@@ -1457,6 +2949,10 @@ onUnmounted(() => {
     border-radius: 6px;
     cursor: pointer;
     transition: background 0.2s;
+    color: #666;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .search-btn:hover {
@@ -1468,6 +2964,9 @@ onUnmounted(() => {
     padding: 25px;
     max-height: calc(100vh - 350px);
     overflow-y: auto;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
 }
 
 .request-card {
@@ -1475,7 +2974,6 @@ onUnmounted(() => {
     border: 1px solid #e0e0e0;
     border-radius: 12px;
     padding: 20px;
-    margin-bottom: 20px;
     box-shadow: 0 4px 12px rgba(0,0,0,0.06);
     transition: all 0.3s ease;
 }
@@ -1553,11 +3051,16 @@ onUnmounted(() => {
     font-weight: 600;
     font-size: 13px;
     transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(35, 150, 64, 0.3);
+    pointer-events: auto;
+    position: relative;
+    z-index: 10;
 }
 
 .view-btn:hover {
-    background: #239640;
+    background: #1e7e34;
     transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(35, 150, 64, 0.4);
 }
 
 .no-requests {
@@ -1573,31 +3076,45 @@ onUnmounted(() => {
 
 /* Modal Styles */
 .modal-overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.6);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 2000;
+    position: fixed !important;
+    inset: 0 !important;
+    background: rgba(0, 0, 0, 0.6) !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    z-index: 9999 !important;
     backdrop-filter: blur(4px);
+    visibility: visible !important;
+    opacity: 1 !important;
 }
 
 .modal-container {
-    background: white;
+    background: white !important;
     border-radius: 20px;
     padding: 30px;
     width: 90%;
     max-width: 900px;
     max-height: 90vh;
     overflow-y: auto;
-    position: relative;
+    position: relative !important;
     box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    z-index: 10000 !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    display: block !important;
 }
 
 .approval-modal,
 .rejection-modal {
     max-width: 600px;
+}
+
+.rejection-modal-overlay {
+    z-index: 10001 !important;
+}
+
+.rejection-modal-overlay .modal-container {
+    z-index: 10002 !important;
 }
 
 .modal-close {
@@ -1641,17 +3158,18 @@ onUnmounted(() => {
 
 .modal-top {
     display: grid;
-    grid-template-columns: 2fr 2fr 1fr;
-    gap: 20px;
-    padding-bottom: 25px;
-    border-bottom: 2px solid #f0f0f0;
-    margin-bottom: 25px;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid #e0e0e0;
+    margin-bottom: 20px;
+    align-items: start;
 }
 
 .modal-user-section {
     display: flex;
     align-items: center;
-    gap: 15px;
+    gap: 12px;
 }
 
 .modal-avatar {
@@ -1686,53 +3204,6 @@ onUnmounted(() => {
     display: flex;
     flex-direction: column;
     justify-content: center;
-}
-.document-actions {
-    margin-top: 12px;
-    display: flex;
-    gap: 12px;
-}
-
-.action-btn {
-    padding: 12px 20px;                 /* more padding = cleaner */
-    border-radius: 4px;                 /* subtle corner */
-    font-size: 15px;
-    font-weight: 500;
-    text-decoration: none;
-    cursor: pointer;
-    border: none;
-    display: inline-flex;               /* fixes text alignment */
-    align-items: center;                /* centers text vertically */
-    justify-content: center;            /* centers text horizontally */
-    min-width: 140px;                   /* same width = balanced */
-    height: 44px;                       /* uniform height */
-    transition: 0.15s ease;
-}
-
-/* Download button (blue) */
-.download-btn {
-    background: #ff8c42;
-    padding: 15px 12px;
-    border-radius: 4px;  
-    font-weight: bold;
-    color: white;
-}
-
-.download-btn:hover {
-    background: #ff7a28;
-}
-
-/* Print button (green) */
-.print-btn {
-    border-radius: 4px;  
-    background: #43a047;
-    padding: 15px 12px;
-    font-weight: bold;
-    color: white;
-}
-
-.print-btn:hover {
-    background: #2e7d32;
 }
 
 .modal-doc-type {
@@ -1793,6 +3264,27 @@ onUnmounted(() => {
     border-radius: 10px;
 }
 
+.detail-section {
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px solid #e0e0e0;
+}
+
+.detail-section:first-of-type {
+    margin-top: 0;
+    padding-top: 0;
+    border-top: none;
+}
+
+.section-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: #239640;
+    margin: 0 0 10px 0;
+    padding-bottom: 8px;
+    border-bottom: 2px solid #239640;
+}
+
 .detail-item-full {
     background: #f8f9fa;
     padding: 12px 15px;
@@ -1813,6 +3305,237 @@ onUnmounted(() => {
     color: #333;
     font-weight: 600;
     margin: 0;
+}
+
+.attachments-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.attachment-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 10px;
+    border: 1px solid #e0e0e0;
+    transition: all 0.2s;
+}
+
+.attachment-item:hover {
+    background: #e8f8ed;
+    border-color: #239640;
+}
+
+.attachment-info {
+    flex: 1;
+}
+
+.attachment-label {
+    font-size: 12px;
+    font-weight: 700;
+    color: #666;
+    margin: 0 0 5px 0;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.attachment-filename {
+    font-size: 14px;
+    color: #333;
+    font-weight: 600;
+    margin: 0 0 3px 0;
+}
+
+.attachment-size {
+    font-size: 12px;
+    color: #999;
+    margin: 0;
+}
+
+.attachment-download-btn {
+    background: #239640;
+    color: white;
+    text-decoration: none;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 13px;
+    transition: all 0.3s ease;
+    white-space: nowrap;
+}
+
+.attachment-download-btn:hover {
+    background: #1e7d35;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(35, 150, 64, 0.4);
+}
+
+/* Attachment Modal Styles */
+.attachment-modal {
+    max-width: 90vw;
+    max-height: 90vh;
+    overflow-y: auto;
+    z-index: 10001 !important; /* Higher than main modal to appear on top */
+}
+
+/* Ensure attachment modal overlay appears above main modal */
+div.modal-overlay:has(.attachment-modal) {
+    z-index: 10001 !important;
+}
+
+.attachment-section {
+    margin-bottom: 30px;
+    padding: 20px;
+    background: #f8f9fa;
+    border-radius: 10px;
+    border: 1px solid #e0e0e0;
+}
+
+.attachments-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 20px;
+    margin-top: 15px;
+}
+
+.attachment-card {
+    background: white;
+    border: 1px solid #e0e0e0;
+    border-radius: 10px;
+    padding: 15px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    transition: all 0.3s ease;
+}
+
+.attachment-card:hover {
+    border-color: #239640;
+    box-shadow: 0 4px 12px rgba(35, 150, 64, 0.15);
+}
+
+.attachment-header {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.attachment-preview {
+    width: 100%;
+    margin-top: 10px;
+}
+
+.image-preview-container {
+    width: 100%;
+    max-height: 500px;
+    overflow: hidden;
+    border-radius: 8px;
+    border: 1px solid #e0e0e0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f8f9fa;
+}
+
+.attachment-image {
+    max-width: 100%;
+    max-height: 500px;
+    object-fit: contain;
+    display: block;
+    margin: 0 auto;
+}
+
+.attachment-iframe {
+    width: 100%;
+    height: 400px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+}
+
+.attachment-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.attachment-actions .download-btn {
+    flex: 1;
+    text-align: center;
+    text-decoration: none;
+}
+
+/* Inline attachment previews in request details modal */
+.attachment-preview-section {
+    margin-top: 15px;
+}
+
+.image-preview-container-inline {
+    width: 100%;
+    max-height: 400px;
+    overflow: hidden;
+    border-radius: 8px;
+    border: 1px solid #e0e0e0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f8f9fa;
+    margin-top: 10px;
+}
+
+.attachment-image-inline {
+    max-width: 100%;
+    max-height: 400px;
+    object-fit: contain;
+    display: block;
+    margin: 0 auto;
+}
+
+.attachment-image-inline-small {
+    max-width: 100%;
+    max-height: 200px;
+    object-fit: contain;
+    display: block;
+    border-radius: 8px;
+    border: 1px solid #e0e0e0;
+    background: #f8f9fa;
+}
+
+.attachment-preview-inline {
+    width: 100%;
+    margin-top: 10px;
+}
+
+.attachment-actions-inline {
+    display: flex;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.loading-placeholder {
+    padding: 40px;
+    text-align: center;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border: 1px solid #e0e0e0;
+}
+
+.pdf-preview-link {
+    color: #239640;
+    text-decoration: none;
+    font-weight: 600;
+    padding: 8px 16px;
+    border: 1px solid #239640;
+    border-radius: 6px;
+    display: inline-block;
+    transition: all 0.3s ease;
+}
+
+.pdf-preview-link:hover {
+    background: #239640;
+    color: white;
 }
 
 .comment-section {
@@ -1880,7 +3603,7 @@ onUnmounted(() => {
 .approval-title {
     font-size: 24px;
     font-weight: 700;
-    color: #000000;
+    color: #239640;
     margin: 0 0 10px 0;
     text-align: center;
 }
@@ -1958,11 +3681,13 @@ onUnmounted(() => {
     font-weight: 700;
     font-size: 15px;
     transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(35, 150, 64, 0.3);
 }
 
 .confirm-btn:hover {
     background: #1e7d35;
     transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(35, 150, 64, 0.4);
 }
 
 .cancel-btn {
@@ -1976,18 +3701,20 @@ onUnmounted(() => {
     font-weight: 700;
     font-size: 15px;
     transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(107, 114, 128, 0.3);
 }
 
 .cancel-btn:hover {
     background: #4b5563;
     transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(107, 114, 128, 0.4);
 }
 
 /* Rejection Modal Styles */
 .rejection-title {
     font-size: 24px;
     font-weight: 700;
-    color: #000000;
+    color: #ef4444;
     margin: 0 0 10px 0;
     text-align: center;
 }
@@ -2022,11 +3749,13 @@ onUnmounted(() => {
     font-weight: 700;
     font-size: 15px;
     transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
 }
 
 .confirm-reject-btn:hover {
     background: linear-gradient(135deg, #dc2626, #b91c1c);
     transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
 }
 
 /* Custom Scrollbar */
@@ -2043,11 +3772,13 @@ onUnmounted(() => {
 
 .requests-container::-webkit-scrollbar-thumb,
 .modal-container::-webkit-scrollbar-thumb {
+    background: #888;
     border-radius: 3px;
 }
 
 .requests-container::-webkit-scrollbar-thumb:hover,
 .modal-container::-webkit-scrollbar-thumb:hover {
+    background: #666;
 }
 
 /* Responsive */
@@ -2100,6 +3831,10 @@ onUnmounted(() => {
     .modal-top {
         grid-template-columns: 1fr;
         gap: 15px;
+    }
+    
+    .requests-container {
+        grid-template-columns: 1fr;
     }
     
     .request-content {

@@ -12,12 +12,21 @@ class DocumentRequest extends Model
     use HasFactory;
 
     protected $table = 'document_requests';
-    public $incrementing = true;
+
+    // Primary key
     protected $primaryKey = 'doc_request_id';
+    public $incrementing = true;
     protected $keyType = 'int';
 
-    // Prevent Eloquent from expecting or maintaining created_at / updated_at
-    public $timestamps = false;
+    /**
+     * Table uses created_at but not updated_at.
+     * We want Eloquent to manage created_at automatically if desired,
+     * but not updated_at. If you prefer to fully manage timestamps manually
+     * set $timestamps = false.
+     */
+    public $timestamps = true;
+    const CREATED_AT = 'created_at';
+    const UPDATED_AT = null;
 
     protected $fillable = [
         'doc_request_ticket',
@@ -27,14 +36,21 @@ class DocumentRequest extends Model
         'first_name',
         'middle_name',
         'suffix',
+        'house_number',
+        'phase',
+        'package',
         'birthdate',
+        'is_requestor_minor',
         'sex',
         'civil_status',
-        'address',
         'contact_number',
-        'valid_id_path',
+        'email',
         'applied_processing_fee',
         'purpose',
+        'reason_type',
+        'fk_valid_id_type_id',
+        'valid_id_content',
+        'valid_id_number',
         'pickup_item',
         'pickup_location',
         'pickup_start',
@@ -42,47 +58,79 @@ class DocumentRequest extends Model
         'person_to_look',
         'status',
         'fk_approver_id',
+        // 'created_at' removed - let Laravel manage it automatically via timestamps
+        'reviewed_at',
+        'admin_feedback',
+        'extra_fields',
     ];
 
     protected $casts = [
-        'birthdate' => 'date',
-        'reviewed_at' => 'datetime',
-        'created_at' => 'datetime',
-        'updated_at' => 'datetime',
+        'birthdate'              => 'date',
+        'pickup_start'           => 'datetime',
+        'pickup_end'             => 'datetime',
+        'created_at'             => 'datetime',
+        'reviewed_at'            => 'datetime',
         'applied_processing_fee' => 'float',
+        'is_requestor_minor'     => 'boolean',
+        'extra_fields'           => 'array',
     ];
 
-    // expose processing_fee attribute automatically
     protected $appends = ['processing_fee', 'title'];
 
-
     /**
-     * Relationship to the user who created the request
+     * Relationship: the user who created the request.
+     * Assumes users table primary key is `user_id`. Adjust owner key if different.
      */
-    public function user()
+    public function user(): BelongsTo
     {
-        return $this->belongsTo(\App\Models\User::class, 'fk_user_id');
+        return $this->belongsTo(\App\Models\User::class, 'fk_user_id', 'user_id');
     }
 
     /**
-     * Relationship to the document type
+     * Relationship: document type lookup
      */
-    public function documentType()
+    public function documentType(): BelongsTo
     {
-        return $this->belongsTo(\App\Models\DocumentType::class, 'fk_document_type_id');
+        return $this->belongsTo(\App\Models\DocumentType::class, 'fk_document_type_id', 'document_type_id');
     }
 
+    /**
+     * Relationship: approver (a user)
+     */
+    public function approver(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\User::class, 'fk_approver_id', 'user_id');
+    }
+
+    /**
+     * Relationship: user credential (optional)
+     */
     public function userCredential()
     {
         return $this->hasOne(\App\Models\UserCredential::class, 'fk_user_id', 'fk_user_id');
     }
 
     /**
-     * Boot hook to copy user attributes into the model if they are not set.
-     * This ensures that if the controller accidentally leaves them blank,
-     * the model will still get values from the authenticated user.
+     * Relationship: valid id type lookup (if you have that table)
      */
-     protected static function booted()
+    public function validIdType()
+    {
+        return $this->belongsTo(\App\Models\ValidIdType::class, 'fk_valid_id_type_id', 'valid_id_type_id');
+    }
+
+    /**
+     * Relationship: attachments for this document request
+     */
+    public function attachments()
+    {
+        return $this->hasMany(\App\Models\DocumentRequestAttachment::class, 'fk_doc_request_id', 'doc_request_id');
+    }
+
+    /**
+     * Booted: copy sensible defaults from authenticated user (or the referenced user)
+     * into blank fields at creation time so controller doesn't have to fill everything.
+     */
+    protected static function booted()
     {
         static::creating(function (DocumentRequest $model) {
             // ensure fk_user_id exists
@@ -90,7 +138,7 @@ class DocumentRequest extends Model
                 $model->fk_user_id = Auth::id();
             }
 
-            // Load related user and credential if available
+            // load the user and credential for copying fallback values
             $user = null;
             $credential = null;
 
@@ -102,7 +150,6 @@ class DocumentRequest extends Model
                 $credential = \App\Models\UserCredential::where('fk_user_id', Auth::id())->first();
             }
 
-            // copy a set of user fields if they are empty on the model
             if ($user) {
                 $copyFields = [
                     'last_name',
@@ -112,7 +159,6 @@ class DocumentRequest extends Model
                     'birthdate',
                     'sex',
                     'civil_status',
-                    'address',
                 ];
 
                 foreach ($copyFields as $f) {
@@ -125,15 +171,14 @@ class DocumentRequest extends Model
             // contact_number preference:
             // 1) use model->contact_number if provided
             // 2) else use user_credential.contact_number
-            // 3) else use user.contact_number (if you keep it on users)
+            // 3) else use user.contact_number
             if (empty($model->contact_number)) {
-                if ($credential && !empty($credential->contact_number)) {
+                if ($credential && ! empty($credential->contact_number)) {
                     $model->contact_number = $credential->contact_number;
-                } elseif ($user && !empty($user->contact_number)) {
+                } elseif ($user && ! empty($user->contact_number)) {
                     $model->contact_number = $user->contact_number;
                 } else {
-                    // last resort: empty string to avoid null constraint error — adjust as needed
-                    $model->contact_number = '';
+                    $model->contact_number = null;
                 }
             }
         });
@@ -148,16 +193,14 @@ class DocumentRequest extends Model
      */
     public function getProcessingFeeAttribute()
     {
-        if (!is_null($this->applied_processing_fee) && $this->applied_processing_fee !== '') {
+        if (! is_null($this->applied_processing_fee) && $this->applied_processing_fee !== '') {
             return (float) $this->applied_processing_fee;
         }
 
-        // Try relation (may be null if not eager loaded)
         if ($this->relationLoaded('documentType') && $this->documentType) {
             return (float) $this->documentType->processing_fee;
         }
 
-        // Fallback: try lazy load (cheap)
         if ($this->fk_document_type_id && $this->documentType()->exists()) {
             $dt = $this->documentType()->first();
             if ($dt) return (float) $dt->processing_fee;
@@ -166,30 +209,25 @@ class DocumentRequest extends Model
         return null;
     }
 
+    /**
+     * Title accessor: prefer explicit value, then document type name, then purpose, etc.
+     */
     public function getTitleAttribute($value)
     {
-        // if explicit column exists use it first
-        if (!is_null($value) && $value !== '') {
+        if (! is_null($value) && $value !== '') {
             return $value;
         }
 
-        // prefer eager-loaded relation
-        if ($this->relationLoaded('documentType') && $this->documentType && !empty($this->documentType->document_name)) {
+        if ($this->relationLoaded('documentType') && $this->documentType && ! empty($this->documentType->document_name)) {
             return $this->documentType->document_name;
         }
 
-        // fallback to lazy load the relation if needed
         if ($this->fk_document_type_id && $this->documentType()->exists()) {
             $dt = $this->documentType()->first();
-            if ($dt && !empty($dt->document_name)) return $dt->document_name;
+            if ($dt && ! empty($dt->document_name)) return $dt->document_name;
         }
 
-        // fallback to any document_name column on the request or purpose
-        if (!empty($this->document_name)) {
-            return $this->document_name;
-        }
-
-        if (!empty($this->purpose)) {
+        if (! empty($this->purpose)) {
             return $this->purpose;
         }
 
@@ -198,8 +236,6 @@ class DocumentRequest extends Model
 
     //
     // Accessors that fall back to the user relation if the DB column is null.
-    // This is handy if you prefer to keep document_requests sparse and always
-    // read user values when not present on the request record.
     //
     public function getFirstNameAttribute($value)
     {
@@ -236,24 +272,13 @@ class DocumentRequest extends Model
         return $value ?? $this->user?->civil_status;
     }
 
-    public function getAddressAttribute($value)
-    {
-        return $value ?? $this->user?->address;
-    }
-
     public function getContactNumberAttribute($value)
     {
-        if (!empty($value)) {
+        if (! empty($value)) {
             return $value;
         }
-        // try related credential
+
         $cred = $this->userCredential ?? (\App\Models\UserCredential::where('fk_user_id', $this->fk_user_id)->first());
         return $cred?->contact_number ?? $this->user?->contact_number ?? null;
-    }
-
-
-    public function approver(): BelongsTo
-    {
-        return $this->belongsTo(\App\Models\User::class, 'fk_approver_id', 'id');
     }
 }

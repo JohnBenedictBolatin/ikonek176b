@@ -428,10 +428,14 @@ onUnmounted(() => {
 
 .profile-role {
     font-size: 12px;
-    background: rgba(255,255,255,0.3);
+    background: linear-gradient(135deg, #ff8c42, #ff7a28);
+    color: white;
     padding: 4px 12px;
     border-radius: 15px;
+    display: inline-block;
     font-weight: 600;
+    text-transform: uppercase;
+    box-shadow: 0 2px 8px rgba(255, 140, 66, 0.3);
 }
 
 .nav-menu {
@@ -824,7 +828,7 @@ onUnmounted(() => {
 }
 
 .request-form-container::-webkit-scrollbar-thumb {
-    background: #ff8c42;
+    background: #888;
     border-radius: 3px;
 }
 

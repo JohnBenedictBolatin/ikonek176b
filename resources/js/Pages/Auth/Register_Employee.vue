@@ -6,7 +6,12 @@
   <!-- Privacy Modal -->
   <div v-if="showPrivacy" class="modal-backdrop">
     <div class="modal" role="dialog" aria-modal="true" aria-labelledby="privacyTitle">
-      <h2 id="privacyTitle" class="privacy-title">⚠️ Privacy Notice</h2>
+      <h2 id="privacyTitle" class="privacy-title">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="icon-svg-title">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
+        </svg>
+        Privacy Notice
+      </h2>
       <p class="justified-text">
        Thank you for registering! Your privacy is important to us. This platform collects personal information such as your name, contact details, and address when you request barangay documents or use our community interaction features. We may also gather non-personal data like device and browser information to improve the system's performance and security.
       </p>
@@ -19,8 +24,18 @@ Our website uses cookies to improve user experience.
         By using iKonek176B, you agree to the terms of this Privacy Policy.
 For any concerns, contact us at ikonek176b@dev.ph, +639193076338, or visit the Barangay 176B office.
       </p>
+      <div class="privacy-checkbox-container">
+        <label class="privacy-checkbox-label">
+          <input 
+            type="checkbox" 
+            v-model="privacyAcknowledged" 
+            class="privacy-checkbox"
+          />
+          <span class="privacy-checkbox-text">I have read and understand the Privacy Notice</span>
+        </label>
+      </div>
       <div class="modal-actions">
-        <button class="btn-primary" @click="closePrivacy">I Understand</button>
+        <button class="btn-primary" @click="closePrivacy" :disabled="!privacyAcknowledged">I Understand</button>
       </div>
     </div>
   </div>
@@ -44,7 +59,10 @@ For any concerns, contact us at ikonek176b@dev.ph, +639193076338, or visit the B
           <div class="form-column">
             <div class="form-section">
               <h3 class="section-title">
-                👤 Personal Information
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="icon-svg-section">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
+                </svg>
+                Personal Information
               </h3>
               
               <div class="form-group">
@@ -63,55 +81,148 @@ For any concerns, contact us at ikonek176b@dev.ph, +639193076338, or visit the B
 
               <div class="form-row">
                 <div class="form-group half">
-                  <select v-model="form.suffix" class="form-input">
-                    <option value="">Suffix</option>
-                    <option value="Jr">Jr.</option>
-                    <option value="Sr">Sr.</option>
-                    <option value="III">III</option>
-                    <option value="IV">IV</option>
-                  </select>
+                  <div class="select-wrapper">
+                    <select v-model="form.suffix" class="form-input">
+                      <option value="">Suffix</option>
+                      <option value="Jr">Jr.</option>
+                      <option value="Sr">Sr.</option>
+                      <option value="III">III</option>
+                      <option value="IV">IV</option>
+                    </select>
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="select-icon">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+                    </svg>
+                  </div>
                 </div>
 
                 <div class="form-group half">
-                  <div class="input-with-icon">
-                    📅
-                    <input type="date" v-model="form.birthdate" class="form-input" required />
+                  <div class="select-wrapper">
+                    <select v-model="form.sex" class="form-input" required>
+                      <option value="">Sex</option>
+                      <option value="Male">Male</option>
+                      <option value="Female">Female</option>
+                    </select>
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="select-icon">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+                    </svg>
                   </div>
+                </div>
+              </div>
+
+              <div class="form-row" style="margin-top:8px;">
+                <div class="form-group" style="max-width: 400px;">
+                  <label style="display: block; margin-bottom: 5px; font-size: 14px; font-weight: 500; color: #333;">Birthdate*</label>
+                  <div class="input-with-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="icon-svg-input">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-9-6h.008v.008H12v-.008Z" />
+                    </svg>
+                    <!-- REPLACED: single date input with month/day/year split -->
+                    <div class="birthdate-split" style="display:flex;gap:6px;align-items:center;">
+                      <div class="select-wrapper" style="flex: 1; min-width: 0; position: relative;">
+                        <select v-model="birth_month" class="form-input" required @change="onMonthOrYearChange" style="flex: 1; min-width: 0;">
+                          <option value="">Month</option>
+                          <option v-for="(m, idx) in months" :key="idx" :value="idx+1">{{ m }}</option>
+                        </select>
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="select-icon">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+                        </svg>
+                      </div>
+
+                      <div class="select-wrapper" style="flex: 0.8; min-width: 0; position: relative;">
+                        <select v-model.number="birth_day" class="form-input" required style="flex: 0.8; min-width: 0;">
+                          <option value="">Day</option>
+                          <option v-for="d in daysInSelectedMonth" :key="d" :value="d">{{ d }}</option>
+                        </select>
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="select-icon">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+                        </svg>
+                      </div>
+
+                      <div class="select-wrapper" style="flex: 1; min-width: 0; position: relative;">
+                        <select v-model.number="birth_year" class="form-input" required @change="onMonthOrYearChange" style="flex: 1; min-width: 0;">
+                          <option value="">Year</option>
+                          <option v-for="y in years" :key="y" :value="y">{{ y }}</option>
+                        </select>
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="select-icon">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+                        </svg>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="form-group half">
+                  <label style="display: block; margin-bottom: 5px; font-size: 14px; font-weight: 500; color: #333;">Nationality*</label>
+                  <input v-model="form.nationality" placeholder="Nationality*" class="form-input" readonly style="background-color: #f5f5f5; cursor: not-allowed;" required />
                 </div>
               </div>
 
               <div class="form-row">
                 <div class="form-group half">
-                  <select v-model="form.sex" class="form-input" required>
-                    <option value="">Sex</option>
-                    <option value="Male">Male</option>
-                    <option value="Female">Female</option>
+                  <div class="select-wrapper">
+                    <select v-model="form.religion" class="form-input" required>
+                      <option value="">Religion*</option>
+                    <option value="Roman Catholic">Roman Catholic</option>
+                    <option value="Islam">Islam</option>
+                    <option value="Iglesia ni Cristo">Iglesia ni Cristo</option>
+                    <option value="Protestant">Protestant</option>
+                    <option value="Baptist">Baptist</option>
+                    <option value="Methodist">Methodist</option>
+                    <option value="Seventh-day Adventist">Seventh-day Adventist</option>
+                    <option value="Jehovah's Witness">Jehovah's Witness</option>
+                    <option value="Buddhism">Buddhism</option>
+                    <option value="Hinduism">Hinduism</option>
+                    <option value="Atheist">Atheist</option>
+                    <option value="Agnostic">Agnostic</option>
+                    <option value="Other">Other</option>
                   </select>
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="select-icon">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+                  </svg>
                 </div>
+              </div>
 
                 <div class="form-group half">
-                  <select v-model="form.civil_status" class="form-input" required>
-                    <option value="">Civil Status</option>
-                    <option value="Single">Single</option>
-                    <option value="Married">Married</option>
-                    <option value="Widowed">Widowed</option>
-                    <option value="Separated">Separated</option>
-                    <option value="Divorced">Divorced</option>
-                  </select>
+                  <div class="select-wrapper">
+                    <select v-model="form.civil_status" class="form-input" required>
+                      <option value="">Civil Status</option>
+                      <option value="Single">Single</option>
+                      <option value="Married">Married</option>
+                      <option value="Widowed">Widowed</option>
+                      <option value="Separated">Separated</option>
+                      <option value="Divorced">Divorced</option>
+                    </select>
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="select-icon">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+                    </svg>
+                  </div>
+                </div>
+              </div>
+
+              <div v-if="form.religion === 'Other'" class="form-row" style="margin-top:8px;">
+                <div class="form-group">
+                  <input v-model="form.religion_other" placeholder="Specify Religion*" class="form-input" required />
                 </div>
               </div>
 
               <div class="form-group">
-                <select v-model="form.fk_role_id" class="form-input" required>
-                  <option value="">Position/Role</option>
-                  <option value="2">Barangay Captain</option>
-                  <option value="3">Barangay Secretary</option>
-                  <option value="4">Barangay Treasurer</option>
-                  <option value="5">Barangay Kagawad</option>
-                  <option value="6">Sangguniang Kabataan Chairman</option>
-                  <option value="7">Sangguniang Kabataan Kagawad</option>
-                </select>
+                <div class="select-wrapper">
+                  <select v-model="form.fk_role_id" class="form-input" required>
+                    <option value="">Position/Role</option>
+                    <option value="2">Barangay Captain</option>
+                    <option value="3">Barangay Secretary</option>
+                    <option value="4">Barangay Treasurer</option>
+                    <option value="5">Barangay Kagawad</option>
+                    <option value="6">Sangguniang Kabataan Chairman</option>
+                    <option value="7">Sangguniang Kabataan Kagawad</option>
+                  </select>
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="select-icon">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+                  </svg>
+                </div>
               </div>
+
+              <!-- END NEW fields -->
             </div>
           </div>
 
@@ -119,7 +230,10 @@ For any concerns, contact us at ikonek176b@dev.ph, +639193076338, or visit the B
           <div class="form-column">
             <div class="form-section">
               <h3 class="section-title">
-                👥 Contact Information
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="icon-svg-section">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 0 0 2.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 0 1-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 0 0-1.091-.852H4.5A2.25 2.25 0 0 0 2.25 4.5v2.25Z" />
+                </svg>
+                Contact Information
               </h3>
               
               <div class="form-group">
@@ -132,100 +246,126 @@ For any concerns, contact us at ikonek176b@dev.ph, +639193076338, or visit the B
                 </div>
               </div>
 
-              <div class="form-group">
-                <div class="phone-input">
-                  <span class="country-code">+63</span>
-                  <input v-model="form.secondary_contact_number" placeholder="Secondary Number (Optional)" maxlength="10" class="form-input" />
-                </div>
-              </div>
-
-              <div class="form-group">
-                <input placeholder="Enter OTP Code (Primary Number)" class="form-input" />
-                <button type="button" class="resend-btn">RESEND</button>
-              </div>
-
               <!-- Password Section -->
               <h3 class="section-title" style="margin-top: 25px;">
-                🔒 Account Security
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="icon-svg-section">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z" />
+                </svg>
+                Account Security
               </h3>
               
               <div class="form-group">
-                <input type="password" v-model="form.password" @input="clearError('password'); validateMatch()" placeholder="Enter password" class="form-input" required />
+                <div class="password-input-wrapper" style="position: relative;">
+                  <input :type="showPassword ? 'text' : 'password'" v-model="form.password" @input="clearError('password'); validateMatch()" placeholder="Enter password" class="form-input" required style="padding-right: 45px;" />
+                  <button type="button" @click="showPassword = !showPassword" class="password-toggle-btn" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: #000; display: flex; align-items: center; justify-content: center;">
+                    <svg v-if="showPassword" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="icon-svg" style="width: 20px; height: 20px;">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M3.98 8.223A10.477 10.477 0 0 0 1.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.451 10.451 0 0 1 12 4.5c4.756 0 8.773 3.162 10.065 7.498a10.522 10.522 0 0 1-4.293 5.774M6.228 6.228 3 3m3.228 3.228 3.65 3.65m7.894 7.894L21 21m-3.228-3.228-3.65-3.65m0 0a3 3 0 1 0-4.243-4.243m4.242 4.242L9.88 9.88" />
+                    </svg>
+                    <svg v-else xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="icon-svg" style="width: 20px; height: 20px;">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                    </svg>
+                  </button>
+                </div>
                 <small class="helper-text">Minimum 6 characters.</small>
                 <div class="error-message" v-if="localErrors.password">{{ localErrors.password }}</div>
                 <div class="error-message" v-else-if="form.errors.password">{{ form.errors.password }}</div>
               </div>
 
               <div class="form-group">
-                <input type="password" v-model="confirmPassword" @input="clearError('confirmPassword'); validateMatch()" placeholder="Confirm password" class="form-input" required />
+                <div class="password-input-wrapper" style="position: relative;">
+                  <input :type="showConfirmPassword ? 'text' : 'password'" v-model="confirmPassword" @input="clearError('confirmPassword'); validateMatch()" placeholder="Confirm password" class="form-input" required style="padding-right: 45px;" />
+                  <button type="button" @click="showConfirmPassword = !showConfirmPassword" class="password-toggle-btn" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; font-size: 18px; color: #666;">
+                    {{ showConfirmPassword ? '👁️' : '👁️‍🗨️' }}
+                  </button>
+                </div>
                 <div class="error-message" v-if="localErrors.confirmPassword">{{ localErrors.confirmPassword }}</div>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- Full Width: Address Information -->
+        <!-- Full Width: Address Information (SPLIT INTO FIELDS) -->
         <div class="form-section full-width">
           <h3 class="section-title">
-            📍 Address Information
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="icon-svg-section">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+              <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z" />
+            </svg>
+            Address Information
           </h3>
           
-          <div class="form-group">
-            <input v-model="form.address" placeholder="Home Address Line" class="form-input" required />
+          <!-- house & street -->
+          <div class="form-row">
+            <div class="form-group half">
+              <input v-model="form.house" placeholder="House / Unit / Building No." class="form-input" />
+            </div>
+
+            <div class="form-group half">
+              <input v-model="form.street" placeholder="Street" class="form-input" />
+            </div>
           </div>
 
-          <div class="form-row">
+          <!-- city/municipality & province -->
+          <div class="form-row" style="margin-top:8px;">
+            <div class="form-group half">
+              <input v-model="form.city" placeholder="City / Municipality*" class="form-input" readonly style="background-color: #f5f5f5; cursor: not-allowed;" />
+            </div>
+
+            <div class="form-group half">
+              <input v-model="form.province" placeholder="Province / Region*" class="form-input" readonly style="background-color: #f5f5f5; cursor: not-allowed;" />
+            </div>
+          </div>
+
+          <!-- Original 3-column row kept exactly as before (barangay, phase, package) -->
+          <div class="form-row" style="margin-top:8px;">
             <div class="form-group third">
-              <input disabled value="Barangay 176B" class="form-input disabled" />
+              <input v-model="form.barangay" placeholder="Barangay*" class="form-input" readonly style="background-color: #f5f5f5; cursor: not-allowed;" />
             </div>
 
             <div class="form-group third">
-              <select v-model="form.phase" class="form-input" required>
-                <option value="">Phase</option>
-                <option value="2">2</option>
-                <option value="5">5</option>
-              </select>
+              <div class="select-wrapper">
+                <select v-model="form.phase" class="form-input" required>
+                  <option value="">Phase</option>
+                  <option value="Phase 2">2</option>
+                  <option value="Phase 5">5</option>
+                </select>
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="select-icon">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+                </svg>
+              </div>
             </div>
 
             <div class="form-group third">
-              <select v-model="form.package" class="form-input" required>
-                <option value="">Package</option>
-                <option value="1">1</option>
-                <option value="2">2</option>
-                <option value="3">3</option>
-              </select>
+              <div class="select-wrapper">
+                <select v-model="form.package" class="form-input" required>
+                  <option value="">Package</option>
+                  <option value="1">1</option>
+                  <option value="2">2</option>
+                  <option value="3">3</option>
+                </select>
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="select-icon">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+                </svg>
+              </div>
             </div>
           </div>
         </div>
 
-        <!-- Full Width: Proof of Residency -->
-        <div class="form-section full-width">
-          <h3 class="section-title">
-            📁 Proof of Position/Employment
-          </h3>
-          
-          <div class="form-row">
-            <div class="form-group flex-grow">
-              <select v-model="form.proof_of_residency" class="form-input" required>
-                <option value="">Type of Official Document</option>
-                <option>Certificate of Employment</option>
-                <option>Appointment Letter</option>
-                <option>Government-Issued IDs</option>
-                <option>Official Authorization</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <button type="button" class="upload-btn" @click="uploadId">
-                UPLOAD
-              </button>
-            </div>
+        <!-- General Error Display -->
+        <div v-if="form.errors.error || Object.keys(form.errors).length > 0" class="general-error" style="margin: 20px 0; padding: 15px; background: #fee; border: 1px solid #fcc; border-radius: 4px;">
+          <div v-if="form.errors.error" class="error-message" style="font-weight: 600; margin-bottom: 10px;">
+            {{ form.errors.error }}
+          </div>
+          <div v-for="(error, field) in form.errors" :key="field" v-if="field !== 'error'">
+            <strong>{{ field }}:</strong> {{ Array.isArray(error) ? error[0] : error }}
           </div>
         </div>
 
         <!-- Action Buttons -->
         <div class="form-actions">
-          <Link :href="route('login')" class="back-btn">
-            BACK TO LOGIN
+          <Link :href="route('dashboard_admin')" class="back-btn">
+            BACK TO DASHBOARD
           </Link>
           <button class="register-btn" :disabled="form.processing || !canSubmit" type="submit">
             REGISTER
@@ -234,10 +374,14 @@ For any concerns, contact us at ikonek176b@dev.ph, +639193076338, or visit the B
 
         <!-- Disclaimer -->
         <div class="disclaimer">
-          <span class="disclaimer-icon">⚠️</span>
+          <span class="disclaimer-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="icon-svg">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
+            </svg>
+          </span>
           <div class="disclaimer-content">
             <strong>Disclaimer</strong><br>
-            Your registration request is subject for approval by the system administrator. Check your messages regularly for updates on your account status.
+            Upon clicking "REGISTER", the user will be automatically registerd to the system as a Barangay Official.
           </div>
         </div>
       </form>
@@ -256,7 +400,12 @@ import { Link, Head, useForm } from '@inertiajs/vue3'
 
 // showPrivacy defaults to true so modal is visible on page load
 const showPrivacy = ref(true)
-function closePrivacy() { showPrivacy.value = false }
+const privacyAcknowledged = ref(false)
+function closePrivacy() { 
+  if (privacyAcknowledged.value) {
+    showPrivacy.value = false 
+  }
+}
 
 // prevent background scrolling while modal is open
 watch(showPrivacy, (val) => {
@@ -275,21 +424,134 @@ const form = useForm({
   sex: '',
   civil_status: '',
   contact_number: '',
-  secondary_contact_number: '',
   password: '',
+  // remove legacy single 'address' reliance: backend expects house_number & street etc.
   address: '',
-  fk_role_id: '',
+  // NEW split address fields (UI fields)
+  house: '',
+  street: '',
+  // fields matching DB columns (will be filled before submit)
+  house_number: '',
+  // keep separate user-editable barangay part
+  barangay_input: 'Barangay 176B',
   barangay: 'Barangay 176B',
+  city: 'Caloocan City',
+  province: 'Metro Manila',           // default to NCR as requested
+  fk_role_id: '',
   phase: '',
   package: '',
-  proof_of_residency: '',
+
+  // other personal fields that map to users table
+  religion: '',
+  religion_other: '',
+  nationality: 'Filipino',
 })
 
 const confirmPassword = ref('')
+const showPassword = ref(false)
+const showConfirmPassword = ref(false)
 const localErrors = reactive({ password: null, confirmPassword: null })
 
 const passwordsMatch = computed(() => form.password === confirmPassword.value)
 const canSubmit = computed(() => form.password.length >= 6 && confirmPassword.value.length >= 6 && passwordsMatch.value)
+
+// ---------- Birthdate split fields & helpers ----------
+const months = [
+  'January','February','March','April','May','June','July','August','September','October','November','December'
+]
+
+// default years: from current year down to currentYear - 100
+const currentYear = new Date().getFullYear()
+const years = Array.from({length: 101}, (_, i) => currentYear - i)
+
+// reactive split values (numbers for month & day & year where appropriate)
+const birth_month = ref('') // 1-12
+const birth_day = ref('')   // 1-31
+const birth_year = ref('')  // full year (e.g., 1980)
+
+// compute days available based on month/year (handles leap year)
+function daysInMonthCount(y, m) {
+  if (!y || !m) return 31
+  // JS months are 0-indexed
+  return new Date(y, m, 0).getDate()
+}
+
+const daysInSelectedMonth = computed(() => {
+  const y = Number(birth_year.value)
+  const m = Number(birth_month.value)
+  const count = daysInMonthCount(y || currentYear, m || 1)
+  return Array.from({length: count}, (_, i) => i + 1)
+})
+
+// Ensure day stays valid when month/year changes
+function onMonthOrYearChange() {
+  const max = daysInMonthCount(Number(birth_year.value) || currentYear, Number(birth_month.value) || 1)
+  if (birth_day.value && Number(birth_day.value) > max) {
+    birth_day.value = max
+  }
+}
+
+// Parse form.birthdate (expects 'YYYY-MM-DD') into split fields
+function splitBirthdate() {
+  const v = form.birthdate
+  if (!v) {
+    birth_month.value = ''
+    birth_day.value = ''
+    birth_year.value = ''
+    return
+  }
+  // Accept ISO YYYY-MM-DD
+  const parts = ('' + v).split('-')
+  if (parts.length >= 3) {
+    birth_year.value = Number(parts[0]) || ''
+    birth_month.value = Number(parts[1]) || ''
+    birth_day.value = Number(parts[2]) || ''
+    // ensure day is valid for month/year
+    onMonthOrYearChange()
+  } else {
+    // fallback: try Date parsing
+    const d = new Date(v)
+    if (!isNaN(d.getTime())) {
+      birth_year.value = d.getFullYear()
+      birth_month.value = d.getMonth() + 1
+      birth_day.value = d.getDate()
+    } else {
+      birth_month.value = ''
+      birth_day.value = ''
+      birth_year.value = ''
+    }
+  }
+}
+
+// Merge split fields back into form.birthdate as YYYY-MM-DD
+function pad(num) {
+  return num.toString().padStart(2, '0')
+}
+function mergeBirthdate() {
+  // if any part missing, clear form.birthdate so server can validate requiredness
+  if (!birth_year.value || !birth_month.value || !birth_day.value) {
+    form.birthdate = ''
+    return
+  }
+  const y = Number(birth_year.value)
+  const m = Number(birth_month.value)
+  const d = Number(birth_day.value)
+  // ensure day <= daysInMonth
+  const max = daysInMonthCount(y, m)
+  const safeDay = Math.min(d, max)
+  form.birthdate = `${y}-${pad(m)}-${pad(safeDay)}`
+}
+
+// watch form.birthdate so server-provided value populates split fields
+watch(() => form.birthdate, () => {
+  splitBirthdate()
+})
+
+// call on mount to populate if server provided birthdate
+onMounted(() => {
+  showPrivacy.value = true
+  splitBirthdate()
+})
 
 function clearError(field) {
   if (field === 'password') {
@@ -309,9 +571,38 @@ function validateMatch() {
   if (!passwordsMatch.value) localErrors.confirmPassword = 'Passwords do not match.'
 }
 
-function uploadId() { alert('Upload dialog would open here (implement upload logic).') }
+
+// merge the split address fields into individual DB-mapped fields BEFORE posting
+function mergeAddressFields() {
+  // Use barangay_input if provided, otherwise fallback to the static barangay value
+  const barangayToUse = (form.barangay_input && form.barangay_input.trim()) ? form.barangay_input.trim() : (form.barangay || '')
+
+  // assign DB column names expected by User model
+  form.house_number = form.house && form.house.toString().trim() ? form.house.toString().trim() : ''
+  form.street = form.street && form.street.toString().trim() ? form.street.toString().trim() : ''
+  form.barangay = barangayToUse
+  form.city = form.city && form.city.toString().trim() ? form.city.toString().trim() : 'Caloocan City'
+  form.province = form.province && form.province.toString().trim() ? form.province.toString().trim() : 'Metro Manila'
+
+  // Optionally set a legacy address string if your backend still expects it (not required):
+  const parts = [
+    form.house_number,
+    form.street,
+    form.barangay,
+    form.city,
+    form.province,
+  ].filter(Boolean)
+  form.address = parts.join(', ')
+}
 
 function submit() {
+  // Check if privacy notice has been acknowledged
+  if (showPrivacy.value || !privacyAcknowledged.value) {
+    alert('Please read and acknowledge the Privacy Notice before submitting the registration form.')
+    showPrivacy.value = true
+    return
+  }
+  
   localErrors.password = null
   localErrors.confirmPassword = null
 
@@ -321,18 +612,40 @@ function submit() {
 
   if (localErrors.password || localErrors.confirmPassword) return
 
-  console.log('posting payload', JSON.parse(JSON.stringify(form)));
-  form.post(route('register_resident.store'), {
+  // MERGE birthdate fields into form.birthdate BEFORE posting
+  mergeBirthdate()
+
+  // MERGE address fields here (IMPORTANT: done immediately before posting)
+  mergeAddressFields()
+
+  // MERGE "other" values into main fields if "Other" is selected
+  if (form.religion === 'Other' && form.religion_other) {
+    form.religion = form.religion_other
+  }
+
+  // Ensure fk_role_id is an integer
+  if (form.fk_role_id) {
+    form.fk_role_id = parseInt(form.fk_role_id, 10)
+  }
+
+  // Log the payload before sending (excluding password for security)
+  const payloadToLog = { ...form.data() };
+  delete payloadToLog.password;
+  console.log('posting payload', payloadToLog);
+  
+  form.post(route('register_employee.store'), {
     onStart: () => {
-    console.log('starting request');
-  },
+      console.log('starting request');
+    },
     onError: (errors) => {
-      form.reset('password')
-      confirmPassword.value = '',
+      // Only reset password if there's an actual error, and preserve it in form for retry
       console.log('server validation errors', errors);
+      // Don't reset password - keep it so user can see what went wrong and retry
     },
     onSuccess: (page) => {
-      confirmPassword.value = '',
+      // Clear password fields only on success
+      form.reset('password')
+      confirmPassword.value = ''
       console.log('server success response', page);
     },
     onFinish: () => {
@@ -449,11 +762,18 @@ html, body {
 .section-title {
   font-size: 16px;
   font-weight: 600;
-  color: #ff8c42;
+  color: #000;
   margin-bottom: 15px;
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+.icon-svg-section {
+  width: 20px;
+  height: 20px;
+  stroke: currentColor;
+  flex-shrink: 0;
 }
 
 /* Form Groups and Rows */
@@ -539,6 +859,39 @@ html, body {
 .input-with-icon .form-input {
   border: none;
   padding-left: 0;
+}
+
+.icon-svg-input {
+  width: 18px;
+  height: 18px;
+  stroke: currentColor;
+  color: #666;
+  flex-shrink: 0;
+}
+
+/* Select Wrapper with Dropdown Icon */
+.select-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.select-wrapper .form-input {
+  padding-right: 40px;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+}
+
+.select-icon {
+  position: absolute;
+  right: 12px;
+  width: 18px;
+  height: 18px;
+  stroke: currentColor;
+  color: #666;
+  pointer-events: none;
+  flex-shrink: 0;
 }
 
 /* Buttons */
@@ -653,7 +1006,18 @@ html, body {
 
 .disclaimer-icon {
   font-size: 18px;
-  margin-top: 2px;
+  margin-top: 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  flex-shrink: 0;
+  padding-top: 2px;
+}
+
+.disclaimer-icon .icon-svg {
+  width: 20px;
+  height: 20px;
+  stroke: currentColor;
 }
 
 .disclaimer-content {
@@ -696,6 +1060,13 @@ html, body {
   gap: 10px;
 }
 
+.icon-svg-title {
+  width: 24px;
+  height: 24px;
+  stroke: currentColor;
+  flex-shrink: 0;
+}
+
 .modal h2 {
   margin-top: 0;
   color: #ff8c42;
@@ -723,6 +1094,42 @@ html, body {
   border: none;
   border-radius: 6px;
   cursor: pointer;
+}
+
+.btn-primary:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.privacy-checkbox-container {
+  margin: 20px 0;
+  padding: 15px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border: 2px solid #e0e0e0;
+}
+
+.privacy-checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.privacy-checkbox {
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+  accent-color: #ff8c42;
+  flex-shrink: 0;
+}
+
+.privacy-checkbox-text {
+  font-size: 14px;
+  font-weight: 500;
+  color: #333;
+  line-height: 1.4;
 }
 
 /* Mobile Responsive */

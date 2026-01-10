@@ -42,7 +42,11 @@
         <div class="form-group">
           <label class="form-label">Contact Number</label>
           <div class="input-wrapper">
-            <span class="input-icon">📱</span>
+            <span class="input-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="icon-svg">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 1.5H8.25A2.25 2.25 0 0 0 6 3.75v16.5a2.25 2.25 0 0 0 2.25 2.25h7.5A2.25 2.25 0 0 0 18 20.25V3.75a2.25 2.25 0 0 0-2.25-2.25H13.5m-3 0V3h3V1.5m-3 0h3m-3 18.75h3" />
+              </svg>
+            </span>
             <input 
               type="tel" 
               name="phone" 
@@ -59,7 +63,11 @@
         <div class="form-group">
           <label class="form-label">Password</label>
           <div class="input-wrapper">
-            <span class="input-icon">🔒</span>
+            <span class="input-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="icon-svg">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z" />
+              </svg>
+            </span>
             <input 
               type="password" 
               name="password" 
@@ -72,11 +80,6 @@
           </div>
         </div>
 
-        <div class="forgot-link-container">
-          <Link :href="route('find_account_user')" class="forgot-link">
-            Lost your contact number?
-          </Link>
-        </div>
         <Link :href="route('announcement_employee')">
         <button type="submit" class="login-btn" :disabled="form.processing">
           LOGIN
@@ -99,7 +102,11 @@
 
         <!-- Disclaimer -->
         <div class="disclaimer">
-          <span class="disclaimer-icon">⚠️</span>
+          <span class="disclaimer-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="icon-svg">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
+            </svg>
+          </span>
           <div class="disclaimer-content">
             <strong>Disclaimer</strong><br>
             This website is exclusive for Barangay 176B residents only.
@@ -222,9 +229,18 @@ html, body {
 .input-icon {
   padding: 12px;
   font-size: 16px;
-  color: #ff8c42;
+  color: #000;
   border-right: 1px solid #ddd;
   background: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.icon-svg {
+  width: 20px;
+  height: 20px;
+  stroke: currentColor;
 }
 
 .form-input {
@@ -338,7 +354,7 @@ html, body {
 .disclaimer {
   background: #fff3cd;
   border: 1px solid #ffeaa7;
-  padding: 12px;
+  padding: 12px 12px 12px 20px;
   margin-top: 170px;
   font-size: 15px;
   color: #856404;
@@ -349,7 +365,18 @@ html, body {
 
 .disclaimer-icon {
   font-size: 20px;
-  margin-top: 2px;
+  margin-top: 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  color: #856404;
+  flex-shrink: 0;
+  padding-top: 2px;
+}
+
+.disclaimer-icon .icon-svg {
+  width: 20px;
+  height: 20px;
 }
 
 .disclaimer-content {

@@ -20,6 +20,7 @@ class DocumentType extends Model
         'document_type_id',
         'document_name',
         'processing_fee',
+        'template_id',
     ];
 
     // If your primary key is not auto-incrementing (e.g. UUID), set this to false

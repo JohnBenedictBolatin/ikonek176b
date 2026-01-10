@@ -8,46 +8,7 @@ use Illuminate\Support\Facades\Auth;
 
 class HandleInertiaRequests extends Middleware
 {
-    // public function share(Request $request): array
-    // {
-    //     return array_merge(parent::share($request), [
-    //         'auth' => [
-    //             'user' => function () use ($request) {
-    //                 // Prefer real authenticated user if present
-    //                 $u = $request->user();
-    //                 if ($u) {
-    //                     return [
-    //                         'id' => $u->id,
-    //                         'name' => $u->first_name . ' ' . $u->last_name,
-    //                         'contact_contact' => $u->contact_number,
-    //                         'secondary_number' => $u->secondary_number,
-    //                         'fk_role_id' => $u->fk_role_id ?? null,
-    //                     ];
-    //                 }
-                    
-
-    //                 // Fallback to session-based logged_user
-    //                 $sessionUser = $request->session()->get('logged_user');
-    //                 if ($sessionUser) {
-    //                     return [
-    //                         'id' => $sessionUser['id'] ?? null,
-    //                         'name' => $sessionUser['name'] ?? null,
-    //                         'primary_contact' => $sessionUser['pri_num'] ?? null,
-    //                         'secondary_contact' => $sessionUser['sec_num'] ?? null,
-    //                         'fk_role_id' => $sessionUser['fk_role_id'] ?? null,
-    //                     ];
-    //                 }
-
-    //                 return null;
-    //             },
-    //         ],
-    //         'flash' => [
-    //             'success' => fn () => $request->session()->get('success'),
-    //             'error'   => fn () => $request->session()->get('error'),
-    //         ],
-    //     ]);
-    // }
-
+   
     public function share(Request $request): array
     {
         return array_merge(parent::share($request), [
@@ -75,8 +36,11 @@ class HandleInertiaRequests extends Middleware
             return [
             // User id for the user identity
             'id' => $u->user_id ?? $u->id ?? null,
+            'user_id' => $u->user_id ?? $u->id ?? null,
             // Names
-            'name' => trim(($u->first_name ?? '') . ' ' . ($u->last_name ?? '')),
+            'name' => trim(($u->first_name ?? '') . ' ' . ($u->last_name ?? '')) ?: ($u->name ?? null),
+            // Profile picture
+            'profile_pic' => $u->profile_pic ?? null,
             // Contact fields
             'primary_contact' => $cred->contact_number ?? null,
             'secondary_contact' => $cred->secondary_contact_number ?? null,
@@ -93,7 +57,9 @@ class HandleInertiaRequests extends Middleware
         if ($sessionUser) {
             return [
             'id' => $sessionUser['id'] ?? null,
+            'user_id' => $sessionUser['id'] ?? $sessionUser['user_id'] ?? null,
             'name' => $sessionUser['name'] ?? null,
+            'profile_pic' => $sessionUser['profile_pic'] ?? null,
             'primary_contact' => $sessionUser['contact_number'] ?? $sessionUser['primary_contact'] ?? null,
             'secondary_contact' => $sessionUser['secondary_number'] ?? $sessionUser['secondary_contact'] ?? null,
             'fk_role_id' => $sessionUser['fk_role_id'] ?? null,

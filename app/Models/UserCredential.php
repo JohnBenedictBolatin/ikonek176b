@@ -24,6 +24,7 @@ class UserCredential extends Model
     'fk_user_id',
     'contact_number',
     'secondary_contact_number',
+    'email',
     'password',
     ];
 

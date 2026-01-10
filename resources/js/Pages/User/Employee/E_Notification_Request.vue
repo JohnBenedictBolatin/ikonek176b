@@ -8,7 +8,7 @@
         <div class="header-bar">
             <div class="header-content">
                 <div class="logo-section">
-                    <img src="/assets/WHITE LOGO.png" alt="Logo" class="header-logo" />
+                    <img src="/assets/LOGO.png" alt="Logo" class="header-logo" />
                 </div>
                 <div class="header-actions">
                     <img src="/assets/SETTINGS.png" alt="Settings" class="settings-btn-img" @click="toggleSettings" />
@@ -26,10 +26,10 @@
             <!-- Sidebar -->
             <div class="sidebar">
                 <div class="profile-card">
-                    <img src="/assets/KAPITAN.jpg" alt="Profile" class="profile-avatar" />
+                    <img :src="profilePictureUrl" alt="Profile" class="profile-avatar" />
                     <div class="profile-info">
-                        <div class="profile-name">Kap. Sammy Reyes</div>
-                        <div class="profile-role">BARANGAY CAPTAIN</div>
+                        <div class="profile-name">{{ user?.name || 'Unknown User' }}</div>
+                        <div class="profile-role">{{ displayRole }}</div>
                     </div>
                 </div>
 
@@ -40,7 +40,10 @@
                         :class="{ active: activeTab === 'posts' }"
                         @click="navigateToPosts"
                     >
-                        📋 Posts
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="nav-icon">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 0 0 2.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 0 0-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 0 0 .75-.75 2.25 2.25 0 0 0-.1-.664m-5.8 0A2.251 2.251 0 0 1 13.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25ZM6.75 12h.008v.008H6.75V12Zm0 3h.008v.008H6.75V15Zm0 3h.008v.008H6.75V18Z" />
+                        </svg>
+                        Posts
                     </Link>
                     <Link 
                         href="#" 
@@ -48,7 +51,10 @@
                         :class="{ active: activeTab === 'documents' }"
                         @click="navigateToDocuments"
                     >
-                        📄 Document Request
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="nav-icon">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
+                        </svg>
+                        Document Request
                     </Link>
                     <Link 
                         href="#" 
@@ -56,7 +62,10 @@
                         :class="{ active: activeTab === 'events' }"
                         @click="navigateToEvents"
                     >
-                        🤝 Event Assistance
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="nav-icon">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 0 0 2.625.372 9.337 9.337 0 0 0 4.121-.952 4.125 4.125 0 0 0-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 0 1 8.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0 1 11.964-3.07M12 6.375a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0Zm8.25 2.25a2.625 2.625 0 1 1-5.25 0 2.625 2.625 0 0 1 5.25 0Z" />
+                        </svg>
+                        Event Assistance
                     </Link>
                     <Link 
                         href="#" 
@@ -64,7 +73,10 @@
                         :class="{ active: activeTab === 'notifications' }"
                         @click="navigateToNotifications"
                     >
-                        🔔 Notifications
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="nav-icon">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0" />
+                        </svg>
+                        Notifications
                     </Link>
                     <Link 
                         href="#" 
@@ -72,12 +84,18 @@
                         :class="{ active: activeTab === 'profile' }"
                         @click="navigateToProfile"
                     >
-                        👤 Profile
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="nav-icon">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
+                        </svg>
+                        Profile
                     </Link>
                 </div>
 
                 <button class="faq-btn" @click="openFAQ">
-                    ❓ FAQs & Help Center
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="nav-icon">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 5.25h.008v.008H12v-.008Z" />
+                    </svg>
+                    FAQs & Help Center
                 </button>
             </div>
 
@@ -127,6 +145,29 @@
                                     <button @click="selectSort('newest')" :class="{ active: sortOption === 'newest' }">NEWEST</button>
                                     <button @click="selectSort('relevant')" :class="{ active: sortOption === 'relevant' }">RELEVANT</button>
                                     <button @click="selectSort('oldest')" :class="{ active: sortOption === 'oldest' }">OLDEST</button>
+                                </div>
+                            </div>
+                            <div class="filter-dropdown-wrapper" style="margin-left: 15px;">
+                                <button class="filter-dropdown-btn" @click="toggleRequestTypeDropdown">
+                                    {{ requestTypeFilter === 'all' ? 'ALL REQUESTS' : requestTypeFilter === 'document' ? 'DOCUMENT REQUESTS' : 'EVENT ASSISTANCE' }}
+                                    <span class="filter-arrow" :class="{ rotated: showRequestTypeDropdown }">▼</span>
+                                </button>
+                                <div v-if="showRequestTypeDropdown" class="filter-dropdown-menu">
+                                    <button @click="selectRequestType('all')" :class="{ active: requestTypeFilter === 'all' }">ALL REQUESTS</button>
+                                    <button @click="selectRequestType('document')" :class="{ active: requestTypeFilter === 'document' }">DOCUMENT REQUESTS</button>
+                                    <button @click="selectRequestType('event')" :class="{ active: requestTypeFilter === 'event' }">EVENT ASSISTANCE</button>
+                                </div>
+                            </div>
+                            <div class="filter-dropdown-wrapper" style="margin-left: 15px;">
+                                <button class="filter-dropdown-btn" @click="toggleStatusDropdown">
+                                    {{ statusFilter === 'all' ? 'ALL STATUS' : statusFilter.toUpperCase() }}
+                                    <span class="filter-arrow" :class="{ rotated: showStatusDropdown }">▼</span>
+                                </button>
+                                <div v-if="showStatusDropdown" class="filter-dropdown-menu">
+                                    <button @click="selectStatus('all')" :class="{ active: statusFilter === 'all' }">ALL STATUS</button>
+                                    <button @click="selectStatus('pending')" :class="{ active: statusFilter === 'pending' }">PENDING</button>
+                                    <button @click="selectStatus('approved')" :class="{ active: statusFilter === 'approved' }">APPROVED</button>
+                                    <button @click="selectStatus('rejected')" :class="{ active: statusFilter === 'rejected' }">REJECTED</button>
                                 </div>
                             </div>
                         </div>
@@ -185,8 +226,33 @@
                                         <h3 class="request-title">{{ request.title }}</h3>
                                         <span class="request-time">{{ request.date }} | {{ request.time }}</span>
                                     </div>
-                                    <div class="request-status" :class="request.status.toLowerCase()">
-                                        {{ request.status }}
+                                    
+                                    <div class="request-status-wrapper">
+                                        <div class="request-status" :class="request.status.toLowerCase()">
+                                            {{ request.status }}
+                                        </div>
+                                        
+                                        <!-- Add the payment badge RIGHT HERE, inside request-status-wrapper -->
+                                        <div v-if="request.type === 'document' && request.status === 'APPROVED'" class="request-payment-row">
+                                            <div
+                                              v-if="getPaymentBadge(request)"
+                                              :class="['payment-list-badge', getPaymentBadge(request).cls]"
+                                              role="status"
+                                              aria-live="polite"
+                                            >
+                                              <span class="badge-icon" aria-hidden="true">
+                                                <template v-if="getPaymentBadge(request).cls === 'pending'">⏱</template>
+                                                <template v-else-if="getPaymentBadge(request).cls === 'approved'">✓</template>
+                                                <template v-else-if="getPaymentBadge(request).cls === 'rejected'">✕</template>
+                                              </span>
+                                              <span class="badge-text">{{ getPaymentBadge(request).label }}</span>
+                                            </div>
+
+                                            <div v-else class="payment-list-badge none">
+                                              <span class="badge-icon"></span>
+                                              <span class="badge-text">Not paid yet</span>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -208,7 +274,7 @@
                 <!-- Success/Status Header -->
                 <div class="modal-icon" :class="selectedRequest?.status.toLowerCase() + '-icon'">
                     <div class="status-badge">
-                        <span v-if="selectedRequest?.status === 'ACCEPTED'">✓</span>
+                        <span v-if="selectedRequest?.status === 'APPROVED'">✓</span>
                         <span v-if="selectedRequest?.status === 'PENDING'">⏱</span>
                         <span v-if="selectedRequest?.status === 'REJECTED'">✕</span>
                     </div>
@@ -224,8 +290,8 @@
                         <strong>{{ selectedRequest?.status.toLowerCase() }}</strong>.
                     </p>
                     
-                    <!-- ACCEPTED Status - Show pickup instructions -->
-                    <div v-if="selectedRequest?.status === 'ACCEPTED'" class="accepted-section">
+                    <!-- APPROVED Status - Show pickup instructions -->
+                    <div v-if="selectedRequest?.status === 'APPROVED'" class="accepted-section">
                         <p class="details-message">
                             You may now proceed to claim your certificate by following the instructions provided.
                         </p>
@@ -233,23 +299,125 @@
                         <div class="pickup-info">
                             <div class="info-item">
                                 <span class="info-label">WHAT:</span>
-                                <span class="info-value">PICKUP OF DOCUMENT ({{ selectedRequest?.title }})</span>
+                                <!-- prefer pickup_item (from document_requests), otherwise title -->
+                                <span class="info-value">
+                                    PICKUP OF DOCUMENT ({{ selectedRequest?.pickup_item ?? selectedRequest?.title }})
+                                </span>
                             </div>
+
                             <div class="info-item">
                                 <span class="info-label">WHERE:</span>
-                                <span class="info-value">BARANGAY 176B BARANGAY HALL</span>
+                                <!-- prefer pickup_location from request, fallback to raw, then default hall -->
+                                <span class="info-value">
+                                    {{ selectedRequest?.pickup_location ?? selectedRequest?.raw?.pickup_location ?? 'BARANGAY 176B BARANGAY HALL' }}
+                                </span>
                             </div>
+
                             <div class="info-item">
                                 <span class="info-label">WHEN:</span>
-                                <span class="info-value">{{ getPickupSchedule() }}</span>
+                                <!-- pass the whole request so the function can use pickup_start / pickup_end -->
+                                <span class="info-value">{{ getPickupSchedule(selectedRequest) }}</span>
                             </div>
+
                             <div class="info-item">
                                 <span class="info-label">WHO:</span>
-                                <span class="info-value">FIND MS. MERCY ALPAÑO</span>
+                                <!-- person_to_look on request, else fallback to raw, then logged-in user's name, then 'N/A' -->
+                                <span class="info-value">
+                                    {{ selectedRequest?.person_to_look ?? selectedRequest?.raw?.person_to_look ?? user?.name ?? 'N/A' }}
+                                </span>
                             </div>
+
                             <div class="info-item" v-if="selectedRequest?.type === 'document'">
                                 <span class="info-label">AMOUNT:</span>
-                                <span class="info-value amount">₱{{ selectedRequest?.amount || '150.00' }}</span>
+                                <span class="info-value amount">₱{{ (selectedRequest?.amount ?? selectedRequest?.processing_fee) || '0.00' }}</span>
+                            </div>
+                        </div>
+
+                        <!-- Payment Buttons for Document Requests -->
+                        <!-- Only show if no payment exists OR payment was rejected (user can try again) -->
+                        <div v-if="selectedRequest?.type === 'document' && 
+                                  (!selectedRequest?.payment || 
+                                    selectedRequest?.payment?.status?.toUpperCase() === 'REJECTED')" 
+                            class="payment-buttons-modal">
+                            <button class="pay-online-btn-modal" @click="showPaymentGateway(selectedRequest)">
+                                Pay Online
+                            </button>
+                            <button class="pay-onsite-btn-modal" @click="acknowledgeOnsite">
+                                Pay Onsite
+                            </button>
+                        </div>
+
+                        <!-- NEW: Payment Status block -->
+                        <div v-if="selectedRequest?.type === 'document'" class="payment-status-section">
+                            <h4 class="section-title-payment">
+                                <span class="icon">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" style="width: 20px; height: 20px; display: inline-block; vertical-align: middle;">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 0 0 2.25-2.25V6.75A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25v12.75A2.25 2.25 0 0 0 4.5 21.75Z" />
+                                    </svg>
+                                </span> Payment Status
+                            </h4>
+
+                            <!-- If there's a payment object attached: show status details -->
+                            <div v-if="selectedRequest?.payment" class="payment-info-card">
+                                <div :class="['payment-status-badge', selectedRequest.payment.status?.toLowerCase()]">
+                                    <span class="badge-icon">
+                                        <template v-if="selectedRequest.payment.status?.toLowerCase() === 'pending'">⏱</template>
+                                        <template v-else-if="selectedRequest.payment.status?.toLowerCase() === 'approved' || selectedRequest.payment.status?.toLowerCase() === 'paid'">✓</template>
+                                        <template v-else-if="selectedRequest.payment.status?.toLowerCase() === 'rejected'">✕</template>
+                                    </span>
+                                    <span class="badge-text">{{ formatPaymentStatus(selectedRequest.payment.status) }}</span>
+                                </div>
+
+                                <div class="payment-details-grid">
+                                    <div class="payment-detail-item">
+                                        <span class="detail-label">Amount:</span>
+                                        <span class="detail-value">₱{{ (selectedRequest.payment.amount ?? selectedRequest.amount) || '0.00' }}</span>
+                                    </div>
+
+                                    <div v-if="selectedRequest.payment.transaction_ref" class="payment-detail-item">
+                                        <span class="detail-label">Transaction Ref:</span>
+                                        <span class="detail-value">{{ selectedRequest.payment.transaction_ref }}</span>
+                                    </div>
+
+                                    <div v-if="selectedRequest.payment.paid_at" class="payment-detail-item">
+                                        <span class="detail-label">Paid At:</span>
+                                        <span class="detail-value">{{ formatDateTime(selectedRequest.payment.paid_at) }}</span>
+                                    </div>
+
+                                    <div v-if="selectedRequest.payment.receipt_path" class="payment-detail-item">
+                                        <span class="detail-label">Receipt:</span>
+                                        <span class="detail-value">
+                                            <a :href="selectedRequest.payment.receipt_path" target="_blank" class="receipt-link">View Receipt</a>
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <!-- Change Payment Method Button for Cash/Onsite payments -->
+                                <div v-if="canChangePaymentMethod(selectedRequest)" class="change-payment-method-section">
+                                    <button @click="showPaymentGateway(selectedRequest)" class="change-payment-method-btn">
+                                        Change Payment Method
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- If no payment: prompt to pay -->
+                            <div v-else class="no-payment-card">
+                                <p>No payment record found. You can <strong>Pay Online</strong> or <strong>Pay Onsite</strong> above.</p>
+                            </div>
+                        </div>
+                        <!-- END payment-status-block -->
+
+                        <!-- Admin Feedback/Comment Section for Approved Requests -->
+                        <div v-if="selectedRequest?.admin_feedback || selectedRequest?.raw?.admin_feedback" class="feedback-section">
+                            <h4 class="section-title-feedback">
+                                <span class="icon">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" style="width: 20px; height: 20px; display: inline-block; vertical-align: middle;">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M8.625 12a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H8.25m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H12m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 0 1-2.555-.337A5.972 5.972 0 0 1 5.41 20.97a5.969 5.969 0 0 1-.474-.065 4.48 4.48 0 0 0 .978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25Z" />
+                                    </svg>
+                                </span> Approver Comment
+                            </h4>
+                            <div class="feedback-box">
+                                <p>{{ selectedRequest?.admin_feedback ?? selectedRequest?.raw?.admin_feedback }}</p>
                             </div>
                         </div>
 
@@ -258,15 +426,6 @@
                             <span class="highlight-number">#{{ selectedRequest?.requestNumber }}</span>
                         </p>
 
-                        <!-- Payment Buttons for Document Requests -->
-                        <div v-if="selectedRequest?.type === 'document'" class="payment-buttons-modal">
-                            <button class="pay-online-btn-modal" @click="showPaymentGateway(selectedRequest)">
-                                Pay Online
-                            </button>
-                            <button class="pay-onsite-btn-modal" @click="acknowledgeOnsite">
-                                Pay Onsite
-                            </button>
-                        </div>
                     </div>
 
                     <!-- PENDING Status -->
@@ -286,7 +445,7 @@
                             </div>
                             <div class="info-item" v-if="selectedRequest?.type === 'document'">
                                 <span class="info-label">ESTIMATED AMOUNT:</span>
-                                <span class="info-value">₱{{ selectedRequest?.amount || '150.00' }}</span>
+                                <span class="info-value">₱{{ (selectedRequest?.amount ?? selectedRequest?.processing_fee) || '0.00' }}</span>
                             </div>
                         </div>
                         
@@ -322,67 +481,239 @@
                         </p>
                     </div>
                     
-                    <p class="thank-you">Thank you!</p>
                 </div>
-
-                <button 
-                    v-if="!(selectedRequest?.status === 'ACCEPTED' && selectedRequest?.type === 'document')" 
-                    class="close-btn" 
-                    @click="closeDetailsModal"
-                >
-                    Close
-                </button>
             </div>
         </div>
 
         <!-- Payment Gateway Modal -->
         <div v-if="showPaymentModal" class="modal-overlay" @click="closePaymentModal">
             <div class="modal-content payment-modal" @click.stop>
-                <button class="close-modal-btn" @click="closePaymentModal">✕</button>
-                <h3 class="modal-title">Choose Payment Gateway</h3>
-                <p class="modal-subtitle">Select your preferred payment method</p>
+            <button class="close-modal-btn" @click="closePaymentModal">✕</button>
+            <h3 class="modal-title">Choose Payment Gateway</h3>
+            <p class="modal-subtitle">Select your preferred payment method</p>
+            
+            <div class="payment-options">
+                <button class="payment-option-btn gcash" @click="openQR('GCash')">
+                <div class="payment-logo-placeholder">
+                    <img src="/assets/GCASH.png" alt="GCash" class="payment-logo" />
+                </div>
+                <span>GCash</span>
+                </button>
                 
-                <div class="payment-options">
-                    <button class="payment-option-btn gcash" @click="processPayment('GCash')">
-                        <div class="payment-logo-placeholder">
-                            <img src="/assets/GCASH.png" alt="GCash" class="payment-logo" />
-                        </div>
-                        <span>GCash</span>
-                    </button>
-                    
-                    <button class="payment-option-btn maya" @click="processPayment('Maya')">
-                        <div class="payment-logo-placeholder">
-                            <img src="/assets/MAYA.png" alt="Maya" class="payment-logo" />
-                        </div>
-                        <span>Maya</span>
-                    </button>
+                <button class="payment-option-btn maya" @click="openQR('Maya')">
+                <div class="payment-logo-placeholder">
+                    <img src="/assets/MAYA.png" alt="Maya" class="payment-logo" />
                 </div>
+                <span>Maya</span>
+                </button>
+            </div>
 
-                <div class="payment-details">
-                    <p><strong>Request:</strong> {{ selectedRequest?.title }}</p>
-                    <p><strong>Amount:</strong> ₱{{ selectedRequest?.amount || '150.00' }}</p>
+            <div class="payment-details">
+                <p><strong>Request:</strong> {{ selectedRequest?.title }}</p>
+                <p><strong>Amount:</strong> ₱{{ (selectedRequest?.amount ?? selectedRequest?.processing_fee) || '0.00' }}</p>
+            </div>
+            </div>
+        </div>
+
+        <!-- QR Modal (fake QR + simulate scan) -->
+        <div v-if="showQRModal" class="modal-overlay" @click="closeQRModal">
+            <div class="modal-content qr-modal" @click.stop>
+            <button class="close-modal-btn" @click="closeQRModal">✕</button>
+
+            <h3 class="modal-title">Pay via QR - {{ selectedGateway }}</h3>
+            <div v-if="paymentSuccess" class="payment-success-banner">
+              <p><strong>Payment is successful ✅</strong></p>
+            </div>
+
+            <p class="modal-subtitle">Scan the QR code below to pay online</p>
+             <p class="modal-subtitle">Click <strong>Upload Payment Screenshot</strong> to complete your payment.</p>
+
+            <div class="qr-preview">
+                <img v-if="selectedGateway === 'GCash'" src="/assets/GQR.png" alt="GCash QR" class="qr-image" />
+                <img v-else-if="selectedGateway === 'Maya'" src="/assets/MQR.png" alt="Maya QR" class="qr-image" />
+                <div v-else class="qr-placeholder">NO QR</div>
+            </div>
+
+            <div class="upload-section">
+              <label class="upload-btn">
+                  Upload Payment Screenshot
+                  <input type="file" accept="image/*" @change="onFileChange" />
+              </label>
+
+              <div v-if="uploadedPreview" class="upload-preview">
+                  <img :src="uploadedPreview" alt="Uploaded preview" class="uploaded-thumb" />
+                  <div class="upload-filename">{{ uploadedFile?.name }}</div>
+              </div>
+
+              <div v-if="uploadedFile" class="evidence-form">
+                  <div class="input-and-actions">
+                      <input
+                          type="text"
+                          v-model="referenceId"
+                          placeholder="Enter Transaction Reference ID"
+                          class="reference-input"
+                      />
+
+                      <div class="evidence-actions">
+                          <button
+                              class="submit-evidence-btn"
+                              :disabled="uploading"
+                              @click="submitEvidence"
+                          >
+                              {{ uploading ? 'Uploading...' : 'Submit' }}
+                          </button>
+
+                          <button 
+                              class="clear-evidence-btn" 
+                              @click="clearEvidence" 
+                              :disabled="uploading"
+                          >
+                              Clear
+                          </button>
+                      </div>
+                  </div>
+              </div>
+            </div>
+
+            <p class="note-message small">After submission, your payment will be reviewed by the Barangay Treasurer.</p>
+            </div>
+        </div>
+
+        <!-- Payment Confirmation Modal -->
+        <div v-if="showPaymentConfirmation" class="modal-overlay" @click="closePaymentConfirmation">
+            <div class="modal-content confirmation-modal" @click.stop>
+                <button class="close-modal-btn" @click="closePaymentConfirmation">✕</button>
+                
+                <div class="confirmation-icon success-icon">
+                    <div class="status-badge">
+                        <span>✓</span>
+                    </div>
                 </div>
+                
+                <h3 class="modal-title">{{ isOnsitePayment ? 'Onsite Payment Recorded' : 'Payment Submitted Successfully' }}</h3>
+                
+                <div class="confirmation-content">
+                    <p class="confirmation-message" v-if="!isOnsitePayment">
+                        Your payment has been successfully submitted and sent to the <strong>Barangay Treasurer</strong> for review.
+                    </p>
+                    <p class="confirmation-message" v-else>
+                        Your onsite payment has been recorded. Please bring the <strong>exact amount</strong> and present this request number at the barangay office.
+                    </p>
+                    
+                    <div class="payment-summary">
+                        <div class="summary-item">
+                            <span class="summary-label">Request Number:</span>
+                            <span class="summary-value">#{{ selectedRequest?.requestNumber }}</span>
+                        </div>
+                        <div class="summary-item">
+                            <span class="summary-label">Amount:</span>
+                            <span class="summary-value">₱{{ (selectedRequest?.amount ?? selectedRequest?.processing_fee) || '0.00' }}</span>
+                        </div>
+                        <div class="summary-item" v-if="!isOnsitePayment && selectedGateway">
+                            <span class="summary-label">Payment Method:</span>
+                            <span class="summary-value">{{ selectedGateway }}</span>
+                        </div>
+                        <div class="summary-item" v-if="isOnsitePayment">
+                            <span class="summary-label">Payment Method:</span>
+                            <span class="summary-value">Onsite</span>
+                        </div>
+                        <div class="summary-item" v-if="!isOnsitePayment && referenceId && referenceId.trim()">
+                            <span class="summary-label">Transaction Reference:</span>
+                            <span class="summary-value">{{ referenceId }}</span>
+                        </div>
+                    </div>
+                    
+                    <p class="confirmation-note" v-if="!isOnsitePayment">
+                        You will be notified once the treasurer reviews your payment. Please check your notifications for updates.
+                    </p>
+                    <p class="confirmation-note" v-else>
+                        <strong>Important:</strong> Remember to bring the exact amount (₱{{ (selectedRequest?.amount ?? selectedRequest?.processing_fee) || '0.00' }}) and present request number <strong>#{{ selectedRequest?.requestNumber }}</strong> when you visit the barangay office.
+                    </p>
+                </div>
+                
+                <button class="confirmation-btn" @click="closePaymentConfirmation">
+                    Got it
+                </button>
             </div>
         </div>
     </div>
 </template>
 
 <script setup>
-import { Link } from '@inertiajs/vue3'
+import { Link, usePage } from '@inertiajs/vue3'
 import { Head } from '@inertiajs/vue3'
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watchEffect } from 'vue'
 import { router } from '@inertiajs/vue3'
+
+// --- Inertia-shared auth user ---
+const page = usePage()
+
+// Helper to get props (supports both Inertia v1 and v0.8+)
+const getPageProp = (key) => {
+  const props = page?.props?.value ?? page?.props ?? {}
+  return props[key] ?? null
+}
+
+// role map
+const roleMap = {
+  1: 'Resident', 2: 'Barangay Captain', 3: 'Barangay Secretary',
+  4: 'Barangay Treasurer', 5: 'Barangay Kagawad',
+  6: 'Sangguniang Kabataan Chairman', 7: 'Sangguniang Kabataan Kagawad',
+  9: 'System Admin'
+}
+
+const user = computed(() => page?.props?.value?.auth?.user ?? page?.props?.auth?.user ?? null)
+
+const displayRole = computed(() => {
+  const id = user.value?.fk_role_id ?? user.value?.role_id ?? null
+  return id ? (roleMap[id] ?? `Role ${id}`) : 'Employee'
+})
+
+// Profile picture URL
+const profilePictureUrl = computed(() => {
+    if (user.value?.profile_pic) {
+        const pic = user.value.profile_pic
+        // If it's a full URL, return as is
+        if (pic.startsWith('http')) {
+            return pic
+        }
+        // If it already has /storage/, return as is
+        if (pic.startsWith('/storage/')) {
+            return pic
+        }
+        // Otherwise prepend storage path
+        return `/storage/${pic}`
+    }
+    return '/assets/DEFAULT.jpg'
+})
 
 const showSettings = ref(false)
 const showModeDropdown = ref(false)
 const showSortDropdown = ref(false)
+const showRequestTypeDropdown = ref(false)
+const showStatusDropdown = ref(false)
 const activeTab = ref('notifications')
 const currentTab = ref('requests')
 const sortOption = ref('newest')
+const requestTypeFilter = ref('all') // 'all', 'document', 'event'
+const statusFilter = ref('all') // 'all', 'pending', 'approved', 'rejected'
 const searchQuery = ref('')
 const showPaymentModal = ref(false)
 const showDetailsModal = ref(false)
 const selectedRequest = ref(null)
+// QR modal state
+const showQRModal = ref(false)
+const selectedGateway = ref(null) // 'GCash' or 'Maya'
+const scanning = ref(false)
+
+const uploadedFile = ref(null)
+const uploadedPreview = ref(null)
+const referenceId = ref('')
+const uploading = ref(false)
+const paymentSuccess = ref(false)
+const paymentError = ref('')
+const showPaymentConfirmation = ref(false)
+const isOnsitePayment = ref(false)
 
 // Sample Activities Data
 const activities = ref([
@@ -424,62 +755,205 @@ const activities = ref([
     }
 ])
 
-// Sample Requests Data
-const requests = ref([
-    {
-        id: 1,
-        requestNumber: '002212',
-        title: 'Request for Barangay Certificate',
-        date: 'Jun 01, 2025',
-        time: '10:09 AM',
-        status: 'ACCEPTED',
-        type: 'document',
-        amount: '150.00',
-        timestamp: new Date('2025-06-01T10:09:00')
-    },
-    {
-        id: 2,
-        requestNumber: '002198',
-        title: 'Request for Barangay Clearance',
-        date: 'May 28, 2025',
-        time: '2:30 PM',
-        status: 'PENDING',
-        type: 'document',
-        amount: '200.00',
-        timestamp: new Date('2025-05-28T14:30:00')
-    },
-    {
-        id: 3,
-        requestNumber: 'EA-0045',
-        title: 'Court Reservation Request',
-        date: 'May 27, 2025',
-        time: '9:15 AM',
-        status: 'ACCEPTED',
-        type: 'event',
-        timestamp: new Date('2025-05-27T09:15:00')
-    },
-    {
-        id: 4,
-        requestNumber: '002165',
-        title: 'Request for Certificate of Indigency',
-        date: 'May 25, 2025',
-        time: '11:00 AM',
-        status: 'REJECTED',
-        type: 'document',
-        amount: '100.00',
-        timestamp: new Date('2025-05-25T11:00:00')
-    },
-    {
-        id: 5,
-        requestNumber: 'EA-0032',
-        title: 'Funeral Assistance Request',
-        date: 'May 24, 2025',
-        time: '8:30 AM',
-        status: 'PENDING',
-        type: 'event',
-        timestamp: new Date('2025-05-24T08:30:00')
+// Get raw data from server (supports both key naming conventions)
+const documentRequestsRaw = computed(() => getPageProp('documentRequests') ?? getPageProp('document_requests') ?? [])
+const eventRequestsRaw = computed(() => getPageProp('eventAssistanceRequests') ?? getPageProp('event_assistance_requests') ?? [])
+
+// --- NEW: payments passed from controller
+const paymentsRaw = computed(() => getPageProp('payments') ?? getPageProp('payment') ?? [])
+
+// build a map fk_doc_request_id -> latest payment object
+const paymentsMap = computed(() => {
+  const map = {}
+  const items = Array.isArray(paymentsRaw.value) ? paymentsRaw.value : []
+  for (const p of items) {
+    // Normalize keys
+    const fk = p.fk_doc_request_id ?? p.fkDocRequestId ?? p.doc_request_id ?? p.fk_doc_request ?? null
+    if (!fk) continue
+
+    // only set if not already present (controller sorts desc so first is latest)
+    if (!map[fk]) {
+      const status = (p.status ?? p.payment_status ?? 'PENDING').toString().toUpperCase()
+      map[fk] = {
+        payment_id: p.payment_id ?? p.id ?? null,
+        fk_doc_request_id: fk,
+        status,
+        amount: p.amount ?? p.payment_amount ?? null,
+        transaction_ref: p.transaction_ref ?? p.reference_id ?? p.reference_ticket ?? null,
+        receipt_path: p.receipt_path ?? p.receipt_url ?? null,
+        paid_at: p.paid_at ?? p.created_at ?? p.payment_date ?? null,
+        raw: p,
+      }
     }
-])
+  }
+  return map
+})
+
+// Map document requests into normalized shape
+const mappedDocumentRequests = computed(() => {
+  const server = documentRequestsRaw.value || []
+  if (!Array.isArray(server) || server.length === 0) return []
+
+  return server.map((r) => {
+    const raw = r.raw ?? r
+    const createdAt = r.created_at ?? raw?.created_at
+    let timestamp = null
+    
+    if (createdAt) {
+      try { 
+        timestamp = new Date(createdAt)
+        if (isNaN(timestamp.getTime())) timestamp = null
+      } catch (e) { 
+        timestamp = null 
+      }
+    }
+
+    let dateStr = ''
+    let timeStr = ''
+    if (timestamp && !isNaN(timestamp.getTime())) {
+      try {
+        const dateFormatter = new Intl.DateTimeFormat('en-US', {
+          month: 'short',
+          day: '2-digit',
+          year: 'numeric',
+          timeZone: 'Asia/Manila'
+        })
+        const timeFormatter = new Intl.DateTimeFormat('en-US', {
+          hour: 'numeric',
+          minute: '2-digit',
+          timeZone: 'Asia/Manila',
+          hour12: true
+        })
+        dateStr = dateFormatter.format(timestamp)
+        timeStr = timeFormatter.format(timestamp)
+      } catch (e) {
+        dateStr = timestamp.toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' })
+        timeStr = timestamp.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
+      }
+    }
+
+    const requestNumber = r.doc_request_ticket ?? raw?.doc_request_ticket ?? String(r.doc_request_id ?? raw?.doc_request_id ?? '')
+    const docType = r.documentType ?? raw?.documentType
+    const title = docType?.document_name ?? raw?.document_name ?? r.purpose ?? raw?.purpose ?? 'Document Request'
+    const status = (r.status ?? raw?.status ?? 'PENDING').toString().toUpperCase()
+    const type = 'document'
+
+    const amountVal = (
+      (r.amount !== undefined && r.amount !== null) ? Number(r.amount) :
+      (r.processing_fee !== undefined && r.processing_fee !== null) ? Number(r.processing_fee) :
+      (r.applied_processing_fee !== undefined && r.applied_processing_fee !== null) ? Number(r.applied_processing_fee) :
+      (docType?.processing_fee !== undefined && docType?.processing_fee !== null) ? Number(docType.processing_fee) :
+      (raw?.processing_fee !== undefined && raw?.processing_fee !== null) ? Number(raw.processing_fee) :
+      null
+    )
+    const amount = amountVal !== null ? Number(amountVal).toFixed(2) : null
+
+    // find payment if any (use id or doc_request_id as normalized key)
+    const fk = r.doc_request_id ?? raw?.doc_request_id ?? requestNumber
+    const payment = paymentsMap.value[fk] ?? null
+
+    return {
+      id: r.doc_request_id ?? raw?.doc_request_id ?? requestNumber,
+      requestNumber,
+      title,
+      date: dateStr,
+      time: timeStr,
+      status,
+      type,
+      amount,
+      timestamp: timestamp || new Date(0),
+      pickup_location: r.pickup_location ?? raw?.pickup_location ?? null,
+      pickup_start: r.pickup_start ?? raw?.pickup_start ?? null,
+      pickup_end: r.pickup_end ?? raw?.pickup_end ?? null,
+      pickup_item: r.pickup_item ?? raw?.pickup_item ?? null,
+      person_to_look: r.person_to_look ?? raw?.person_to_look ?? null,
+      admin_feedback: r.admin_feedback ?? raw?.admin_feedback ?? null,
+      raw,
+      payment, // attached payment object or null
+    }
+  })
+})
+
+// Map event assistance requests into normalized shape
+const mappedEventRequests = computed(() => {
+  const server = eventRequestsRaw.value || []
+  if (!Array.isArray(server) || server.length === 0) return []
+
+  return server.map((r) => {
+    const raw = r.raw ?? r
+    const dt = raw?.start_datetime ?? raw?.created_at
+    let timestamp = null
+    if (dt) {
+      try { timestamp = new Date(dt) } catch (e) { timestamp = null }
+    } else if (raw?.created_at) {
+      try { timestamp = new Date(raw.created_at) } catch (e) { timestamp = null }
+    }
+
+    let dateStr = ''
+    let timeStr = ''
+    if (timestamp && !isNaN(timestamp.getTime())) {
+      try {
+        const dateFormatter = new Intl.DateTimeFormat('en-US', {
+          month: 'short',
+          day: '2-digit',
+          year: 'numeric',
+          timeZone: 'Asia/Manila'
+        })
+        const timeFormatter = new Intl.DateTimeFormat('en-US', {
+          hour: 'numeric',
+          minute: '2-digit',
+          timeZone: 'Asia/Manila',
+          hour12: true
+        })
+        dateStr = dateFormatter.format(timestamp)
+        timeStr = timeFormatter.format(timestamp)
+      } catch (e) {
+        dateStr = timestamp.toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' })
+        timeStr = timestamp.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
+      }
+    }
+
+    const requestNumber = raw?.eventassist_request_ticket ?? raw?.event_assist_request_ticket ?? String(raw?.event_assist_request_id ?? raw?.id ?? '')
+    // Use title from server (which uses event_type), fallback to event_type, then purpose
+    const title = raw?.title ?? raw?.event_type ?? (raw?.purpose ? String(raw.purpose) : (raw?.event_location ? String(raw.event_location) : 'Event Assistance'))
+    const status = (raw?.status ?? 'PENDING').toString().toUpperCase()
+    const type = 'event'
+
+    return {
+      id: raw?.event_assist_request_id ?? requestNumber,
+      requestNumber,
+      title,
+      date: dateStr,
+      time: timeStr,
+      status,
+      type,
+      amount: null,
+      timestamp: timestamp || new Date(0),
+      admin_feedback: raw?.admin_feedback ?? null,
+      raw,
+    }
+  })
+})
+
+// Combine documents + events into a single requests array for the UI
+const combinedRequests = computed(() => {
+  const combined = [
+    ...(mappedDocumentRequests.value || []),
+    ...(mappedEventRequests.value || [])
+  ]
+
+  combined.forEach(c => {
+    if (!(c.timestamp instanceof Date)) {
+      try { c.timestamp = new Date(c.timestamp) } catch (e) { c.timestamp = new Date(0) }
+    }
+  })
+
+  combined.sort((a,b) => b.timestamp - a.timestamp)
+  return combined
+})
+
+// Alias for backward compatibility
+const requests = combinedRequests
 
 // Filtered Activities
 const filteredActivities = computed(() => {
@@ -504,28 +978,40 @@ const filteredActivities = computed(() => {
 
 // Filtered Requests
 const filteredRequests = computed(() => {
-    let filtered = [...requests.value]
+  let filtered = [...combinedRequests.value]
 
-    if (searchQuery.value.trim()) {
-        const query = searchQuery.value.toLowerCase()
-        filtered = filtered.filter(request => 
-            request.title.toLowerCase().includes(query) ||
-            request.requestNumber.includes(query) ||
-            request.status.toLowerCase().includes(query)
-        )
-    }
+  // Filter by request type
+  if (requestTypeFilter.value !== 'all') {
+    filtered = filtered.filter(req => req.type === requestTypeFilter.value)
+  }
 
-    if (sortOption.value === 'newest') {
-        filtered.sort((a, b) => b.timestamp - a.timestamp)
-    } else if (sortOption.value === 'oldest') {
-        filtered.sort((a, b) => a.timestamp - b.timestamp)
-    } else if (sortOption.value === 'relevant') {
-        // Sort by status priority: PENDING > ACCEPTED > REJECTED
-        const statusPriority = { 'PENDING': 1, 'ACCEPTED': 2, 'REJECTED': 3 }
-        filtered.sort((a, b) => statusPriority[a.status] - statusPriority[b.status])
-    }
+  // Filter by status
+  if (statusFilter.value !== 'all') {
+    filtered = filtered.filter(req => {
+      const reqStatus = (req.status || '').toLowerCase()
+      return reqStatus === statusFilter.value.toLowerCase()
+    })
+  }
 
-    return filtered
+  if (searchQuery.value.trim()) {
+    const q = searchQuery.value.toLowerCase()
+    filtered = filtered.filter(req =>
+      (req.title || '').toLowerCase().includes(q) ||
+      (String(req.requestNumber || '')).toLowerCase().includes(q) ||
+      (req.status || '').toLowerCase().includes(q)
+    )
+  }
+
+  if (sortOption.value === 'newest') {
+    filtered.sort((a,b) => b.timestamp - a.timestamp)
+  } else if (sortOption.value === 'oldest') {
+    filtered.sort((a,b) => a.timestamp - b.timestamp)
+  } else if (sortOption.value === 'relevant') {
+    const statusPriority = { 'PENDING': 1, 'APPROVED': 2, 'REJECTED': 3 }
+    filtered.sort((a,b) => (statusPriority[a.status] || 99) - (statusPriority[b.status] || 99))
+  }
+
+  return filtered
 })
 
 const toggleSettings = () => {
@@ -547,6 +1033,24 @@ const toggleSortDropdown = () => {
 const selectSort = (option) => {
     sortOption.value = option
     showSortDropdown.value = false
+}
+
+const toggleRequestTypeDropdown = () => {
+    showRequestTypeDropdown.value = !showRequestTypeDropdown.value
+}
+
+const selectRequestType = (type) => {
+    requestTypeFilter.value = type
+    showRequestTypeDropdown.value = false
+}
+
+const toggleStatusDropdown = () => {
+    showStatusDropdown.value = !showStatusDropdown.value
+}
+
+const selectStatus = (status) => {
+    statusFilter.value = status
+    showStatusDropdown.value = false
 }
 
 const performSearch = () => {
@@ -581,10 +1085,7 @@ const navigateToEvents = () => {
     router.visit(route('event_assistance_employee'))
 }
 
-const navigateToNotifications = () => {
-    activeTab.value = 'notifications'
-    // Already on notifications page, no need to navigate
-}
+const navigateToNotifications = () => { activeTab.value = 'notifications' }
 
 const switchTab = (tab) => {
     currentTab.value = tab
@@ -605,44 +1106,366 @@ const closeDetailsModal = () => {
     selectedRequest.value = null
 }
 
+// NEW: payment methods from server props (optional)
+const paymentMethodsRaw = computed(() => getPageProp('paymentMethods') ?? getPageProp('payment_methods') ?? [])
+const paymentMethodsMap = computed(() => {
+  const map = {}
+  for (const m of (Array.isArray(paymentMethodsRaw.value) ? paymentMethodsRaw.value : [])) {
+    const name = m.pay_method_name ?? m.name ?? m.payMethodName ?? m.payment_method_name ?? m.pay_method ?? null
+    const id = m.pay_method_id ?? m.id ?? m.payMethodId ?? null
+    if (name && id) map[String(name).trim()] = id
+  }
+  return map
+})
+
 const showPaymentGateway = (request) => {
     selectedRequest.value = request
     showDetailsModal.value = false
     showPaymentModal.value = true
 }
 
+const openQR = (gateway) => {
+  selectedGateway.value = gateway
+  showQRModal.value = true
+  showPaymentModal.value = false
+}
+
+const closeQRModal = () => {
+  showQRModal.value = false
+  selectedGateway.value = null
+  scanning.value = false
+}
+
 const closePaymentModal = () => {
     showPaymentModal.value = false
 }
 
-const processPayment = (gateway) => {
-    alert(`Processing payment via ${gateway}...\nRequest: ${selectedRequest.value.title}\nAmount: ₱${selectedRequest.value.amount}`)
-    closePaymentModal()
-    selectedRequest.value = null
+/**
+ * File upload helpers and payment flows
+ */
+const onFileChange = (event) => {
+  const file = (event.target && event.target.files && event.target.files[0]) || null
+  if (!file) {
+    clearEvidence()
+    return
+  }
+
+  const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp']
+  if (!allowedTypes.includes(file.type)) {
+    alert('Please upload a PNG/JPEG/WebP image.')
+    event.target.value = ''
+    return
+  }
+
+  const maxMB = 5
+  if (file.size / 1024 / 1024 > maxMB) {
+    alert(`File too large. Max ${maxMB} MB allowed.`)
+    event.target.value = ''
+    return
+  }
+
+  uploadedFile.value = file
+
+  if (uploadedPreview.value) {
+    try { URL.revokeObjectURL(uploadedPreview.value) } catch (e) {}
+    uploadedPreview.value = null
+  }
+  uploadedPreview.value = URL.createObjectURL(file)
 }
 
-const acknowledgeOnsite = () => {
-    showDetailsModal.value = false
-    alert('You have chosen to pay onsite. Please bring the exact amount when you pick up your document.')
+const clearEvidence = () => {
+  if (uploadedPreview.value) {
+    try { URL.revokeObjectURL(uploadedPreview.value) } catch (e) {}
+  }
+  uploadedFile.value = null
+  uploadedPreview.value = null
+  referenceId.value = ''
+  uploading.value = false
+  paymentSuccess.value = false
+  paymentError.value = ''
+}
+
+/**
+ * submitEvidence()
+ * - sends FormData to backend payments.upload_evidence route (adjust route name as needed)
+ */
+const submitEvidence = async () => {
+  if (!selectedRequest.value) {
+    alert('No selected request.');
+    return;
+  }
+
+  // require either a file or a reference ID
+  if (!uploadedFile.value && (!referenceId.value || referenceId.value.trim() === '')) {
+    alert('Please upload a screenshot or enter a transaction reference ID before submitting.');
+    return;
+  }
+
+  uploading.value = true;
+  paymentError.value = '';
+  paymentSuccess.value = false;
+
+  try {
+    const formData = new FormData();
+    formData.append('fk_doc_request_id', Number(selectedRequest.value.id || selectedRequest.value.requestNumber));
+    formData.append('fk_user_id', Number(user.value?.user_id ?? user.value?.id ?? ''));
+    // send keys the controller expects
+    formData.append('request_reference_ticket', selectedRequest.value.requestNumber ?? '');
+    formData.append('paid_amount', String(Number(selectedRequest.value.amount ?? 0)));
+    if (selectedGateway.value) formData.append('gateway', selectedGateway.value);
+    if (referenceId.value && referenceId.value.trim() !== '') {
+      formData.append('transaction_ref', referenceId.value.trim());
+    }
+    if (uploadedFile.value) {
+      formData.append('evidence', uploadedFile.value, uploadedFile.value.name);
+    }
+
+    // Store referenceId temporarily before clearing
+    const tempReferenceId = referenceId.value;
+    
+    try {
+      const response = await window.axios.post(route('payments.store'), formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+          'X-Requested-With': 'XMLHttpRequest',
+        },
+        withCredentials: true,
+      });
+
+      if (response.data && response.status === 201) {
+        paymentSuccess.value = true;
+        // Preserve referenceId for confirmation modal
+        referenceId.value = tempReferenceId;
+        // Mark as online payment (not onsite)
+        isOnsitePayment.value = false;
+        // Show confirmation modal instead of alert
+        showPaymentConfirmation.value = true;
+        // Close QR modal after a short delay
+        setTimeout(() => {
+          showQRModal.value = false;
+          selectedGateway.value = null;
+          // Don't clear evidence yet - let user see confirmation first
+        }, 500);
+        // Refresh payment data
+        router.reload({ only: ['documentRequests', 'payments'] });
+      }
+    } catch (axiosError) {
+      console.error('Upload errors:', axiosError);
+      if (axiosError.response && axiosError.response.data) {
+        paymentError.value = JSON.stringify(axiosError.response.data);
+        alert('Failed to submit payment evidence: ' + (axiosError.response.data.message || 'Please try again.'));
+      } else {
+        alert('Failed to submit payment evidence. Please try again.');
+      }
+    }
+  } catch (err) {
+    console.error('Unexpected error in submitEvidence:', err);
+    alert('An unexpected error occurred while submitting evidence.');
+  } finally {
+    uploading.value = false;
+  }
+};
+
+const acknowledgeOnsite = async () => {
+  if (!selectedRequest.value) {
+    alert('No request selected.')
+    return
+  }
+
+  const payload = {
+    fk_doc_request_id: Number(selectedRequest.value.id ?? selectedRequest.value.requestNumber ?? 0),
+    fk_user_id: Number(user.value?.user_id ?? user.value?.id ?? 0),
+    request_reference_ticket: selectedRequest.value.requestNumber ?? '',
+    paid_amount: Number(selectedRequest.value.amount ?? selectedRequest.value.processing_fee ?? 0),
+    onsite: true,
+  }
+
+  try {
+    const response = await window.axios.post(route('payments.store'), payload, {
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Requested-With': 'XMLHttpRequest',
+      },
+      withCredentials: true,
+    })
+
+    if (response.data && response.status === 201) {
+      // Mark as onsite payment for different confirmation message
+      isOnsitePayment.value = true
+      // Show confirmation modal
+      showPaymentConfirmation.value = true
+      // Close details modal
+      showDetailsModal.value = false
+      // Refresh payment data
+      router.reload({ only: ['documentRequests', 'payments'] })
+    }
+  } catch (axiosError) {
+    console.error('Failed to create onsite payment:', axiosError)
+    if (axiosError.response && axiosError.response.data) {
+      alert('Failed to create onsite payment: ' + (axiosError.response.data.message || 'Please try again.'))
+    } else {
+      alert('Failed to create onsite payment. Please try again.')
+    }
+  }
+}
+
+const closePaymentConfirmation = () => {
+  showPaymentConfirmation.value = false
+  isOnsitePayment.value = false
+  // Clear evidence after confirmation is closed
+  clearEvidence()
+  // Refresh the page data to show updated payment status
+  router.reload({ only: ['documentRequests', 'payments'] })
 }
 
 const getRejectionReason = (request) => {
-    const reasons = {
-        '002165': 'Incomplete documentation. Please submit a valid ID and proof of residency.',
-        'default': 'The submitted information does not meet the requirements. Please contact the barangay office for more details.'
+    // First, try to get admin_feedback from the request
+    const adminFeedback = request?.admin_feedback ?? request?.raw?.admin_feedback ?? null
+    
+    if (adminFeedback && adminFeedback.trim() !== '') {
+        return adminFeedback.trim()
     }
-    return reasons[request.requestNumber] || reasons.default
+    
+    // Fallback to default message if no feedback is available
+    return 'The submitted information does not meet the requirements. Please contact the barangay office for more details.'
 }
 
-const getPickupSchedule = () => {
-    const today = new Date()
-    const pickupDate = new Date(today)
-    pickupDate.setDate(today.getDate() + 3)
-    
-    const options = { month: 'short', day: '2-digit', year: 'numeric' }
-    const dateStr = pickupDate.toLocaleDateString('en-US', options).toUpperCase()
-    
-    return `${dateStr}, 9:00 AM - 3:00 PM`
+const parseDate = (val) => {
+  if (!val) return null;
+  if (val instanceof Date && !isNaN(val)) return val;
+  try {
+    const d = new Date(val);
+    if (!isNaN(d)) return d;
+  } catch (e) {}
+  return null;
+};
+
+const getPickupSchedule = (request = null) => {
+  const startRaw = request?.pickup_start ?? request?.raw?.pickup_start ?? null;
+  const endRaw = request?.pickup_end ?? request?.raw?.pickup_end ?? null;
+
+  const startDate = parseDate(startRaw);
+  const endDate = parseDate(endRaw);
+
+  const dateOptions = { month: 'short', day: '2-digit', year: 'numeric' };
+  const timeOptions = { hour: 'numeric', minute: '2-digit' };
+
+  if (startDate) {
+    const dateStr = startDate.toLocaleDateString('en-US', dateOptions).toUpperCase();
+    const startTimeStr = startDate.toLocaleTimeString('en-US', timeOptions);
+
+    if (endDate) {
+      const sameDay = startDate.toDateString() === endDate.toDateString();
+      const endTimeStr = endDate.toLocaleTimeString('en-US', timeOptions);
+      if (sameDay) {
+        return `${dateStr}, ${startTimeStr} - ${endTimeStr}`;
+      } else {
+        const endDateStr = endDate.toLocaleDateString('en-US', dateOptions).toUpperCase();
+        return `${dateStr}, ${startTimeStr} - ${endDateStr}, ${endTimeStr}`;
+      }
+    } else {
+      const hasTime = !(startTimeStr === '12:00 AM' && startDate.getHours() === 0 && startDate.getMinutes() === 0);
+      if (hasTime) {
+        return `${dateStr}, ${startTimeStr}`;
+      }
+      return `${dateStr}, 9:00 AM - 3:00 PM`;
+    }
+  }
+
+  const today = new Date();
+  const pickupDate = new Date(today);
+  pickupDate.setDate(today.getDate() + 3);
+
+  const defaultDateStr = pickupDate.toLocaleDateString('en-US', dateOptions).toUpperCase();
+  return `${defaultDateStr}, 9:00 AM - 3:00 PM`;
+};
+
+// Payment badge helper: call as getPaymentBadge(request)
+const getPaymentBadge = (request) => {
+  // prefer normalized attached payment
+  const p = request?.payment ?? request?.raw?.payment ?? request?.raw?.latest_payment ?? null
+
+  // If there's no payment record, return null -> show "No payment"
+  if (!p) return null
+
+  // try different possible status fields
+  const rawStatus =
+    p.status ??
+    p.payment_status ??
+    p.raw?.status ??
+    p.raw?.payment_status ??
+    null
+
+  const s = rawStatus ? String(rawStatus).toUpperCase().trim() : null
+
+  // map to three buckets
+  if (s) {
+    if (['PENDING', 'PROCESSING', 'AWAITING', 'ONHOLD', 'IN_REVIEW', 'IN-REVIEW'].includes(s)) {
+      return { label: 'Payment Pending', cls: 'pending' }
+    }
+    if (['APPROVED', 'PAID', 'SUCCESS', 'COMPLETED', 'CONFIRMED'].includes(s)) {
+      return { label: 'Payment Approved', cls: 'approved' }
+    }
+    if (['REJECTED', 'FAILED', 'CANCELLED', 'DECLINED'].includes(s)) {
+      return { label: 'Payment Rejected', cls: 'rejected' }
+    }
+  }
+
+  // If payment exists but status unknown, treat as pending to indicate action required/review
+  return { label: 'Payment Pending', cls: 'pending' }
+}
+
+// UI Helper: format payment status display string
+const formatPaymentStatus = (s) => {
+  if (!s) return 'UNKNOWN'
+  const v = s.toString().toUpperCase()
+  if (v === 'PENDING') return 'Payment Pending'
+  if (v === 'APPROVED' || v === 'PAID' || v === 'SUCCESS') return 'Payment Approved'
+  if (v === 'REJECTED' || v === 'FAILED') return 'Payment Rejected'
+  return v
+}
+
+const formatDateTime = (val) => {
+  if (!val) return ''
+  try {
+    const d = new Date(val)
+    return d.toLocaleString('en-US', { month: 'short', day: '2-digit', year: 'numeric', hour: 'numeric', minute: '2-digit' })
+  } catch (e) { return String(val) }
+}
+
+// Check if payment method can be changed (cash/onsite with pending status)
+const canChangePaymentMethod = (request) => {
+  if (!request?.payment) return false
+  
+  const paymentStatus = (request.payment.status ?? '').toString().toUpperCase()
+  // Only allow change if status is pending
+  if (paymentStatus !== 'PENDING') return false
+  
+  // Check payment method from various possible locations
+  const paymentMethodRaw = request.payment.raw?.paymentMethod?.pay_method_name ?? 
+                          request.payment.raw?.payment_method_name ?? 
+                          request.payment.raw?.paymentMethod ?? 
+                          request.payment.paymentMethod ?? 
+                          request.payment.raw?.pay_method_name ??
+                          request.payment.payment_method_name ??
+                          ''
+  
+  const methodUpper = paymentMethodRaw.toString().toUpperCase().trim()
+  
+  // Check if it's cash or onsite
+  const isCashOrOnsite = methodUpper.includes('CASH') || 
+                         methodUpper.includes('ONSITE') || 
+                         methodUpper.includes('ON-SITE') || 
+                         methodUpper.includes('ON SITE')
+  
+  // Also check if transaction_ref is null/empty (often indicates onsite/cash payments)
+  // But only if we haven't already determined it's cash/onsite
+  if (!isCashOrOnsite && (!request.payment.transaction_ref || request.payment.transaction_ref === '' || request.payment.transaction_ref === null)) {
+    // If there's no transaction ref and status is pending, it's likely onsite/cash
+    return true
+  }
+  
+  return isCashOrOnsite
 }
 
 const handleClickOutside = (event) => {
@@ -654,6 +1477,8 @@ const handleClickOutside = (event) => {
     }
     if (!event.target.closest('.filter-dropdown-wrapper')) {
         showSortDropdown.value = false
+        showRequestTypeDropdown.value = false
+        showStatusDropdown.value = false
     }
 }
 
@@ -685,7 +1510,7 @@ onUnmounted(() => {
 }
 
 .header-bar {
-    background: linear-gradient(135deg, #ff8c42, #ff7a28);
+    background: #2e2e2e;
     color: white;
     padding: 5px 0;
     box-shadow: 0 4px 15px rgba(255, 140, 66, 0.3);
@@ -762,7 +1587,7 @@ onUnmounted(() => {
 }
 
 .profile-card {
-    background: linear-gradient(135deg, #ff8c42, #ff7a28);
+    background: #2e2e2e;
     border-radius: 15px;
     padding: 20px;
     color: white;
@@ -790,11 +1615,14 @@ onUnmounted(() => {
 
 .profile-role {
     font-size: 12px;
-    background: #239640;
+    background: linear-gradient(135deg, #ff8c42, #ff7a28);
+    color: white;
     padding: 4px 12px;
     border-radius: 15px;
     display: inline-block;
     font-weight: 600;
+    text-transform: uppercase;
+    box-shadow: 0 2px 8px rgba(255, 140, 66, 0.3);
 }
 
 .nav-menu {
@@ -807,7 +1635,9 @@ onUnmounted(() => {
 }
 
 .nav-item {
-    display: block;
+    display: flex;
+    align-items: center;
+    gap: 12px;
     padding: 15px 20px;
     text-decoration: none;
     color: #333;
@@ -815,6 +1645,13 @@ onUnmounted(() => {
     transition: all 0.3s ease;
     cursor: pointer;
     font-weight: 500;
+}
+
+.nav-icon {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+    stroke: currentColor;
 }
 
 .nav-item:last-child {
@@ -835,20 +1672,28 @@ onUnmounted(() => {
 
 .faq-btn {
     width: 100%;
-    background: linear-gradient(135deg, #2bb24a, #239640);
+    background: #ff8c42;
     color: white;
     border: none;
     padding: 15px 20px;
     border-radius: 12px;
     font-weight: 600;
-cursor: pointer;
-box-shadow: 0 6px 20px rgba(43, 178, 74, 0.3);
-transition: all 0.3s ease;
-font-size: 14px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
 }
+
 .faq-btn:hover {
-transform: translateY(-2px);
-box-shadow: 0 8px 25px rgba(43, 178, 74, 0.4);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(255, 140, 66, 0.4);
+}
+
+.faq-btn .nav-icon {
+    stroke: white;
 }
 .content-area {
 display: flex;
@@ -1144,11 +1989,6 @@ font-weight: 700;
 text-transform: uppercase;
 white-space: nowrap;
 }
-.request-status.accepted {
-background: linear-gradient(135deg, #2bb24a, #239640);
-color: white;
-box-shadow: 0 2px 8px rgba(43, 178, 74, 0.3);
-}
 .request-status.pending {
 background: linear-gradient(135deg, #ff9800, #f57c00);
 color: white;
@@ -1158,6 +1998,69 @@ box-shadow: 0 2px 8px rgba(255, 152, 0, 0.3);
 background: linear-gradient(135deg, #dc3545, #c82333);
 color: white;
 box-shadow: 0 2px 8px rgba(220, 53, 69, 0.3);
+}
+.request-status.approved {
+background: linear-gradient(135deg, #2bb24a, #239640);
+color: white;
+box-shadow: 0 2px 8px rgba(43, 178, 74, 0.3);
+}
+
+/* Payment Badge Styles */
+.request-status-wrapper {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+}
+
+.request-payment-row {
+  display: flex;
+  justify-content: flex-start;
+  order: -1;
+}
+
+.payment-list-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 10px;
+  border-radius: 20px;
+  font-weight: 600;
+  font-size: 0.92rem;
+}
+
+.payment-list-badge.pending {
+  background: #fff3cd;
+  color: #856404;
+  border: 1px solid #ffeeba;
+}
+
+.payment-list-badge.approved {
+  background: #d4edda;
+  color: #155724;
+  border: 1px solid #c3e6cb;
+}
+
+.payment-list-badge.rejected {
+  background: #f8d7da;
+  color: #721c24;
+  border: 1px solid #f5c6cb;
+}
+
+.payment-list-badge.none {
+  background: transparent;
+  color: #6c757d;
+  border: 1px dashed rgba(0,0,0,0.06);
+}
+
+.payment-list-badge .badge-icon {
+  font-size: 1.08rem;
+  line-height: 1;
+}
+
+.payment-list-badge .badge-text {
+  font-weight: 600;
+  font-size: 0.9rem;
 }
 .no-notifications {
 padding: 60px 40px;
@@ -1336,14 +2239,23 @@ font-size: 13px;
 line-height: 1.5;
 }
 .note-message {
-font-size: 12px;
-color: #666;
-line-height: 1.5;
-padding: 15px;
-background: #fffbf0;
-border-left: 4px solid #ff9800;
-border-radius: 5px;
-margin-bottom: 20px;
+  font-size: 12px;
+  color: #666;
+  line-height: 1.5;
+  width: 540px;
+  padding: 12px 15px;
+  background: #fffbf0;
+  border-left: 4px solid #ff9800;
+  border-radius: 5px;
+  margin: 20px auto;
+  text-align: left;
+}
+
+.note-message.small {
+  max-width: 400px;
+  width: auto;
+  margin: 20px auto;
+  text-align: center;
 }
 .thank-you {
 font-size: 14px;
@@ -1384,6 +2296,182 @@ box-shadow: 0 4px 12px rgba(43, 178, 74, 0.3);
 .pay-onsite-btn-modal:hover {
 transform: translateY(-2px);
 box-shadow: 0 6px 18px rgba(43, 178, 74, 0.4);
+}
+
+/* Payment Status Section */
+.payment-status-section {
+    margin-top: 20px;
+    padding: 20px;
+    background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+    border-radius: 12px;
+    border: 1px solid rgba(0,0,0,0.05);
+}
+
+.section-title-payment {
+    font-size: 18px;
+    font-weight: 700;
+    color: #333;
+    margin-bottom: 15px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.section-title-payment .icon {
+    font-size: 20px;
+}
+
+/* Feedback Section */
+.feedback-section {
+    margin-top: 20px;
+    margin-bottom: 20px;
+}
+
+.section-title-feedback {
+    font-size: 18px;
+    font-weight: 700;
+    color: #333;
+    margin-bottom: 15px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.section-title-feedback .icon {
+    font-size: 20px;
+}
+
+.feedback-box {
+    background: #f0f7ff;
+    border: 2px solid #4a90e2;
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+.feedback-box p {
+    color: #333;
+    font-size: 14px;
+    line-height: 1.6;
+    margin: 0;
+}
+
+.payment-info-card {
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    border: 1px solid rgba(0,0,0,0.05);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+.payment-status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 14px;
+    margin-bottom: 15px;
+}
+
+.payment-status-badge.pending {
+    background: linear-gradient(135deg, #fff3cd, #ffeeba);
+    color: #856404;
+    border: 1px solid #ffc107;
+}
+
+.payment-status-badge.approved,
+.payment-status-badge.paid {
+    background: linear-gradient(135deg, #d4edda, #c3e6cb);
+    color: #155724;
+    border: 1px solid #28a745;
+}
+
+.payment-status-badge.rejected {
+    background: linear-gradient(135deg, #f8d7da, #f5c6cb);
+    color: #721c24;
+    border: 1px solid #dc3545;
+}
+
+/* Change Payment Method Section */
+.change-payment-method-section {
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid rgba(0,0,0,0.1);
+}
+
+.change-payment-method-btn {
+    width: 100%;
+    padding: 12px 20px;
+    background: linear-gradient(135deg, #ff8c42, #ff7a28);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(255, 140, 66, 0.3);
+}
+
+.change-payment-method-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(255, 140, 66, 0.4);
+    background: linear-gradient(135deg, #ff7a28, #ff6a18);
+}
+
+.payment-details-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.payment-detail-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.payment-detail-item:last-child {
+    border-bottom: none;
+}
+
+.detail-label {
+    font-weight: 600;
+    color: #666;
+    font-size: 14px;
+}
+
+.detail-value {
+    color: #333;
+    font-size: 14px;
+    text-align: right;
+}
+
+.receipt-link {
+    color: #ff8c42;
+    text-decoration: none;
+    font-weight: 600;
+    transition: color 0.2s;
+}
+
+.receipt-link:hover {
+    color: #ff7a28;
+    text-decoration: underline;
+}
+
+.no-payment-card {
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    border: 1px solid rgba(0,0,0,0.05);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    text-align: center;
+    color: #666;
+    font-size: 14px;
 }
 .close-btn {
 width: 100%;
@@ -1475,9 +2563,493 @@ margin-bottom: 8px;
 margin-bottom: 0;
 }
 .payment-details strong {
-font-weight: 700;
-color: #333;
+    font-weight: 700;
+    color: #333;
 }
+
+/* QR Modal Styles */
+.qr-modal {
+    padding: 40px 30px;
+    max-width: 500px;
+}
+
+.qr-preview {
+    margin: 20px auto;
+    width: 250px;
+    height: 250px;
+    background: #f8f9fa;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px dashed #ddd;
+}
+
+.qr-image {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    border-radius: 10px;
+}
+
+.qr-placeholder {
+    color: #999;
+    font-size: 14px;
+}
+
+.upload-section {
+    margin: 16px 0;
+    text-align: center;
+}
+
+.upload-btn {
+    display: inline-block;
+    padding: 10px 30px;
+    font-weight: bold;
+    color: white;
+    font-size: 15px;
+    background: #ff8c42;
+    border-radius: 6px;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s;
+    max-width: 300px;
+    width: auto;
+}
+
+.upload-btn:hover {
+    background: #ff7a28;
+    transform: translateY(-2px);
+}
+
+.upload-btn input[type="file"] {
+    position: absolute;
+    left: 0;
+    top: 0;
+    opacity: 0;
+    width: 100%;
+    height: 100%;
+    cursor: pointer;
+}
+
+.upload-preview {
+    margin-top: 12px;
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+}
+
+.uploaded-thumb {
+    width: 120px;
+    height: 120px;
+    object-fit: cover;
+    border-radius: 8px;
+    border: 1px solid #ddd;
+}
+
+.upload-filename {
+    font-size: 0.9rem;
+    color: #333;
+}
+
+.evidence-form {
+    margin-top: 12px;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    max-width: 350px;
+    width: 100%;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.input-and-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.reference-input {
+    height: 45px;
+    width: 300px;
+    padding: 0 12px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+    box-sizing: border-box;
+    font-size: 14px;
+}
+
+.evidence-actions {
+    display: flex;
+    gap: 5px;
+}
+
+.submit-evidence-btn,
+.clear-evidence-btn {
+    height: 45px;
+    padding: 0 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    font-weight: 600;
+    box-sizing: border-box;
+    transition: all 0.2s;
+}
+
+.submit-evidence-btn {
+    background: #28a745;
+    color: white;
+}
+
+.submit-evidence-btn:hover {
+    background: #218838;
+}
+
+.submit-evidence-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.clear-evidence-btn {
+    background: #e0e0e0;
+    color: #333;
+}
+
+.clear-evidence-btn:hover {
+    background: #d0d0d0;
+}
+
+.clear-evidence-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.payment-success-banner {
+    background: #d4edda;
+    border: 1px solid #c3e6cb;
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 15px;
+    color: #155724;
+}
+
+.payment-success-banner p {
+    margin: 0;
+    font-weight: 600;
+}
+
+.note-message.small {
+    font-size: 11px;
+    margin-top: 15px;
+    max-width: 400px;
+    width: auto;
+    margin: 20px auto;
+    text-align: center;
+}
+
+/* QR Modal Styles */
+.qr-modal {
+    padding: 40px 30px;
+    max-width: 500px;
+}
+
+.qr-preview {
+    margin: 20px auto;
+    width: 250px;
+    height: 250px;
+    background: #f8f9fa;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px dashed #ddd;
+}
+
+.qr-image {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    border-radius: 10px;
+}
+
+.qr-placeholder {
+    color: #999;
+    font-size: 14px;
+}
+
+.upload-section {
+    margin: 16px 0;
+    text-align: center;
+}
+
+.upload-btn {
+    display: inline-block;
+    padding: 10px 30px;
+    font-weight: bold;
+    color: white;
+    font-size: 15px;
+    background: #ff8c42;
+    border-radius: 6px;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s;
+    max-width: 300px;
+    width: auto;
+}
+
+.upload-btn:hover {
+    background: #ff7a28;
+    transform: translateY(-2px);
+}
+
+.upload-btn input[type="file"] {
+    position: absolute;
+    left: 0;
+    top: 0;
+    opacity: 0;
+    width: 100%;
+    height: 100%;
+    cursor: pointer;
+}
+
+.upload-preview {
+    margin-top: 12px;
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+}
+
+.uploaded-thumb {
+    width: 120px;
+    height: 120px;
+    object-fit: cover;
+    border-radius: 8px;
+    border: 1px solid #ddd;
+}
+
+.upload-filename {
+    font-size: 0.9rem;
+    color: #333;
+}
+
+.evidence-form {
+    margin-top: 12px;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    max-width: 350px;
+    width: 100%;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.input-and-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.reference-input {
+    height: 45px;
+    width: 300px;
+    padding: 0 12px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+    box-sizing: border-box;
+    font-size: 14px;
+}
+
+.evidence-actions {
+    display: flex;
+    gap: 5px;
+}
+
+.submit-evidence-btn,
+.clear-evidence-btn {
+    height: 45px;
+    padding: 0 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    font-weight: 600;
+    box-sizing: border-box;
+    transition: all 0.2s;
+}
+
+.submit-evidence-btn {
+    background: #28a745;
+    color: white;
+}
+
+.submit-evidence-btn:hover {
+    background: #218838;
+}
+
+.submit-evidence-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.clear-evidence-btn {
+    background: #e0e0e0;
+    color: #333;
+}
+
+.clear-evidence-btn:hover {
+    background: #d0d0d0;
+}
+
+.clear-evidence-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.payment-success-banner {
+    background: #d4edda;
+    border: 1px solid #c3e6cb;
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 15px;
+    color: #155724;
+}
+
+.payment-success-banner p {
+    margin: 0;
+    font-weight: 600;
+}
+
+.note-message.small {
+    font-size: 11px;
+    margin-top: 15px;
+    max-width: 400px;
+    width: auto;
+    margin: 20px auto;
+    text-align: center;
+}
+
+/* Payment Confirmation Modal Styles */
+.confirmation-modal {
+    padding: 40px 30px;
+    max-width: 550px;
+    text-align: center;
+}
+
+.confirmation-icon {
+    margin-bottom: 20px;
+}
+
+.confirmation-icon.success-icon .status-badge {
+    width: 80px;
+    height: 80px;
+    margin: 0 auto;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 40px;
+    font-weight: 700;
+    background: linear-gradient(135deg, #2bb24a, #239640);
+    color: white;
+    box-shadow: 0 4px 15px rgba(43, 178, 74, 0.3);
+}
+
+.confirmation-content {
+    text-align: left;
+    margin: 25px 0;
+}
+
+.confirmation-message {
+    font-size: 15px;
+    color: #555;
+    line-height: 1.6;
+    margin-bottom: 25px;
+    text-align: center;
+}
+
+.confirmation-message strong {
+    color: #2bb24a;
+    font-weight: 700;
+}
+
+.payment-summary {
+    background: #f8f9fa;
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 20px;
+    border: 1px solid #e0e0e0;
+}
+
+.summary-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.summary-item:last-child {
+    border-bottom: none;
+}
+
+.summary-label {
+    font-weight: 600;
+    color: #666;
+    font-size: 14px;
+}
+
+.summary-value {
+    color: #333;
+    font-size: 14px;
+    font-weight: 600;
+    text-align: right;
+}
+
+.confirmation-note {
+    font-size: 13px;
+    color: #666;
+    line-height: 1.5;
+    text-align: center;
+    padding: 15px;
+    background: #fffbf0;
+    border-left: 4px solid #ff9800;
+    border-radius: 5px;
+    margin: 20px 0;
+}
+
+.confirmation-btn {
+    width: 100%;
+    background: linear-gradient(135deg, #2bb24a, #239640);
+    color: white;
+    border: none;
+    padding: 14px 30px;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    margin-top: 20px;
+    transition: all 0.3s;
+    box-shadow: 0 4px 12px rgba(43, 178, 74, 0.3);
+}
+
+.confirmation-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 18px rgba(43, 178, 74, 0.4);
+}
+
 /* Scrollbar Styles */
 .notifications-container::-webkit-scrollbar {
 width: 6px;
@@ -1487,11 +3059,11 @@ background: #f1f1f1;
 border-radius: 3px;
 }
 .notifications-container::-webkit-scrollbar-thumb {
-background: #ff8c42;
+background: #888;
 border-radius: 3px;
 }
 .notifications-container::-webkit-scrollbar-thumb:hover {
-background: #e6763a;
+background: #666;
 }
 /* Responsive Design */
 @media (max-width: 1024px) {
