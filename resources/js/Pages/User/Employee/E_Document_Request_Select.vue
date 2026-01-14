@@ -189,6 +189,12 @@
                                         style="margin-top: 10px;"
                                         required
                                     />
+                                    <p v-if="form.purpose === 'Others'" style="margin-top: 8px; font-size: 14px; color: #333; font-weight: 600; display: flex; align-items: center; gap: 8px;">
+                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" style="width: 16px; height: 16px; color: #e74c3c; flex-shrink: 0;">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+                                        </svg>
+                                        Please provide a purpose similar to the existing options (e.g., "Medical Appointment", "Loan Application").
+                                    </p>
                                 </template>
                                 <!-- Other documents: Keep textarea -->
                                 <textarea 

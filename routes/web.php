@@ -11,7 +11,6 @@ use App\Http\Controllers\RegisterRequestController;
 use Illuminate\Support\Facades\DB;  
 use App\Http\Controllers\RegisterResidentController;
 use App\Http\Controllers\RegisterOfficialController;
-use App\Http\Controllers\OtpController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\EventAssistanceRequestController;
 use App\Http\Controllers\ProfileController;
@@ -24,7 +23,6 @@ use App\Http\Controllers\ResidentAnnouncementController;
 use App\Http\Controllers\PostReactionController;
 use App\Http\Controllers\PostCommentController;
 use App\Http\Controllers\ReportController;
-use App\Http\Controllers\HelpCenterController;
 
 Route::get('/calendar-static', function () {
     return Inertia::render('CalendarStatic');
@@ -87,25 +85,12 @@ Route::inertia('/find_account_user', 'Find_Account_User')->name('find_account_us
 Route::get('/account/find', [AccountController::class, 'find'])->name('account.find');
 Route::post('/account/update', [AccountController::class, 'update'])->name('account.update');
 
-Route::inertia("/register_employee", 'Auth/Register_Employee')
-    ->name('registration_employee')
-    ->middleware('auth');
-Route::post('/register-employee', [RegisterOfficialController::class, 'store'])
-    ->name('register_employee.store')
-    ->middleware('auth');
+Route::inertia("/register_employee", 'Auth/Register_Employee')->name('registration_employee');
+Route::post('/register-employee', [RegisterOfficialController::class, 'store'])->name('register_employee.store');
 
 Route::inertia("/register_resident", 'Auth/Register_Resident')->name('registration_resident');
 Route::post('/register-resident', [RegisterResidentController::class, 'store'])->name('register_resident.store');
-
-// OTP routes for phone verification
-Route::post('/otp/send', [OtpController::class, 'send'])->name('otp.send');
-Route::post('/otp/verify', [OtpController::class, 'verify'])->name('otp.verify');
-Route::post('/otp/check', [OtpController::class, 'checkVerification'])->name('otp.check');
 // Route::post("/register_resident", [UsersController::class, 'store'])->name('register_resident.store');
-
-// OTP routes for registration
-Route::post('/otp/send', [\App\Http\Controllers\OtpController::class, 'send'])->name('otp.send');
-Route::post('/otp/verify', [\App\Http\Controllers\OtpController::class, 'verify'])->name('otp.verify');
 
 Route::inertia("/guest_discussion", 'Guest_Discussion')->name('guest_discussion');
 
@@ -238,15 +223,6 @@ Route::middleware(['auth'])->group(function () {
 
 Route::inertia("/e_help_center", 'User/Employee/E_Help_Center')->name('help_center_employee');
 
-// Help Center Contact Form (authenticated users)
-Route::post('/help-center/contact', [HelpCenterController::class, 'submitMessage'])
-    ->name('help_center.contact')
-    ->middleware('auth');
-
-// Landing Page Contact Form (guest users)
-Route::post('/contact', [HelpCenterController::class, 'submitMessage'])
-    ->name('contact.submit');
-
 // Approver Routes
 Route::inertia("/a_dashboard", 'Admin/Approver/A_Dashboard')->name('dashboard_approver');
 
@@ -266,11 +242,6 @@ Route::post('/document-requests/{id}/approve', [DocumentRequestController::class
 
 Route::post('/document-requests/{id}/reject', [DocumentRequestController::class, 'reject'])
     ->name('document_requests.reject')
-    ->middleware(['auth']);
-
-Route::get('/document-requests/{id}/download/{format}', [DocumentRequestController::class, 'download'])
-    ->name('document_requests.download')
-    ->where('format', 'pdf|docx')
     ->middleware(['auth']);
 
 Route::inertia("/a_event_request", 'Admin/Approver/A_Event_Request')->name('event_request_approver');
@@ -358,6 +329,5 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/reports', [ReportController::class, 'store'])->name('reports.store');
     Route::post('/reports/{id}/dismiss', [ReportController::class, 'dismiss'])->name('reports.dismiss');
     Route::delete('/admin/posts/{postId}', [ReportController::class, 'deletePost'])->name('admin.posts.delete');
-    Route::post('/admin/contact-messages/{id}/update', [ReportController::class, 'updateContactMessage'])->name('admin.contact_messages.update');
 });
 

@@ -5,141 +5,156 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 
 class PostReactionController extends Controller
 {
+    private function resolvePostReactionsColumns(): array
+    {
+        $postCol = Schema::hasColumn('post_reactions', 'fk_post_id') ? 'fk_post_id' : 'post_id';
+        $userCol = Schema::hasColumn('post_reactions', 'fk_reactor_id') ? 'fk_reactor_id' : 'user_id';
+        $pkCol = Schema::hasColumn('post_reactions', 'post_reaction_id') ? 'post_reaction_id' : 'id';
+
+        return [$postCol, $userCol, $pkCol];
+    }
+
+    /**
+     * Toggle like / dislike reaction for an authenticated user.
+     *
+     * Request payload:
+     *  - reaction_type: 'Like' | 'Dislike'
+     */
     public function toggle(Request $request, $postId)
     {
         try {
             $user = Auth::user();
             if (!$user) {
-                return response()->json(['error' => 'Unauthorized'], 401);
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthenticated.',
+                ], 401);
             }
+
+            $validated = $request->validate([
+                'reaction_type' => 'required|in:Like,Dislike',
+            ]);
 
             $userId = $user->user_id ?? $user->id;
-            $reactionType = $request->input('reaction_type'); // 'Like' or 'Dislike'
 
-            if (!in_array($reactionType, ['Like', 'Dislike'])) {
-                return response()->json(['error' => 'Invalid reaction type'], 400);
-            }
+            // Support both schemas & primary key names
+            [$postCol, $userCol, $pkCol] = $this->resolvePostReactionsColumns();
 
-            // Check if user already has a reaction for this post
-            $existingReaction = DB::table('post_reactions')
-                ->where('fk_post_id', $postId)
-                ->where('fk_reactor_id', $userId)
+            $existing = DB::table('post_reactions')
+                ->where($postCol, $postId)
+                ->where($userCol, $userId)
                 ->first();
 
-            if ($existingReaction) {
-                if ($existingReaction->reaction_type === $reactionType) {
-                    // Remove the reaction (toggle off)
+            if ($existing) {
+                if ($existing->reaction_type === $validated['reaction_type']) {
+                    // Same reaction → remove (unlike / undislike)
                     DB::table('post_reactions')
-                        ->where('post_reaction_id', $existingReaction->post_reaction_id)
+                        ->where($pkCol, $existing->{$pkCol})
                         ->delete();
-                    
-                    $action = 'removed';
                 } else {
-                    // Update to the opposite reaction type
+                    // Different reaction → switch type
                     DB::table('post_reactions')
-                        ->where('post_reaction_id', $existingReaction->post_reaction_id)
-                        ->update(['reaction_type' => $reactionType]);
-                    
-                    $action = 'updated';
+                        ->where($pkCol, $existing->{$pkCol})
+                        ->update([
+                            'reaction_type' => $validated['reaction_type'],
+                            'created_at' => now(),
+                        ]);
                 }
             } else {
-                // Create new reaction
+                // No reaction yet → create new
                 DB::table('post_reactions')->insert([
-                    'fk_post_id' => $postId,
-                    'fk_reactor_id' => $userId,
-                    'reaction_type' => $reactionType,
+                    $postCol => $postId,
+                    $userCol => $userId,
+                    'reaction_type' => $validated['reaction_type'],
                     'created_at' => now(),
                 ]);
-                
-                $action = 'added';
             }
 
-            // Get updated counts
+            // Recalculate counts
             $likes = DB::table('post_reactions')
-                ->where('fk_post_id', $postId)
+                ->where($postCol, $postId)
                 ->where('reaction_type', 'Like')
                 ->count();
-            
+
             $dislikes = DB::table('post_reactions')
-                ->where('fk_post_id', $postId)
+                ->where($postCol, $postId)
                 ->where('reaction_type', 'Dislike')
                 ->count();
 
-            // Check user's current reaction
+            // Determine current user state after the operation
             $userReaction = DB::table('post_reactions')
-                ->where('fk_post_id', $postId)
-                ->where('fk_reactor_id', $userId)
+                ->where($postCol, $postId)
+                ->where($userCol, $userId)
                 ->first();
+
+            $userLiked = $userReaction && $userReaction->reaction_type === 'Like';
+            $userDisliked = $userReaction && $userReaction->reaction_type === 'Dislike';
 
             return response()->json([
                 'success' => true,
-                'action' => $action,
-                'likes' => $likes,
-                'dislikes' => $dislikes,
-                'userLiked' => $userReaction && $userReaction->reaction_type === 'Like',
-                'userDisliked' => $userReaction && $userReaction->reaction_type === 'Dislike',
-            ]);
-
-        } catch (\Exception $e) {
-            Log::error('Error toggling reaction: ' . $e->getMessage());
-            return response()->json(['error' => 'Failed to toggle reaction'], 500);
-        }
-    }
-
-    public function getReactions($postId)
-    {
-        try {
-            $user = Auth::user();
-            $userId = $user ? ($user->user_id ?? $user->id) : null;
-
-            $likes = DB::table('post_reactions')
-                ->where('fk_post_id', $postId)
-                ->where('reaction_type', 'Like')
-                ->count();
-            
-            $dislikes = DB::table('post_reactions')
-                ->where('fk_post_id', $postId)
-                ->where('reaction_type', 'Dislike')
-                ->count();
-
-            $userLiked = false;
-            $userDisliked = false;
-
-            if ($userId) {
-                $userReaction = DB::table('post_reactions')
-                    ->where('fk_post_id', $postId)
-                    ->where('fk_reactor_id', $userId)
-                    ->first();
-
-                if ($userReaction) {
-                    $userLiked = $userReaction->reaction_type === 'Like';
-                    $userDisliked = $userReaction->reaction_type === 'Dislike';
-                }
-            }
-
-            return response()->json([
                 'likes' => $likes,
                 'dislikes' => $dislikes,
                 'userLiked' => $userLiked,
                 'userDisliked' => $userDisliked,
             ]);
-
-        } catch (\Exception $e) {
-            Log::error('Error getting reactions: ' . $e->getMessage());
-            return response()->json(['error' => 'Failed to get reactions'], 500);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to toggle reaction.',
+                'error' => config('app.debug') ? $e->getMessage() : null,
+            ], 500);
         }
     }
+
+    /**
+     * Optional: return current reactions summary for a post.
+     * Currently not used by the frontend but kept for completeness.
+     */
+    public function getReactions($postId)
+    {
+        $user = Auth::user();
+        $userId = $user ? ($user->user_id ?? $user->id) : null;
+
+        $postCol = Schema::hasColumn('post_reactions', 'fk_post_id') ? 'fk_post_id' : 'post_id';
+        $userCol = Schema::hasColumn('post_reactions', 'fk_reactor_id') ? 'fk_reactor_id' : 'user_id';
+
+        $likes = DB::table('post_reactions')
+            ->where($postCol, $postId)
+            ->where('reaction_type', 'Like')
+            ->count();
+
+        $dislikes = DB::table('post_reactions')
+            ->where($postCol, $postId)
+            ->where('reaction_type', 'Dislike')
+            ->count();
+
+        $userLiked = false;
+        $userDisliked = false;
+
+        if ($userId) {
+            $userReaction = DB::table('post_reactions')
+                ->where($postCol, $postId)
+                ->where($userCol, $userId)
+                ->first();
+
+            if ($userReaction) {
+                $userLiked = $userReaction->reaction_type === 'Like';
+                $userDisliked = $userReaction->reaction_type === 'Dislike';
+            }
+        }
+
+        return response()->json([
+            'success' => true,
+            'likes' => $likes,
+            'dislikes' => $dislikes,
+            'userLiked' => $userLiked,
+            'userDisliked' => $userDisliked,
+        ]);
+    }
 }
-
-
-
-
-
-
-
 
 
