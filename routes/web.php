@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\LoginController;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 use Illuminate\Http\Request;
 use App\Http\Controllers\DocumentRequestController;
@@ -13,6 +14,7 @@ use App\Http\Controllers\RegisterResidentController;
 use App\Http\Controllers\RegisterOfficialController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\EventAssistanceRequestController;
+use App\Http\Controllers\EventAssistanceController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PostController;
 use App\Http\Controllers\DiscussionController;
@@ -23,6 +25,10 @@ use App\Http\Controllers\ResidentAnnouncementController;
 use App\Http\Controllers\PostReactionController;
 use App\Http\Controllers\PostCommentController;
 use App\Http\Controllers\ReportController;
+use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\TagController;
+use App\Http\Controllers\ContactController;
+use App\Http\Controllers\WelcomeController;
 
 Route::get('/calendar-static', function () {
     return Inertia::render('CalendarStatic');
@@ -66,10 +72,21 @@ Route::get('/phpinfo-debug', function () {
 
 
 
-Route::inertia("/", 'Welcome')->name('welcome');
+Route::get("/", [WelcomeController::class, 'index'])->name('welcome');
+Route::post('/contact/submit', [ContactController::class, 'submit'])->name('contact.submit');
 
 Route::inertia("/login_user", 'Login_User')->name('login');
 Route::post('/login/check', [LoginController::class, 'check'])->name('login.check');
+
+// Unified logout route for all users (residents, employees, admins)
+Route::post('/logout', function (Request $request) {
+    Auth::logout();
+    $request->session()->invalidate();
+    $request->session()->regenerateToken();
+
+    // Redirect residents/employees to user login
+    return redirect()->route('login');
+})->name('logout');
 
 Route::inertia("/login_employee", 'Login_employee')->name('login_employee');
 
@@ -115,7 +132,9 @@ Route::middleware('auth')->group(function () {
 });
 
 
-Route::inertia("/r_document_request_select", 'User/Resident/R_Document_Request_Select')->name('document_request_select_resident');
+Route::middleware(['auth'])->group(function () {
+    Route::get('/r_document_request_select', [DocumentRequestController::class, 'selectPage'])->name('document_request_select_resident');
+});
 Route::middleware(['auth'])->group(function () {
     Route::post('/requests', [DocumentRequestController::class, 'store'])->name('requests.store');
 });
@@ -126,7 +145,9 @@ Route::inertia("/r_document_request_form", 'User/Resident/R_Document_Request_For
 
 Route::inertia("/r_document_request_submission", 'User/Resident/R_Document_Request_Submission')->name('document_request_submission_resident');
 
-Route::inertia("/r_event_assist", 'User/Resident/R_Event_Assist')->name('event_assistance_resident');
+Route::middleware(['auth'])->group(function () {
+    Route::get('/r_event_assist', [EventAssistanceController::class, 'selectPage'])->name('event_assistance_resident');
+});
 Route::middleware(['auth'])->group(function () {
     Route::post('/event-assistance', [EventAssistanceRequestController::class, 'store'])
         ->name('event_assist.store');
@@ -219,6 +240,14 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/posts/{postId}/comments', [PostCommentController::class, 'store'])->name('posts.comments.store');
     Route::get('/posts/{postId}/comments', [PostCommentController::class, 'getComments'])->name('posts.comments.get');
     Route::get('/posts/{postId}/comments/count', [PostCommentController::class, 'getCommentCount'])->name('posts.comments.count');
+    
+    // Tags API
+    Route::get('/api/tags/trending', [TagController::class, 'trending'])->name('api.tags.trending');
+    
+    // Notifications API
+    Route::get('/api/notifications', [NotificationController::class, 'index'])->name('api.notifications.index');
+    Route::put('/api/notifications/{id}/read', [NotificationController::class, 'markAsRead'])->name('api.notifications.mark-read');
+    Route::put('/api/notifications/mark-all-read', [NotificationController::class, 'markAllAsRead'])->name('api.notifications.mark-all-read');
 });
 
 Route::inertia("/e_help_center", 'User/Employee/E_Help_Center')->name('help_center_employee');
@@ -243,6 +272,12 @@ Route::post('/document-requests/{id}/approve', [DocumentRequestController::class
 Route::post('/document-requests/{id}/reject', [DocumentRequestController::class, 'reject'])
     ->name('document_requests.reject')
     ->middleware(['auth']);
+
+// Download generated document
+Route::get('/document-requests/{id}/download/{format}', [DocumentRequestController::class, 'download'])
+    ->name('document_requests.download')
+    ->middleware(['auth'])
+    ->where('format', 'pdf|docx');
 
 Route::inertia("/a_event_request", 'Admin/Approver/A_Event_Request')->name('event_request_approver');
 Route::get('/a_event_request', [EventAssistanceRequestController::class, 'index'])
@@ -330,4 +365,9 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/reports/{id}/dismiss', [ReportController::class, 'dismiss'])->name('reports.dismiss');
     Route::delete('/admin/posts/{postId}', [ReportController::class, 'deletePost'])->name('admin.posts.delete');
 });
+
+// OTP routes for registration (no auth required)
+Route::post('/otp/send', [\App\Http\Controllers\OtpController::class, 'send'])->name('otp.send');
+Route::post('/otp/verify', [\App\Http\Controllers\OtpController::class, 'verify'])->name('otp.verify');
+Route::post('/otp/check-verification', [\App\Http\Controllers\OtpController::class, 'checkVerification'])->name('otp.check-verification');
 

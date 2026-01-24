@@ -16,12 +16,14 @@
                     <!-- Settings Dropdown -->
                     <div v-if="showSettings" class="settings-dropdown">
                         <Link href="#" class="settings-item" @click="closeSettings">Help Center</Link>
-                        <Link href="#" class="settings-item" @click="closeSettings">Terms & Conditions</Link>
+                        <button type="button" class="settings-item" @click="openTerms">Terms & Conditions</button>
                         <Link href="#" class="settings-item" @click="logout">Sign Out</Link>
                     </div>
                 </div>
             </div>
         </div>
+
+        <TermsModal :open="showTerms" @close="closeTerms" />
 
         <!-- Main Content Area - Full Width -->
         <div class="main-layout">
@@ -104,6 +106,7 @@
             <!-- Content Area -->
             <div class="content-area">
                 <!-- Main Content Panel -->
+                <div class="main-content-wrapper">
                 <div class="main-content">
                     <!-- Discussions Header with Dropdown Toggle -->
                     <div class="discussions-header">
@@ -210,6 +213,7 @@
                             v-for="post in filteredPosts" 
                             :key="post.id"
                             class="post-card"
+                            :data-post-id="post.id"
                             @click="viewPost(post.id)"
                         >
                             <div class="post-header">
@@ -498,8 +502,42 @@
                         </div>
                     </div>
                 </div>
+                </div>
             </div>
-        </div>
+
+            <!-- Trending Tags Sidebar -->
+            <div class="trending-tags-sidebar">
+                <div class="trending-tags-card">
+                        <h3 class="trending-tags-title">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="trending-icon">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 18L9 11.25l4.306 4.307a11.95 11.95 0 0 1 5.814-5.519l2.74-1.22m0 0l-5.94-2.28m5.94 2.28-2.28 5.94" />
+                            </svg>
+                            Trending Tags
+                        </h3>
+                        <div v-if="loadingTrendingTags" class="trending-tags-loading">
+                            <p>Loading...</p>
+                        </div>
+                        <div v-else-if="trendingTags.length === 0" class="trending-tags-empty">
+                            <p>No trending tags yet</p>
+                        </div>
+                        <div v-else class="trending-tags-list">
+                            <button
+                                v-for="tag in trendingTags"
+                                :key="tag.id"
+                                class="trending-tag-item"
+                                :class="{ active: selectedTrendingTag === tag.name }"
+                                @click="selectTrendingTag(tag.name)"
+                            >
+                                <span class="trending-tag-name">#{{ tag.name }}</span>
+                                <span class="trending-tag-count">{{ tag.count }}</span>
+                            </button>
+                        </div>
+                        <button v-if="selectedTrendingTag" class="clear-tag-filter-btn" @click="clearTagFilter">
+                            Clear Filter
+                        </button>
+                    </div>
+                </div>
+            </div>
 
         <!-- Report Modal -->
         <div v-if="showReportModal" class="report-modal-overlay" @click="closeReportModal">
@@ -559,6 +597,7 @@
             </div>
         </div>
     </div>
+
 </template>
 
 <script setup>
@@ -567,6 +606,7 @@ import { Head } from '@inertiajs/vue3'
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { router } from '@inertiajs/vue3'
 import axios from 'axios'
+import TermsModal from '@/Components/TermsModal.vue'
 
 // Define props - receive posts from backend
 const props = defineProps({
@@ -676,6 +716,9 @@ const reportType = ref('')
 const reportReasons = ref([])
 const reportDetails = ref('')
 const reportTargetId = ref(null)
+const trendingTags = ref([])
+const loadingTrendingTags = ref(false)
+const selectedTrendingTag = ref(null)
 
 // Initialize posts from props
 // Unified posts ref used by the template
@@ -766,27 +809,105 @@ function updatePostsFromProps() {
 watch(() => props.posts, updatePostsFromProps, { immediate: true, deep: true })
 watch(() => page.props.posts, updatePostsFromProps, { immediate: true, deep: true })
 
+// Scroll to post if post parameter is in URL
+onMounted(() => {
+    // Wait for posts to load, then check for post parameter
+    setTimeout(() => {
+        const urlParams = new URLSearchParams(window.location.search)
+        const postId = urlParams.get('post')
+        if (postId && posts.value.length > 0) {
+            scrollToPost(postId)
+        }
+    }, 1000)
+})
+
+// Function to scroll to a specific post
+const scrollToPost = (postId) => {
+    const postElement = document.querySelector(`[data-post-id="${postId}"]`)
+    if (postElement) {
+        postElement.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        // Highlight the post briefly with light green
+        postElement.style.transition = 'background-color 0.3s'
+        postElement.style.backgroundColor = '#d4edda'
+        setTimeout(() => {
+            postElement.style.backgroundColor = ''
+        }, 2000)
+    }
+}
 
 
-// Navigation functions (adjust these routes to match your actual employee routes)
+
+// Import navigation composable
+import { useUserNavigation } from '@/composables/useUserNavigation'
+
+// Use navigation composable
+const { 
+    navigateToDocuments: navToDocuments, 
+    navigateToProfile: navToProfile, 
+    navigateToEvents: navToEvents, 
+    navigateToNotifications: navToNotifications,
+    navigateToHelpCenter: navToHelpCenter,
+    navigateToAnnouncement: navToAnnouncement,
+    navigateToDiscussion: navToDiscussion,
+    navigateToDiscussionAddPost: navToDiscussionAddPost
+} = useUserNavigation()
+
+// Navigation functions with activeTab management
 const navigateToDocuments = () => {
     activeTab.value = 'documents'
-    router.visit(route('document_request_select_resident'))
+    navToDocuments()
 }
 
 const navigateToProfile = () => {
     activeTab.value = 'profile'
-    router.visit(route('profile_resident'))
+    navToProfile()
 }
 
 const navigateToEvents = () => {
     activeTab.value = 'events'
-    router.visit(route('event_assistance_resident'))
+    navToEvents()
 }
 
 const navigateToNotifications = () => {
     activeTab.value = 'notifications'
-    router.visit(route('notification_request_resident'))
+    navToNotifications()
+}
+
+// Fetch trending tags
+const fetchTrendingTags = async () => {
+    loadingTrendingTags.value = true
+    try {
+        const response = await axios.get(route('api.tags.trending'), {
+            params: {
+                days: 30,
+                limit: 10
+            }
+        })
+        if (response.data.success) {
+            trendingTags.value = response.data.tags || []
+        }
+    } catch (error) {
+        console.error('Error fetching trending tags:', error)
+        trendingTags.value = []
+    } finally {
+        loadingTrendingTags.value = false
+    }
+}
+
+// Select trending tag
+const selectTrendingTag = (tagName) => {
+    if (selectedTrendingTag.value === tagName) {
+        clearTagFilter()
+    } else {
+        selectedTrendingTag.value = tagName
+        filterOption.value = tagName.toLowerCase()
+    }
+}
+
+// Clear tag filter
+const clearTagFilter = () => {
+    selectedTrendingTag.value = null
+    filterOption.value = 'all'
 }
 
 // Computed filtered posts
@@ -839,6 +960,15 @@ const closeSettings = () => {
     showSettings.value = false
 }
 
+const openTerms = () => {
+    showSettings.value = false
+    showTerms.value = true
+}
+
+const closeTerms = () => {
+    showTerms.value = false
+}
+
 const toggleModeDropdown = () => {
     showModeDropdown.value = !showModeDropdown.value
 }
@@ -863,7 +993,41 @@ const selectFilter = (option) => {
     showFilterDropdown.value = false
 }
 
-const logout = () => { showSettings.value = false; router.visit(route('login')) }
+const logout = () => {
+    showSettings.value = false
+    // Properly logout by calling the logout endpoint
+    router.post('/logout', {}, {
+        onSuccess: () => {
+            // Clear any local storage or session storage if needed
+            if (typeof window !== 'undefined') {
+                localStorage.clear()
+                sessionStorage.clear()
+            }
+            // Redirect to login page after successful logout
+            router.visit(route('login'), {
+                replace: true,
+                preserveState: false,
+                preserveScroll: false
+            })
+        },
+        onError: () => {
+            // Even if logout fails, redirect to login
+            router.visit(route('login'), {
+                replace: true,
+                preserveState: false,
+                preserveScroll: false
+            })
+        },
+        onFinish: () => {
+            // Ensure we redirect even if something goes wrong
+            router.visit(route('login'), {
+                replace: true,
+                preserveState: false,
+                preserveScroll: false
+            })
+        }
+    })
+}
 
 const setActiveTab = (tab) => {
     activeTab.value = tab
@@ -873,9 +1037,9 @@ const switchTab = (tab) => {
     currentTab.value = tab
     showModeDropdown.value = false
     if (tab === 'announcements') {
-        router.visit(route('announcement_resident'))
+        navToAnnouncement()
     } else if (tab === 'discussions') {
-        router.visit(route('discussion_resident'))
+        navToDiscussion()
     }
 }
 
@@ -884,7 +1048,7 @@ const performSearch = () => {
 }
 
 const addPost = () => {
-    router.visit(route('discussion_addpost_resident'))
+    navToDiscussionAddPost()
 }
 
 const viewPost = async (postId) => {
@@ -1256,9 +1420,21 @@ const handleClickOutside = (event) => {
 }
 
 // Component lifecycle
+// Check authentication on mount and redirect if not authenticated
 onMounted(() => {
+    if (!user.value || !user.value.user_id) {
+        router.visit(route('login'), {
+            replace: true,
+            preserveState: false
+        })
+        return
+    }
+    
     document.addEventListener('click', handleClickOutside)
     activeTab.value = 'posts'
+    
+    // Fetch trending tags
+    fetchTrendingTags()
     
     console.log('✅ Employee Discussion Component mounted')
     console.log('📊 Initial posts:', posts.value.length)
@@ -1282,6 +1458,8 @@ onUnmounted(() => {
 .app-container {
     min-height: 100vh;
     width: 100vw;
+    max-width: 100vw;
+    overflow-x: hidden;
     background: url('/assets/BG MAIN.png') no-repeat center center fixed;
     background-size: cover;
     background-attachment: fixed;
@@ -1311,6 +1489,63 @@ onUnmounted(() => {
     justify-content: space-between;
     align-items: center;
     padding: 0 10px;
+}
+
+.modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 3000;
+}
+
+.modal.terms-modal {
+    background: #ffffff;
+    border-radius: 16px;
+    max-width: 600px;
+    width: 90%;
+    padding: 24px 28px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+}
+
+.privacy-title {
+    font-size: 20px;
+    font-weight: 700;
+    margin-bottom: 12px;
+    color: #111827;
+}
+
+.justified-text {
+    font-size: 14px;
+    line-height: 1.6;
+    color: #374151;
+    text-align: justify;
+    margin-bottom: 10px;
+}
+
+.modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 16px;
+}
+
+.btn-primary {
+    background: #239640;
+    color: #fff;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s ease, transform 0.1s ease;
+}
+
+.btn-primary:hover {
+    background: #1e7d36;
+    transform: translateY(-1px);
 }
 
 .logo-section {
@@ -1394,19 +1629,23 @@ onUnmounted(() => {
 .main-layout {
     flex: 1;
     display: grid;
-    grid-template-columns: 300px 1fr;
-    gap: 25px;
-    width: 100%;
-    max-width: none;
+    grid-template-columns: 280px 1fr 280px;
+    gap: 25px 25px;
+    width: 100vw;
+    max-width: 100vw;
     margin: 0;
     margin-top: 70px;
     padding: 25px 30px;
+    box-sizing: border-box;
 }
 
 /* Sidebar - Enhanced styling */
 .sidebar {
     background: transparent;
-    padding-right: 20px;
+    padding-right: 0;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
 }
 
 .profile-card {
@@ -1512,9 +1751,17 @@ onUnmounted(() => {
 
 /* Content Area - Enhanced styling */
 .content-area {
+    width: 100%;
+    min-width: 0;
+}
+
+.main-content-wrapper {
+    flex: 1;
     display: flex;
     flex-direction: column;
+    min-width: 0;
     width: 100%;
+    overflow: visible;
 }
 
 /* Main Content */
@@ -1525,6 +1772,13 @@ onUnmounted(() => {
     box-shadow: 0 8px 25px rgba(0,0,0,0.08);
     flex: 1;
     border: 1px solid rgba(0,0,0,0.05);
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    z-index: 1;
 }
 
 .discussions-header {
@@ -1803,8 +2057,11 @@ onUnmounted(() => {
 /* Posts Container - Enhanced styling */
 .posts-container {
     padding: 0;
-    max-height: calc(100vh - 350px);
+    max-height: calc(100vh - 280px);
     overflow-y: auto;
+    width: 100%;
+    flex: 1;
+    display: block;
 }
 
 .post-card {
@@ -1812,15 +2069,21 @@ onUnmounted(() => {
     padding: 25px;
     transition: all 0.3s ease;
     cursor: pointer;
+    font-size: 15px; /* bump base text size for readability */
+}
+
+.post-card:first-child {
+    border-radius: 0;
+}
+
+.post-card:last-child {
+    border-bottom: none;
+    border-radius: 0 0 15px 15px;
 }
 
 .post-card:hover {
     background: linear-gradient(135deg, #fafbfc, #f8f9fa);
     transform: translateY(-1px);
-}
-
-.post-card:last-child {
-    border-bottom: none;
 }
 
 .post-header {
@@ -1847,7 +2110,7 @@ onUnmounted(() => {
 
 .post-author {
     font-weight: 700;
-    font-size: 15px;
+    font-size: 16px;
     color: #333;
 }
 
@@ -2001,7 +2264,7 @@ onUnmounted(() => {
 }
 
 .post-header-text {
-    font-size: 18px;
+    font-size: 20px;
     font-weight: 600;
     color: #2e2e2e;
     margin: 0 0 12px 0;
@@ -2011,7 +2274,7 @@ onUnmounted(() => {
 }
 
 .post-title {
-    font-size: 17px;
+    font-size: 19px;
     font-weight: 600;
     margin: 0 0 10px 0;
     color: #333;
@@ -2019,7 +2282,7 @@ onUnmounted(() => {
 }
 
 .post-text {
-    font-size: 14px;
+    font-size: 15px;
     line-height: 1.6;
     color: #555;
     margin: 0;
@@ -2737,6 +3000,157 @@ onUnmounted(() => {
     cursor: not-allowed;
 }
 
+/* Trending Tags Sidebar */
+.trending-tags-sidebar {
+    padding-left: 0;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+}
+
+.trending-tags-card {
+    background: white;
+    border-radius: 15px;
+    padding: 20px;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+    border: 1px solid rgba(0,0,0,0.05);
+    position: sticky;
+    top: 90px;
+    max-height: calc(100vh - 200px);
+    overflow-y: auto;
+    width: 100%;
+    box-sizing: border-box;
+    align-self: flex-start;
+}
+
+.trending-tags-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 18px;
+    font-weight: 700;
+    color: #333;
+    margin: 0 0 20px 0;
+    padding-bottom: 15px;
+    border-bottom: 2px solid #f0f0f0;
+}
+
+.trending-icon {
+    width: 22px;
+    height: 22px;
+    stroke: currentColor;
+    color: #ff8c42;
+    flex-shrink: 0;
+}
+
+.trending-tags-loading,
+.trending-tags-empty {
+    text-align: center;
+    padding: 30px 15px;
+    color: #999;
+    font-size: 14px;
+}
+
+.trending-tags-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.trending-tag-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 15px;
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-align: left;
+    width: 100%;
+}
+
+.trending-tag-item:hover {
+    background: #fff7ef;
+    border-color: #ff8c42;
+    transform: translateX(3px);
+    box-shadow: 0 4px 12px rgba(255, 140, 66, 0.2);
+}
+
+.trending-tag-item.active {
+    background: linear-gradient(135deg, #fff7ef, #ffede0);
+    border-color: #ff8c42;
+    box-shadow: 0 4px 15px rgba(255, 140, 66, 0.3);
+}
+
+.trending-tag-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: #333;
+    flex: 1;
+}
+
+.trending-tag-item.active .trending-tag-name {
+    color: #ff8c42;
+}
+
+.trending-tag-count {
+    font-size: 12px;
+    font-weight: 700;
+    color: #666;
+    background: white;
+    padding: 4px 10px;
+    border-radius: 12px;
+    min-width: 30px;
+    text-align: center;
+}
+
+.trending-tag-item.active .trending-tag-count {
+    background: #ff8c42;
+    color: white;
+}
+
+.clear-tag-filter-btn {
+    width: 100%;
+    margin-top: 15px;
+    padding: 12px 20px;
+    background: linear-gradient(135deg, #ff8c42, #ff7a28);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 12px rgba(255, 140, 66, 0.3);
+}
+
+.clear-tag-filter-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 18px rgba(255, 140, 66, 0.4);
+    background: linear-gradient(135deg, #e6763a, #e66b25);
+}
+
+/* Custom scrollbar for trending tags card */
+.trending-tags-card::-webkit-scrollbar {
+    width: 6px;
+}
+
+.trending-tags-card::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 3px;
+}
+
+.trending-tags-card::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 3px;
+}
+
+.trending-tags-card::-webkit-scrollbar-thumb:hover {
+    background: #e6763a;
+}
+
 /* Responsive */
 @media (max-width: 1024px) {
     .main-layout {
@@ -2748,6 +3162,10 @@ onUnmounted(() => {
     
     .header-content {
         padding: 0 25px;
+    }
+
+    .trending-tags-sidebar {
+        display: none;
     }
 }
 

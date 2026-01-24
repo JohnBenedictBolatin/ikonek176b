@@ -236,7 +236,38 @@ const closeSettings = () => {
 
 const logout = () => {
     showSettings.value = false
-    router.visit(route('login'))
+    // Properly logout by calling the logout endpoint
+    router.post(route('logout'), {}, {
+        onSuccess: () => {
+            // Clear any local storage or session storage if needed
+            if (typeof window !== 'undefined') {
+                localStorage.clear()
+                sessionStorage.clear()
+            }
+            // Redirect to login page after successful logout
+            router.visit(route('login'), {
+                replace: true,
+                preserveState: false,
+                preserveScroll: false
+            })
+        },
+        onError: () => {
+            // Even if logout fails, redirect to login
+            router.visit(route('login'), {
+                replace: true,
+                preserveState: false,
+                preserveScroll: false
+            })
+        },
+        onFinish: () => {
+            // Ensure we redirect even if something goes wrong
+            router.visit(route('login'), {
+                replace: true,
+                preserveState: false,
+                preserveScroll: false
+            })
+        }
+    })
 }
 
 const setActiveTab = (tab) => {

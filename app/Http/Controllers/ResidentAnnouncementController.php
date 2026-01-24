@@ -20,6 +20,12 @@ class ResidentAnnouncementController extends Controller
     {
         Log::info('🔵 ResidentAnnouncementController@index called');
         
+        // Check if user is authenticated
+        if (!Auth::check()) {
+            Log::warning('❌ No authenticated user, redirecting to login');
+            return redirect()->route('login')->with('error', 'Please sign in to access this page.');
+        }
+        
         try {
             $authUser = Auth::user();
             Log::info('Auth User:', [

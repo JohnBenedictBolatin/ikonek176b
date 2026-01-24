@@ -1223,29 +1223,49 @@ const confirmApproval = async () => {
         {
             preserveState: false,
             onSuccess: () => {
+                // Close all modals first to prevent blocking
+                isApprovalModalOpen.value = false
+                isModalOpen.value = false
+                
                 // remove request from local list
                 const index = requests.value.findIndex(r => r.id === selectedRequest.value.id)
                 if (index > -1) requests.value.splice(index, 1)
 
-                // close modals / reset local fields
-                isApprovalModalOpen.value = false
+                // reset local fields
                 selectedRequest.value = null
-                comment.value = ''
                 approvalDetails.value = {
                     comment: ''
                 }
+                
+                // Reset submitting flag
+                isSubmittingApproval.value = false
 
-                // show alert and attempt to close/redirect
-                closeEverythingAndExit('Request approved successfully.')
+                // Redirect to refresh the page and show updated list
+                router.visit(route('event_request_approver'), {
+                    preserveState: false,
+                    preserveScroll: false,
+                    onFinish: () => {
+                        // Show success message after page loads
+                        setTimeout(() => {
+                            alert('Request approved successfully.')
+                        }, 100)
+                    }
+                })
             },
             onError: (errors) => {
                 console.error('Approval error', errors)
+                isSubmittingApproval.value = false
                 alert('Failed to approve. Check console for details.')
+            },
+            onFinish: () => {
+                // Ensure submitting flag is reset even if something goes wrong
+                isSubmittingApproval.value = false
             }
         }
         )
     } catch (err) {
         console.error('Approve exception', err)
+        isSubmittingApproval.value = false
         alert('An error occurred while approving.')
     }
 }
@@ -1278,26 +1298,47 @@ const confirmRejection = async () => {
         {
             preserveState: false,
             onSuccess: () => {
+                // Close all modals first to prevent blocking
+                isRejectionModalOpen.value = false
+                isModalOpen.value = false
+                
                 // remove request from local list
                 const index = requests.value.findIndex(r => r.id === selectedRequest.value.id)
                 if (index > -1) requests.value.splice(index, 1)
 
-                // close modals / reset local fields
-                isRejectionModalOpen.value = false
+                // reset local fields
                 selectedRequest.value = null
                 rejectionReason.value = ''
+                
+                // Reset submitting flag
+                isSubmittingRejection.value = false
 
-                // show alert and attempt to close/redirect
-                closeEverythingAndExit('Request rejected successfully.')
+                // Redirect to refresh the page and show updated list
+                router.visit(route('event_request_approver'), {
+                    preserveState: false,
+                    preserveScroll: false,
+                    onFinish: () => {
+                        // Show success message after page loads
+                        setTimeout(() => {
+                            alert('Request rejected successfully.')
+                        }, 100)
+                    }
+                })
             },
             onError: (errors) => {
                 console.error('Rejection error', errors)
+                isSubmittingRejection.value = false
                 alert('Failed to reject. Check console for details.')
+            },
+            onFinish: () => {
+                // Ensure submitting flag is reset even if something goes wrong
+                isSubmittingRejection.value = false
             }
         }
         )
     } catch (err) {
         console.error('Reject exception', err)
+        isSubmittingRejection.value = false
         alert('An error occurred while rejecting.')
     }
 }

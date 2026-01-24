@@ -787,7 +787,10 @@ class DocumentRequestController extends Controller
             'admin_feedback'  => ['nullable', 'string'],
         ]);
 
-        $doc = DocumentRequest::where('doc_request_id', $id)->firstOrFail();
+        // Load document request with all necessary relationships for document generation
+        $doc = DocumentRequest::with(['documentType', 'user', 'attachments', 'approver'])
+            ->where('doc_request_id', $id)
+            ->firstOrFail();
 
         $update = [
             'pickup_item'     => $data['pickup_item'] ?? $doc->pickup_item,
@@ -805,10 +808,14 @@ class DocumentRequestController extends Controller
             $doc->update($update);
         });
 
-        $doc = $doc->fresh();
+        // Reload with all necessary relationships for document generation
+        $doc = DocumentRequest::with(['documentType', 'user', 'attachments', 'approver'])
+            ->where('doc_request_id', $id)
+            ->firstOrFail();
 
         // Generate document if approved
         $documentData = null;
+        $documentGenerationError = null;
         if ($data['status'] === 'Approved') {
             try {
                 $documentService = new DocumentGenerationService();
@@ -816,10 +823,12 @@ class DocumentRequestController extends Controller
                 
                 \Log::info('Document generated successfully', [
                     'doc_request_id' => $doc->doc_request_id,
-                    'docx_path' => $documentData['docx_path'],
-                    'pdf_path' => $documentData['pdf_path'],
+                    'docx_path' => $documentData['docx_path'] ?? null,
+                    'pdf_path' => $documentData['pdf_path'] ?? null,
+                    'docx_url' => $documentData['docx_url'] ?? null,
                 ]);
             } catch (\Exception $e) {
+                $documentGenerationError = $e->getMessage();
                 \Log::error('Failed to generate document: ' . $e->getMessage(), [
                     'doc_request_id' => $doc->doc_request_id,
                     'error' => $e->getTraceAsString(),
@@ -952,10 +961,16 @@ class DocumentRequestController extends Controller
         if ($documentData) {
             $responseData['document_url'] = $documentData['pdf_url'];
             $responseData['document_docx_url'] = $documentData['docx_url'];
-            $responseData['filename'] = $documentData['pdf_filename'];
-            
-            // Also include base64 for immediate display (optional - can be large)
-            // We'll skip base64 for now and use URL instead
+            // Prefer DOCX filename since we want to download DOCX by default
+            $responseData['filename'] = $documentData['docx_filename'] ?? $documentData['pdf_filename'];
+            $responseData['docx_filename'] = $documentData['docx_filename'];
+            $responseData['pdf_filename'] = $documentData['pdf_filename'];
+            $responseData['document_generated'] = true;
+        } else {
+            $responseData['document_generated'] = false;
+            if ($documentGenerationError) {
+                $responseData['document_generation_error'] = $documentGenerationError;
+            }
         }
 
         return response()->json([
@@ -1142,10 +1157,16 @@ class DocumentRequestController extends Controller
             $filename = $documentService->generateFileName($doc, $format);
         }
 
-        // Serve file with proper headers for iframe embedding
+        // For DOCX files, force download instead of inline display
+        // PDFs can be displayed inline, but DOCX should download to open in Word
+        $contentDisposition = ($format === 'docx' || $isFallbackToDocx) 
+            ? 'attachment; filename="' . $filename . '"'
+            : 'inline; filename="' . $filename . '"';
+
+        // Serve file with proper headers
         return response()->file($filePath, [
             'Content-Type' => $mimeType,
-            'Content-Disposition' => 'inline; filename="' . $filename . '"',
+            'Content-Disposition' => $contentDisposition,
             'X-Content-Type-Options' => 'nosniff',
             'Cache-Control' => 'private, max-age=3600',
         ]);
@@ -1247,11 +1268,40 @@ class DocumentRequestController extends Controller
 
         // Resolve document type id by name if necessary
         $fk_document_type_id = $request->input('fk_document_type_id');
+        $documentName = $request->input('document_name');
+        
+        // Handle Permit types: if document_name is "Permit", check extra_fields for permit_type
         if (empty($fk_document_type_id) && $request->filled('document_name')) {
-            $docType = DocumentType::where('document_name', $request->input('document_name'))->first();
-            if ($docType) {
-                $fk_document_type_id = $docType->document_type_id;
+            // Check if this is a Permit request with a specific permit_type in extra_fields
+            $extraFields = $request->input('extra_fields', []);
+            $permitType = is_array($extraFields) ? ($extraFields['permit_type'] ?? null) : null;
+            
+            if ($documentName === 'Permit' && $permitType) {
+                // Use the specific permit type (Building Permit or Business Permit) as the document name
+                $docType = DocumentType::where('document_name', $permitType)->first();
+                if ($docType) {
+                    $fk_document_type_id = $docType->document_type_id;
+                    \Log::info('Resolved Permit to specific permit type', [
+                        'permit_type' => $permitType,
+                        'document_type_id' => $fk_document_type_id,
+                    ]);
+                }
+            } else {
+                // Standard lookup by document_name
+                $docType = DocumentType::where('document_name', $documentName)->first();
+                if ($docType) {
+                    $fk_document_type_id = $docType->document_type_id;
+                }
             }
+        }
+        
+        // Final check: if still empty, log error
+        if (empty($fk_document_type_id)) {
+            \Log::error('Could not resolve document type ID', [
+                'document_name' => $documentName,
+                'permit_type' => $permitType ?? null,
+                'extra_fields' => $request->input('extra_fields', []),
+            ]);
         }
 
         // Contact number priority
@@ -1511,10 +1561,21 @@ class DocumentRequestController extends Controller
         // Process text values from extra_fields
         // Get the extra_fields array from input (excluding files which are in allFiles)
         $extraFields = $request->input('extra_fields', []);
+        
+        \Log::info('Document Request - Processing extra_fields:', [
+            'extra_fields_type' => gettype($extraFields),
+            'extra_fields_raw' => $extraFields,
+            'extra_fields_keys' => is_array($extraFields) ? array_keys($extraFields) : [],
+            'all_input_keys' => array_keys($request->all()),
+            'has_building_type' => isset($extraFields['building_type']),
+            'has_building_reg_number' => isset($extraFields['building_reg_number']),
+        ]);
+        
         if (is_array($extraFields)) {
             foreach ($extraFields as $fieldName => $fieldValue) {
                 // Skip if this field is a file (already handled above)
                 if (isset($fileAttachments[$fieldName])) {
+                    \Log::info("Skipping extra_fields[{$fieldName}] - it's a file attachment");
                     continue;
                 }
                 
@@ -1524,12 +1585,21 @@ class DocumentRequestController extends Controller
                     if (!empty($fieldValue)) {
                         // Sanitize array values
                         $extraFieldsData[$fieldName] = $fieldValue;
+                        \Log::info("Added extra_fields[{$fieldName}] as array:", ['value' => $fieldValue]);
                     }
                 } elseif ($fieldValue !== null && $fieldValue !== '') {
                     $extraFieldsData[$fieldName] = $fieldValue;
+                    \Log::info("Added extra_fields[{$fieldName}]:", ['value' => $fieldValue]);
+                } else {
+                    \Log::info("Skipping extra_fields[{$fieldName}] - empty or null:", ['value' => $fieldValue]);
                 }
             }
         }
+        
+        \Log::info('Document Request - Final extraFieldsData to be saved:', [
+            'extraFieldsData' => $extraFieldsData,
+            'extraFieldsData_keys' => array_keys($extraFieldsData),
+        ]);
 
         // Log file attachments BEFORE transaction to verify they're detected
         \Log::info('Document Request - BEFORE TRANSACTION - File attachments detected:', [
@@ -1652,6 +1722,14 @@ class DocumentRequestController extends Controller
 
                 if ($col === 'extra_fields') {
                     // Store non-file extra_fields as JSON with UTF-8 safe encoding
+                    \Log::info('Document Request - Saving extra_fields to database:', [
+                        'extraFieldsData' => $extraFieldsData,
+                        'extraFieldsData_count' => count($extraFieldsData),
+                        'extraFieldsData_keys' => array_keys($extraFieldsData),
+                        'has_building_type' => isset($extraFieldsData['building_type']),
+                        'has_building_reg_number' => isset($extraFieldsData['building_reg_number']),
+                    ]);
+                    
                     if (!empty($extraFieldsData)) {
                         // Clean extra_fields data to ensure valid UTF-8
                         $cleanedExtraFields = $this->cleanArrayForJson($extraFieldsData);
@@ -1661,8 +1739,13 @@ class DocumentRequestController extends Controller
                             $json = json_encode($cleanedExtraFields, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_INVALID_UTF8_IGNORE | JSON_PARTIAL_OUTPUT_ON_ERROR);
                         }
                         $dataWithTicket[$col] = $json;
+                        \Log::info('Document Request - extra_fields JSON encoded:', [
+                            'json' => $json,
+                            'json_length' => strlen($json),
+                        ]);
                     } else {
                         $dataWithTicket[$col] = null;
+                        \Log::warning('Document Request - extraFieldsData is empty, setting extra_fields to null');
                     }
                     continue;
                 }
@@ -2392,6 +2475,127 @@ class DocumentRequestController extends Controller
             ->with('ticket', $docRequest->doc_request_ticket);
     }
 
+    public function selectPage(Request $request)
+    {
+        $userId = auth()->id();
+        if (!$userId) {
+            abort(403, 'Unauthorized');
+        }
 
+        // Helper: sanitize string to UTF-8
+        $sanitizeString = function ($value) {
+            if (!is_string($value)) {
+                return $value;
+            }
+            if (mb_check_encoding($value, 'UTF-8')) {
+                return $value;
+            }
+            $tryEncodings = ['Windows-1252', 'ISO-8859-1', 'CP1252'];
+            foreach ($tryEncodings as $enc) {
+                $converted = @mb_convert_encoding($value, 'UTF-8', $enc);
+                if ($converted !== false && mb_check_encoding($converted, 'UTF-8')) {
+                    return $converted;
+                }
+            }
+            $stripped = @iconv('UTF-8', 'UTF-8//IGNORE', $value);
+            return $stripped !== false ? $stripped : mb_convert_encoding($value, 'UTF-8', 'UTF-8');
+        };
+
+        // Fetch document requests with payment info
+        $documentRequests = DocumentRequest::with(['documentType'])
+            ->where('fk_user_id', $userId)
+            ->orderByDesc('doc_request_id')
+            ->limit(100)
+            ->get();
+
+        $docRequestIds = $documentRequests->pluck('doc_request_id')->filter()->values()->all();
+
+        $payments = \App\Models\Payment::select([
+                'payment_id',
+                'fk_doc_request_id',
+                'fk_user_id',
+                'status',
+                'paid_amount',
+                'transaction_ref',
+                'receipt_content',
+                'paid_at',
+                'updated_at',
+            ])
+            ->where(function ($query) use ($userId, $docRequestIds) {
+                $query->where('fk_user_id', $userId);
+                if (!empty($docRequestIds)) {
+                    $query->orWhereIn('fk_doc_request_id', $docRequestIds);
+                }
+            })
+            ->orderByDesc('payment_id')
+            ->limit(100)
+            ->get();
+
+        $documentRequestsArray = $documentRequests->map(function ($m) use ($sanitizeString) {
+            $docType = $m->documentType;
+            return [
+                'doc_request_id' => $m->doc_request_id,
+                'doc_request_ticket' => $sanitizeString($m->doc_request_ticket ?? ''),
+                'fk_user_id' => $m->fk_user_id,
+                'fk_document_type_id' => $m->fk_document_type_id,
+                'status' => $sanitizeString($m->status ?? 'PENDING'),
+                'purpose' => $sanitizeString($m->purpose ?? ''),
+                'pickup_item' => $sanitizeString($m->pickup_item ?? ''),
+                'pickup_location' => $sanitizeString($m->pickup_location ?? ''),
+                'pickup_start' => $m->pickup_start ? $m->pickup_start->toIso8601String() : null,
+                'pickup_end' => $m->pickup_end ? $m->pickup_end->toIso8601String() : null,
+                'person_to_look' => $sanitizeString($m->person_to_look ?? ''),
+                'applied_processing_fee' => $m->applied_processing_fee,
+                'processing_fee' => $docType ? ($docType->processing_fee ?? null) : null,
+                'document_name' => $docType ? $sanitizeString($docType->document_name ?? '') : '',
+                'created_at' => $m->created_at ? $m->created_at->toIso8601String() : null,
+                'reviewed_at' => $m->reviewed_at ? $m->reviewed_at->toIso8601String() : null,
+                'admin_feedback' => $sanitizeString($m->admin_feedback ?? ''),
+            ];
+        })->all();
+
+        $paymentsArray = $payments->map(function ($m) use ($sanitizeString) {
+            $receiptImage = null;
+            if (!empty($m->receipt_content)) {
+                if (Str::startsWith($m->receipt_content, ['http://', 'https://', '/'])) {
+                    $receiptImage = $m->receipt_content;
+                } else {
+                    $receiptImage = asset('storage/' . ltrim($m->receipt_content, '/'));
+                }
+            }
+            
+            return [
+                'payment_id' => $m->payment_id,
+                'fk_doc_request_id' => $m->fk_doc_request_id,
+                'fk_user_id' => $m->fk_user_id,
+                'status' => $sanitizeString($m->status ?? 'PENDING'),
+                'amount' => $m->paid_amount,
+                'paid_amount' => $m->paid_amount,
+                'transaction_ref' => $sanitizeString($m->transaction_ref ?? ''),
+                'receipt_path' => $receiptImage,
+                'receipt_content' => $sanitizeString($m->receipt_content ?? ''),
+                'receipt_image' => $receiptImage,
+                'paid_at' => $m->paid_at ? $m->paid_at->toIso8601String() : null,
+                'updated_at' => $m->updated_at ? $m->updated_at->toIso8601String() : null,
+            ];
+        })->all();
+
+        // Get user data
+        $user = auth()->user();
+        $userData = $user ? [
+            'id' => $user->user_id,
+            'name' => $sanitizeString($user->name ?? ''),
+            'email' => $sanitizeString($user->email ?? ''),
+            'fk_role_id' => $user->fk_role_id ?? null,
+            'profile_pic' => $sanitizeString($user->profile_pic ?? ''),
+        ] : null;
+
+        return Inertia::render('User/Resident/R_Document_Request_Select', [
+            'documentRequests' => $documentRequestsArray,
+            'document_requests' => $documentRequestsArray,
+            'payments' => $paymentsArray,
+            'auth' => ['user' => $userData],
+        ]);
+    }
 
 }

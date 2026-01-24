@@ -8,13 +8,13 @@
         <div class="header-bar">
             <div class="header-content">
                 <div class="logo-section">
-                    <img src="/assets/WHITE LOGO.png" alt="Logo" class="header-logo" />
+                    <img src="/assets/LOGO.png" alt="Logo" class="header-logo" />
                 </div>
                 <div class="header-actions">
                     <img src="/assets/SETTINGS.png" alt="Settings" class="settings-btn-img" @click="toggleSettings" />
                     <div v-if="showSettings" class="settings-dropdown">
                         <Link href="#" class="settings-item" @click="closeSettings">Help Center</Link>
-                        <Link href="#" class="settings-item" @click="closeSettings">Terms & Conditions</Link>
+                        <button type="button" class="settings-item" @click="openTerms">Terms & Conditions</button>
                         <Link href="#" class="settings-item" @click="logout">Sign Out</Link>
                     </div>
                 </div>
@@ -26,10 +26,10 @@
             <!-- Sidebar -->
             <div class="sidebar">
                 <div class="profile-card">
-                    <img src="/assets/PROFILE PIC.jpg" alt="Profile" class="profile-avatar" />
+                    <img :src="profilePictureUrl" alt="Profile" class="profile-avatar" />
                     <div class="profile-info">
-                        <div class="profile-name">Rolando Sanchez</div>
-                        <div class="profile-role">RESIDENT</div>
+                        <div class="profile-name">{{ user?.name || 'Unknown User' }}</div>
+                        <div class="profile-role">{{ displayRole }}</div>
                     </div>
                 </div>
 
@@ -40,7 +40,10 @@
                         :class="{ active: activeTab === 'posts' }"
                         @click="navigateToPosts"
                     >
-                        📋 Posts
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="nav-icon">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 0 0 2.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 0 0-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 0 0 .75-.75 2.25 2.25 0 0 0-.1-.664m-5.8 0A2.251 2.251 0 0 1 13.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25ZM6.75 12h.008v.008H6.75V12Zm0 3h.008v.008H6.75V15Zm0 3h.008v.008H6.75V18Z" />
+                        </svg>
+                        Posts
                     </Link>
                     <Link 
                         href="#" 
@@ -48,7 +51,10 @@
                         :class="{ active: activeTab === 'documents' }"
                         @click="navigateToDocuments"
                     >
-                        📄 Document Request
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="nav-icon">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
+                        </svg>
+                        Document Request
                     </Link>
                     <Link 
                         href="#" 
@@ -56,51 +62,50 @@
                         :class="{ active: activeTab === 'events' }"
                         @click="navigateToEvents"
                     >
-                        🤝 Event Assistance
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="nav-icon">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 0 0 2.625.372 9.337 9.337 0 0 0 4.121-.952 4.125 4.125 0 0 0-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 0 1 8.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0 1 11.964-3.07M12 6.375a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0Zm8.25 2.25a2.625 2.625 0 1 1-5.25 0 2.625 2.625 0 0 1 5.25 0Z" />
+                        </svg>
+                        Event Assistance
                     </Link>
                     <Link 
                         href="#" 
                         class="nav-item active"
                         :class="{ active: activeTab === 'notifications' }"
-                        @click="setActiveTab('notifications')"
+                        @click.prevent="navigateToNotifications"
                     >
-                        🔔 Notifications
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="nav-icon">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0" />
+                        </svg>
+                        Notifications
                     </Link>
                     <Link 
                         href="#" 
                         class="nav-item"
                         :class="{ active: activeTab === 'profile' }"
-                        @click="setActiveTab('profile')"
+                        @click="navigateToProfile"
                     >
-                        👤 Profile
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="nav-icon">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
+                        </svg>
+                        Profile
                     </Link>
                 </div>
 
                 <button class="faq-btn" @click="openFAQ">
-                    ❓ FAQs & Help Center
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="nav-icon">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 5.25h.008v.008H12v-.008Z" />
+                    </svg>
+                    FAQs & Help Center
                 </button>
             </div>
 
             <!-- Content Area -->
             <div class="content-area">
                 <div class="main-content">
-                    <!-- Header with Tabs -->
+                    <!-- Header -->
                     <div class="notification-header">
-                        <div class="tabs">
-                            <button 
-                                class="tab-btn"
-                                :class="{ active: currentTab === 'activities' }"
-                                @click="switchTab('activities')"
-                            >
-                                Activities
-                            </button>
-                            <button 
-                                class="tab-btn"
-                                :class="{ active: currentTab === 'requests' }"
-                                @click="switchTab('requests')"
-                            >
-                                Requests
-                            </button>
+                        <div class="header-title">
+                            <h2>Notifications</h2>
                         </div>
                         <div class="header-icon">
                             <img src="/assets/ICON.png" alt="iKONEK" class="small-logo" />
@@ -111,82 +116,70 @@
                     <div class="filter-section">
                         <div class="filter-left">
                             <span class="filter-label">Filter by</span>
-                            <select v-model="sortOption" class="filter-select">
-                                <option value="newest">NEWEST</option>
-                                <option value="relevant">RELEVANT</option>
-                                <option value="oldest">OLDEST</option>
-                            </select>
+                            <div class="filter-dropdown-wrapper">
+                                <button class="filter-dropdown-btn" @click="toggleSortDropdown">
+                                    {{ sortOption.toUpperCase() }}
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="filter-arrow" :class="{ rotated: showSortDropdown }">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+                                    </svg>
+                                </button>
+                                <div v-if="showSortDropdown" class="filter-dropdown-menu">
+                                    <button @click="selectSort('newest')" :class="{ active: sortOption === 'newest' }">NEWEST</button>
+                                    <button @click="selectSort('oldest')" :class="{ active: sortOption === 'oldest' }">OLDEST</button>
+                                </div>
+                            </div>
                         </div>
                         <div class="filter-right">
-                            <input 
-                                type="text" 
-                                v-model="searchQuery" 
-                                placeholder="SEARCH..." 
-                                class="search-input"
-                            />
+                            <div class="search-container">
+                                <input 
+                                    type="text" 
+                                    v-model="searchQuery" 
+                                    placeholder="SEARCH..." 
+                                    class="search-input"
+                                />
+                            </div>
                         </div>
                     </div>
 
                     <!-- Notifications Content -->
                     <div class="notifications-container">
-                        <!-- Activities Tab -->
-                        <div v-if="currentTab === 'activities'" class="activities-list">
-                            <div 
-                                v-for="activity in filteredActivities" 
-                                :key="activity.id"
-                                class="notification-card activity-card"
-                            >
-                                <img :src="activity.avatar" alt="User" class="notif-avatar" />
-                                <div class="notif-content">
-                                    <p class="notif-text">
-                                        <strong>{{ activity.user }}</strong>
-                                        <span v-if="activity.others"> and {{ activity.others }} others</span>
-                                        {{ activity.action }}
-                                    </p>
-                                    <span class="notif-time">{{ activity.time }}</span>
-                                </div>
+                        <div class="activities-list">
+                            <!-- Loading State -->
+                            <div v-if="isLoading" class="loading-state">
+                                <p>Loading notifications...</p>
                             </div>
 
-                            <div v-if="filteredActivities.length === 0" class="no-notifications">
-                                <p>No activities found</p>
-                            </div>
-                        </div>
-
-                        <!-- Requests Tab -->
-                        <div v-if="currentTab === 'requests'" class="requests-list">
-                            <div 
-                                v-for="request in filteredRequests" 
-                                :key="request.id"
-                                class="notification-card request-card"
-                                :class="request.status.toLowerCase()"
-                            >
-                                <div class="request-header">
-                                    <div class="request-info">
-                                        <span class="request-number">REQUEST NUMBER: #{{ request.requestNumber }}</span>
-                                        <h3 class="request-title">{{ request.title }}</h3>
-                                        <span class="request-time">{{ request.date }} | {{ request.time }}</span>
-                                    </div>
-                                    <div class="request-status" :class="request.status.toLowerCase()">
-                                        {{ request.status }}
-                                    </div>
-                                </div>
-
-                                <!-- Payment Buttons (Only for Document Requests with ACCEPTED status) -->
-                                <div 
-                                    v-if="request.type === 'document' && request.status === 'ACCEPTED'" 
-                                    class="payment-buttons"
+                            <!-- Notifications List -->
+                            <div v-else>
+                                <div
+                                    v-for="activity in filteredActivities"
+                                    :key="activity.id"
+                                    class="notification-card activity-card"
+                                    :class="{ 'unread': !activity.is_read }"
+                                    @click="handleNotificationClick(activity)"
                                 >
-                                    <button class="pay-online-btn" @click="showPaymentGateway(request)">
-                                        Pay Online
-                                    </button>
-                                    <button class="pay-onsite-btn" @click="showOnsitePayment(request)">
-                                        Pay Onsite
+                                    <img :src="activity.avatar" alt="User" class="notif-avatar" />
+                                    <div class="notif-content">
+                                        <p class="notif-text">
+                                            <strong>{{ activity.user }}</strong>
+                                            <span v-if="activity.others"> and {{ activity.others }} others</span>
+                                            {{ activity.action }}
+                                        </p>
+                                        <span class="notif-time">{{ activity.time }}</span>
+                                    </div>
+                                    <div v-if="!activity.is_read" class="unread-indicator"></div>
+                                </div>
+
+                                <!-- Mark All as Read Button -->
+                                <div v-if="activities.length > 0 && activities.some(a => !a.is_read)" class="mark-all-read">
+                                    <button class="mark-read-btn" @click="markAllAsRead">
+                                        Mark all as read
                                     </button>
                                 </div>
-                            </div>
 
-                            <div v-if="filteredRequests.length === 0" class="no-notifications">
-                                <p>No requests found</p>
+                                <div v-if="!isLoading && filteredActivities.length === 0" class="no-notifications">
+                                    <p>No notifications found</p>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -194,204 +187,141 @@
             </div>
         </div>
 
-        <!-- Payment Gateway Modal -->
-        <div v-if="showPaymentModal" class="modal-overlay" @click="closePaymentModal">
-            <div class="modal-content payment-modal" @click.stop>
-                <button class="close-modal-btn" @click="closePaymentModal">✕</button>
-                <h3 class="modal-title">Choose Payment Gateway</h3>
-                <p class="modal-subtitle">Select your preferred payment method</p>
-                
-                <div class="payment-options">
-                    <button class="payment-option-btn gcash" @click="processPayment('GCash')">
-                        <div class="payment-logo-placeholder">
-                            <img src="/assets/gcash-logo.png" alt="GCash" class="payment-logo" />
-                        </div>
-                        <span>GCash</span>
-                    </button>
-                    
-                    <button class="payment-option-btn maya" @click="processPayment('Maya')">
-                        <div class="payment-logo-placeholder">
-                            <img src="/assets/maya-logo.png" alt="Maya" class="payment-logo" />
-                        </div>
-                        <span>Maya</span>
-                    </button>
-                </div>
-
-                <div class="payment-details">
-                    <p><strong>Request:</strong> {{ selectedRequest?.title }}</p>
-                    <p><strong>Amount:</strong> ₱{{ selectedRequest?.amount || '150.00' }}</p>
-                </div>
-            </div>
-        </div>
-
-        <!-- Onsite Payment Modal -->
-        <div v-if="showOnsiteModal" class="modal-overlay" @click="closeOnsiteModal">
-            <div class="modal-content onsite-modal" @click.stop>
-                <button class="close-modal-btn" @click="closeOnsiteModal">✕</button>
-                <div class="modal-icon success-icon">
-                    <div class="checkmark">✓</div>
-                </div>
-                <h3 class="modal-title">REQUEST ACCEPTED</h3>
-                <p class="request-number-display">REQUEST NO. #{{ selectedRequest?.requestNumber }}</p>
-                
-                <div class="onsite-details">
-                    <p class="onsite-message">
-                        Your request to acquire a <strong>{{ selectedRequest?.title }}</strong> has been approved.
-                    </p>
-                    <p class="onsite-message">
-                        You may now proceed to claim your certificate by following the instructions provided.
-                    </p>
-                    
-                    <div class="pickup-info">
-                        <div class="info-item">
-                            <span class="info-label">WHAT:</span>
-                            <span class="info-value">PICKUP OF DOCUMENT ({{ selectedRequest?.title }})</span>
-                        </div>
-                        <div class="info-item">
-                            <span class="info-label">WHERE:</span>
-                            <span class="info-value">BARANGAY 176B BARANGAY HALL</span>
-                        </div>
-                        <div class="info-item">
-                            <span class="info-label">WHEN:</span>
-                            <span class="info-value">{{ getPickupSchedule() }}</span>
-                        </div>
-                        <div class="info-item">
-                            <span class="info-label">WHO:</span>
-                            <span class="info-value">FIND MS. MERCY ALPAÑO</span>
-                        </div>
-                        <div class="info-item">
-                            <span class="info-label">AMOUNT:</span>
-                            <span class="info-value amount">₱{{ selectedRequest?.amount || '150.00' }}</span>
-                        </div>
-                    </div>
-
-                    <p class="present-message">
-                        <strong>Present this request number upon pickup:</strong><br/>
-                        <span class="highlight-number">#{{ selectedRequest?.requestNumber }}</span>
-                    </p>
-                    
-                    <p class="thank-you">Thank you!</p>
-                </div>
-
-                <button class="close-btn" @click="closeOnsiteModal">
-                    Close
-                </button>
-            </div>
-        </div>
     </div>
+
+    <!-- Terms & Conditions Modal -->
+    <TermsModal :open="showTerms" @close="closeTerms" />
 </template>
 
 <script setup>
-import { Link } from '@inertiajs/vue3'
+import { Link, usePage } from '@inertiajs/vue3'
 import { Head } from '@inertiajs/vue3'
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { router } from '@inertiajs/vue3'
+import axios from 'axios'
+import TermsModal from '@/Components/TermsModal.vue'
+
+// --- Inertia-shared auth user ---
+const page = usePage()
+const user = computed(() => page?.props?.value?.auth?.user ?? page?.props?.auth?.user ?? null)
+
+// map of role_id -> role_name
+const roleMap = {
+  1: 'Resident',
+  2: 'Barangay Captain',
+  3: 'Barangay Secretary',
+  4: 'Barangay Treasurer',
+  5: 'Barangay Kagawad',
+  6: 'Sangguniang Kabataan Chairman',
+  7: 'Sangguniang Kabataan Kagawad',
+  9: 'System Admin',
+}
+
+// computed display role (safe if user is null)
+const displayRole = computed(() => {
+  const id = user.value?.fk_role_id ?? user.value?.role_id ?? null
+  const role = id ? (roleMap[id] ?? `Role ${id}`) : 'Resident'
+  return role.toUpperCase()
+})
+
+// Profile picture URL
+const profilePictureUrl = computed(() => {
+  if (user.value?.profile_pic) {
+    const pic = user.value.profile_pic
+    if (pic.startsWith('http://') || pic.startsWith('https://') || pic.startsWith('/')) {
+      return pic
+    }
+    return '/storage/' + pic.replace(/^\/+/, '')
+  }
+  return '/assets/PROFILE PIC.jpg'
+})
 
 const showSettings = ref(false)
 const activeTab = ref('notifications')
-const currentTab = ref('requests')
 const sortOption = ref('newest')
 const searchQuery = ref('')
-const showPaymentModal = ref(false)
-const showOnsiteModal = ref(false)
-const selectedRequest = ref(null)
+const activities = ref([])
+const isLoading = ref(false)
+const showSortDropdown = ref(false)
 
-// Sample Activities Data
-const activities = ref([
-    {
-        id: 1,
-        user: 'John Rey Santiago',
-        others: 88,
-        action: 'liked your post.',
-        avatar: '/assets/PROFILE PIC 9.jpg',
-        time: 'Jun 01, 2025 10:08 AM',
-        timestamp: new Date('2025-06-01T10:08:00')
-    },
-    {
-        id: 2,
-        user: 'Kap. Sammy Reyes',
-        others: null,
-        action: 'commented on your post.',
-        avatar: '/assets/PROFILE PIC 4.jpg',
-        time: 'Jun 01, 2025 10:09 AM',
-        timestamp: new Date('2025-06-01T10:09:00')
-    },
-    {
-        id: 3,
-        user: 'Maria Theresa Santos',
-        others: 15,
-        action: 'and others reacted to your comment.',
-        avatar: '/assets/PROFILE PIC 3.jpg',
-        time: 'May 30, 2025 3:45 PM',
-        timestamp: new Date('2025-05-30T15:45:00')
-    },
-    {
-        id: 4,
-        user: 'Anna Mae Buenavente',
-        others: null,
-        action: 'shared your post.',
-        avatar: '/assets/PROFILE PIC 5.jpg',
-        time: 'May 29, 2025 2:20 PM',
-        timestamp: new Date('2025-05-29T14:20:00')
+// Fetch notifications from API
+const fetchNotifications = async () => {
+    try {
+        isLoading.value = true
+        const response = await axios.get('/api/notifications')
+        if (response.data.success) {
+            activities.value = response.data.notifications.map(notification => ({
+                id: notification.id,
+                user: notification.user,
+                others: notification.others || null,
+                action: notification.action,
+                avatar: notification.avatar,
+                time: notification.time,
+                timestamp: new Date(notification.timestamp),
+                is_read: notification.is_read,
+                type: notification.type,
+                post_id: notification.post_id || null,
+                post_category: notification.post_category || null // 'Announcement' or 'Discussion'
+            }))
+        } else {
+            activities.value = []
+        }
+    } catch (error) {
+        console.error('Error fetching notifications:', error)
+        activities.value = []
+    } finally {
+        isLoading.value = false
     }
-])
+}
 
-// Sample Requests Data
-const requests = ref([
-    {
-        id: 1,
-        requestNumber: '002212',
-        title: 'Request for Barangay Certificate',
-        date: 'Jun 01, 2025',
-        time: '10:09 AM',
-        status: 'ACCEPTED',
-        type: 'document',
-        amount: '150.00',
-        timestamp: new Date('2025-06-01T10:09:00')
-    },
-    {
-        id: 2,
-        requestNumber: '002198',
-        title: 'Request for Barangay Clearance',
-        date: 'May 28, 2025',
-        time: '2:30 PM',
-        status: 'PENDING',
-        type: 'document',
-        amount: '200.00',
-        timestamp: new Date('2025-05-28T14:30:00')
-    },
-    {
-        id: 3,
-        requestNumber: 'EA-0045',
-        title: 'Court Reservation Request',
-        date: 'May 27, 2025',
-        time: '9:15 AM',
-        status: 'ACCEPTED',
-        type: 'event',
-        timestamp: new Date('2025-05-27T09:15:00')
-    },
-    {
-        id: 4,
-        requestNumber: '002165',
-        title: 'Request for Certificate of Indigency',
-        date: 'May 25, 2025',
-        time: '11:00 AM',
-        status: 'REJECTED',
-        type: 'document',
-        amount: '100.00',
-        timestamp: new Date('2025-05-25T11:00:00')
-    },
-    {
-        id: 5,
-        requestNumber: 'EA-0032',
-        title: 'Funeral Assistance Request',
-        date: 'May 24, 2025',
-        time: '8:30 AM',
-        status: 'PENDING',
-        type: 'event',
-        timestamp: new Date('2025-05-24T08:30:00')
+// Handle notification click - mark as read and navigate to post if available
+const handleNotificationClick = async (activity) => {
+    if (!activity.is_read) {
+        await markAsRead(activity.id)
     }
-])
+    
+    // Navigate to post if post_id is available
+    if (activity.post_id) {
+        // Determine which route to use based on post category
+        const category = activity.post_category || 'Discussion' // Default to Discussion if not specified
+        const routeName = category === 'Announcement' 
+            ? 'announcement_resident' 
+            : 'discussion_resident'
+        
+        // Navigate to the appropriate page with post_id as query parameter
+        const url = route(routeName) + `?post=${activity.post_id}`
+        router.visit(url, {
+            preserveScroll: false
+        })
+    }
+}
+
+// Mark notification as read
+const markAsRead = async (notificationId) => {
+    try {
+        await axios.put(`/api/notifications/${notificationId}/read`)
+        // Update the local state
+        const notification = activities.value.find(n => n.id === notificationId)
+        if (notification) {
+            notification.is_read = true
+        }
+    } catch (error) {
+        console.error('Error marking notification as read:', error)
+    }
+}
+
+// Mark all notifications as read
+const markAllAsRead = async () => {
+    try {
+        await axios.put('/api/notifications/mark-all-read')
+        // Update all notifications in local state
+        activities.value.forEach(notification => {
+            notification.is_read = true
+        })
+    } catch (error) {
+        console.error('Error marking all notifications as read:', error)
+    }
+}
 
 // Filtered Activities
 const filteredActivities = computed(() => {
@@ -414,31 +344,6 @@ const filteredActivities = computed(() => {
     return filtered
 })
 
-// Filtered Requests
-const filteredRequests = computed(() => {
-    let filtered = [...requests.value]
-
-    if (searchQuery.value.trim()) {
-        const query = searchQuery.value.toLowerCase()
-        filtered = filtered.filter(request => 
-            request.title.toLowerCase().includes(query) ||
-            request.requestNumber.includes(query) ||
-            request.status.toLowerCase().includes(query)
-        )
-    }
-
-    if (sortOption.value === 'newest') {
-        filtered.sort((a, b) => b.timestamp - a.timestamp)
-    } else if (sortOption.value === 'oldest') {
-        filtered.sort((a, b) => a.timestamp - b.timestamp)
-    } else if (sortOption.value === 'relevant') {
-        // Sort by status priority: PENDING > ACCEPTED > REJECTED
-        const statusPriority = { 'PENDING': 1, 'ACCEPTED': 2, 'REJECTED': 3 }
-        filtered.sort((a, b) => statusPriority[a.status] - statusPriority[b.status])
-    }
-
-    return filtered
-})
 
 const toggleSettings = () => {
     showSettings.value = !showSettings.value
@@ -448,9 +353,50 @@ const closeSettings = () => {
     showSettings.value = false
 }
 
+// Terms & Conditions modal
+const showTerms = ref(false)
+const openTerms = () => {
+    showSettings.value = false
+    showTerms.value = true
+}
+const closeTerms = () => {
+    showTerms.value = false
+}
+
 const logout = () => {
     showSettings.value = false
-    router.visit(route('login'))
+    // Properly logout by calling the logout endpoint
+    router.post('/logout', {}, {
+        onSuccess: () => {
+            // Clear any local storage or session storage if needed
+            if (typeof window !== 'undefined') {
+                localStorage.clear()
+                sessionStorage.clear()
+            }
+            // Redirect to login page after successful logout
+            router.visit(route('login'), {
+                replace: true,
+                preserveState: false,
+                preserveScroll: false
+            })
+        },
+        onError: () => {
+            // Even if logout fails, redirect to login
+            router.visit(route('login'), {
+                replace: true,
+                preserveState: false,
+                preserveScroll: false
+            })
+        },
+        onFinish: () => {
+            // Ensure we redirect even if something goes wrong
+            router.visit(route('login'), {
+                replace: true,
+                preserveState: false,
+                preserveScroll: false
+            })
+        }
+    })
 }
 
 const setActiveTab = (tab) => {
@@ -472,59 +418,42 @@ const navigateToEvents = () => {
     router.visit(route('event_assistance_resident'))
 }
 
-const switchTab = (tab) => {
-    currentTab.value = tab
+const navigateToNotifications = () => {
+    activeTab.value = 'notifications'
+    router.visit(route('notification_activities_resident'))
+}
+
+const navigateToProfile = () => {
+    activeTab.value = 'profile'
+    router.visit(route('profile_resident'))
+}
+
+const toggleSortDropdown = () => {
+    showSortDropdown.value = !showSortDropdown.value
+}
+
+const selectSort = (option) => {
+    sortOption.value = option
+    showSortDropdown.value = false
 }
 
 const openFAQ = () => {
-    console.log('Opening FAQ')
-}
-
-const showPaymentGateway = (request) => {
-    selectedRequest.value = request
-    showPaymentModal.value = true
-}
-
-const closePaymentModal = () => {
-    showPaymentModal.value = false
-    selectedRequest.value = null
-}
-
-const processPayment = (gateway) => {
-    alert(`Processing payment via ${gateway}...\nRequest: ${selectedRequest.value.title}\nAmount: ₱${selectedRequest.value.amount}`)
-    closePaymentModal()
-}
-
-const showOnsitePayment = (request) => {
-    selectedRequest.value = request
-    showOnsiteModal.value = true
-}
-
-const closeOnsiteModal = () => {
-    showOnsiteModal.value = false
-    selectedRequest.value = null
-}
-
-const getPickupSchedule = () => {
-    const today = new Date()
-    const pickupDate = new Date(today)
-    pickupDate.setDate(today.getDate() + 3)
-    
-    const options = { month: 'short', day: '2-digit', year: 'numeric' }
-    const dateStr = pickupDate.toLocaleDateString('en-US', options).toUpperCase()
-    
-    return `${dateStr}, 9:00 AM - 3:00 PM`
+    router.visit(route('help_center_resident'))
 }
 
 const handleClickOutside = (event) => {
     if (!event.target.closest('.header-actions')) {
         showSettings.value = false
     }
+    if (!event.target.closest('.filter-dropdown-wrapper')) {
+        showSortDropdown.value = false
+    }
 }
 
 onMounted(() => {
     document.addEventListener('click', handleClickOutside)
     activeTab.value = 'notifications'
+    fetchNotifications()
 })
 
 onUnmounted(() => {
@@ -550,7 +479,7 @@ onUnmounted(() => {
 }
 
 .header-bar {
-    background: linear-gradient(135deg, #ff8c42, #ff7a28);
+    background: linear-gradient(135deg, #2e2e2e, #2e2e2e);
     color: white;
     padding: 5px 0;
     box-shadow: 0 4px 15px rgba(255, 140, 66, 0.3);
@@ -558,6 +487,7 @@ onUnmounted(() => {
     top: 0;
     left: 0;
     right: 0;
+    width: 100%;
     z-index: 1000;
 }
 
@@ -572,6 +502,7 @@ onUnmounted(() => {
 .header-logo {
     width: 180px;
     height: 60px;
+    padding: 1px;
 }
 
 .header-actions {
@@ -582,6 +513,11 @@ onUnmounted(() => {
     margin-right: 30px;
     width: 30px;
     cursor: pointer;
+    transition: transform 0.2s;
+}
+
+.settings-btn-img:hover {
+    transform: scale(1.1);
 }
 
 .settings-dropdown {
@@ -627,7 +563,7 @@ onUnmounted(() => {
 }
 
 .profile-card {
-    background: linear-gradient(135deg, #ff8c42, #ff7a28);
+    background: linear-gradient(135deg, #2e2e2e, #2e2e2e);
     border-radius: 15px;
     padding: 20px;
     color: white;
@@ -660,6 +596,7 @@ onUnmounted(() => {
     border-radius: 15px;
     display: inline-block;
     font-weight: 600;
+    backdrop-filter: blur(10px);
     text-transform: uppercase;
 }
 
@@ -673,7 +610,9 @@ onUnmounted(() => {
 }
 
 .nav-item {
-    display: block;
+    display: flex;
+    align-items: center;
+    gap: 12px;
     padding: 15px 20px;
     text-decoration: none;
     color: #333;
@@ -681,6 +620,13 @@ onUnmounted(() => {
     transition: all 0.3s ease;
     cursor: pointer;
     font-weight: 500;
+}
+
+.nav-icon {
+    width: 20px;
+    height: 20px;
+    stroke: currentColor;
+    flex-shrink: 0;
 }
 
 .nav-item:last-child {
@@ -701,21 +647,25 @@ onUnmounted(() => {
 
 .faq-btn {
     width: 100%;
-    background: linear-gradient(135deg, #2bb24a, #239640);
+    background: #ff8c42;
     color: white;
     border: none;
     padding: 15px 20px;
     border-radius: 12px;
     font-weight: 600;
     cursor: pointer;
-    box-shadow: 0 6px 20px rgba(43, 178, 74, 0.3);
     transition: all 0.3s ease;
     font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
 }
 
 .faq-btn:hover {
+    background: #ff7a28;
     transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(43, 178, 74, 0.4);
+    box-shadow: 0 4px 12px rgba(255, 140, 66, 0.4);
 }
 
 .content-area {
@@ -731,43 +681,29 @@ onUnmounted(() => {
 }
 
 .notification-header {
-    background: linear-gradient(135deg, #ff8c42, #ff7a28);
+    background: linear-gradient(135deg, #2bb24a, #239640);
     color: white;
-    padding: 0;
+    padding: 16px 25px;
     display: flex;
     justify-content: space-between;
     align-items: center;
+    position: relative;
 }
 
-.tabs {
-    display: flex;
+.header-title {
     flex: 1;
 }
 
-.tab-btn {
-    flex: 1;
-    background: none;
-    border: none;
+.header-title h2 {
     color: white;
-    padding: 16px 25px;
-    font-size: 18px;
+    font-size: 22px;
     font-weight: 700;
-    cursor: pointer;
-    transition: all 0.3s;
-    border-bottom: 3px solid transparent;
-}
-
-.tab-btn:hover {
-    background: rgba(255,255,255,0.1);
-}
-
-.tab-btn.active {
-    background: rgba(255,255,255,0.2);
-    border-bottom-color: white;
+    margin: 0;
 }
 
 .header-icon {
-    padding: 16px 25px;
+    display: flex;
+    align-items: center;
 }
 
 .small-logo {
@@ -797,7 +733,14 @@ onUnmounted(() => {
     font-size: 14px;
 }
 
-.filter-select {
+.filter-dropdown-wrapper {
+    position: relative;
+}
+
+.filter-dropdown-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
     padding: 8px 15px;
     border: 1px solid #ddd;
     border-radius: 8px;
@@ -805,6 +748,64 @@ onUnmounted(() => {
     font-weight: 600;
     background: white;
     cursor: pointer;
+    transition: all 0.2s;
+}
+
+.filter-dropdown-btn:hover {
+    border-color: #ff8c42;
+    background: #fff7ef;
+}
+
+.filter-arrow {
+    width: 14px;
+    height: 14px;
+    transition: transform 0.2s;
+}
+
+.filter-arrow.rotated {
+    transform: rotate(180deg);
+}
+
+.filter-dropdown-menu {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    margin-top: 4px;
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    z-index: 100;
+    min-width: 120px;
+    overflow: hidden;
+}
+
+.filter-dropdown-menu button {
+    display: block;
+    width: 100%;
+    padding: 10px 15px;
+    text-align: left;
+    border: none;
+    background: white;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 600;
+    transition: all 0.2s;
+    color: #333;
+}
+
+.filter-dropdown-menu button:hover {
+    background: #fff7ef;
+    color: #ff8c42;
+}
+
+.filter-dropdown-menu button.active {
+    background: #fff7ef;
+    color: #ff8c42;
+}
+
+.search-container {
+    position: relative;
 }
 
 .filter-right {
@@ -826,8 +827,7 @@ onUnmounted(() => {
     overflow-y: auto;
 }
 
-.activities-list,
-.requests-list {
+.activities-list {
     display: flex;
     flex-direction: column;
 }
@@ -846,6 +846,8 @@ onUnmounted(() => {
     display: flex;
     gap: 15px;
     align-items: start;
+    cursor: pointer;
+    position: relative;
 }
 
 .notif-avatar {
@@ -876,122 +878,6 @@ onUnmounted(() => {
     color: #999;
 }
 
-.request-card {
-    border-left: 4px solid transparent;
-}
-
-.request-card.accepted {
-    border-left-color: #2bb24a;
-    background: linear-gradient(90deg, rgba(43, 178, 74, 0.05), transparent);
-}
-
-.request-card.pending {
-    border-left-color: #ff9800;
-    background: linear-gradient(90deg, rgba(255, 152, 0, 0.05), transparent);
-}
-
-.request-card.rejected {
-    border-left-color: #dc3545;
-    background: linear-gradient(90deg, rgba(220, 53, 69, 0.05), transparent);
-}
-
-.request-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: start;
-    margin-bottom: 15px;
-}
-
-.request-info {
-    flex: 1;
-}
-
-.request-number {
-    font-size: 11px;
-    font-weight: 700;
-    color: #ff8c42;
-    display: block;
-    margin-bottom: 5px;
-}
-
-.request-title {
-    font-size: 16px;
-    font-weight: 700;
-    color: #333;
-    margin-bottom: 5px;
-}
-
-.request-time {
-    font-size: 12px;
-    color: #999;
-}
-
-.request-status {
-    padding: 8px 16px;
-    border-radius: 20px;
-    font-size: 11px;
-    font-weight: 700;
-    text-transform: uppercase;
-    white-space: nowrap;
-}
-
-.request-status.accepted {
-    background: linear-gradient(135deg, #2bb24a, #239640);
-    color: white;
-    box-shadow: 0 2px 8px rgba(43, 178, 74, 0.3);
-}
-
-.request-status.pending {
-    background: linear-gradient(135deg, #ff9800, #f57c00);
-    color: white;
-    box-shadow: 0 2px 8px rgba(255, 152, 0, 0.3);
-}
-
-.request-status.rejected {
-    background: linear-gradient(135deg, #dc3545, #c82333);
-    color: white;
-    box-shadow: 0 2px 8px rgba(220, 53, 69, 0.3);
-}
-
-.payment-buttons {
-    display: flex;
-    gap: 15px;
-    margin-top: 15px;
-}
-
-.pay-online-btn,
-.pay-onsite-btn {
-    flex: 1;
-    padding: 12px 20px;
-    border: none;
-    border-radius: 8px;
-    font-size: 14px;
-    font-weight: 700;
-    cursor: pointer;
-    transition: all 0.3s;
-}
-
-.pay-online-btn {
-    background: linear-gradient(135deg, #ff8c42, #ff7a28);
-    color: white;
-    box-shadow: 0 4px 12px rgba(255, 140, 66, 0.3);
-}
-
-.pay-online-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 18px rgba(255, 140, 66, 0.4);
-}
-
-.pay-onsite-btn {
-    background: linear-gradient(135deg, #2bb24a, #239640);
-    color: white;
-    box-shadow: 0 4px 12px rgba(43, 178, 74, 0.3);
-}
-
-.pay-onsite-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 18px rgba(43, 178, 74, 0.4);
-}
 
 .no-notifications {
     padding: 60px 40px;
@@ -1003,272 +889,58 @@ onUnmounted(() => {
     font-size: 16px;
 }
 
-/* Modal Styles */
-.modal-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.6);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 2000;
-    backdrop-filter: blur(4px);
-}
 
-.modal-content {
-    background: white;
-    border-radius: 15px;
-    max-width: 500px;
-    width: 90%;
-    max-height: 80vh;
-    overflow-y: auto;
-    box-shadow: 0 10px 40px rgba(0,0,0,0.3);
-    position: relative;
-}
+    /* Notification Styles */
+    .loading-state {
+        text-align: center;
+        padding: 40px 20px;
+        color: #999;
+        font-size: 16px;
+    }
 
-.close-modal-btn {
-    position: absolute;
-    top: 15px;
-    right: 15px;
-    background: none;
-    border: none;
-    font-size: 24px;
-    color: #999;
-    cursor: pointer;
-    width: 30px;
-    height: 30px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 50%;
-    transition: all 0.2s;
-}
+    .activity-card.unread {
+        background: linear-gradient(135deg, rgba(255, 140, 66, 0.05), rgba(255, 140, 66, 0.02));
+        border-left: 3px solid #ff8c42;
+    }
 
-.close-modal-btn:hover {
-    background: #f8f9fa;
-    color: #333;
-}
+    .activity-card.unread:hover {
+        background: linear-gradient(135deg, rgba(255, 140, 66, 0.08), rgba(255, 140, 66, 0.04));
+    }
 
-/* Payment Gateway Modal */
-.payment-modal {
-    padding: 40px 30px;
-}
+    .unread-indicator {
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        width: 8px;
+        height: 8px;
+        background: #ff8c42;
+        border-radius: 50%;
+        box-shadow: 0 0 0 2px white;
+    }
 
-.modal-title {
-    font-size: 24px;
-    font-weight: 700;
-    color: #333;
-    margin-bottom: 10px;
-    text-align: center;
-}
+    .mark-all-read {
+        text-align: center;
+        padding: 20px;
+        border-top: 1px solid #f0f0f0;
+    }
 
-.modal-subtitle {
-    font-size: 14px;
-    color: #666;
-    margin-bottom: 30px;
-    text-align: center;
-}
+    .mark-read-btn {
+        background: linear-gradient(135deg, #ff8c42, #ff7a28);
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+        box-shadow: 0 2px 8px rgba(255, 140, 66, 0.3);
+    }
 
-.payment-options {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 20px;
-    margin-bottom: 30px;
-}
-
-.payment-option-btn {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 15px;
-    padding: 30px 20px;
-    border: 2px solid #e0e0e0;
-    border-radius: 12px;
-    background: white;
-    cursor: pointer;
-    transition: all 0.3s;
-}
-
-.payment-option-btn:hover {
-    border-color: #ff8c42;
-    transform: translateY(-3px);
-    box-shadow: 0 6px 20px rgba(0,0,0,0.1);
-}
-
-.payment-option-btn.gcash:hover {
-    border-color: #007dfe;
-}
-
-.payment-option-btn.maya:hover {
-    border-color: #00d632;
-}
-
-.payment-logo-placeholder {
-    width: 80px;
-    height: 80px;
-    background: linear-gradient(135deg, #f8f9fa, #e9ecef);
-    border-radius: 12px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    overflow: hidden;
-}
-
-.payment-logo {
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
-}
-
-.payment-option-btn span {
-    font-size: 16px;
-    font-weight: 700;
-    color: #333;
-}
-
-.payment-details {
-    background: #f8f9fa;
-    padding: 20px;
-    border-radius: 10px;
-}
-
-.payment-details p {
-    font-size: 14px;
-    color: #555;
-    margin-bottom: 8px;
-}
-
-.payment-details p:last-child {
-    margin-bottom: 0;
-}
-
-.payment-details strong {
-    font-weight: 700;
-    color: #333;
-}
-
-/* Onsite Payment Modal */
-.onsite-modal {
-    padding: 40px 30px;
-    text-align: center;
-}
-
-.modal-icon {
-    margin-bottom: 20px;
-}
-
-.success-icon .checkmark {
-    width: 80px;
-    height: 80px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, #2bb24a, #239640);
-    color: white;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 40px;
-    font-weight: 700;
-    box-shadow: 0 6px 20px rgba(43, 178, 74, 0.4);
-    margin: 0 auto;
-}
-
-.request-number-display {
-    font-size: 13px;
-    color: #ff8c42;
-    font-weight: 700;
-    margin-bottom: 25px;
-}
-
-.onsite-details {
-    text-align: left;
-}
-
-.onsite-message {
-    font-size: 14px;
-    color: #555;
-    line-height: 1.6;
-    margin-bottom: 20px;
-}
-
-.pickup-info {
-    background: #f8f9fa;
-    border-radius: 10px;
-    padding: 20px;
-    margin-bottom: 20px;
-}
-
-.info-item {
-    display: flex;
-    gap: 10px;
-    margin-bottom: 12px;
-    font-size: 13px;
-}
-
-.info-item:last-child {
-    margin-bottom: 0;
-}
-
-.info-label {
-    font-weight: 700;
-    color: #333;
-    min-width: 80px;
-}
-
-.info-value {
-    color: #555;
-    flex: 1;
-}
-
-.info-value.amount {
-    color: #2bb24a;
-    font-weight: 700;
-    font-size: 16px;
-}
-
-.present-message {
-    font-size: 13px;
-    color: #555;
-    text-align: center;
-    margin-bottom: 20px;
-    line-height: 1.6;
-}
-
-.highlight-number {
-    font-size: 20px;
-    font-weight: 700;
-    color: #ff8c42;
-    display: block;
-    margin-top: 10px;
-}
-
-.thank-you {
-    font-size: 14px;
-    font-weight: 700;
-    color: #333;
-    text-align: center;
-}
-
-.close-btn {
-    width: 100%;
-    background: linear-gradient(135deg, #ff8c42, #ff7a28);
-    color: white;
-    border: none;
-    padding: 12px 30px;
-    border-radius: 8px;
-    font-size: 14px;
-    font-weight: 700;
-    cursor: pointer;
-    margin-top: 25px;
-    transition: all 0.3s;
-}
-
-.close-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 15px rgba(255, 140, 66, 0.4);
-}
+    .mark-read-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(255, 140, 66, 0.4);
+    }
 
 /* Scrollbar Styles */
 .notifications-container::-webkit-scrollbar {
@@ -1319,18 +991,6 @@ onUnmounted(() => {
         width: 100%;
     }
 
-    .payment-buttons {
-        flex-direction: column;
-    }
-
-    .payment-options {
-        grid-template-columns: 1fr;
-    }
-
-    .tab-btn {
-        font-size: 16px;
-        padding: 14px 20px;
-    }
 }
 
 @media (max-width: 480px) {
@@ -1344,25 +1004,6 @@ onUnmounted(() => {
 
     .notification-card {
         padding: 15px 20px;
-    }
-
-    .request-header {
-        flex-direction: column;
-        gap: 10px;
-    }
-
-    .request-status {
-        align-self: flex-start;
-    }
-
-    .modal-content {
-        width: 95%;
-        padding: 30px 20px;
-    }
-
-    .onsite-modal,
-    .payment-modal {
-        padding: 30px 20px;
     }
 }
 </style>

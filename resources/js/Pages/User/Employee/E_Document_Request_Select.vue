@@ -15,7 +15,7 @@
                     <!-- Settings Dropdown -->
                     <div v-if="showSettings" class="settings-dropdown">
                         <Link href="#" class="settings-item" @click="closeSettings">Help Center</Link>
-                        <Link href="#" class="settings-item" @click="closeSettings">Terms & Conditions</Link>
+                        <button type="button" class="settings-item" @click="openTerms">Terms & Conditions</button>
                         <Link href="#" class="settings-item" @click="logout">Sign Out</Link>
                     </div>
                 </div>
@@ -435,6 +435,9 @@
             </div>
         </div>
     </div>
+
+    <!-- Terms & Conditions Modal -->
+    <TermsModal :open="showTerms" @close="closeTerms" />
 </template>
 
 <script setup>
@@ -442,6 +445,7 @@ import { Link, usePage } from '@inertiajs/vue3'
 import { Head, useForm } from '@inertiajs/vue3'
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { router } from '@inertiajs/vue3'
+import TermsModal from '@/Components/TermsModal.vue'
 
 // Get page props
 const page = usePage()
@@ -726,6 +730,13 @@ const documentFields = {
 
   'Cedula': [
     { name: 'income_source', label: 'Income Source', type: 'select', required: false, placeholder: 'Select income source', options: ['Employment', 'Business', 'Pension', 'Remittance', 'Other'] },
+    { name: 'annual_income', label: 'Annual Income/Salary (PHP)', type: 'number', required: false, placeholder: 'Enter annual income or salary', min: 0, step: 0.01, description: 'Your annual income or salary from employment/profession (for tax calculation)' },
+    { name: 'business_gross_receipts', label: 'Business Gross Receipts (PHP)', type: 'number', required: false, placeholder: 'Enter business gross receipts', min: 0, step: 0.01, description: 'If you have a business, enter gross receipts from preceding year (optional)' },
+    { name: 'real_property_income', label: 'Real Property Income (PHP)', type: 'number', required: false, placeholder: 'Enter income from real property', min: 0, step: 0.01, description: 'Income from real property if applicable (optional)' },
+    { name: 'occupation', label: 'Occupation/Profession', type: 'text', required: false, placeholder: 'Enter your occupation or profession', description: 'Your current job or profession' },
+    { name: 'tin', label: 'Tax Identification Number (TIN)', type: 'text', required: false, placeholder: 'Enter TIN if available', description: 'Your TIN if you have one (optional)' },
+    { name: 'height', label: 'Height (cm)', type: 'number', required: false, placeholder: 'Enter height in centimeters', min: 0, step: 0.1, description: 'Your height (optional)' },
+    { name: 'weight', label: 'Weight (kg)', type: 'number', required: false, placeholder: 'Enter weight in kilograms', min: 0, step: 0.1, description: 'Your weight (optional)' },
     { name: 'tax_declaration', label: 'Tax Declaration (if applicable)', type: 'file', required: false, accept: '.pdf,image/*', description: 'Upload tax declaration document' },
     { name: 'supporting_documents', label: 'Supporting Documents for Residency', type: 'file', required: true, accept: '.pdf,image/*', description: 'Upload proof of residency documents' },
     { name: 'income_statement', label: 'Income Statement (if employed)', type: 'file', required: false, accept: '.pdf,image/*', description: 'Upload income statement or payslip if employed' }
@@ -751,6 +762,7 @@ const documentFields = {
 
   'Building Permit': [
     { name: 'building_type', label: 'Building Type', type: 'select', required: true, placeholder: 'Select building type', options: ['Residential', 'Commercial', 'Mixed Use', 'Industrial', 'Institutional', 'Other'] },
+    { name: 'building_reg_number', label: 'Building Registration Number', type: 'text', required: false, placeholder: 'Enter building registration number (if available)' },
     { name: 'building_plans', label: 'Building Plans (3 copies)', type: 'file', required: true, accept: '.pdf,image/*', description: 'Upload building plans (3 copies)' },
     { name: 'engineer_cert', label: 'Engineer\'s Certification', type: 'file', required: true, accept: '.pdf,image/*', description: 'Upload engineer\'s certification document' },
     { name: 'lot_title', label: 'Lot Title or Tax Declaration', type: 'file', required: true, accept: '.pdf,image/*', description: 'Upload lot title or tax declaration' },
@@ -808,9 +820,50 @@ const closeSettings = () => {
     showSettings.value = false
 }
 
+// Terms & Conditions modal
+const showTerms = ref(false)
+const openTerms = () => {
+    showSettings.value = false
+    showTerms.value = true
+}
+const closeTerms = () => {
+    showTerms.value = false
+}
+
 const logout = () => {
     showSettings.value = false
-    router.visit(route('login'))
+    // Properly logout by calling the logout endpoint
+    router.post('/logout', {}, {
+        onSuccess: () => {
+            // Clear any local storage or session storage if needed
+            if (typeof window !== 'undefined') {
+                localStorage.clear()
+                sessionStorage.clear()
+            }
+            // Redirect to login page after successful logout
+            router.visit(route('login'), {
+                replace: true,
+                preserveState: false,
+                preserveScroll: false
+            })
+        },
+        onError: () => {
+            // Even if logout fails, redirect to login
+            router.visit(route('login'), {
+                replace: true,
+                preserveState: false,
+                preserveScroll: false
+            })
+        },
+        onFinish: () => {
+            // Ensure we redirect even if something goes wrong
+            router.visit(route('login'), {
+                replace: true,
+                preserveState: false,
+                preserveScroll: false
+            })
+        }
+    })
 }
 
 const setActiveTab = (tab) => {

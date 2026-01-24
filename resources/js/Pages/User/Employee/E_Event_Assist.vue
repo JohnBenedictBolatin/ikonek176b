@@ -14,7 +14,7 @@
                     <img src="/assets/SETTINGS.png" alt="Settings" class="settings-btn-img" @click="toggleSettings" />
                     <div v-if="showSettings" class="settings-dropdown">
                         <Link href="#" class="settings-item" @click="closeSettings">Help Center</Link>
-                        <Link href="#" class="settings-item" @click="closeSettings">Terms & Conditions</Link>
+                        <button type="button" class="settings-item" @click="openTerms">Terms & Conditions</button>
                         <Link href="#" class="settings-item" @click="logout">Sign Out</Link>
                     </div>
                 </div>
@@ -685,6 +685,9 @@
             </div>
         </div>
     </div>
+
+    <!-- Terms & Conditions Modal -->
+    <TermsModal :open="showTerms" @close="closeTerms" />
 </template>
 
 <script setup>
@@ -693,6 +696,7 @@ import { Head, useForm } from '@inertiajs/vue3'
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { router } from '@inertiajs/vue3'
 import axios from 'axios'
+import TermsModal from '@/Components/TermsModal.vue'
 
 // ensure axios uses X-Requested-With and CSRF (Laravel default)
 axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest'
@@ -1071,9 +1075,50 @@ const closeSettings = () => {
     showSettings.value = false
 }
 
+// Terms & Conditions modal
+const showTerms = ref(false)
+const openTerms = () => {
+    showSettings.value = false
+    showTerms.value = true
+}
+const closeTerms = () => {
+    showTerms.value = false
+}
+
 const logout = () => {
     showSettings.value = false
-    router.visit(route('login'))
+    // Properly logout by calling the logout endpoint
+    router.post('/logout', {}, {
+        onSuccess: () => {
+            // Clear any local storage or session storage if needed
+            if (typeof window !== 'undefined') {
+                localStorage.clear()
+                sessionStorage.clear()
+            }
+            // Redirect to login page after successful logout
+            router.visit(route('login'), {
+                replace: true,
+                preserveState: false,
+                preserveScroll: false
+            })
+        },
+        onError: () => {
+            // Even if logout fails, redirect to login
+            router.visit(route('login'), {
+                replace: true,
+                preserveState: false,
+                preserveScroll: false
+            })
+        },
+        onFinish: () => {
+            // Ensure we redirect even if something goes wrong
+            router.visit(route('login'), {
+                replace: true,
+                preserveState: false,
+                preserveScroll: false
+            })
+        }
+    })
 }
 
 const setActiveTab = (tab) => {

@@ -16,7 +16,7 @@
                     <!-- Settings Dropdown -->
                     <div v-if="showSettings" class="settings-dropdown">
                         <Link href="#" class="settings-item" @click="closeSettings">Help Center</Link>
-                        <Link href="#" class="settings-item" @click="closeSettings">Terms & Conditions</Link>
+                        <button type="button" class="settings-item" @click="openTerms">Terms & Conditions</button>
                         <Link href="#" class="settings-item" @click="logout">Sign Out</Link>
                     </div>
                 </div>
@@ -499,6 +499,9 @@
             </div>
         </div>
     </div>
+
+    <!-- Terms & Conditions Modal -->
+    <TermsModal :open="showTerms" @close="closeTerms" />
 </template>
 
 <script setup>
@@ -507,6 +510,7 @@ import { Head } from '@inertiajs/vue3'
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { router } from '@inertiajs/vue3'
 import axios from 'axios'
+import TermsModal from '@/Components/TermsModal.vue'
 
 // Define props - receive posts from backend
 const props = defineProps({
@@ -784,9 +788,50 @@ const selectFilter = (option) => {
     showFilterDropdown.value = false
 }
 
+// Terms & Conditions modal
+const showTerms = ref(false)
+const openTerms = () => {
+    showSettings.value = false
+    showTerms.value = true
+}
+const closeTerms = () => {
+    showTerms.value = false
+}
+
 const logout = () => {
     showSettings.value = false
-    router.visit(route('login'))
+    // Properly logout by calling the logout endpoint
+    router.post('/logout', {}, {
+        onSuccess: () => {
+            // Clear any local storage or session storage if needed
+            if (typeof window !== 'undefined') {
+                localStorage.clear()
+                sessionStorage.clear()
+            }
+            // Redirect to login page after successful logout
+            router.visit(route('login'), {
+                replace: true,
+                preserveState: false,
+                preserveScroll: false
+            })
+        },
+        onError: () => {
+            // Even if logout fails, redirect to login
+            router.visit(route('login'), {
+                replace: true,
+                preserveState: false,
+                preserveScroll: false
+            })
+        },
+        onFinish: () => {
+            // Ensure we redirect even if something goes wrong
+            router.visit(route('login'), {
+                replace: true,
+                preserveState: false,
+                preserveScroll: false
+            })
+        }
+    })
 }
 
 const setActiveTab = (tab) => {
@@ -1749,6 +1794,7 @@ onUnmounted(() => {
     padding: 25px;
     transition: all 0.3s ease;
     cursor: pointer;
+    font-size: 15px; /* bump base text size for readability */
 }
 
 .post-card:hover {
@@ -1784,7 +1830,7 @@ onUnmounted(() => {
 
 .post-author {
     font-weight: 700;
-    font-size: 15px;
+    font-size: 16px;
     color: #333;
 }
 
@@ -1939,7 +1985,7 @@ onUnmounted(() => {
 }
 
 .post-header-text {
-    font-size: 18px;
+    font-size: 20px;
     font-weight: 600;
     color: #2e2e2e;
     margin: 0 0 12px 0;
@@ -1949,7 +1995,7 @@ onUnmounted(() => {
 }
 
 .post-title {
-    font-size: 17px;
+    font-size: 19px;
     font-weight: 600;
     margin: 0 0 10px 0;
     color: #333;
@@ -1957,7 +2003,7 @@ onUnmounted(() => {
 }
 
 .post-text {
-    font-size: 14px;
+    font-size: 15px;
     line-height: 1.6;
     color: #555;
     margin: 0;

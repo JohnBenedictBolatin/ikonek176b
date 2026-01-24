@@ -143,7 +143,6 @@
                                     <th style="width: 140px; text-align: center;">Action</th>
                                     <th style="width: 150px; text-align: center;">Approver</th>
                                     <th style="width: 110px; text-align: center;">Date</th>
-                                    <th style="width: 120px; text-align: center;">Download</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -169,18 +168,6 @@
                                     </td>
                                     <td style="text-align: center; padding: 15px 12px;">{{ activity.approver }}</td>
                                     <td style="text-align: center; padding: 15px 12px;">{{ activity.date }}</td>
-                                    <td style="text-align: center; padding: 15px 12px;">
-                                        <a 
-                                            v-if="activity.type === 'document' && activity.action === 'Approved' && canDownloadDocument(activity.documentType)"
-                                            :href="getDownloadUrl(activity.docRequestId, 'pdf')"
-                                            class="download-btn-history"
-                                            :download="getDownloadFilename(activity)"
-                                            @click.stop
-                                        >
-                                            Download
-                                        </a>
-                                        <span v-else style="color: #999; font-size: 12px;">-</span>
-                                    </td>
                                 </tr>
                             </tbody>
                         </table>
@@ -649,53 +636,6 @@ const navigateToDocumentRequest = () => {
 
 const navigateToRegisterRequest = () => {
     router.visit(route('event_request_approver'))
-}
-
-// Helper function to check if document type supports download
-const canDownloadDocument = (documentType) => {
-  if (!documentType) return false
-  
-  // Document types that currently have generated documents from API
-  // Currently only Barangay Certificate and Business Permit have it
-  const supportedTypes = [
-    'Barangay Certificate',
-    'Business Permit'
-  ]
-  
-  // Check if document type matches any supported type (case-insensitive, partial match)
-  return supportedTypes.some(type => {
-    const docTypeLower = documentType.toLowerCase().trim()
-    const supportedTypeLower = type.toLowerCase().trim()
-    return docTypeLower === supportedTypeLower || 
-           docTypeLower.includes(supportedTypeLower) ||
-           supportedTypeLower.includes(docTypeLower)
-  })
-}
-
-// Helper function to get download URL
-const getDownloadUrl = (docRequestId, format = 'pdf') => {
-  try {
-    if (typeof route === 'function') {
-      return route('document_requests.download', { id: docRequestId, format: format })
-    }
-  } catch (e) {
-    console.warn('Route helper not available, using fallback URL')
-  }
-  // Fallback URL
-  return `/document-requests/${docRequestId}/download/${format}`
-}
-
-// Helper function to generate download filename
-const getDownloadFilename = (activity) => {
-  if (!activity.docRequestId || !activity.documentType) return 'document.pdf'
-  
-  // Sanitize document type name for filename
-  const docTypeSanitized = activity.documentType
-    .replace(/[^a-zA-Z0-9_-]/g, '_')
-    .replace(/_+/g, '_')
-    .trim('_')
-  
-  return `${activity.docRequestId}_${docTypeSanitized}.pdf`
 }
 
 // Close dropdowns when clicking outside
@@ -1217,30 +1157,6 @@ onUnmounted(() => {
 
 .action-badge.default {
     background: linear-gradient(135deg, #6b7280, #4b5563);
-}
-
-.download-btn-history {
-    display: inline-block;
-    padding: 6px 12px;
-    background: linear-gradient(135deg, #239640, #1e7a33);
-    color: white;
-    text-decoration: none;
-    border-radius: 6px;
-    font-size: 12px;
-    font-weight: 600;
-    transition: all 0.2s;
-    cursor: pointer;
-    border: none;
-}
-
-.download-btn-history:hover {
-    background: linear-gradient(135deg, #1e7a33, #1a6b2a);
-    transform: translateY(-1px);
-    box-shadow: 0 2px 8px rgba(35, 150, 64, 0.3);
-}
-
-.download-btn-history:active {
-    transform: translateY(0);
 }
 
 .no-users {

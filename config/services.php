@@ -35,6 +35,19 @@ return [
         ],
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | SMS Service Configuration
+    |--------------------------------------------------------------------------
+    |
+    | Configure which SMS provider to use. Options: 'semaphore' or 'sms_gateway'
+    | Set SMS_PROVIDER in your .env file to switch between providers.
+    |
+    */
+    'sms' => [
+        'provider' => env('SMS_PROVIDER', 'sms_gateway'), // 'semaphore' or 'sms_gateway'
+    ],
+
     'semaphore' => [
         'api_key' => env('SEMAPHORE_API_KEY'),
         'sender_name' => env('SEMAPHORE_SENDER_NAME', 'Semaphore'), // Default to 'Semaphore' if not set

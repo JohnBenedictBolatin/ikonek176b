@@ -15,8 +15,8 @@
                     <img src="/assets/SETTINGS.png" alt="Settings" class="settings-btn-img" @click="toggleSettings" />
                     <!-- Settings Dropdown -->
                     <div v-if="showSettings" class="settings-dropdown">
-                        <Link href="#" class="settings-item" @click="closeSettings">Help Center</Link>
-                        <Link href="#" class="settings-item" @click="closeSettings">Terms & Conditions</Link>
+                        <Link href="#" class="settings-item" @click.prevent="navigateToHelpCenter">Help Center</Link>
+                        <button type="button" class="settings-item" @click="openTerms">Terms & Conditions</button>
                         <Link href="#" class="settings-item" @click="logout">Sign Out</Link>
                     </div>
                 </div>
@@ -123,26 +123,30 @@
                                 <img :src="profilePictureUrl" alt="User Photo" class="profile-photo" />
                                 <div class="button-stats-row">
                                     <button class="edit-profile-btn" @click="showEditModal = true">Edit Profile Picture</button>
-                                    <div class="profile-stats">
-                                        <div class="stat-item">
-                                            <div class="stat-value">{{ stats?.posts || 0 }}</div>
-                                            <div class="stat-label">Posts</div>
-                                        </div>
-                                        <div class="stat-item">
-                                            <div class="stat-value">{{ stats?.reactions || 0 }}</div>
-                                            <div class="stat-label">Reactions</div>
-                                        </div>
-                                        <div class="stat-item">
-                                            <div class="stat-value">{{ stats?.comments || 0 }}</div>
-                                            <div class="stat-label">Comments</div>
-                                        </div>
-                                    </div>
                                 </div>
                             </div>
                             <div class="profile-info-section">
                                 <div class="profile-header-info">
-                                    <h3 class="profile-display-name">{{ user?.name || 'Unknown User' }}</h3>
-                                    <div class="profile-badge">{{ displayRole.toUpperCase() }}</div>
+                                    <div class="profile-name-stats-row">
+                                        <div class="profile-name-badge-group">
+                                            <h3 class="profile-display-name">{{ user?.name || 'Unknown User' }}</h3>
+                                            <div class="profile-badge">{{ displayRole.toUpperCase() }}</div>
+                                        </div>
+                                        <div class="profile-stats">
+                                            <div class="stat-item">
+                                                <div class="stat-value">{{ stats?.posts || 0 }}</div>
+                                                <div class="stat-label">Posts</div>
+                                            </div>
+                                            <div class="stat-item">
+                                                <div class="stat-value">{{ stats?.reactions || 0 }}</div>
+                                                <div class="stat-label">Reactions</div>
+                                            </div>
+                                            <div class="stat-item">
+                                                <div class="stat-value">{{ stats?.comments || 0 }}</div>
+                                                <div class="stat-label">Comments</div>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                                 
                                 <!-- Basic Information -->
@@ -256,13 +260,23 @@
 
                                     <div class="activity-reactions">
                                         <button class="reaction-btn" @click.stop="toggleLike(post.id)" :class="{ liked: post.userLiked }">
-                                            👍 {{ post.likes }}
+                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="reaction-icon">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12Z" />
+                                            </svg>
+                                            {{ post.likes }}
                                         </button>
                                         <button class="reaction-btn" @click.stop="toggleDislike(post.id)" :class="{ disliked: post.userDisliked }">
-                                            👎 {{ post.dislikes }}
+                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="reaction-icon">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12Z" />
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M3 3l18 18" />
+                                            </svg>
+                                            {{ post.dislikes }}
                                         </button>
                                         <button class="comment-btn" @click.stop="viewComments(post.id)">
-                                            💬 {{ post.comments }}
+                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="reaction-icon">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 20.25c4.97 0 9-3.694 9-8.25s-4.03-8.25-9-8.25S3 7.444 3 12c0 2.104.859 4.023 2.273 5.48.432.447.74 1.04.586 1.641a4.483 4.483 0 0 1-.923 1.785A5.969 5.969 0 0 0 6 21c1.282 0 2.47-.402 3.578-1.087a9.034 9.034 0 0 0 2.422 0Z" />
+                                            </svg>
+                                            {{ post.comments }}
                                         </button>
                                     </div>
                                 </div>
@@ -315,6 +329,9 @@
             </div>
         </div>
     </div>
+
+    <!-- Terms & Conditions Modal -->
+    <TermsModal :open="showTerms" @close="closeTerms" />
 </template>
 
 <script setup>
@@ -322,6 +339,7 @@ import { Link, usePage, useForm } from '@inertiajs/vue3'
 import { Head } from '@inertiajs/vue3'
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { router } from '@inertiajs/vue3'
+import TermsModal from '@/Components/TermsModal.vue'
 
 // --- Inertia-shared auth user ---
 const page = usePage()
@@ -554,9 +572,50 @@ const selectFilter = (option) => {
     showFilterDropdown.value = false
 }
 
+// Terms & Conditions modal
+const showTerms = ref(false)
+const openTerms = () => {
+    showSettings.value = false
+    showTerms.value = true
+}
+const closeTerms = () => {
+    showTerms.value = false
+}
+
 const logout = () => {
     showSettings.value = false
-    router.visit(route('login'))
+    // Properly logout by calling the logout endpoint
+    router.post('/logout', {}, {
+        onSuccess: () => {
+            // Clear any local storage or session storage if needed
+            if (typeof window !== 'undefined') {
+                localStorage.clear()
+                sessionStorage.clear()
+            }
+            // Redirect to login page after successful logout
+            router.visit(route('login'), {
+                replace: true,
+                preserveState: false,
+                preserveScroll: false
+            })
+        },
+        onError: () => {
+            // Even if logout fails, redirect to login
+            router.visit(route('login'), {
+                replace: true,
+                preserveState: false,
+                preserveScroll: false
+            })
+        },
+        onFinish: () => {
+            // Ensure we redirect even if something goes wrong
+            router.visit(route('login'), {
+                replace: true,
+                preserveState: false,
+                preserveScroll: false
+            })
+        }
+    })
 }
 
 const setActiveTab = (tab) => {
@@ -580,7 +639,7 @@ const navigateToEvents = () => {
 
 const navigateToNotifications = () => {
     activeTab.value = 'notifications'
-    router.visit(route('notification_request_resident'))
+    router.visit(route('notification_activities_resident'))
 }
 
 const navigateToProfile = () => {
@@ -632,6 +691,19 @@ const toggleDislike = (postId) => {
 
 const openFAQ = () => {
     router.visit(route('help_center_resident'))
+}
+
+const navigateToHelpCenter = () => {
+    showSettings.value = false
+    // Navigate to help center based on user role
+    const roleId = user.value?.fk_role_id ?? 1
+    if (roleId === 1) {
+        // Resident
+        router.visit(route('help_center_resident'))
+    } else {
+        // Employee/Official
+        router.visit(route('help_center_employee'))
+    }
 }
 
 const formatDate = (date) => {
@@ -1002,29 +1074,29 @@ onUnmounted(() => {
 
 .main-content {
     background: white;
-    border-radius: 15px;
+    border-radius: 20px;
     overflow: hidden;
-    box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.02);
     flex: 1;
-    border: 1px solid rgba(0,0,0,0.05);
+    border: 1px solid rgba(0,0,0,0.04);
 }
 
 .profile-header {
-background: linear-gradient(135deg, #2bb24a, #239640);
-color: white;
-padding: 16px 25px;
-display: flex;
-justify-content: space-between;
-align-items: center;
-position: relative;
+    background: linear-gradient(135deg, #2bb24a, #239640);
+    color: white;
+    padding: 20px 32px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: relative;
 }
 
 .profile-title h2 {
-    font-size: 22px;
+    font-size: 24px;
     font-weight: 700;
     margin: 0;
     position: relative;
-    text-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    letter-spacing: -0.3px;
 }
 
 .small-logo {
@@ -1036,20 +1108,21 @@ position: relative;
 
 /* Profile Content Container */
 .profile-content-container {
-    padding: 30px 25px;
+    padding: 32px;
     overflow-y: auto;
 }
 
 /* Profile Details Card */
 .profile-details-card {
-    background: linear-gradient(135deg, #f8f9fa, #e9ecef);
-    border-radius: 15px;
-    padding: 30px;
+    background: #ffffff;
+    border-radius: 20px;
+    padding: 40px;
     display: grid;
     grid-template-columns: 200px 1fr;
-    gap: 30px;
-    margin-bottom: 30px;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+    gap: 40px;
+    margin-bottom: 32px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.02);
+    border: 1px solid rgba(0,0,0,0.04);
 }
 
 .profile-photo-section {
@@ -1063,7 +1136,6 @@ position: relative;
 .button-stats-row {
     display: flex;
     align-items: center;
-    gap: 40px;
     width: 100%;
     margin-top: 20px;
     justify-content: flex-start;
@@ -1071,31 +1143,36 @@ position: relative;
 
 .profile-photo {
     width: 100%;        /* scales with parent container */
-    max-width: 200px;  /* doesn’t get too big */
+    max-width: 200px;  /* doesn't get too big */
     height: auto;      /* keeps aspect ratio */
-    border-radius: 15px;
+    border-radius: 20px;
     object-fit: cover;
+    border: 3px solid #f5f5f5;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
 }
 
 .edit-profile-btn {
-    background: linear-gradient(135deg, #ff8c42, #ff7a28);
+    background: #ff8c42;
     color: white;
     border: none;
-    padding: 10px 20px;
-    border-radius: 10px;
+    padding: 12px 24px;
+    border-radius: 12px;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.3s ease;
-    font-size: 13px;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    font-size: 14px;
     white-space: nowrap;
     flex-shrink: 0;
     width: 100%;
     max-width: 200px;
     height: fit-content;
+    box-shadow: 0 2px 4px rgba(255, 140, 66, 0.2);
 }
 
 .edit-profile-btn:hover {
-    transform: translateY(-2px);
+    background: #ff7a28;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(255, 140, 66, 0.3);
 }
 
 .profile-info-section {
@@ -1111,24 +1188,42 @@ position: relative;
     margin-bottom: 5px;
 }
 
+.profile-name-stats-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 24px;
+    width: 100%;
+}
+
+.profile-name-badge-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    flex: 1;
+}
+
 .profile-display-name {
-    font-size: 28px;
+    font-size: 32px;
     font-weight: 700;
-    color: #333;
+    color: #1a1a1a;
     margin: 0;
+    letter-spacing: -0.5px;
+    line-height: 1.2;
 }
 
 .profile-badge {
-    font-size: 12px;
+    font-size: 11px;
     background: #239640;
     color: white;
-    padding: 6px 16px;
-    border-radius: 20px;
+    padding: 6px 14px;
+    border-radius: 12px;
     display: inline-block;
     width: fit-content;
     font-weight: 600;
     text-transform: uppercase;
-    box-shadow: 0 2px 8px rgba(255, 140, 66, 0.3);
+    letter-spacing: 0.5px;
+    box-shadow: 0 2px 4px rgba(35, 150, 64, 0.2);
 }
 
 .profile-description {
@@ -1140,20 +1235,22 @@ position: relative;
 
 /* User Information Grid */
 .user-info-grid {
-    background: #f8f9fa;
-    border-radius: 10px;
-    padding: 15px 18px;
+    background: #fafbfc;
+    border-radius: 16px;
+    padding: 24px 28px;
     display: grid;
     grid-template-columns: repeat(2, 1fr);
-    gap: 10px 20px;
-    margin: 8px 0;
+    gap: 16px 24px;
+    margin: 16px 0;
+    border: 1px solid #f0f0f0;
 }
 
 .user-info-grid .info-item {
     display: flex;
-    gap: 10px;
-    font-size: 13px;
+    gap: 12px;
+    font-size: 14px;
     align-items: flex-start;
+    padding: 4px 0;
 }
 
 .user-info-grid .info-item:last-child {
@@ -1161,23 +1258,26 @@ position: relative;
 }
 
 .user-info-grid .info-label {
-    font-weight: 700;
-    color: #333;
-    min-width: 90px;
+    font-weight: 600;
+    color: #666;
+    min-width: 110px;
     flex-shrink: 0;
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
 }
 
 .user-info-grid .info-value {
-    color: #555;
+    color: #1a1a1a;
     flex: 1;
+    font-weight: 500;
 }
 
 .profile-stats {
     display: flex;
-    gap: 35px;
-    flex: 1;
-    justify-content: flex-start;
-    align-items: center;
+    gap: 32px;
+    align-items: flex-start;
+    flex-shrink: 0;
 }
 
 .stat-item {
@@ -1186,43 +1286,48 @@ position: relative;
     flex-direction: column;
     align-items: center;
     justify-content: center;
+    padding: 0;
 }
 
 .stat-value {
     font-size: 28px;
     font-weight: 700;
     color: #ff8c42;
-    margin-bottom: 5px;
+    margin-bottom: 4px;
+    line-height: 1;
+    letter-spacing: -0.5px;
 }
 
 .stat-label {
-    font-size: 13px;
-    color: #666;
-    font-weight: 600;
+    font-size: 11px;
+    color: #888;
+    font-weight: 500;
     text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
 /* Activities Section */
 .activities-section {
     background: white;
-    border-radius: 15px;
+    border-radius: 20px;
     overflow: hidden;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.02);
+    border: 1px solid rgba(0,0,0,0.04);
 }
 
 .activities-header {
-    background: white; /* Changed from green gradient */
-    color: #333; /* Changed from white to black */
-    padding: 20px 25px; /* Increased padding for better spacing */
-    border-bottom: 2px solid #e0e0e0; /* Add separator line */
+    background: white;
+    color: #1a1a1a;
+    padding: 24px 32px;
+    border-bottom: 1px solid #f0f0f0;
 }
 
 .activities-title h3 {
-    font-size: 20px;
+    font-size: 22px;
     font-weight: 700;
     margin: 0;
-    color: #333; /* Changed from white to black */
-    text-shadow: none; /* Remove text shadow */
+    color: #1a1a1a;
+    letter-spacing: -0.3px;
 }
 
 /* Remove or comment out this style since we're removing the subtitle */
@@ -1232,14 +1337,14 @@ position: relative;
 
 /* Filter Section */
 .filter-section {
-    padding: 20px 25px;
-    background: linear-gradient(135deg, #f8f9fa, #e9ecef);
-    border-bottom: 1px solid #e0e0e0;
+    padding: 20px 32px;
+    background: #fafbfc;
+    border-bottom: 1px solid #f0f0f0;
     display: flex;
     justify-content: space-between;
     align-items: center;
     flex-wrap: wrap;
-    gap: 15px;
+    gap: 16px;
 }
 
 .filter-left {
@@ -1259,23 +1364,26 @@ position: relative;
 }
 
 .filter-dropdown-btn {
-    padding: 8px 15px;
-    border: 1px solid #ddd;
-    border-radius: 8px;
-    font-size: 12px;
+    padding: 10px 16px;
+    border: 1px solid #e5e5e5;
+    border-radius: 10px;
+    font-size: 13px;
     font-weight: 600;
     cursor: pointer;
     background: white;
-    transition: all 0.2s;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     display: flex;
     align-items: center;
     gap: 8px;
-    min-width: 120px;
+    min-width: 130px;
     justify-content: space-between;
+    color: #666;
 }
 
 .filter-dropdown-btn:hover {
     border-color: #ff8c42;
+    background: #fff;
+    color: #333;
 }
 
 .filter-arrow {
@@ -1292,31 +1400,32 @@ position: relative;
     top: 100%;
     left: 0;
     background: white;
-    border-radius: 10px;
-    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+    border-radius: 12px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.12), 0 2px 4px rgba(0,0,0,0.08);
     min-width: 150px;
     z-index: 1000;
-    margin-top: 5px;
+    margin-top: 8px;
     overflow: hidden;
-    border: 1px solid rgba(0,0,0,0.1);
+    border: 1px solid rgba(0,0,0,0.06);
 }
 
 .filter-dropdown-menu button {
     display: block;
     width: 100%;
-    padding: 10px 15px;
+    padding: 12px 16px;
     background: none;
     border: none;
     text-align: left;
     color: #333;
     cursor: pointer;
-    transition: background 0.2s;
+    transition: all 0.15s ease;
     font-weight: 500;
-    font-size: 12px;
+    font-size: 13px;
 }
 
 .filter-dropdown-menu button:hover {
-    background: #fff7ef;
+    background: #fafbfc;
+    color: #ff8c42;
 }
 
 .filter-dropdown-menu button.active {
@@ -1331,15 +1440,15 @@ position: relative;
 }
 
 .activity-card {
-    padding: 25px;
-    border-bottom: 1px solid #f0f0f0;
-    transition: all 0.3s ease;
+    padding: 28px 32px;
+    border-bottom: 1px solid #f5f5f5;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     cursor: pointer;
 }
 
 .activity-card:hover {
-    background: linear-gradient(135deg, #fafbfc, #f8f9fa);
-    transform: translateY(-1px);
+    background: #fafbfc;
+    padding-left: 36px;
 }
 
 .activity-card:last-child {
@@ -1360,11 +1469,12 @@ position: relative;
 }
 
 .activity-avatar {
-    width: 50px;
-    height: 50px;
-    border-radius: 12px;
+    width: 48px;
+    height: 48px;
+    border-radius: 14px;
     object-fit: cover;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    border: 2px solid #f5f5f5;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.06);
 }
 
 .activity-author-info {
@@ -1374,9 +1484,10 @@ position: relative;
 }
 
 .activity-author-name {
-    font-weight: 700;
+    font-weight: 600;
     font-size: 15px;
-    color: #333;
+    color: #1a1a1a;
+    letter-spacing: -0.2px;
 }
 
 .activity-tags {
@@ -1386,13 +1497,14 @@ position: relative;
 }
 
 .tag {
-    font-size: 11px;
-    padding: 5px 10px;
-    border-radius: 15px;
+    font-size: 10px;
+    padding: 4px 10px;
+    border-radius: 12px;
     font-weight: 600;
     color: white;
     text-transform: uppercase;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    letter-spacing: 0.3px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.12);
 }
 
 .tag.question {
@@ -1517,27 +1629,28 @@ position: relative;
 }
 
 .activity-title {
-    font-size: 17px;
+    font-size: 18px;
     font-weight: 600;
-    margin: 0 0 10px 0;
-    color: #333;
-    line-height: 1.4;
+    margin: 0 0 12px 0;
+    color: #1a1a1a;
+    line-height: 1.5;
+    letter-spacing: -0.2px;
 }
 
 .activity-text {
-    font-size: 14px;
-    line-height: 1.6;
-    color: #555;
+    font-size: 15px;
+    line-height: 1.7;
+    color: #666;
     margin: 0;
 }
 
 .activity-reactions {
     display: flex;
-    gap: 10px;
+    gap: 12px;
     align-items: center;
-    margin-top: 15px;
-    padding-top: 15px;
-    border-top: 1px solid #f0f0f0;
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid #f5f5f5;
 }
 
 .reaction-btn,
@@ -1556,6 +1669,13 @@ position: relative;
     gap: 6px;
     backdrop-filter: blur(10px);
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.reaction-icon {
+    width: 18px;
+    height: 18px;
+    stroke: currentColor;
+    flex-shrink: 0;
 }
 
 .reaction-btn:hover,
@@ -1680,6 +1800,17 @@ position: relative;
     
     .edit-profile-btn {
         width: 100%;
+    }
+    
+    .profile-name-stats-row {
+        flex-direction: column;
+        gap: 20px;
+        align-items: center;
+    }
+    
+    .profile-name-badge-group {
+        align-items: center;
+        text-align: center;
     }
     
     .profile-stats {

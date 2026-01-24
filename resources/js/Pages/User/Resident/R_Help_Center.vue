@@ -14,7 +14,7 @@
                     <img src="/assets/SETTINGS.png" alt="Settings" class="settings-btn-img" @click="toggleSettings" />
                     <div v-if="showSettings" class="settings-dropdown">
                         <Link href="#" class="settings-item" @click="closeSettings">Help Center</Link>
-                        <Link href="#" class="settings-item" @click="closeSettings">Terms & Conditions</Link>
+                        <button type="button" class="settings-item" @click="openTerms">Terms & Conditions</button>
                         <Link href="#" class="settings-item" @click="logout">Sign Out</Link>
                     </div>
                 </div>
@@ -132,7 +132,9 @@
                                             class="faq-question"
                                         >
                                             <span>{{ faq.question }}</span>
-                                            <span class="faq-arrow" :class="{ rotated: faq.open }">▼</span>
+                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="faq-arrow" :class="{ rotated: faq.open }">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+                                            </svg>
                                         </button>
                                         <div v-if="faq.open" class="faq-answer">
                                             {{ faq.answer }}
@@ -148,11 +150,15 @@
                                     <h3 class="section-title">Contact Us</h3>
                                     <div class="contact-info">
                                         <div class="contact-item">
-                                            <span class="contact-icon">📞</span>
+                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="contact-icon">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 0 0 2.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 0 1-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 0 0-1.091-.852H4.5A2.25 2.25 0 0 0 2.25 4.5v2.25Z" />
+                                            </svg>
                                             <span>+639193076338</span>
                                         </div>
                                         <div class="contact-item">
-                                            <span class="contact-icon">📧</span>
+                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="contact-icon">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75" />
+                                            </svg>
                                             <span>ikonek176b@dev.ph</span>
                                         </div>
                                     </div>
@@ -178,6 +184,9 @@
             </div>
         </div>
     </div>
+
+    <!-- Terms & Conditions Modal -->
+    <TermsModal :open="showTerms" @close="closeTerms" />
 </template>
 
 <script setup>
@@ -185,6 +194,7 @@ import { Link, usePage } from '@inertiajs/vue3'
 import { Head } from '@inertiajs/vue3'
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { router } from '@inertiajs/vue3'
+import TermsModal from '@/Components/TermsModal.vue'
 
 // --- Inertia-shared auth user ---
 const page = usePage()
@@ -239,33 +249,53 @@ const message = ref('')
 
 const faqs = ref([
     {
-        question: 'Ilang araw bago ma-accept ang document request?',
-        answer: 'Karaniwan ay 2-3 araw bago ma-approve ang request depende sa dami ng requests at availability ng barangay officials. Makakakuha kayo ng notification kapag na-process na ang inyong request.',
+        question: 'Paano ako makakakuha ng barangay clearance o certificate?',
+        answer: 'Pumunta sa "Document Request" section sa inyong dashboard. Piliin ang "Barangay Clearance" o ang certificate na kailangan ninyo. Fill-up ang form at i-upload ang mga required documents. Karaniwan ay 2-3 araw bago ma-approve ang request. Makakakuha kayo ng notification kapag ready na ang inyong document.',
         open: false,
     },
     {
-        question: 'Bakit hindi natatanggap ang document request ko?',
-        answer: 'Siguraduhing tama ang mga impormasyon at kumpleto ang requirements na ipinasa. Maaaring rejected ang request kung may kulang na dokumento o hindi valid ang mga ID na isinumite. I-check ang notifications para sa specific reason.',
+        question: 'Ano ang mga requirements para sa document request?',
+        answer: 'Ang requirements ay depende sa type ng document na hinihingi. Karaniwang kailangan ay valid ID, proof of residency, at iba pang supporting documents. Makikita ang complete list ng requirements sa document request form. Siguraduhing kumpleto at valid ang lahat ng documents bago mag-submit.',
         open: false,
     },
     {
-        question: 'Paano makita ang mga bagong announcement?',
-        answer: 'Makikita ang mga bagong announcements sa Posts page ng inyong resident dashboard. May notification din kayo kapag may bagong announcement mula sa barangay officials.',
+        question: 'Paano ko malalaman kung approved o rejected ang aking document request?',
+        answer: 'Makikita ninyo ang status ng inyong request sa "Notifications" tab. May notification din kayo kapag may update sa inyong request. Kung rejected, makikita ninyo ang reason kung bakit at pwede ninyong i-resubmit pagkatapos i-correct ang issues.',
         open: false,
     },
     {
-        question: 'Paano palitan ang aking profile picture?',
-        answer: 'Pumunta sa Profile tab at i-click ang "Edit Profile" button. Doon ay pwede ninyong i-upload ang bagong profile picture at i-save ang changes.',
+        question: 'Paano ako makakapag-request ng event assistance?',
+        answer: 'Pumunta sa "Event Assistance" section at piliin ang type ng event na gusto ninyong i-request. Fill-up ang event details form kasama ang date, venue, at purpose ng event. I-submit ang request at hintayin ang approval mula sa barangay officials. Makakakuha kayo ng notification kapag approved na.',
         open: false,
     },
     {
-        question: 'Paano mag post sa discussions section?',
-        answer: 'Pumunta sa Discussions tab at i-click ang "+ ADD POST" button sa taas. Fill-up ang form kasama ang title, content, at tags, tapos i-click ang submit.',
+        question: 'Paano ako makakapag-post sa Discussions section?',
+        answer: 'Pumunta sa "Discussions" tab at i-click ang "+ ADD POST" button. Fill-up ang form kasama ang title, content, at piliin ang appropriate tags. I-click ang submit button. Ang inyong post ay makikita na agad sa discussions feed.',
         open: false,
     },
     {
-        question: 'Paano ko ma-retrieve o mapalitan ang aking password?',
-        answer: 'Para sa password retrieval o pagpapalit ng password, pumunta sa login page at i-click ang "Forgot Password" link. Maaari din kayong makipag-ugnayan sa barangay office o tumawag sa +639193076338 para sa assistance. Maaari din ninyong gamitin ang "Find Account" feature sa login page kung nakalimutan ninyo ang inyong account details.',
+        question: 'Paano ko makikita ang mga bagong announcements mula sa barangay?',
+        answer: 'Ang mga announcements ay makikita sa "Posts" page ng inyong dashboard. May notification din kayo kapag may bagong announcement. Pwede ninyong i-filter ang posts ayon sa tags para mas madaling makita ang relevant announcements.',
+        open: false,
+    },
+    {
+        question: 'Paano ko mapapalitan ang aking profile picture?',
+        answer: 'Pumunta sa "Profile" tab at i-click ang "Edit Profile Picture" button sa ilalim ng inyong profile photo. Piliin ang bagong image mula sa inyong device at i-click ang "Save Changes". Ang bagong profile picture ay makikita na agad.',
+        open: false,
+    },
+    {
+        question: 'Nakalimutan ko ang aking password. Paano ko ito ma-recover?',
+        answer: 'Pumunta sa login page at i-click ang "Forgot Password" link. Ilagay ang inyong email address o username at susundan ang instructions na ipapadala sa inyo. Kung hindi ninyo ma-access ang email, tumawag sa +639193076338 o pumunta sa barangay office para sa assistance.',
+        open: false,
+    },
+    {
+        question: 'Paano ko makikita ang status ng aking mga requests?',
+        answer: 'Lahat ng inyong requests (document requests, event assistance, etc.) ay makikita sa "Notifications" tab. Pwede ninyong i-filter ayon sa type ng notification. May color coding din: green para sa approved, red para sa rejected, at yellow para sa pending.',
+        open: false,
+    },
+    {
+        question: 'Ano ang dapat kong gawin kung may technical issue sa website?',
+        answer: 'Kung may technical issue, pwede ninyong gamitin ang "Send us a message" section sa Help Center page. Ilagay ang details ng issue na naranasan ninyo at i-submit. Pwede din kayong tumawag sa +639193076338 o mag-email sa ikonek176b@dev.ph para sa immediate assistance.',
         open: false,
     },
 ])
@@ -278,9 +308,50 @@ const closeSettings = () => {
     showSettings.value = false
 }
 
+// Terms & Conditions modal
+const showTerms = ref(false)
+const openTerms = () => {
+    showSettings.value = false
+    showTerms.value = true
+}
+const closeTerms = () => {
+    showTerms.value = false
+}
+
 const logout = () => {
     showSettings.value = false
-    router.visit(route('login'))
+    // Properly logout by calling the logout endpoint
+    router.post('/logout', {}, {
+        onSuccess: () => {
+            // Clear any local storage or session storage if needed
+            if (typeof window !== 'undefined') {
+                localStorage.clear()
+                sessionStorage.clear()
+            }
+            // Redirect to login page after successful logout
+            router.visit(route('login'), {
+                replace: true,
+                preserveState: false,
+                preserveScroll: false
+            })
+        },
+        onError: () => {
+            // Even if logout fails, redirect to login
+            router.visit(route('login'), {
+                replace: true,
+                preserveState: false,
+                preserveScroll: false
+            })
+        },
+        onFinish: () => {
+            // Ensure we redirect even if something goes wrong
+            router.visit(route('login'), {
+                replace: true,
+                preserveState: false,
+                preserveScroll: false
+            })
+        }
+    })
 }
 
 const navigateToPosts = () => {
@@ -300,7 +371,7 @@ const navigateToEvents = () => {
 
 const navigateToNotifications = () => {
     activeTab.value = 'notifications'
-    router.visit(route('notification_request_resident'))
+    router.visit(route('notification_activities_resident'))
 }
 
 const navigateToProfile = () => {
@@ -635,10 +706,17 @@ onUnmounted(() => {
 }
 
 .faq-item {
-    background: #f8f9fa;
-    border-radius: 8px;
+    background: #ffffff;
+    border-radius: 12px;
     overflow: hidden;
-    border: 1px solid #e0e0e0;
+    border: 1px solid #e9ecef;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    transition: all 0.2s ease;
+}
+
+.faq-item:hover {
+    box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+    border-color: #dee2e6;
 }
 
 .faq-question {
@@ -646,24 +724,28 @@ onUnmounted(() => {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 12px 15px;
+    padding: 16px 20px;
     background: white;
     border: none;
     cursor: pointer;
-    font-size: 13px;
+    font-size: 14px;
     font-weight: 600;
-    color: #333;
-    transition: background 0.2s;
+    color: #1a1a1a;
+    transition: all 0.2s ease;
     text-align: left;
+    gap: 12px;
 }
 
 .faq-question:hover {
-    background: #f8f9fa;
+    background: #fafbfc;
+    color: #2bb24a;
 }
 
 .faq-arrow {
-    color: #2bb24a;
-    font-size: 11px;
+    width: 18px;
+    height: 18px;
+    stroke: #2bb24a;
+    flex-shrink: 0;
     transition: transform 0.3s ease;
 }
 
@@ -672,12 +754,12 @@ onUnmounted(() => {
 }
 
 .faq-answer {
-    padding: 12px 15px;
-    font-size: 12px;
-    line-height: 1.5;
-    color: #555;
+    padding: 16px 20px;
+    font-size: 14px;
+    line-height: 1.7;
+    color: #666;
     background: #fafbfc;
-    border-top: 1px solid #e0e0e0;
+    border-top: 1px solid #e9ecef;
 }
 
 .contact-section,
@@ -696,16 +778,26 @@ onUnmounted(() => {
 .contact-item {
     display: flex;
     align-items: center;
-    gap: 10px;
-    font-size: 13px;
+    gap: 12px;
+    font-size: 14px;
     color: #333;
-    padding: 10px;
+    padding: 14px 16px;
     background: white;
-    border-radius: 6px;
+    border-radius: 10px;
+    border: 1px solid #e9ecef;
+    transition: all 0.2s ease;
+}
+
+.contact-item:hover {
+    border-color: #ff8c42;
+    background: #fff7ef;
 }
 
 .contact-icon {
-    font-size: 18px;
+    width: 20px;
+    height: 20px;
+    stroke: #ff8c42;
+    flex-shrink: 0;
 }
 
 .message-input {

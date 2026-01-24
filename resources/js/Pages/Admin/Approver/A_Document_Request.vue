@@ -183,23 +183,23 @@
 
                 <div v-if="selectedRequest" class="modal-content">
                         <!-- Top Section -->
-                        <div class="modal-top" style="grid-template-columns: 1fr 1fr; gap: 15px; align-items: start;">
-                            <div class="modal-user-section" style="display: flex; align-items: center; gap: 12px;">
-                                <img :src="selectedRequest?.profileImg || '/assets/DEFAULT.jpg'" alt="Profile" class="modal-avatar" style="width: 60px; height: 60px; flex-shrink: 0;" />
+                        <div class="modal-top" style="grid-template-columns: 1fr 1fr; gap: 24px; align-items: start;">
+                            <div class="modal-user-section" style="display: flex; align-items: center; gap: 20px;">
+                                <img :src="selectedRequest?.profileImg || '/assets/DEFAULT.jpg'" alt="Profile" class="modal-avatar" style="width: 80px; height: 80px; flex-shrink: 0;" />
                                 <div style="flex: 1; min-width: 0;">
-                                    <h3 class="modal-name" style="font-size: 18px; margin-bottom: 4px;">{{ selectedRequest?.name || 'Unknown' }}</h3>
-                                    <p class="modal-label" style="font-size: 12px; margin: 0;">Document Request</p>
+                                    <h3 class="modal-name" style="font-size: 24px; margin-bottom: 6px; font-weight: 700; color: #1a1a1a;">{{ selectedRequest?.name || 'Unknown' }}</h3>
+                                    <p class="modal-label" style="font-size: 15px; margin: 0; color: #6b7280; font-weight: 500;">Document Request</p>
                                 </div>
                             </div>
-                            <div style="display: flex; flex-direction: row; gap: 15px; align-items: center; justify-content: space-between; background: linear-gradient(135deg, #ff8c42 0%, #ff7a28 100%); color: white; padding: 10px 15px; border-radius: 10px; box-shadow: 0 3px 10px rgba(255, 122, 40, 0.3); min-height: fit-content;">
+                            <div style="display: flex; flex-direction: row; gap: 20px; align-items: center; justify-content: space-between; background: linear-gradient(135deg, #ff8c42 0%, #ff7a28 100%); color: white; padding: 20px 24px; border-radius: 16px; box-shadow: 0 4px 16px rgba(255, 122, 40, 0.25); min-height: fit-content;">
                                 <div style="flex: 1;">
-                                    <p style="font-size: 8px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px; margin: 0 0 3px 0; opacity: 0.9;">Document Type</p>
-                                    <h3 style="font-size: 15px; font-weight: 700; margin: 0; text-shadow: 0 1px 3px rgba(0,0,0,0.2); line-height: 1.2;">{{ selectedRequest.documentType || 'Unknown Document Type' }}</h3>
+                                    <p style="font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 8px 0; opacity: 0.95;">Document Type</p>
+                                    <h3 style="font-size: 20px; font-weight: 700; margin: 0; text-shadow: 0 1px 3px rgba(0,0,0,0.2); line-height: 1.3;">{{ selectedRequest.documentType || 'Unknown Document Type' }}</h3>
                                 </div>
-                                <div style="width: 1px; height: 30px; background: rgba(255,255,255,0.3); flex-shrink: 0;"></div>
+                                <div style="width: 1px; height: 40px; background: rgba(255,255,255,0.3); flex-shrink: 0;"></div>
                                 <div style="flex: 0 0 auto; text-align: right;">
-                                    <p style="font-size: 8px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px; margin: 0 0 3px 0; opacity: 0.9;">Request Number</p>
-                                    <p style="font-size: 13px; font-weight: 700; margin: 0; font-family: monospace; letter-spacing: 0.8px; text-shadow: 0 1px 2px rgba(0,0,0,0.2);">{{ selectedRequest.referenceCode }}</p>
+                                    <p style="font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 8px 0; opacity: 0.95;">Request Number</p>
+                                    <p style="font-size: 18px; font-weight: 700; margin: 0; font-family: 'SF Mono', 'Monaco', 'Cascadia Code', monospace; letter-spacing: 0.5px; text-shadow: 0 1px 2px rgba(0,0,0,0.2);">{{ selectedRequest.referenceCode }}</p>
                                 </div>
                             </div>
                         </div>
@@ -207,96 +207,96 @@
                         <!-- Details Section -->
                         <div class="modal-details">
                         <!-- Request Information - Compact -->
-                        <div class="detail-section" style="margin-bottom: 15px;">
-                            <h4 class="section-title" style="margin-bottom: 10px; font-size: 16px;">Request Information</h4>
-                            <div class="details-grid" style="grid-template-columns: auto 1fr; gap: 12px 15px; align-items: start;">
-                                <div v-if="getRequestCategory(selectedRequest)" class="detail-item" style="margin: 0; min-width: 120px;">
-                                    <p class="detail-label" style="font-size: 12px; margin-bottom: 3px;">Category:</p>
-                                    <p class="detail-value" style="font-size: 13px; font-weight: 600; color: #239640; margin: 0;">
+                        <div class="detail-section" style="margin-bottom: 24px;">
+                            <h4 class="section-title" style="margin-bottom: 16px; font-size: 20px;">Request Information</h4>
+                            <div class="details-grid" style="grid-template-columns: auto 1fr; gap: 16px 20px; align-items: start;">
+                                <div v-if="getRequestCategory(selectedRequest)" class="detail-item" style="margin: 0; min-width: 140px;">
+                                    <p class="detail-label" style="font-size: 13px; margin-bottom: 6px;">Category:</p>
+                                    <p class="detail-value" style="font-size: 16px; font-weight: 600; color: #239640; margin: 0;">
                                         {{ getRequestCategory(selectedRequest) }}
                                     </p>
                                 </div>
                                 <div v-if="getRequestPurpose(selectedRequest)" class="detail-item" style="margin: 0; flex: 1;">
-                                    <p class="detail-label" style="font-size: 12px; margin-bottom: 3px;">Purpose:</p>
-                                    <p class="detail-value" style="font-size: 13px; margin: 0; line-height: 1.4; text-align: left; word-wrap: break-word;">{{ getRequestPurpose(selectedRequest) }}</p>
+                                    <p class="detail-label" style="font-size: 13px; margin-bottom: 6px;">Purpose:</p>
+                                    <p class="detail-value" style="font-size: 16px; margin: 0; line-height: 1.6; text-align: left; word-wrap: break-word; color: #1a1a1a;">{{ getRequestPurpose(selectedRequest) }}</p>
                                 </div>
                             </div>
                         </div>
 
                         <!-- User & Personal Information - Merged -->
-                        <div class="detail-section" style="margin-bottom: 15px;">
-                            <h4 class="section-title" style="margin-bottom: 10px; font-size: 16px;">User Information</h4>
-                            <div class="details-grid" style="grid-template-columns: repeat(4, 1fr); gap: 8px 12px;">
+                        <div class="detail-section" style="margin-bottom: 24px;">
+                            <h4 class="section-title" style="margin-bottom: 16px; font-size: 20px;">User Information</h4>
+                            <div class="details-grid" style="grid-template-columns: repeat(4, 1fr); gap: 12px 16px;">
                                 <!-- Personal Info -->
                                 <div v-if="selectedRequest.first_name" class="detail-item" style="margin: 0;">
-                                    <p class="detail-label" style="font-size: 11px; margin-bottom: 2px; color: #666;">First Name:</p>
-                                    <p class="detail-value" style="font-size: 12px; margin: 0;">{{ selectedRequest.first_name }}</p>
+                                    <p class="detail-label" style="font-size: 13px; margin-bottom: 6px; color: #6b7280;">First Name:</p>
+                                    <p class="detail-value" style="font-size: 15px; margin: 0; color: #1a1a1a;">{{ selectedRequest.first_name }}</p>
                                 </div>
                                 <div v-if="selectedRequest.middle_name" class="detail-item" style="margin: 0;">
-                                    <p class="detail-label" style="font-size: 11px; margin-bottom: 2px; color: #666;">Middle Name:</p>
-                                    <p class="detail-value" style="font-size: 12px; margin: 0;">{{ selectedRequest.middle_name }}</p>
+                                    <p class="detail-label" style="font-size: 13px; margin-bottom: 6px; color: #6b7280;">Middle Name:</p>
+                                    <p class="detail-value" style="font-size: 15px; margin: 0; color: #1a1a1a;">{{ selectedRequest.middle_name }}</p>
                                 </div>
                                 <div v-if="selectedRequest.last_name" class="detail-item" style="margin: 0;">
-                                    <p class="detail-label" style="font-size: 11px; margin-bottom: 2px; color: #666;">Last Name:</p>
-                                    <p class="detail-value" style="font-size: 12px; margin: 0;">{{ selectedRequest.last_name }}</p>
+                                    <p class="detail-label" style="font-size: 13px; margin-bottom: 6px; color: #6b7280;">Last Name:</p>
+                                    <p class="detail-value" style="font-size: 15px; margin: 0; color: #1a1a1a;">{{ selectedRequest.last_name }}</p>
                                 </div>
                                 <div v-if="selectedRequest.suffix" class="detail-item" style="margin: 0;">
-                                    <p class="detail-label" style="font-size: 11px; margin-bottom: 2px; color: #666;">Suffix:</p>
-                                    <p class="detail-value" style="font-size: 12px; margin: 0;">{{ selectedRequest.suffix }}</p>
+                                    <p class="detail-label" style="font-size: 13px; margin-bottom: 6px; color: #6b7280;">Suffix:</p>
+                                    <p class="detail-value" style="font-size: 15px; margin: 0; color: #1a1a1a;">{{ selectedRequest.suffix }}</p>
                                 </div>
                                 <div v-if="selectedRequest.birthdate" class="detail-item" style="margin: 0;">
-                                    <p class="detail-label" style="font-size: 11px; margin-bottom: 2px; color: #666;">Birthdate:</p>
-                                    <p class="detail-value" style="font-size: 12px; margin: 0;">{{ selectedRequest.birthdate }}</p>
+                                    <p class="detail-label" style="font-size: 13px; margin-bottom: 6px; color: #6b7280;">Birthdate:</p>
+                                    <p class="detail-value" style="font-size: 15px; margin: 0; color: #1a1a1a;">{{ selectedRequest.birthdate }}</p>
                                 </div>
                                 <div v-if="selectedRequest.age" class="detail-item" style="margin: 0;">
-                                    <p class="detail-label" style="font-size: 11px; margin-bottom: 2px; color: #666;">Age:</p>
-                                    <p class="detail-value" style="font-size: 12px; margin: 0;">{{ selectedRequest.age }}</p>
+                                    <p class="detail-label" style="font-size: 13px; margin-bottom: 6px; color: #6b7280;">Age:</p>
+                                    <p class="detail-value" style="font-size: 15px; margin: 0; color: #1a1a1a;">{{ selectedRequest.age }}</p>
                                 </div>
                                 <div v-if="selectedRequest.sex" class="detail-item" style="margin: 0;">
-                                    <p class="detail-label" style="font-size: 11px; margin-bottom: 2px; color: #666;">Sex:</p>
-                                    <p class="detail-value" style="font-size: 12px; margin: 0;">{{ selectedRequest.sex }}</p>
+                                    <p class="detail-label" style="font-size: 13px; margin-bottom: 6px; color: #6b7280;">Sex:</p>
+                                    <p class="detail-value" style="font-size: 15px; margin: 0; color: #1a1a1a;">{{ selectedRequest.sex }}</p>
                                 </div>
                                 <div v-if="selectedRequest.civilStatus" class="detail-item" style="margin: 0;">
-                                    <p class="detail-label" style="font-size: 11px; margin-bottom: 2px; color: #666;">Civil Status:</p>
-                                    <p class="detail-value" style="font-size: 12px; margin: 0;">{{ selectedRequest.civilStatus }}</p>
+                                    <p class="detail-label" style="font-size: 13px; margin-bottom: 6px; color: #6b7280;">Civil Status:</p>
+                                    <p class="detail-value" style="font-size: 15px; margin: 0; color: #1a1a1a;">{{ selectedRequest.civilStatus }}</p>
                                 </div>
                                 
                                 <!-- Contact Info -->
                                 <div v-if="selectedRequest.credential_info?.contact_number || selectedRequest.contact" class="detail-item" style="margin: 0;">
-                                    <p class="detail-label" style="font-size: 11px; margin-bottom: 2px; color: #666;">Contact:</p>
-                                    <p class="detail-value" style="font-size: 12px; margin: 0;">{{ selectedRequest.credential_info?.contact_number || selectedRequest.contact }}</p>
+                                    <p class="detail-label" style="font-size: 13px; margin-bottom: 6px; color: #6b7280;">Contact:</p>
+                                    <p class="detail-value" style="font-size: 15px; margin: 0; color: #1a1a1a;">{{ selectedRequest.credential_info?.contact_number || selectedRequest.contact }}</p>
                                 </div>
                                 <div v-if="selectedRequest.credential_info?.secondary_contact_number" class="detail-item" style="margin: 0;">
-                                    <p class="detail-label" style="font-size: 11px; margin-bottom: 2px; color: #666;">Secondary:</p>
-                                    <p class="detail-value" style="font-size: 12px; margin: 0;">{{ selectedRequest.credential_info.secondary_contact_number }}</p>
+                                    <p class="detail-label" style="font-size: 13px; margin-bottom: 6px; color: #6b7280;">Secondary:</p>
+                                    <p class="detail-value" style="font-size: 15px; margin: 0; color: #1a1a1a;">{{ selectedRequest.credential_info.secondary_contact_number }}</p>
                                 </div>
                                 <div v-if="selectedRequest.user_info?.email" class="detail-item" style="margin: 0;">
-                                    <p class="detail-label" style="font-size: 11px; margin-bottom: 2px; color: #666;">Email:</p>
-                                    <p class="detail-value" style="font-size: 12px; margin: 0;">{{ selectedRequest.user_info.email }}</p>
+                                    <p class="detail-label" style="font-size: 13px; margin-bottom: 6px; color: #6b7280;">Email:</p>
+                                    <p class="detail-value" style="font-size: 15px; margin: 0; color: #1a1a1a;">{{ selectedRequest.user_info.email }}</p>
                                 </div>
                                 
                                 <!-- Address Info (Compact) -->
                                 <div v-if="selectedRequest.user_info?.house_number || selectedRequest.user_info?.street" class="detail-item" style="grid-column: span 2; margin: 0;">
-                                    <p class="detail-label" style="font-size: 11px; margin-bottom: 2px; color: #666;">Address:</p>
-                                    <p class="detail-value" style="font-size: 12px; margin: 0; line-height: 1.3;">
+                                    <p class="detail-label" style="font-size: 13px; margin-bottom: 6px; color: #6b7280;">Address:</p>
+                                    <p class="detail-value" style="font-size: 15px; margin: 0; line-height: 1.5; color: #1a1a1a;">
                                         {{ [selectedRequest.user_info?.house_number, selectedRequest.user_info?.street].filter(Boolean).join(' ') }}
                                     </p>
                                 </div>
                                 <div v-if="selectedRequest.user_info?.phase || selectedRequest.user_info?.package" class="detail-item" style="margin: 0;">
-                                    <p class="detail-label" style="font-size: 11px; margin-bottom: 2px; color: #666;">Phase/Package:</p>
-                                    <p class="detail-value" style="font-size: 12px; margin: 0;">
+                                    <p class="detail-label" style="font-size: 13px; margin-bottom: 6px; color: #6b7280;">Phase/Package:</p>
+                                    <p class="detail-value" style="font-size: 15px; margin: 0; color: #1a1a1a;">
                                         {{ [selectedRequest.user_info?.phase, selectedRequest.user_info?.package].filter(Boolean).join(' / ') }}
                                     </p>
                                 </div>
                                 <div v-if="selectedRequest.user_info?.barangay || selectedRequest.user_info?.city" class="detail-item" style="margin: 0;">
-                                    <p class="detail-label" style="font-size: 11px; margin-bottom: 2px; color: #666;">Location:</p>
-                                    <p class="detail-value" style="font-size: 12px; margin: 0;">
+                                    <p class="detail-label" style="font-size: 13px; margin-bottom: 6px; color: #6b7280;">Location:</p>
+                                    <p class="detail-value" style="font-size: 15px; margin: 0; color: #1a1a1a;">
                                         {{ [selectedRequest.user_info?.barangay, selectedRequest.user_info?.city].filter(Boolean).join(', ') }}
                                     </p>
                                 </div>
                                 <div v-if="selectedRequest.user_info?.province || selectedRequest.user_info?.zip_code" class="detail-item" style="margin: 0;">
-                                    <p class="detail-label" style="font-size: 11px; margin-bottom: 2px; color: #666;">Province/Zip:</p>
-                                    <p class="detail-value" style="font-size: 12px; margin: 0;">
+                                    <p class="detail-label" style="font-size: 13px; margin-bottom: 6px; color: #6b7280;">Province/Zip:</p>
+                                    <p class="detail-value" style="font-size: 15px; margin: 0; color: #1a1a1a;">
                                         {{ [selectedRequest.user_info?.province, selectedRequest.user_info?.zip_code].filter(Boolean).join(' ') }}
                                     </p>
                                 </div>
@@ -305,24 +305,24 @@
                         </div>
 
                         <!-- Extra Fields (Dynamic Fields) -->
-                        <div v-if="(selectedRequest.extra_fields && getExtraFieldsCount(selectedRequest.extra_fields) > 0) || selectedRequest.valid_id_type || selectedRequest.valid_id_number" class="detail-section" style="margin-bottom: 15px;">
-                            <h4 class="section-title" style="margin-bottom: 10px; font-size: 16px;">Additional Information</h4>
-                            <div class="details-grid" style="grid-template-columns: repeat(4, 1fr); gap: 8px 12px;">
+                        <div v-if="(selectedRequest.extra_fields && getExtraFieldsCount(selectedRequest.extra_fields) > 0) || selectedRequest.valid_id_type || selectedRequest.valid_id_number" class="detail-section" style="margin-bottom: 24px;">
+                            <h4 class="section-title" style="margin-bottom: 16px; font-size: 20px;">Additional Information</h4>
+                            <div class="details-grid" style="grid-template-columns: repeat(4, 1fr); gap: 12px 16px;">
                                 <!-- ID Type and ID Number -->
-                                <div v-if="selectedRequest.valid_id_type" class="detail-item" style="margin: 0; padding: 8px 10px;">
-                                    <p class="detail-label" style="font-size: 11px; margin-bottom: 2px; color: #666;">ID Type:</p>
-                                    <p class="detail-value" style="font-size: 12px; margin: 0; line-height: 1.3;">{{ getValidIdTypeName(selectedRequest.valid_id_type) }}</p>
+                                <div v-if="selectedRequest.valid_id_type" class="detail-item" style="margin: 0; padding: 12px 14px;">
+                                    <p class="detail-label" style="font-size: 13px; margin-bottom: 6px; color: #6b7280;">ID Type:</p>
+                                    <p class="detail-value" style="font-size: 15px; margin: 0; line-height: 1.5; color: #1a1a1a;">{{ getValidIdTypeName(selectedRequest.valid_id_type) }}</p>
                                 </div>
-                                <div v-if="selectedRequest.valid_id_number" class="detail-item" style="margin: 0; padding: 8px 10px;">
-                                    <p class="detail-label" style="font-size: 11px; margin-bottom: 2px; color: #666;">ID Number:</p>
-                                    <p class="detail-value" style="font-size: 12px; margin: 0; line-height: 1.3;">{{ selectedRequest.valid_id_number }}</p>
+                                <div v-if="selectedRequest.valid_id_number" class="detail-item" style="margin: 0; padding: 12px 14px;">
+                                    <p class="detail-label" style="font-size: 13px; margin-bottom: 6px; color: #6b7280;">ID Number:</p>
+                                    <p class="detail-value" style="font-size: 15px; margin: 0; line-height: 1.5; color: #1a1a1a;">{{ selectedRequest.valid_id_number }}</p>
                                 </div>
                                 
                                 <!-- Dynamic Extra Fields -->
                                 <template v-for="(value, key) in getExtraFieldsObject(selectedRequest.extra_fields)" :key="key">
-                                    <div class="detail-item" v-if="isValidExtraFieldValue(value)" style="margin: 0; padding: 8px 10px;">
-                                        <p class="detail-label" style="font-size: 11px; margin-bottom: 2px; color: #666;">{{ formatFieldName(key) }}:</p>
-                                        <p class="detail-value" style="font-size: 12px; margin: 0; line-height: 1.3;">
+                                    <div class="detail-item" v-if="isValidExtraFieldValue(value)" style="margin: 0; padding: 12px 14px;">
+                                        <p class="detail-label" style="font-size: 13px; margin-bottom: 6px; color: #6b7280;">{{ formatFieldName(key) }}:</p>
+                                        <p class="detail-value" style="font-size: 15px; margin: 0; line-height: 1.5; color: #1a1a1a;">
                                             <span v-if="Array.isArray(value)">{{ value.length > 0 ? value.join(', ') : 'Not provided' }}</span>
                                             <span v-else-if="typeof value === 'object' && value !== null && !(value instanceof File)">{{ JSON.stringify(value) }}</span>
                                             <span v-else>{{ String(value) }}</span>
@@ -333,8 +333,8 @@
                         </div>
 
                         <!-- Valid ID Attachments Section -->
-                        <div v-if="idAttachments.length > 0 || (selectedRequest.valid_id_url || selectedRequest.has_valid_id)" class="detail-section" style="margin-bottom: 15px;">
-                            <h4 class="section-title" style="margin-bottom: 10px; font-size: 16px;">Valid Identification</h4>
+                        <div v-if="idAttachments.length > 0 || (selectedRequest.valid_id_url || selectedRequest.has_valid_id)" class="detail-section" style="margin-bottom: 24px;">
+                            <h4 class="section-title" style="margin-bottom: 16px; font-size: 20px;">Valid Identification</h4>
                             
                             <!-- ID Front and Back Attachments -->
                             <template v-if="idAttachments.length > 0">
@@ -347,16 +347,16 @@
                                             style="background: #f8f9fa; border: 1px solid #e0e0e0; border-radius: 8px; padding: 10px; display: flex; flex-direction: column; gap: 8px;"
                                         >
                                             <div class="attachment-info" style="text-align: center;">
-                                                <p class="attachment-label" style="font-size: 12px; font-weight: 700; color: #239640; margin: 0 0 5px 0; text-transform: uppercase;">
+                                                <p class="attachment-label" style="font-size: 14px; font-weight: 700; color: #239640; margin: 0 0 8px 0; text-transform: uppercase; letter-spacing: 0.5px;">
                                                     {{ formatFieldName(attachment.field_name || 'Unknown') }}
                                                 </p>
-                                                <p class="attachment-filename" style="font-size: 14px; color: #333; font-weight: 600; margin: 0 0 5px 0; display: flex; align-items: center; gap: 6px;">
-                                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width: 16px; height: 16px; flex-shrink: 0;">
+                                                <p class="attachment-filename" style="font-size: 16px; color: #1a1a1a; font-weight: 600; margin: 0 0 8px 0; display: flex; align-items: center; gap: 8px;">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width: 18px; height: 18px; flex-shrink: 0;">
                                                         <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                                                     </svg>
                                                     {{ attachment.file_name || 'Unnamed file' }}
                                                 </p>
-                                                <p v-if="attachment.file_size" class="attachment-size" style="font-size: 11px; color: #666; margin: 0;">
+                                                <p v-if="attachment.file_size" class="attachment-size" style="font-size: 13px; color: #6b7280; margin: 0;">
                                                     Size: {{ formatFileSize(attachment.file_size) }}
                                                 </p>
                                                 
@@ -385,7 +385,7 @@
                                                     :href="getAttachmentUrl(attachment)" 
                                                     target="_blank" 
                                                     class="attachment-download-btn"
-                                                    style="display: inline-block; text-align: center; padding: 10px 20px; background: #239640; color: white; text-decoration: none; border-radius: 6px; font-weight: 600; transition: all 0.3s ease;"
+                                                    style="display: inline-block; text-align: center; padding: 12px 24px; background: #239640; color: white; text-decoration: none; border-radius: 10px; font-weight: 600; font-size: 15px; transition: all 0.3s ease; box-shadow: 0 2px 8px rgba(35, 150, 64, 0.2);"
                                                 >
                                                     View/Download File
                                                 </a>
@@ -398,7 +398,7 @@
                             <!-- Fallback: Valid ID Image Preview (if no separate attachments but has valid_id_content) -->
                             <template v-else-if="selectedRequest.valid_id_url || selectedRequest.has_valid_id">
                                 <div class="attachment-preview-section" style="margin-top: 15px;">
-                                    <p class="detail-label" style="font-size: 12px; font-weight: 700; color: #666; margin: 0 0 10px 0; text-transform: uppercase;">Valid ID Image:</p>
+                                    <p class="detail-label" style="font-size: 14px; font-weight: 700; color: #6b7280; margin: 0 0 12px 0; text-transform: uppercase; letter-spacing: 0.5px;">Valid ID Image:</p>
                                     <div class="image-preview-container-inline">
                                         <img 
                                             v-if="validIdImageUrl"
@@ -422,7 +422,7 @@
                                             :href="validIdImageUrl" 
                                             :download="`valid_id_${selectedRequest.referenceCode || 'attachment'}.jpg`" 
                                             class="attachment-download-btn"
-                                            style="display: inline-block; text-align: center; padding: 10px 20px; background: #239640; color: white; text-decoration: none; border-radius: 6px; font-weight: 600; transition: all 0.3s ease;"
+                                            style="display: inline-block; text-align: center; padding: 12px 24px; background: #239640; color: white; text-decoration: none; border-radius: 10px; font-weight: 600; font-size: 15px; transition: all 0.3s ease; box-shadow: 0 2px 8px rgba(35, 150, 64, 0.2);"
                                             target="_blank"
                                         >
                                             Download Valid ID
@@ -432,7 +432,7 @@
                                             :href="selectedRequest.valid_id_url" 
                                             :download="`valid_id_${selectedRequest.referenceCode || 'attachment'}.jpg`" 
                                             class="attachment-download-btn"
-                                            style="display: inline-block; text-align: center; padding: 10px 20px; background: #239640; color: white; text-decoration: none; border-radius: 6px; font-weight: 600; transition: all 0.3s ease;"
+                                            style="display: inline-block; text-align: center; padding: 12px 24px; background: #239640; color: white; text-decoration: none; border-radius: 10px; font-weight: 600; font-size: 15px; transition: all 0.3s ease; box-shadow: 0 2px 8px rgba(35, 150, 64, 0.2);"
                                             target="_blank"
                                         >
                                             Download Valid ID
@@ -443,8 +443,8 @@
                         </div>
                             
                         <!-- Other Attachments -->
-                        <div class="detail-section" style="margin-bottom: 15px;">
-                            <h4 class="section-title" style="margin-bottom: 10px; font-size: 16px;">Other Uploaded Files</h4>
+                        <div class="detail-section" style="margin-bottom: 24px;">
+                            <h4 class="section-title" style="margin-bottom: 16px; font-size: 20px;">Other Uploaded Files</h4>
                             
                             <!-- Show attachments if available (excluding ID front/back which are shown separately) -->
                             <div v-if="otherAttachments && Array.isArray(otherAttachments) && otherAttachments.length > 0" class="attachments-list" style="display: grid; gap: 10px; margin-top: 10px;">
@@ -455,16 +455,16 @@
                                     style="background: #f8f9fa; border: 1px solid #e0e0e0; border-radius: 8px; padding: 10px; display: flex; flex-direction: column; gap: 8px;"
                                 >
                                     <div class="attachment-info" style="text-align: center;">
-                                        <p class="attachment-label" style="font-size: 12px; font-weight: 700; color: #239640; margin: 0 0 5px 0; text-transform: uppercase;">
+                                        <p class="attachment-label" style="font-size: 14px; font-weight: 700; color: #239640; margin: 0 0 8px 0; text-transform: uppercase; letter-spacing: 0.5px;">
                                             {{ formatFieldName(attachment.field_name || 'Unknown') }}
                                         </p>
-                                        <p class="attachment-filename" style="font-size: 14px; color: #333; font-weight: 600; margin: 0 0 5px 0; display: flex; align-items: center; gap: 6px;">
-                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width: 16px; height: 16px; flex-shrink: 0;">
+                                        <p class="attachment-filename" style="font-size: 16px; color: #1a1a1a; font-weight: 600; margin: 0 0 8px 0; display: flex; align-items: center; gap: 8px;">
+                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width: 18px; height: 18px; flex-shrink: 0;">
                                                 <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                                             </svg>
                                             {{ attachment.file_name || 'Unnamed file' }}
                                         </p>
-                                        <p v-if="attachment.file_size" class="attachment-size" style="font-size: 11px; color: #666; margin: 0;">
+                                        <p v-if="attachment.file_size" class="attachment-size" style="font-size: 13px; color: #6b7280; margin: 0;">
                                             Size: {{ formatFileSize(attachment.file_size) }}
                                         </p>
                                         
@@ -498,7 +498,7 @@
                                             :href="getAttachmentUrl(attachment)" 
                                             target="_blank" 
                                             class="attachment-download-btn"
-                                            style="display: inline-block; text-align: center; padding: 10px 20px; background: #239640; color: white; text-decoration: none; border-radius: 6px; font-weight: 600; transition: all 0.3s ease;"
+                                            style="display: inline-block; text-align: center; padding: 12px 24px; background: #239640; color: white; text-decoration: none; border-radius: 10px; font-weight: 600; font-size: 15px; transition: all 0.3s ease; box-shadow: 0 2px 8px rgba(35, 150, 64, 0.2);"
                                                 >
                                                     View/Download File
                                                 </a>
@@ -508,7 +508,7 @@
                             
                             <!-- Show message if no attachments -->
                             <div v-else class="no-attachments-message" style="padding: 30px; text-align: center; background: #f8f9fa; border-radius: 10px; border: 1px dashed #ddd;">
-                                <p class="detail-value" style="color: #999; font-size: 14px; margin: 0; display: flex; align-items: center; gap: 6px; justify-content: center;">
+                                <p class="detail-value" style="color: #9ca3af; font-size: 16px; margin: 0; display: flex; align-items: center; gap: 8px; justify-content: center;">
                                     <span v-if="!selectedRequest.attachments" style="display: flex; align-items: center; gap: 6px;">
                                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width: 18px; height: 18px; flex-shrink: 0;">
                                             <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
@@ -577,8 +577,8 @@
                     </div>
                 </div>
                 <div v-else class="modal-content" style="padding: 40px; text-align: center;">
-                    <p style="font-size: 16px; color: #666;">Loading request details...</p>
-                    <p style="font-size: 14px; color: #999; margin-top: 10px;">If this message persists, please refresh the page.</p>
+                    <p style="font-size: 18px; color: #6b7280; font-weight: 500;">Loading request details...</p>
+                    <p style="font-size: 15px; color: #9ca3af; margin-top: 12px;">If this message persists, please refresh the page.</p>
                 </div>
             </div>
         </div>
@@ -2324,35 +2324,74 @@ const confirmApproval = async () => {
         localRequests.value.splice(idx, 1)
       }
 
-      // show the exact alert text you requested
-      alert('Request is approved')
+      // Check if document was generated
+      const documentGenerated = res.data.document_generated || (res.data.data && res.data.data.document_generated) || false
+      const documentError = res.data.document_generation_error || (res.data.data && res.data.data.document_generation_error) || null
 
-      // (existing document handling) — try to show server-returned document or fallback HTML
-      const maybeDoc = res.data.document_base64 || (res.data.data && res.data.data.document_base64) || null
-      const maybeDocUrl = res.data.document_url || (res.data.data && res.data.data.document_url) || null
-      const maybeFilename = res.data.filename || (res.data.data && res.data.data.filename) || `${selectedRequest.value.referenceCode || 'document'}.pdf`
-      const maybeMime = res.data.mime || (res.data.data && res.data.data.mime) || 'application/pdf'
-
-      if (maybeDoc) {
-        let base64 = maybeDoc
-        const dataPrefixMatch = base64.match(/^data:(.*);base64,(.*)$/)
-        if (dataPrefixMatch) {
-          base64 = dataPrefixMatch[2]
-        }
-        await showGeneratedDocumentFromBase64(base64, maybeFilename, maybeMime)
-        // Print prompt is already handled in showGeneratedDocumentFromBase64
-      } else if (maybeDocUrl) {
-        let finalUrl = maybeDocUrl
-        if (!/^https?:\/\//i.test(finalUrl) && finalUrl.startsWith('/')) {
-          finalUrl = window.location.origin + finalUrl
-        }
-        await showGeneratedDocumentFromUrl(finalUrl, maybeFilename)
-        // Print prompt is already handled in showGeneratedDocumentFromUrl
+      // Show appropriate message
+      if (documentGenerated) {
+        alert('Request is approved. Document generated successfully!')
+      } else if (documentError) {
+        alert(`Request is approved, but document generation failed: ${documentError}\n\nPlease check the logs or try regenerating the document.`)
       } else {
-        const html = generateDocumentHtml(selectedRequest.value, payload)
-        const filename = `${selectedRequest.value.referenceCode || 'document'}.html`
-        await showGeneratedDocumentFromHtml(html, filename)
-        // Print prompt is already handled in showGeneratedDocumentFromHtml
+        alert('Request is approved.')
+      }
+
+      // Handle document download - prefer DOCX, fallback to PDF
+      // IMPORTANT: Download directly from server to avoid wasting DocuGenerate API calls
+      // Use direct link click method to trigger download (no blob URLs, no print dialogs)
+      const docxUrl = res.data.document_docx_url || (res.data.data && res.data.data.document_docx_url) || null
+      const pdfUrl = res.data.document_url || (res.data.data && res.data.data.document_url) || null
+      const docxFilename = res.data.docx_filename || (res.data.data && res.data.data.docx_filename) || null
+      const filename = docxFilename || res.data.filename || (res.data.data && res.data.data.filename) || `${selectedRequest.value.referenceCode || 'document'}.docx`
+
+      // Function to trigger direct download using temporary link (forces download, no redirects, no prints)
+      const triggerDirectDownload = (url, downloadFilename) => {
+        const fullUrl = url.startsWith('http') ? url : window.location.origin + url
+        console.log('📥 Triggering direct download:', fullUrl, 'as', downloadFilename)
+        
+        // Create a temporary anchor element and click it to trigger download
+        // The download attribute forces the browser to download instead of navigating
+        const link = document.createElement('a')
+        link.href = fullUrl
+        link.download = downloadFilename // Forces download instead of navigation
+        link.style.display = 'none'
+        link.rel = 'noopener noreferrer' // Security best practice
+        
+        // Append to body
+        document.body.appendChild(link)
+        
+        // Trigger click immediately
+        link.click()
+        
+        // Cleanup after a short delay
+        setTimeout(() => {
+          if (document.body.contains(link)) {
+            document.body.removeChild(link)
+          }
+        }, 100)
+        
+        console.log('✅ Download triggered - file should download directly')
+      }
+
+      // Download DOCX file (preferred - opens in Word)
+      if (docxUrl) {
+        const docxFilename = filename.endsWith('.docx') ? filename : filename.replace(/\.(pdf|html)$/i, '.docx')
+        triggerDirectDownload(docxUrl, docxFilename)
+      } else if (pdfUrl) {
+        // Fallback to PDF (but prefer DOCX)
+        const pdfFilename = filename.endsWith('.pdf') ? filename : filename.replace(/\.(docx|html)$/i, '.pdf')
+        triggerDirectDownload(pdfUrl, pdfFilename)
+      } else {
+        // No document URL available - document generation may have failed
+        console.warn('⚠️ No document URL available in approval response', {
+          documentGenerated,
+          documentError,
+          response: res.data
+        })
+        if (documentError) {
+          console.error('Document generation error:', documentError)
+        }
       }
 
       // close approval modal and clear selection (do NOT attempt to close browser tabs)
@@ -3090,14 +3129,14 @@ onUnmounted(() => {
 
 .modal-container {
     background: white !important;
-    border-radius: 20px;
-    padding: 30px;
+    border-radius: 24px;
+    padding: 40px;
     width: 90%;
-    max-width: 900px;
+    max-width: 1000px;
     max-height: 90vh;
     overflow-y: auto;
     position: relative !important;
-    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    box-shadow: 0 25px 80px rgba(0,0,0,0.15);
     z-index: 10000 !important;
     visibility: visible !important;
     opacity: 1 !important;
@@ -3119,50 +3158,39 @@ onUnmounted(() => {
 
 .modal-close {
     position: absolute;
-    top: 15px;
-    right: 15px;
-    background: #f0f0f0;
+    top: 20px;
+    right: 20px;
+    background: #f3f4f6;
     border: none;
-    width: 35px;
-    height: 35px;
+    width: 40px;
+    height: 40px;
     border-radius: 50%;
     cursor: pointer;
     font-size: 20px;
-    transition: all 0.2s;
+    transition: all 0.2s ease;
     display: flex;
     align-items: center;
     justify-content: center;
+    color: #6b7280;
 }
 
 .modal-close:hover {
-    position: absolute;
-    top: 15px;
-    right: 15px;
-    background: #f0f0f0;
-    border: none;
-    width: 35px;
-    height: 35px;
-    border-radius: 50%;
-    cursor: pointer;
-    font-size: 20px;
-    color: #666;
-    transition: all 0.2s;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    background: #e5e7eb;
+    color: #1a1a1a;
+    transform: scale(1.05);
 }
 
 .modal-content {
-    margin-top: 10px;
+    margin-top: 0;
 }
 
 .modal-top {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 15px;
-    padding-bottom: 20px;
-    border-bottom: 1px solid #e0e0e0;
-    margin-bottom: 20px;
+    gap: 24px;
+    padding-bottom: 32px;
+    border-bottom: 1px solid #e5e7eb;
+    margin-bottom: 32px;
     align-items: start;
 }
 
@@ -3173,24 +3201,26 @@ onUnmounted(() => {
 }
 
 .modal-avatar {
-    width: 70px;
-    height: 70px;
-    border-radius: 15px;
+    width: 80px;
+    height: 80px;
+    border-radius: 16px;
     object-fit: cover;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.1);
 }
 
 .modal-name {
-    font-size: 20px;
+    font-size: 24px;
     font-weight: 700;
-    color: #333;
-    margin: 0 0 5px 0;
+    color: #1a1a1a;
+    margin: 0 0 6px 0;
+    letter-spacing: -0.02em;
 }
 
 .modal-label {
-    font-size: 13px;
-    color: #666;
+    font-size: 15px;
+    color: #6b7280;
     margin: 0 0 3px 0;
+    font-weight: 500;
 }
 
 .modal-ref {
@@ -3242,7 +3272,7 @@ onUnmounted(() => {
 .modal-details {
     display: flex;
     flex-direction: column;
-    gap: 20px;
+    gap: 32px;
 }
 
 .detail-description {
@@ -3255,19 +3285,26 @@ onUnmounted(() => {
 .details-grid {
     display: grid;
     grid-template-columns: repeat(5, 1fr);
-    gap: 15px;
+    gap: 16px;
 }
 
 .detail-item {
-    background: #f8f9fa;
-    padding: 12px 15px;
-    border-radius: 10px;
+    background: #f9fafb;
+    padding: 16px 18px;
+    border-radius: 12px;
+    border: 1px solid #f3f4f6;
+    transition: all 0.2s ease;
+}
+
+.detail-item:hover {
+    background: #f3f4f6;
+    border-color: #e5e7eb;
 }
 
 .detail-section {
-    margin-top: 15px;
-    padding-top: 15px;
-    border-top: 1px solid #e0e0e0;
+    margin-top: 24px;
+    padding-top: 24px;
+    border-top: 1px solid #e5e7eb;
 }
 
 .detail-section:first-of-type {
@@ -3277,34 +3314,37 @@ onUnmounted(() => {
 }
 
 .section-title {
-    font-size: 16px;
+    font-size: 20px;
     font-weight: 700;
     color: #239640;
-    margin: 0 0 10px 0;
-    padding-bottom: 8px;
+    margin: 0 0 16px 0;
+    padding-bottom: 12px;
     border-bottom: 2px solid #239640;
+    letter-spacing: -0.01em;
 }
 
 .detail-item-full {
-    background: #f8f9fa;
-    padding: 12px 15px;
-    border-radius: 10px;
+    background: #f9fafb;
+    padding: 20px 24px;
+    border-radius: 12px;
+    border: 1px solid #f3f4f6;
 }
 
 .detail-label {
-    font-size: 12px;
-    font-weight: 700;
-    color: #666;
-    margin: 0 0 5px 0;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #6b7280;
+    margin: 0 0 6px 0;
+    text-transform: none;
+    letter-spacing: 0;
 }
 
 .detail-value {
-    font-size: 14px;
-    color: #333;
-    font-weight: 600;
+    font-size: 15px;
+    color: #1a1a1a;
+    font-weight: 500;
     margin: 0;
+    line-height: 1.5;
 }
 
 .attachments-list {
@@ -3317,16 +3357,17 @@ onUnmounted(() => {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    background: #f8f9fa;
-    padding: 15px;
-    border-radius: 10px;
-    border: 1px solid #e0e0e0;
-    transition: all 0.2s;
+    background: #f9fafb;
+    padding: 20px;
+    border-radius: 12px;
+    border: 1px solid #e5e7eb;
+    transition: all 0.2s ease;
 }
 
 .attachment-item:hover {
-    background: #e8f8ed;
-    border-color: #239640;
+    background: #f3f4f6;
+    border-color: #d1d5db;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
 }
 
 .attachment-info {
@@ -3334,24 +3375,24 @@ onUnmounted(() => {
 }
 
 .attachment-label {
-    font-size: 12px;
+    font-size: 14px;
     font-weight: 700;
-    color: #666;
-    margin: 0 0 5px 0;
+    color: #239640;
+    margin: 0 0 8px 0;
     text-transform: uppercase;
     letter-spacing: 0.5px;
 }
 
 .attachment-filename {
-    font-size: 14px;
-    color: #333;
+    font-size: 16px;
+    color: #1a1a1a;
     font-weight: 600;
-    margin: 0 0 3px 0;
+    margin: 0 0 8px 0;
 }
 
 .attachment-size {
-    font-size: 12px;
-    color: #999;
+    font-size: 13px;
+    color: #6b7280;
     margin: 0;
 }
 
@@ -3359,18 +3400,19 @@ onUnmounted(() => {
     background: #239640;
     color: white;
     text-decoration: none;
-    padding: 10px 20px;
-    border-radius: 8px;
+    padding: 12px 24px;
+    border-radius: 10px;
     font-weight: 600;
-    font-size: 13px;
+    font-size: 15px;
     transition: all 0.3s ease;
     white-space: nowrap;
+    box-shadow: 0 2px 8px rgba(35, 150, 64, 0.2);
 }
 
 .attachment-download-btn:hover {
     background: #1e7d35;
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(35, 150, 64, 0.4);
+    box-shadow: 0 4px 16px rgba(35, 150, 64, 0.35);
 }
 
 /* Attachment Modal Styles */
@@ -3569,34 +3611,40 @@ div.modal-overlay:has(.attachment-modal) {
     background: #239640;
     color: white;
     border: none;
-    padding: 12px 30px;
-    border-radius: 10px;
+    padding: 14px 32px;
+    border-radius: 12px;
     cursor: pointer;
-    font-weight: 700;
-    font-size: 14px;
+    font-weight: 600;
+    font-size: 16px;
     transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(35, 150, 64, 0.25);
+    letter-spacing: 0.01em;
 }
 
 .approve-btn:hover {
     background: #1e7d35;
     transform: translateY(-2px);
+    box-shadow: 0 4px 16px rgba(35, 150, 64, 0.35);
 }
 
 .reject-btn {
     background: linear-gradient(135deg, #ef4444, #dc2626);
     color: white;
     border: none;
-    padding: 12px 30px;
-    border-radius: 10px;
+    padding: 14px 32px;
+    border-radius: 12px;
     cursor: pointer;
-    font-weight: 700;
-    font-size: 14px;
+    font-weight: 600;
+    font-size: 16px;
     transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(239, 68, 68, 0.25);
+    letter-spacing: 0.01em;
 }
 
 .reject-btn:hover {
     background: linear-gradient(135deg, #dc2626, #b91c1c);
     transform: translateY(-2px);
+    box-shadow: 0 4px 16px rgba(239, 68, 68, 0.35);
 }
 
 /* Approval Modal Styles */
@@ -3695,19 +3743,20 @@ div.modal-overlay:has(.attachment-modal) {
     background: #6b7280;
     color: white;
     border: none;
-    padding: 14px 30px;
-    border-radius: 10px;
+    padding: 14px 32px;
+    border-radius: 12px;
     cursor: pointer;
-    font-weight: 700;
-    font-size: 15px;
+    font-weight: 600;
+    font-size: 16px;
     transition: all 0.3s ease;
-    box-shadow: 0 2px 8px rgba(107, 114, 128, 0.3);
+    box-shadow: 0 2px 8px rgba(107, 114, 128, 0.25);
+    letter-spacing: 0.01em;
 }
 
 .cancel-btn:hover {
     background: #4b5563;
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(107, 114, 128, 0.4);
+    box-shadow: 0 4px 16px rgba(107, 114, 128, 0.35);
 }
 
 /* Rejection Modal Styles */

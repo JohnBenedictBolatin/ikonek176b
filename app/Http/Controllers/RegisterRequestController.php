@@ -9,6 +9,7 @@ use App\Models\UserCredential;
 use App\Services\OtpService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Carbon\Carbon;
@@ -20,6 +21,17 @@ class RegisterRequestController extends Controller
      */
     public function index(Request $request)
     {
+        // Check if user is authenticated
+        if (!Auth::check()) {
+            if ($request->wantsJson() || $request->expectsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthorized. Please sign in.',
+                ], 401);
+            }
+            return redirect()->route('login_admin')->with('error', 'Please sign in to access this page.');
+        }
+
         // If this is an API request (JSON), return JSON response for history
         if ($request->wantsJson() || $request->expectsJson()) {
             return $this->indexJson($request);
@@ -151,8 +163,26 @@ class RegisterRequestController extends Controller
      */
     public function approve(Request $request, $id)
     {
+        // Check if user is authenticated
+        if (!Auth::check()) {
+            \Log::warning('Unauthorized approve attempt', [
+                'registration_request_id' => $id,
+                'ip' => $request->ip(),
+            ]);
+            
+            if ($request->header('X-Inertia')) {
+                return redirect()->route('login_admin')->with('error', 'Please sign in to continue.');
+            }
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized. Please sign in.',
+            ], 401);
+        }
+
         \Log::info('=== REGISTRATION APPROVE METHOD CALLED ===', [
             'registration_request_id' => $id,
+            'user_id' => Auth::id(),
             'timestamp' => now()->toDateTimeString(),
         ]);
 
@@ -406,8 +436,26 @@ class RegisterRequestController extends Controller
      */
     public function reject(Request $request, $id)
     {
+        // Check if user is authenticated
+        if (!Auth::check()) {
+            \Log::warning('Unauthorized reject attempt', [
+                'registration_request_id' => $id,
+                'ip' => $request->ip(),
+            ]);
+            
+            if ($request->header('X-Inertia')) {
+                return redirect()->route('login_admin')->with('error', 'Please sign in to continue.');
+            }
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized. Please sign in.',
+            ], 401);
+        }
+
         \Log::info('=== REGISTRATION REJECT METHOD CALLED ===', [
             'registration_request_id' => $id,
+            'user_id' => Auth::id(),
             'timestamp' => now()->toDateTimeString(),
         ]);
 

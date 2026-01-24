@@ -14,7 +14,7 @@
                     <img src="/assets/SETTINGS.png" alt="Settings" class="settings-btn-img" @click="toggleSettings" />
                     <div v-if="showSettings" class="settings-dropdown">
                         <Link href="#" class="settings-item" @click="closeSettings">Help Center</Link>
-                        <Link href="#" class="settings-item" @click="closeSettings">Terms & Conditions</Link>
+                        <button type="button" class="settings-item" @click="openTerms">Terms & Conditions</button>
                         <Link href="#" class="settings-item" @click="logout">Sign Out</Link>
                     </div>
                 </div>
@@ -110,24 +110,176 @@
                         </div>
                     </div>
 
+                    <!-- View 0: Requests List (Default) -->
+                    <div v-if="currentView === 'list'" class="requests-list-view">
+                        <!-- Filter Bar -->
+                        <div class="filter-section">
+                            <div class="filter-left">
+                                <span class="filter-label">Filter by</span>
+                                <div class="filter-dropdown-wrapper">
+                                    <button class="filter-dropdown-btn" @click="toggleSortDropdown">
+                                        {{ sortOption.toUpperCase() }}
+                                        <span class="filter-arrow" :class="{ rotated: showSortDropdown }">▼</span>
+                                    </button>
+                                    <div v-if="showSortDropdown" class="filter-dropdown-menu">
+                                        <button @click="selectSort('newest')" :class="{ active: sortOption === 'newest' }">NEWEST</button>
+                                        <button @click="selectSort('oldest')" :class="{ active: sortOption === 'oldest' }">OLDEST</button>
+                                    </div>
+                                </div>
+                                <div class="filter-dropdown-wrapper" style="margin-left: 15px;">
+                                    <button class="filter-dropdown-btn" @click="toggleStatusDropdown">
+                                        {{ statusFilter === 'all' ? 'ALL STATUS' : statusFilter.toUpperCase() }}
+                                        <span class="filter-arrow" :class="{ rotated: showStatusDropdown }">▼</span>
+                                    </button>
+                                    <div v-if="showStatusDropdown" class="filter-dropdown-menu">
+                                        <button @click="selectStatus('all')" :class="{ active: statusFilter === 'all' }">ALL STATUS</button>
+                                        <button @click="selectStatus('pending')" :class="{ active: statusFilter === 'pending' }">PENDING</button>
+                                        <button @click="selectStatus('approved')" :class="{ active: statusFilter === 'approved' }">APPROVED</button>
+                                        <button @click="selectStatus('rejected')" :class="{ active: statusFilter === 'rejected' }">REJECTED</button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="filter-right">
+                                <div class="search-container">
+                                    <input 
+                                        type="text" 
+                                        v-model="searchQuery" 
+                                        @input="performSearch"
+                                        placeholder="SEARCH..." 
+                                        class="search-input" 
+                                    />
+                                    <button class="search-btn" @click="performSearch">
+                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="search-icon">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+                                        </svg>
+                                    </button>
+                                </div>
+                                <button class="request-new-btn" @click="showRequestForm">
+                                    ＋ REQUEST NEW DOCUMENT
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="requests-table-container">
+                            <table class="requests-table">
+                                <thead>
+                                    <tr>
+                                        <th>Document Requested</th>
+                                        <th>Request Number</th>
+                                        <th>Date and Time</th>
+                                        <th>Status</th>
+                                        <th>Payment Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr 
+                                        v-for="request in filteredDocumentRequests" 
+                                        :key="request.id"
+                                        @click="viewRequestDetails(request)"
+                                        class="request-row"
+                                    >
+                                        <td>{{ request.title }}</td>
+                                        <td>#{{ request.requestNumber }}</td>
+                                        <td>{{ request.date }} | {{ request.time }}</td>
+                                        <td>
+                                            <span class="status-badge" :class="request.status.toLowerCase()">
+                                                <span class="badge-icon">
+                                                    <template v-if="request.status.toLowerCase() === 'pending'">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="badge-icon-svg">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                                                        </svg>
+                                                    </template>
+                                                    <template v-else-if="request.status.toLowerCase() === 'approved'">✓</template>
+                                                    <template v-else-if="request.status.toLowerCase() === 'rejected'">✕</template>
+                                                </span>
+                                                <span class="badge-text">{{ request.status }}</span>
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <div v-if="request.status === 'APPROVED'">
+                                                <div
+                                                    v-if="getPaymentBadge(request)"
+                                                    :class="['payment-list-badge', getPaymentBadge(request).cls]"
+                                                    role="status"
+                                                    aria-live="polite"
+                                                >
+                                                    <span class="badge-icon" aria-hidden="true">
+                                                        <template v-if="getPaymentBadge(request).cls === 'pending'">
+                                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="badge-icon-svg">
+                                                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                                                            </svg>
+                                                        </template>
+                                                        <template v-else-if="getPaymentBadge(request).cls === 'approved'">✓</template>
+                                                        <template v-else-if="getPaymentBadge(request).cls === 'rejected'">✕</template>
+                                                    </span>
+                                                    <span class="badge-text">{{ getPaymentBadge(request).label }}</span>
+                                                </div>
+                                                <div v-else class="payment-list-badge none">
+                                                    <span class="badge-icon"></span>
+                                                    <span class="badge-text">NOT PAID YET</span>
+                                                </div>
+                                            </div>
+                                            <span v-else class="payment-status-na">—</span>
+                                        </td>
+                                    </tr>
+                                    <tr v-if="filteredDocumentRequests.length === 0">
+                                        <td colspan="5" class="no-requests">No document requests found</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
                     <!-- View 1: Document Selection -->
                     <div v-if="currentView === 'selection'" class="document-selection">
-                        <div class="document-types">
-                            <button 
-                                v-for="docName in documentNames" 
-                                :key="docName"
-                                class="doc-type-btn" 
-                                :class="{ active: selectedDocType === docName }" 
-                                @click="selectDocument(docName)"
-                            >
-                                {{ docName }}
+                        <div class="document-types-wrapper">
+                            <button class="back-btn-selection" @click="backToList">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width: 16px; height: 16px; display: inline-block; vertical-align: middle; margin-right: 6px;">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+                                </svg>
+                                BACK TO REQUESTS
                             </button>
+                            <div class="document-types">
+                                <button 
+                                    v-for="docName in documentNames" 
+                                    :key="docName"
+                                    class="doc-type-btn" 
+                                    :class="{ active: selectedDocType === docName }" 
+                                    @click="selectDocument(docName)"
+                                >
+                                    {{ docName }}
+                                </button>
+                            </div>
                         </div>
 
                         <div class="document-info">
-                            <h3 class="doc-title">{{ selectedDocType }}</h3>
+                            <h3 class="doc-title">{{ displayDocumentType }}</h3>
                             <div class="doc-description">
                                 <p>{{ documentDescriptions[selectedDocType] }}</p>
+                            </div>
+
+                            <!-- Permit Type Selection (only shown when Permit is selected) -->
+                            <div v-if="selectedDocType === 'Permit'" class="permit-type-selection">
+                                <h4 class="permit-type-title">Select Permit Type:</h4>
+                                <div class="permit-type-options">
+                                    <button 
+                                        class="permit-type-btn" 
+                                        :class="{ active: selectedPermitType === 'Building Permit' }"
+                                        @click="selectPermitType('Building Permit')"
+                                    >
+                                        Building Permit
+                                    </button>
+                                    <button 
+                                        class="permit-type-btn" 
+                                        :class="{ active: selectedPermitType === 'Business Permit' }"
+                                        @click="selectPermitType('Business Permit')"
+                                    >
+                                        Business Permit
+                                    </button>
+                                </div>
+                                <div v-if="selectedPermitType" class="permit-type-description">
+                                    <p><strong>{{ selectedPermitType }}:</strong> {{ permitTypeDescriptions[selectedPermitType] }}</p>
+                                </div>
                             </div>
 
                             <div class="requirements-section">
@@ -139,7 +291,11 @@
                                 </ol>
                             </div>
 
-                            <button class="request-btn" @click="proceedToForm">
+                            <button 
+                                class="request-btn" 
+                                @click="proceedToForm"
+                                :disabled="selectedDocType === 'Permit' && !selectedPermitType"
+                            >
                                 REQUEST DOCUMENT
                             </button>
                         </div>
@@ -147,12 +303,15 @@
 
                     <!-- View 2: Request Form -->
                     <div v-if="currentView === 'form'" class="request-form-container">
-                        <button class="back-btn" @click="backToSelection">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width: 16px; height: 16px; display: inline-block; vertical-align: middle; margin-right: 6px;">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
-                            </svg>
-                            BACK TO DOCUMENTS
-                        </button>
+                        <div class="form-header-row">
+                            <button class="back-btn" @click="backToSelection">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width: 16px; height: 16px; display: inline-block; vertical-align: middle; margin-right: 6px;">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+                                </svg>
+                                BACK TO DOCUMENT SELECTION
+                            </button>
+                            <p class="form-document-type">Document Type: <strong>{{ displayDocumentType }}</strong></p>
+                        </div>
 
                         <h3 class="form-title">REQUEST FORM</h3>
 
@@ -436,7 +595,7 @@
                             <p class="request-number">REQUEST NO. #{{ requestNumber }}</p>
                             
                             <div class="success-message">
-                                <p>You have successfully submitted your request form to acquire a <span class="highlight">{{ selectedDocType }}</span>.</p>
+                                <p>You have successfully submitted your request form to acquire a <span class="highlight">{{ displayDocumentType }}</span>.</p>
                                 <p>Please wait while we process your request — it is now under review by the barangay. Thank you for your patience!</p>
                                 <p>Your request number is <span class="highlight">#{{ requestNumber }}</span>. Please note.</p>
                             </div>
@@ -450,13 +609,470 @@
             </div>
         </div>
     </div>
+
+    <!-- Request Details Modal -->
+    <div v-if="showDetailsModal" class="modal-overlay" @click="closeDetailsModal">
+        <div class="modal-content details-modal" @click.stop>
+            <button class="close-modal-btn" @click="closeDetailsModal">✕</button>
+            
+            <!-- Success/Status Header -->
+            <div class="modal-icon" :class="selectedRequest?.status.toLowerCase() + '-icon'">
+                <div class="status-badge">
+                    <span v-if="selectedRequest?.status === 'APPROVED'">✓</span>
+                    <span v-if="selectedRequest?.status === 'PENDING'">
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" style="width: 32px; height: 32px; display: block; margin: 0 auto;">
+                        <circle cx="12" cy="12" r="10"/>
+                        <path stroke-linecap="round" d="M12 6v6l4 2"/>
+                      </svg>
+                    </span>
+                    <span v-if="selectedRequest?.status === 'REJECTED'">✕</span>
+                </div>
+            </div>
+            
+            <h3 class="modal-title">REQUEST {{ selectedRequest?.status }}</h3>
+            <p class="request-number-display">REQUEST NO. #{{ selectedRequest?.requestNumber }}</p>
+            
+            <div class="details-content">
+                <!-- Request Message -->
+                <p class="details-message">
+                    Your request to acquire a <strong>{{ selectedRequest?.title }}</strong> has been 
+                    <strong>{{ selectedRequest?.status.toLowerCase() }}</strong>.
+                </p>
+                
+                <!-- APPROVED Status - Show pickup instructions -->
+                <div v-if="selectedRequest?.status === 'APPROVED'" class="accepted-section">
+                    <p class="details-message">
+                        You may now proceed to claim your certificate by following the instructions provided.
+                    </p>
+
+                    <div class="pickup-info">
+                        <div class="info-item">
+                            <span class="info-label">WHAT:</span>
+                            <span class="info-value">
+                                PICKUP OF DOCUMENT ({{ selectedRequest?.pickup_item ?? selectedRequest?.title }})
+                            </span>
+                        </div>
+
+                        <div class="info-item">
+                            <span class="info-label">WHERE:</span>
+                            <span class="info-value">
+                                {{ selectedRequest?.pickup_location ?? selectedRequest?.raw?.pickup_location ?? 'BARANGAY 176B BARANGAY HALL' }}
+                            </span>
+                        </div>
+
+                        <div class="info-item">
+                            <span class="info-label">WHEN:</span>
+                            <span class="info-value">{{ getPickupSchedule(selectedRequest) }}</span>
+                        </div>
+
+                        <div class="info-item">
+                            <span class="info-label">WHO:</span>
+                            <span class="info-value">
+                                {{ selectedRequest?.person_to_look ?? selectedRequest?.raw?.person_to_look ?? user?.name ?? 'N/A' }}
+                            </span>
+                        </div>
+
+                        <div class="info-item" v-if="selectedRequest?.type === 'document'">
+                            <span class="info-label">AMOUNT:</span>
+                            <span class="info-value amount">₱{{ (selectedRequest?.amount ?? selectedRequest?.processing_fee) || '0.00' }}</span>
+                        </div>
+                    </div>
+
+                    <!-- Payment Buttons for Document Requests -->
+                    <div v-if="selectedRequest?.type === 'document' && 
+                              (!selectedRequest?.payment || 
+                                selectedRequest?.payment?.status?.toUpperCase() === 'REJECTED')" 
+                        class="payment-buttons-modal">
+                        <button class="pay-online-btn-modal" @click="showPaymentGateway(selectedRequest)">
+                            Pay Online
+                        </button>
+                        <button class="pay-onsite-btn-modal" @click="acknowledgeOnsite">
+                            Pay Onsite
+                        </button>
+                    </div>
+
+                    <!-- Payment Status block -->
+                    <div v-if="selectedRequest?.type === 'document'" class="payment-status-section">
+                        <h4 class="section-title-payment">
+                            <span class="icon">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" style="width: 20px; height: 20px; display: inline-block; vertical-align: middle;">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 0 0 2.25-2.25V6.75A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25v12.75A2.25 2.25 0 0 0 4.5 21.75Z" />
+                                </svg>
+                            </span> Payment Status
+                        </h4>
+
+                        <!-- If there's a payment object attached: show status details -->
+                        <div v-if="selectedRequest?.payment" class="payment-info-card">
+                            <div :class="['payment-status-badge', selectedRequest.payment.status?.toLowerCase()]">
+                                <span class="badge-icon">
+                                    <template v-if="selectedRequest.payment.status?.toLowerCase() === 'pending'">
+                                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width: 24px; height: 24px; display: inline-block; vertical-align: middle; margin: 0;">
+                                        <circle cx="12" cy="12" r="10"/>
+                                        <path stroke-linecap="round" d="M12 6v6l4 2"/>
+                                      </svg>
+                                    </template>
+                                    <template v-else-if="selectedRequest.payment.status?.toLowerCase() === 'approved' || selectedRequest.payment.status?.toLowerCase() === 'paid'">✓</template>
+                                    <template v-else-if="selectedRequest.payment.status?.toLowerCase() === 'rejected'">✕</template>
+                                </span>
+                                <span class="badge-text">{{ formatPaymentStatus(selectedRequest.payment.status) }}</span>
+                            </div>
+
+                            <div class="payment-details-grid">
+                                <div class="payment-detail-item">
+                                    <span class="detail-label">Amount:</span>
+                                    <span class="detail-value">₱{{ (selectedRequest.payment.amount ?? selectedRequest.amount) || '0.00' }}</span>
+                                </div>
+
+                                <div v-if="selectedRequest.payment.transaction_ref" class="payment-detail-item">
+                                    <span class="detail-label">Transaction Ref:</span>
+                                    <span class="detail-value">{{ selectedRequest.payment.transaction_ref }}</span>
+                                </div>
+
+                                <div v-if="selectedRequest.payment.paid_at" class="payment-detail-item">
+                                    <span class="detail-label">Paid At:</span>
+                                    <span class="detail-value">{{ formatDateTime(selectedRequest.payment.paid_at) }}</span>
+                                </div>
+
+                                <div v-if="selectedRequest.payment.receipt_path || selectedRequest.payment.receipt_image" class="payment-detail-item">
+                                    <span class="detail-label">Receipt:</span>
+                                    <span class="detail-value">
+                                        <button @click="viewReceipt(selectedRequest)" class="receipt-view-btn">View/Download Receipt</button>
+                                    </span>
+                                </div>
+                            </div>
+
+                            <!-- Change Payment Method Button for Cash/Onsite payments -->
+                            <div v-if="canChangePaymentMethod(selectedRequest)" class="change-payment-method-section">
+                                <button @click="showPaymentGateway(selectedRequest)" class="change-payment-method-btn">
+                                    Change Payment Method
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- If no payment: prompt to pay -->
+                        <div v-else class="no-payment-card">
+                            <p>No payment record found. You can <strong>Pay Online</strong> or <strong>Pay Onsite</strong> above.</p>
+                        </div>
+                    </div>
+
+                    <!-- Admin Feedback/Comment Section for Approved Requests -->
+                    <div v-if="selectedRequest?.admin_feedback || selectedRequest?.raw?.admin_feedback" class="feedback-section">
+                        <h4 class="section-title-feedback">
+                            <span class="icon">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" style="width: 20px; height: 20px; display: inline-block; vertical-align: middle;">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M8.625 12a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H8.25m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H12m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 0 1-2.555-.337A5.972 5.972 0 0 1 5.41 20.97a5.969 5.969 0 0 1-.474-.065 4.48 4.48 0 0 0 .978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25Z" />
+                                </svg>
+                            </span> Approver Comment
+                        </h4>
+                        <div class="feedback-box">
+                            <p>{{ selectedRequest?.admin_feedback ?? selectedRequest?.raw?.admin_feedback }}</p>
+                        </div>
+                    </div>
+
+                    <p class="present-message">
+                        <strong>Present this request number upon pickup:</strong><br/>
+                        <span class="highlight-number">#{{ selectedRequest?.requestNumber }}</span>
+                    </p>
+                </div>
+
+                <!-- PENDING Status -->
+                <div v-if="selectedRequest?.status === 'PENDING'" class="pending-section">
+                    <p class="details-message">
+                        Your request is currently being reviewed by the barangay officials. You will be notified once a decision has been made.
+                    </p>
+                    
+                    <div class="request-info-box">
+                        <div class="info-item">
+                            <span class="info-label">SUBMITTED ON:</span>
+                            <span class="info-value">{{ selectedRequest?.date }}, {{ selectedRequest?.time }}</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">REQUEST TYPE:</span>
+                            <span class="info-value">{{ selectedRequest?.title }}</span>
+                        </div>
+                        <div class="info-item" v-if="selectedRequest?.type === 'document'">
+                            <span class="info-label">ESTIMATED AMOUNT:</span>
+                            <span class="info-value">₱{{ (selectedRequest?.amount ?? selectedRequest?.processing_fee) || '0.00' }}</span>
+                        </div>
+                    </div>
+                    
+                    <p class="note-message">
+                        <strong>Note:</strong> Processing time typically takes 3-5 business days. Thank you for your patience.
+                    </p>
+                </div>
+
+                <!-- REJECTED Status -->
+                <div v-if="selectedRequest?.status === 'REJECTED'" class="rejected-section">
+                    <p class="details-message">
+                        Unfortunately, your request has been rejected. Please review the reason below and contact the barangay office if you have questions.
+                    </p>
+                    
+                    <div class="rejection-box">
+                        <h4>Reason for Rejection:</h4>
+                        <p>{{ getRejectionReason(selectedRequest) }}</p>
+                    </div>
+                    
+                    <div class="request-info-box">
+                        <div class="info-item">
+                            <span class="info-label">SUBMITTED ON:</span>
+                            <span class="info-value">{{ selectedRequest?.date }}, {{ selectedRequest?.time }}</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">REQUEST TYPE:</span>
+                            <span class="info-value">{{ selectedRequest?.title }}</span>
+                        </div>
+                    </div>
+                    
+                    <p class="note-message">
+                        You may submit a new request with the correct information or contact Ms. Mercy Alpaño at the barangay hall for assistance.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Payment Gateway Modal -->
+    <div v-if="showPaymentModal" class="modal-overlay" @click="closePaymentModal">
+        <div class="modal-content payment-modal" @click.stop>
+            <button class="close-modal-btn" @click="closePaymentModal">✕</button>
+            <h3 class="modal-title">Choose Payment Gateway</h3>
+            <p class="modal-subtitle">Select your preferred payment method</p>
+            
+            <div class="payment-options">
+                <button class="payment-option-btn gcash" @click="openQR('GCash')">
+                    <div class="payment-logo-placeholder">
+                        <img src="/assets/GCASH.png" alt="GCash" class="payment-logo" />
+                    </div>
+                    <span>GCash</span>
+                </button>
+                
+                <button class="payment-option-btn maya" @click="openQR('Maya')">
+                    <div class="payment-logo-placeholder">
+                        <img src="/assets/MAYA.png" alt="Maya" class="payment-logo" />
+                    </div>
+                    <span>Maya</span>
+                </button>
+            </div>
+
+            <div class="payment-details">
+                <p><strong>Request:</strong> {{ selectedRequest?.title }}</p>
+                <p><strong>Amount:</strong> ₱{{ (selectedRequest?.amount ?? selectedRequest?.processing_fee) || '0.00' }}</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- QR Modal -->
+    <div v-if="showQRModal" class="modal-overlay" @click="closeQRModal">
+        <div class="modal-content qr-modal" @click.stop>
+            <button class="close-modal-btn" @click="closeQRModal">✕</button>
+
+            <h3 class="modal-title">Pay via QR - {{ selectedGateway }}</h3>
+            <div v-if="paymentSuccess" class="payment-success-banner">
+                <p><strong>Payment is successful ✅</strong></p>
+            </div>
+
+            <p class="modal-subtitle">Scan the QR code below to pay online</p>
+            <p class="modal-subtitle">Click <strong>Upload Payment Screenshot</strong> to complete your payment.</p>
+
+            <div class="qr-preview">
+                <img v-if="selectedGateway === 'GCash'" src="/assets/GQR.png" alt="GCash QR" class="qr-image" />
+                <img v-else-if="selectedGateway === 'Maya'" src="/assets/MQR.png" alt="Maya QR" class="qr-image" />
+                <div v-else class="qr-placeholder">NO QR</div>
+            </div>
+
+            <div class="upload-section">
+                <button class="upload-btn-payment" @click="triggerPaymentUpload">
+                    UPLOAD
+                </button>
+                <input 
+                    type="file" 
+                    ref="paymentFileInput"
+                    accept="image/*" 
+                    @change="onFileChange" 
+                    style="display: none"
+                />
+
+                <div v-if="uploadedFile" class="uploaded-file-info-compact" style="margin-top: 10px;">
+                    <span class="file-checkmark">✓</span>
+                    <span class="file-name-compact">{{ uploadedFile?.name }}</span>
+                    <button 
+                        type="button"
+                        class="remove-file-btn-small" 
+                        @click="clearEvidence"
+                        :disabled="uploading"
+                    >
+                        ✕
+                    </button>
+                </div>
+
+                <div v-if="uploadedFile" class="evidence-form">
+                    <div class="input-and-actions">
+                        <input
+                            type="text"
+                            v-model="referenceId"
+                            placeholder="Enter Transaction Reference ID"
+                            class="reference-input"
+                        />
+
+                        <div class="evidence-actions">
+                            <button
+                                class="submit-evidence-btn"
+                                :disabled="uploading"
+                                @click="submitEvidence"
+                            >
+                                {{ uploading ? 'Uploading...' : 'Submit' }}
+                            </button>
+
+                            <button 
+                                class="clear-evidence-btn" 
+                                @click="clearEvidence" 
+                                :disabled="uploading"
+                            >
+                                Clear
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <p class="note-message small">After submission, your payment will be reviewed by the Barangay Treasurer.</p>
+        </div>
+    </div>
+
+    <!-- Receipt Modal -->
+    <div v-if="showReceiptModal" class="modal-overlay" @click="closeReceiptModal">
+        <div class="receipt-modal-container" @click.stop>
+            <button @click="closeReceiptModal" class="modal-close">✕</button>
+            
+            <div class="receipt-modal-content">
+                <h3 class="receipt-title">Digital Receipt</h3>
+                
+                <div class="receipt-details-box">
+                    <div class="receipt-row">
+                        <span class="receipt-label">Request No:</span>
+                        <span class="receipt-value">{{ selectedReceipt?.requestNumber || 'N/A' }}</span>
+                    </div>
+                    <div class="receipt-row">
+                        <span class="receipt-label">Document:</span>
+                        <span class="receipt-value">{{ selectedReceipt?.title || 'N/A' }}</span>
+                    </div>
+                    <div class="receipt-row">
+                        <span class="receipt-label">Date:</span>
+                        <span class="receipt-value">{{ selectedReceipt?.date || 'N/A' }}</span>
+                    </div>
+                    <div class="receipt-row">
+                        <span class="receipt-label">Payer:</span>
+                        <span class="receipt-value">{{ user?.name || 'N/A' }}</span>
+                    </div>
+                    <div class="receipt-row">
+                        <span class="receipt-label">Amount Paid:</span>
+                        <span class="receipt-value amount">₱{{ (selectedReceipt?.payment?.amount ?? selectedReceipt?.amount)?.toFixed(2) || '0.00' }}</span>
+                    </div>
+                    <div class="receipt-row" v-if="selectedReceipt?.payment?.transaction_ref">
+                        <span class="receipt-label">Transaction ID:</span>
+                        <span class="receipt-value">{{ selectedReceipt.payment.transaction_ref }}</span>
+                    </div>
+                    <div class="receipt-row">
+                        <span class="receipt-label">Status:</span>
+                        <span class="receipt-value" :style="{ color: (selectedReceipt?.payment?.status?.toUpperCase() === 'APPROVED' || selectedReceipt?.payment?.status?.toUpperCase() === 'PAID') ? '#239640' : '#dc3545' }">
+                            {{ formatPaymentStatus(selectedReceipt?.payment?.status) || 'N/A' }}
+                        </span>
+                    </div>
+                </div>
+
+                <div class="receipt-image-container" v-if="selectedReceipt?.payment?.receipt_image || selectedReceipt?.payment?.receipt_path">
+                    <p class="receipt-image-label">Proof of Payment:</p>
+                    <img :src="selectedReceipt?.payment?.receipt_image || selectedReceipt?.payment?.receipt_path" alt="Payment Receipt" class="receipt-image" @error="handleImageError" />
+                </div>
+                <div v-else class="no-receipt-container">
+                    <p class="no-receipt-message">No proof of payment available</p>
+                </div>
+
+                <div class="receipt-note">
+                    <p>Thank you for your payment. This digital receipt is proof of payment issued by Barangay.</p>
+                </div>
+
+                <div class="receipt-actions">
+                    <button class="download-receipt-btn" @click="downloadReceipt" v-if="selectedReceipt?.payment?.receipt_image || selectedReceipt?.payment?.receipt_path">
+                        Download
+                    </button>
+                    <button class="print-receipt-btn" @click="printReceipt" v-if="selectedReceipt?.payment?.receipt_image || selectedReceipt?.payment?.receipt_path">
+                        Print
+                    </button>
+                    <button class="close-receipt-btn" @click="closeReceiptModal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Payment Confirmation Modal -->
+    <div v-if="showPaymentConfirmation" class="modal-overlay" @click="closePaymentConfirmation">
+        <div class="modal-content confirmation-modal" @click.stop>
+            <button class="close-modal-btn" @click="closePaymentConfirmation">✕</button>
+            
+            <div class="confirmation-icon success-icon">
+                <div class="status-badge">
+                    <span>✓</span>
+                </div>
+            </div>
+            
+            <h3 class="modal-title">{{ isOnsitePayment ? 'Onsite Payment Recorded' : 'Payment Submitted Successfully' }}</h3>
+            
+            <div class="confirmation-content">
+                <p class="confirmation-message" v-if="!isOnsitePayment">
+                    Your payment has been successfully submitted and sent to the <strong>Barangay Treasurer</strong> for review.
+                </p>
+                <p class="confirmation-message" v-else>
+                    Your onsite payment has been recorded. Please bring the <strong>exact amount</strong> and present this request number at the barangay office.
+                </p>
+                
+                <div class="payment-summary">
+                    <div class="summary-item">
+                        <span class="summary-label">Request Number:</span>
+                        <span class="summary-value">#{{ selectedRequest?.requestNumber }}</span>
+                    </div>
+                    <div class="summary-item">
+                        <span class="summary-label">Amount:</span>
+                        <span class="summary-value">₱{{ (selectedRequest?.amount ?? selectedRequest?.processing_fee) || '0.00' }}</span>
+                    </div>
+                    <div class="summary-item" v-if="!isOnsitePayment && selectedGateway">
+                        <span class="summary-label">Payment Method:</span>
+                        <span class="summary-value">{{ selectedGateway }}</span>
+                    </div>
+                    <div class="summary-item" v-if="isOnsitePayment">
+                        <span class="summary-label">Payment Method:</span>
+                        <span class="summary-value">Onsite</span>
+                    </div>
+                    <div class="summary-item" v-if="!isOnsitePayment && referenceId && referenceId.trim()">
+                        <span class="summary-label">Transaction Reference:</span>
+                        <span class="summary-value">{{ referenceId }}</span>
+                    </div>
+                </div>
+                
+                <p class="confirmation-note" v-if="!isOnsitePayment">
+                    You will be notified once the treasurer reviews your payment. Please check your notifications for updates.
+                </p>
+                <p class="confirmation-note" v-else>
+                    <strong>Important:</strong> Remember to bring the exact amount (₱{{ (selectedRequest?.amount ?? selectedRequest?.processing_fee) || '0.00' }}) and present request number <strong>#{{ selectedRequest?.requestNumber }}</strong> when you visit the barangay office.
+                </p>
+            </div>
+            
+            <button class="confirmation-btn" @click="closePaymentConfirmation">
+                Got it
+            </button>
+        </div>
+    </div>
+
+    <!-- Terms & Conditions Modal -->
+    <TermsModal :open="showTerms" @close="closeTerms" />
 </template>
 
 <script setup>
 import { Link, usePage } from '@inertiajs/vue3'
 import { Head, useForm } from '@inertiajs/vue3'
-import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { router } from '@inertiajs/vue3'
+import TermsModal from '@/Components/TermsModal.vue'
 
 // Inertia-shared auth user
 const page = usePage()
@@ -505,11 +1121,135 @@ const displayRole = computed(() => {
 
 const showSettings = ref(false)
 const activeTab = ref('documents')
-const currentView = ref('selection')
+const currentView = ref('list') // Default to 'list' view to show submitted requests
 const selectedDocType = ref('Barangay Certificate')
+const selectedPermitType = ref(null) // Store selected permit type (Building Permit or Business Permit)
 const requestNumber = ref('')
 const isSubmitting = ref(false)
 const purposeOthers = ref('') // For custom purpose input when "Others" is selected
+
+// Filter state
+const showSortDropdown = ref(false)
+const showStatusDropdown = ref(false)
+const sortOption = ref('newest')
+const statusFilter = ref('all')
+const searchQuery = ref('')
+
+// Request details modal state
+const showDetailsModal = ref(false)
+const selectedRequest = ref(null)
+
+// Payment modal state
+const showPaymentModal = ref(false)
+const showQRModal = ref(false)
+const selectedGateway = ref(null) // 'GCash' or 'Maya'
+const scanning = ref(false)
+const uploadedFile = ref(null)
+const uploadedPreview = ref(null)
+const referenceId = ref('')
+const uploading = ref(false)
+const paymentFileInput = ref(null)
+const paymentSuccess = ref(false)
+const paymentError = ref('')
+const showPaymentConfirmation = ref(false)
+const isOnsitePayment = ref(false)
+const showReceiptModal = ref(false)
+const selectedReceipt = ref(null)
+
+// Get props from Inertia page
+const documentRequestsRaw = computed(() => {
+  return page?.props?.value?.documentRequests ?? page?.props?.documentRequests ?? page?.props?.value?.document_requests ?? page?.props?.document_requests ?? []
+})
+
+const paymentsRaw = computed(() => {
+  return page?.props?.value?.payments ?? page?.props?.payments ?? []
+})
+
+// Map payments by doc_request_id
+const paymentsMap = computed(() => {
+  const map = {}
+  const items = Array.isArray(paymentsRaw.value) ? paymentsRaw.value : []
+  for (const p of items) {
+    const fk = p.fk_doc_request_id ?? null
+    if (!fk) continue
+    if (!map[fk]) {
+      map[fk] = {
+        payment_id: p.payment_id ?? null,
+        fk_doc_request_id: fk,
+        status: (p.status ?? 'PENDING').toString().toUpperCase(),
+        amount: p.amount ?? p.paid_amount ?? null,
+        transaction_ref: p.transaction_ref ?? null,
+        receipt_path: p.receipt_path ?? p.receipt_image ?? null,
+        receipt_image: p.receipt_image ?? p.receipt_path ?? null,
+        paid_at: p.paid_at ?? null,
+        raw: p,
+      }
+    }
+  }
+  return map
+})
+
+// Map document requests into normalized shape
+const mappedDocumentRequests = computed(() => {
+  const server = documentRequestsRaw.value || []
+  if (server.length === 0) return []
+
+  return (Array.isArray(server) ? server : []).map((r) => {
+    const createdAt = r.created_at
+    let timestamp = null
+    
+    if (createdAt) {
+      try { 
+        timestamp = new Date(createdAt)
+        if (isNaN(timestamp.getTime())) timestamp = null
+      } catch (e) { 
+        timestamp = null 
+      }
+    }
+
+    let dateStr = ''
+    let timeStr = ''
+    if (timestamp && !isNaN(timestamp.getTime())) {
+      try {
+        dateStr = new Intl.DateTimeFormat('en-US', { year: 'numeric', month: 'short', day: 'numeric' }).format(timestamp)
+        timeStr = new Intl.DateTimeFormat('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }).format(timestamp)
+      } catch (e) {
+        dateStr = timestamp.toLocaleDateString()
+        timeStr = timestamp.toLocaleTimeString()
+      }
+    } else {
+      dateStr = 'N/A'
+      timeStr = 'N/A'
+    }
+
+    const status = (r.status ?? 'PENDING').toString().toUpperCase()
+    const title = r.document_name ?? 'Document Request'
+    const requestNumber = r.doc_request_ticket ?? `DOC-${r.doc_request_id}`
+    
+    // Attach payment if exists - use doc_request_id as key
+    const payment = paymentsMap.value[r.doc_request_id] ?? null
+
+    return {
+      id: r.doc_request_id,
+      requestNumber,
+      title,
+      status,
+      date: dateStr,
+      time: timeStr,
+      type: 'document',
+      amount: r.processing_fee ?? r.applied_processing_fee ?? null,
+      processing_fee: r.processing_fee ?? r.applied_processing_fee ?? null,
+      pickup_item: r.pickup_item ?? null,
+      pickup_location: r.pickup_location ?? null,
+      pickup_start: r.pickup_start ?? null,
+      pickup_end: r.pickup_end ?? null,
+      person_to_look: r.person_to_look ?? null,
+      admin_feedback: r.admin_feedback ?? null,
+      payment,
+      raw: r,
+    }
+  })
+})
 
 // Purpose options for each document type
 const documentPurposes = {
@@ -519,14 +1259,6 @@ const documentPurposes = {
     'Government Transaction',
     'Business Registration',
     'Bank Transaction',
-    'Others'
-  ],
-  'Barangay Clearance': [
-    'Employment',
-    'Business Permit',
-    'Travel Requirements',
-    'School Admission',
-    'Government Transaction',
     'Others'
   ],
   'Barangay ID': [
@@ -545,22 +1277,6 @@ const documentPurposes = {
     'Legal Documentation',
     'Others'
   ],
-  'Business Permit': [
-    'New Business Registration',
-    'Business Renewal',
-    'Business Expansion',
-    'Change of Business Name',
-    'Change of Business Location',
-    'Others'
-  ],
-  'Building Permit': [
-    'New Construction',
-    'Building Renovation',
-    'Building Addition',
-    'Structural Repair',
-    'Building Demolition',
-    'Others'
-  ],
   'Certificate of Indigency': [
     'Medical Assistance',
     'Educational Scholarship',
@@ -569,12 +1285,13 @@ const documentPurposes = {
     'Housing Assistance',
     'Others'
   ],
-  'Certificate of Good Moral': [
-    'Employment',
-    'School Admission',
-    'Professional License',
-    'Government Service',
-    'Legal Documentation',
+  'Permit': [
+    'New Business Registration',
+    'Business Renewal',
+    'Business Expansion',
+    'New Construction',
+    'Building Renovation',
+    'Building Addition',
     'Others'
   ]
 }
@@ -632,6 +1349,26 @@ watch(selectedDocType, (val) => {
   // Clear purpose and custom purpose when switching documents
   form.purpose = ''
   purposeOthers.value = ''
+  // Clear permit_type when switching away from Permit
+  if (val !== 'Permit') {
+    selectedPermitType.value = null
+    if (form.extra_fields?.permit_type) {
+      form.extra_fields.permit_type = null
+    }
+  }
+})
+
+// Watch selectedPermitType to update form fields
+watch(selectedPermitType, (newVal) => {
+  if (selectedDocType.value === 'Permit' && newVal) {
+    // Set permit_type in extra_fields
+    if (!form.extra_fields) {
+      form.extra_fields = {}
+    }
+    form.extra_fields.permit_type = newVal
+    // Reinitialize fields with the selected permit type
+    initExtraFieldsForDocument(selectedDocType.value)
+  }
 })
 
 // when id_type changes, clear id_number (so user can re-enter)
@@ -657,25 +1394,31 @@ const idNumberLabel = computed(() => {
   return idNumberLabels[form.id_type] || 'ID Number'
 })
 
+// Display document type - show actual permit type if Permit is selected
+const displayDocumentType = computed(() => {
+  if (selectedDocType.value === 'Permit' && selectedPermitType.value) {
+    return selectedPermitType.value
+  }
+  if (selectedDocType.value === 'Permit' && form.extra_fields?.permit_type) {
+    return form.extra_fields.permit_type
+  }
+  return selectedDocType.value
+})
+
 // helper date
 const today = new Date().toISOString().split('T')[0]
 
-// Document lists and descriptions (unchanged)
+// Document lists and descriptions
 const documentNames = [
     'Barangay Certificate',
-    'Barangay Clearance',
     'Barangay ID',
     'Cedula',
-    'Business Permit',
-    'Building Permit',
     'Certificate of Indigency',
-    'Certificate of Good Moral',
+    'Permit',
 ]
 
 const documentDescriptions = {
     'Barangay Certificate': 'Ang Barangay Certificate ay isang opisyal na dokumentong ibinibigay ng barangay upang patunayan na ang isang tao ay lehitimong residente ng nasabing lugar. Karaniwan itong kinakailangan sa iba\'t ibang transaksyong legal at administratibo gaya ng pag-apply ng trabaho, pag-enroll sa paaralan, pagkuha ng tulong mula sa gobyerno, at pagproseso ng mga permit o lisensya.',
-    
-    'Barangay Clearance': 'Ang Barangay Clearance ay sertipikasyon na nagpapatunay na ang isang residente ay walang pending case o anumang kaso sa loob ng barangay. Ito ay kailangan para sa employment, business permits, at iba pang legal transactions. Nagpapakita rin ito ng mabuting asal ng isang tao sa komunidad.',
     
     'Barangay ID': 'Ang Barangay ID ay isang opisyal na identification card na ibinibigay ng barangay sa mga lehitimong residente. Ito ay ginagamit bilang proof of residency at maaaring gamitin sa iba\'t ibang transaksyon sa loob at labas ng barangay. May kasamang larawan at personal na impormasyon ng may-ari.',
     
@@ -683,11 +1426,13 @@ const documentDescriptions = {
         
     'Certificate of Indigency': 'Ang Certificate of Indigency ay sertipikasyon na nagpapatunay na ang isang pamilya o indibidwal ay walang sapat na kita at nangangailangan ng tulong. Ito ay ginagamit upang makakuha ng medical assistance, educational scholarships, at iba pang social services mula sa gobyerno at pribadong organisasyon.',
     
-    'Business Permit': 'Ang Barangay Business Permit ay kinakailangan para sa lahat ng negosyo na nais magsimula ng operasyon sa loob ng barangay. Ito ay nagpapatunay na ang negosyo ay sumusunod sa mga regulasyon ng barangay at hindi nakakasagabal sa kapakanan ng mga residente.',
-    
+    'Permit': 'Ang Permit ay maaaring maging Barangay Business Permit o Barangay Building Permit. Piliin ang uri ng permit na nais mong i-request.',
+}
+
+// Permit type descriptions
+const permitTypeDescriptions = {
     'Building Permit': 'Ang Barangay Building Permit ay kinakailangan bago magsimula ng anumang konstruksyon o renovation sa loob ng barangay. Ito ay bahagi ng proseso ng pagkuha ng building permit mula sa munisipyo at nagsisiguro na ang plano ay sumusunod sa zoning at safety regulations.',
-    
-    'Certificate of Good Moral': 'Ang Certificate of Good Moral ay sertipikasyon na nagpapatunay na ang isang residente ay may mabuting asal at walang record ng maling gawa sa loob ng barangay. Ito ay kailangan para sa employment, school admission, at iba pang professional requirements.',
+    'Business Permit': 'Ang Barangay Business Permit ay kinakailangan para sa lahat ng negosyo na nais magsimula ng operasyon sa loob ng barangay. Ito ay nagpapatunay na ang negosyo ay sumusunod sa mga regulasyon ng barangay at hindi nakakasagabal sa kapakanan ng mga residente.',
 }
 
 const documentRequirements = {
@@ -696,13 +1441,6 @@ const documentRequirements = {
         '• Supporting documents for residency verification',
         '• Personal appearance',
         '• Processing fee',
-    ],
-    'Barangay Clearance': [
-        '• Valid ID of the requestor',
-        '• 2x2 photo (2 copies)',
-        '• Supporting documents for residency verification',
-        '• Processing fee',
-        '• Cedula',
     ],
     'Barangay ID': [
         '• Valid ID of the requestor',
@@ -727,45 +1465,19 @@ const documentRequirements = {
         '• Personal appearance',
         '• Processing fee',
     ],
-    'Business Permit': [
+    'Permit': [
         '• Valid ID of the requestor (owner)',
-        '• Business registration documents',
-        '• Supporting documents for residency verification',
-        '• Lease Contract (if renting)',
-        '• Barangay Clearance',
-        '• DTI Registration',
-        '• Location Plan',
-        '• Processing fee',
-        '• Personal appearance',
-    ],
-    'Building Permit': [
-        '• Valid ID of the requestor (owner)',
-        '• Building plans (3 copies)',
-        '• Lot title or tax declaration',
         '• Supporting documents for residency verification',
         '• Barangay Clearance',
-        '• Engineer/s Certification',
         '• Processing fee',
         '• Personal appearance',
-    ],
-    'Certificate of Good Moral': [
-        '• Valid ID of the requestor',
-        '• Supporting documents for residency verification',
-        '• Processing fee',
-        '• Personal appearance',
+        '• Additional requirements depend on permit type (Building/Business)',
     ],
 }
 
 const documentFields = {
   'Barangay Certificate': [
     { name: 'duration_of_residency', label: 'Duration of Residency (years)', type: 'number', required: false, placeholder: 'Enter number of years', min: 0, step: 1 }
-  ],
-
-  'Barangay Clearance': [
-    { name: 'clearance_for', label: 'Clearance Type', type: 'select', required: true, placeholder: 'Select clearance purpose', options: ['Employment', 'Business', 'Travel', 'School Admission', 'Government Transaction', 'Other'] },
-    { name: '2x2_photo', label: '2x2 Photo (2 copies)', type: 'file', required: true, accept: 'image/*', description: 'Upload 2x2 ID picture (2 copies)' },
-    { name: 'supporting_documents', label: 'Supporting Documents for Residency', type: 'file', required: true, accept: '.pdf,image/*', description: 'Upload proof of residency documents' },
-    { name: 'cedula', label: 'Cedula (if applicable)', type: 'file', required: false, accept: '.pdf,image/*', description: 'Upload your Cedula document' }
   ],
 
   'Barangay ID': [
@@ -776,6 +1488,13 @@ const documentFields = {
 
   'Cedula': [
     { name: 'income_source', label: 'Income Source', type: 'select', required: false, placeholder: 'Select income source', options: ['Employment', 'Business', 'Pension', 'Remittance', 'Other'] },
+    { name: 'annual_income', label: 'Annual Income/Salary (PHP)', type: 'number', required: false, placeholder: 'Enter annual income or salary', min: 0, step: 0.01, description: 'Your annual income or salary from employment/profession (for tax calculation)' },
+    { name: 'business_gross_receipts', label: 'Business Gross Receipts (PHP)', type: 'number', required: false, placeholder: 'Enter business gross receipts', min: 0, step: 0.01, description: 'If you have a business, enter gross receipts from preceding year (optional)' },
+    { name: 'real_property_income', label: 'Real Property Income (PHP)', type: 'number', required: false, placeholder: 'Enter income from real property', min: 0, step: 0.01, description: 'Income from real property if applicable (optional)' },
+    { name: 'occupation', label: 'Occupation/Profession', type: 'text', required: false, placeholder: 'Enter your occupation or profession', description: 'Your current job or profession' },
+    { name: 'tin', label: 'Tax Identification Number (TIN)', type: 'text', required: false, placeholder: 'Enter TIN if available', description: 'Your TIN if you have one (optional)' },
+    { name: 'height', label: 'Height (cm)', type: 'number', required: false, placeholder: 'Enter height in centimeters', min: 0, step: 0.1, description: 'Your height (optional)' },
+    { name: 'weight', label: 'Weight (kg)', type: 'number', required: false, placeholder: 'Enter weight in kilograms', min: 0, step: 0.1, description: 'Your weight (optional)' },
     { name: 'tax_declaration', label: 'Tax Declaration (if applicable)', type: 'file', required: false, accept: '.pdf,image/*', description: 'Upload tax declaration document' },
     { name: 'supporting_documents', label: 'Supporting Documents for Residency', type: 'file', required: true, accept: '.pdf,image/*', description: 'Upload proof of residency documents' },
     { name: 'income_statement', label: 'Income Statement (if employed)', type: 'file', required: false, accept: '.pdf,image/*', description: 'Upload income statement or payslip if employed' }
@@ -787,36 +1506,50 @@ const documentFields = {
     { name: 'proof_of_residency', label: 'Proof of Residency', type: 'file', required: true, accept: '.pdf,image/*', description: 'Upload utility bills, lease contract, or other proof of residency' }
   ],
 
-  'Business Permit': [
-    { name: 'business_name', label: 'Business Name', type: 'text', required: true, placeholder: 'Enter your business name' },
-    { name: 'business_type', label: 'Business Type', type: 'select', required: true, placeholder: 'Select business type', options: ['Retail', 'Wholesale', 'Service', 'Manufacturing', 'Food & Beverage', 'Other'] },
-    { name: 'dtI_sec_number', label: 'DTI/SEC Registration Number', type: 'text', required: false, placeholder: 'Enter DTI/SEC registration number' },
-    { name: 'business_registration', label: 'Business Registration Documents', type: 'file', required: true, accept: '.pdf,image/*', description: 'Upload business registration documents' },
+  'Permit': [
+    // Common fields for both permit types
+    // Note: permit_type is selected in the document selection view, not in the form
     { name: 'supporting_documents', label: 'Supporting Documents for Residency', type: 'file', required: true, accept: '.pdf,image/*', description: 'Upload proof of residency documents' },
-    { name: 'lease_contract', label: 'Lease Contract (if renting)', type: 'file', required: false, accept: '.pdf,image/*', description: 'Upload lease contract if business location is rented' },
     { name: 'barangay_clearance', label: 'Barangay Clearance', type: 'file', required: true, accept: '.pdf,image/*', description: 'Upload Barangay Clearance document' },
-    { name: 'dti_registration', label: 'DTI Registration Document', type: 'file', required: true, accept: '.pdf,image/*', description: 'Upload DTI registration certificate' },
-    { name: 'location_plan', label: 'Location Plan', type: 'file', required: true, accept: '.pdf,image/*', description: 'Upload location plan or site map of business' }
-  ],
-
-  'Building Permit': [
-    { name: 'building_type', label: 'Building Type', type: 'select', required: true, placeholder: 'Select building type', options: ['Residential', 'Commercial', 'Mixed Use', 'Industrial', 'Institutional', 'Other'] },
-    { name: 'building_plans', label: 'Building Plans (3 copies)', type: 'file', required: true, accept: '.pdf,image/*', description: 'Upload building plans (3 copies)' },
-    { name: 'engineer_cert', label: 'Engineer\'s Certification', type: 'file', required: true, accept: '.pdf,image/*', description: 'Upload engineer\'s certification document' },
-    { name: 'lot_title', label: 'Lot Title or Tax Declaration', type: 'file', required: true, accept: '.pdf,image/*', description: 'Upload lot title or tax declaration' },
-    { name: 'supporting_documents', label: 'Supporting Documents for Residency', type: 'file', required: true, accept: '.pdf,image/*', description: 'Upload proof of residency documents' },
-    { name: 'barangay_clearance', label: 'Barangay Clearance', type: 'file', required: true, accept: '.pdf,image/*', description: 'Upload Barangay Clearance document' }
-  ],
-  
-  'Certificate of Good Moral': [
-    { name: 'photo', label: '2x2 Photo (2 copies)', type: 'file', required: false, accept: 'image/*', description: 'Upload 2x2 ID picture (2 copies)' },
-    { name: 'supporting_documents', label: 'Supporting Documents for Residency', type: 'file', required: true, accept: '.pdf,image/*', description: 'Upload proof of residency documents' }
   ],
 }
 
+// Separate fields for Building and Business permits
+const buildingPermitFields = [
+  { name: 'building_type', label: 'Building Type', type: 'select', required: true, placeholder: 'Select building type', options: ['Residential', 'Commercial', 'Mixed Use', 'Industrial', 'Institutional', 'Other'] },
+  { name: 'building_reg_number', label: 'Building Registration Number', type: 'text', required: false, placeholder: 'Enter building registration number (if available)' },
+  { name: 'building_plans', label: 'Building Plans (3 copies)', type: 'file', required: true, accept: '.pdf,image/*', description: 'Upload building plans (3 copies)' },
+  { name: 'engineer_cert', label: 'Engineer\'s Certification', type: 'file', required: true, accept: '.pdf,image/*', description: 'Upload engineer\'s certification document' },
+  { name: 'lot_title', label: 'Lot Title or Tax Declaration', type: 'file', required: true, accept: '.pdf,image/*', description: 'Upload lot title or tax declaration' },
+]
+
+const businessPermitFields = [
+  { name: 'business_name', label: 'Business Name', type: 'text', required: true, placeholder: 'Enter your business name' },
+  { name: 'business_type', label: 'Business Type', type: 'select', required: true, placeholder: 'Select business type', options: ['Retail', 'Wholesale', 'Service', 'Manufacturing', 'Food & Beverage', 'Other'] },
+  { name: 'dtI_sec_number', label: 'DTI/SEC Registration Number', type: 'text', required: false, placeholder: 'Enter DTI/SEC registration number' },
+  { name: 'business_registration', label: 'Business Registration Documents', type: 'file', required: true, accept: '.pdf,image/*', description: 'Upload business registration documents' },
+  { name: 'lease_contract', label: 'Lease Contract (if renting)', type: 'file', required: false, accept: '.pdf,image/*', description: 'Upload lease contract if business location is rented' },
+  { name: 'dti_registration', label: 'DTI Registration Document', type: 'file', required: true, accept: '.pdf,image/*', description: 'Upload DTI registration certificate' },
+  { name: 'location_plan', label: 'Location Plan', type: 'file', required: true, accept: '.pdf,image/*', description: 'Upload location plan or site map of business' },
+]
+
 // computed array for current selected doc fields
 const currentDocumentFields = computed(() => {
-  return documentFields[selectedDocType.value] ?? []
+  const baseFields = documentFields[selectedDocType.value] ?? []
+  
+  // If Permit is selected, add fields based on permit_type
+  if (selectedDocType.value === 'Permit') {
+    const permitType = selectedPermitType.value || form.extra_fields?.permit_type
+    if (permitType === 'Building Permit') {
+      return [...baseFields, ...buildingPermitFields]
+    } else if (permitType === 'Business Permit') {
+      return [...baseFields, ...businessPermitFields]
+    }
+    // If no permit type selected yet, return only base fields (permit_type selector)
+    return baseFields
+  }
+  
+  return baseFields
 })
 
 // initialize extra_fields when document is chosen to make sure keys exist
@@ -825,7 +1558,18 @@ const initExtraFieldsForDocument = (docName) => {
   // ensure form.extra_fields exists
   form.extra_fields = form.extra_fields || {}
 
-  defs.forEach((f) => {
+  // For Permit documents, also include permit-specific fields
+  let allDefs = [...defs]
+  if (docName === 'Permit') {
+    const permitType = selectedPermitType.value || form.extra_fields?.permit_type
+    if (permitType === 'Building Permit') {
+      allDefs = [...defs, ...buildingPermitFields]
+    } else if (permitType === 'Business Permit') {
+      allDefs = [...defs, ...businessPermitFields]
+    }
+  }
+
+  allDefs.forEach((f) => {
     // only initialize if not present
     if (form.extra_fields[f.name] === undefined) {
       if (f.type === 'checkbox') form.extra_fields[f.name] = []
@@ -945,19 +1689,104 @@ const refsSafe = () => {
 // other UI navigation & settings (unchanged)
 const toggleSettings = () => { showSettings.value = !showSettings.value }
 const closeSettings = () => { showSettings.value = false }
-const logout = () => { showSettings.value = false; router.visit(route('login')) }
+
+// Terms & Conditions modal
+const showTerms = ref(false)
+const openTerms = () => {
+    showSettings.value = false
+    showTerms.value = true
+}
+const closeTerms = () => {
+    showTerms.value = false
+}
+const logout = () => {
+    showSettings.value = false
+    // Properly logout by calling the logout endpoint
+    router.post('/logout', {}, {
+        onSuccess: () => {
+            // Clear any local storage or session storage if needed
+            if (typeof window !== 'undefined') {
+                localStorage.clear()
+                sessionStorage.clear()
+            }
+            // Redirect to login page after successful logout
+            router.visit(route('login'), {
+                replace: true,
+                preserveState: false,
+                preserveScroll: false
+            })
+        },
+        onError: () => {
+            // Even if logout fails, redirect to login
+            router.visit(route('login'), {
+                replace: true,
+                preserveState: false,
+                preserveScroll: false
+            })
+        },
+        onFinish: () => {
+            // Ensure we redirect even if something goes wrong
+            router.visit(route('login'), {
+                replace: true,
+                preserveState: false,
+                preserveScroll: false
+            })
+        }
+    })
+}
 const setActiveTab = (tab) => { activeTab.value = tab }
 const navigateToPosts = () => { activeTab.value = 'posts'; router.visit(route('announcement_resident')) }
 const navigateToEvents = () => { activeTab.value = 'events'; router.visit(route('event_assistance_resident')) }
 const navigateToProfile = () => { activeTab.value = 'profile'; router.visit(route('profile_resident')) }
-const navigateToNotifications = () => { activeTab.value = 'notifications'; router.visit(route('notification_request_resident')) }
+const navigateToNotifications = () => { activeTab.value = 'notifications'; router.visit(route('notification_activities_resident')) }
 const openFAQ = () => { router.visit(route('help_center_resident')) }
+
+// Show request form (switch to selection view)
+const showRequestForm = () => {
+  currentView.value = 'selection'
+}
+
+// View request details (open modal - same as notification page)
+const viewRequestDetails = (request) => {
+  selectedRequest.value = request
+  showDetailsModal.value = true
+}
+
+// Close details modal
+const closeDetailsModal = () => {
+  showDetailsModal.value = false
+  selectedRequest.value = null
+}
 
 const selectDocument = (docType) => {
   selectedDocType.value = docType
 }
 
+const selectPermitType = (permitType) => {
+  selectedPermitType.value = permitType
+  // Set permit_type in extra_fields immediately
+  if (!form.extra_fields) {
+    form.extra_fields = {}
+  }
+  form.extra_fields.permit_type = permitType
+  // Reinitialize fields to include permit-specific fields
+  initExtraFieldsForDocument(selectedDocType.value)
+}
+
 const proceedToForm = () => {
+  // If Permit is selected, ensure permit type is chosen
+  if (selectedDocType.value === 'Permit' && !selectedPermitType.value) {
+    return // Don't proceed if permit type not selected
+  }
+  
+  // Set permit_type in extra_fields if Permit is selected
+  if (selectedDocType.value === 'Permit' && selectedPermitType.value) {
+    if (!form.extra_fields) {
+      form.extra_fields = {}
+    }
+    form.extra_fields.permit_type = selectedPermitType.value
+  }
+  
   initExtraFieldsForDocument(selectedDocType.value)
   currentView.value = 'form'
 }
@@ -967,6 +1796,624 @@ const backToSelection = () => {
   // Clear purpose fields when going back
   form.purpose = ''
   purposeOthers.value = ''
+  // Don't clear selectedPermitType - keep it so user doesn't have to reselect
+}
+
+// Go back to list view from form
+const backToList = () => {
+  currentView.value = 'list'
+  form.purpose = ''
+  purposeOthers.value = ''
+}
+
+// Payment-related functions
+const showPaymentGateway = (request) => {
+  selectedRequest.value = request
+  showDetailsModal.value = false
+  showPaymentModal.value = true
+}
+
+const openQR = (gateway) => {
+  selectedGateway.value = gateway
+  showQRModal.value = true
+  showPaymentModal.value = false
+}
+
+const closeQRModal = () => {
+  showQRModal.value = false
+  selectedGateway.value = null
+  scanning.value = false
+}
+
+const closePaymentModal = () => {
+  showPaymentModal.value = false
+}
+
+const closePaymentConfirmation = () => {
+  showPaymentConfirmation.value = false
+  isOnsitePayment.value = false
+  clearEvidence()
+  router.reload({ only: ['documentRequests', 'payments'] })
+}
+
+const triggerPaymentUpload = () => {
+  if (paymentFileInput.value && typeof paymentFileInput.value.click === 'function') {
+    paymentFileInput.value.click()
+  }
+}
+
+const onFileChange = (event) => {
+  const file = (event.target && event.target.files && event.target.files[0]) || null
+  if (!file) {
+    clearEvidence()
+    return
+  }
+
+  const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp']
+  if (!allowedTypes.includes(file.type)) {
+    alert('Please upload a PNG/JPEG/WebP image.')
+    event.target.value = ''
+    return
+  }
+
+  const maxMB = 5
+  if (file.size / 1024 / 1024 > maxMB) {
+    alert(`File too large. Max ${maxMB} MB allowed.`)
+    event.target.value = ''
+    return
+  }
+
+  uploadedFile.value = file
+
+  // Create preview URL
+  if (uploadedPreview.value) {
+    try { URL.revokeObjectURL(uploadedPreview.value) } catch (e) {}
+  }
+  uploadedPreview.value = URL.createObjectURL(file)
+}
+
+const clearEvidence = () => {
+  if (uploadedPreview.value) {
+    try { URL.revokeObjectURL(uploadedPreview.value) } catch (e) {}
+  }
+  uploadedFile.value = null
+  uploadedPreview.value = null
+  referenceId.value = ''
+  uploading.value = false
+  paymentSuccess.value = false
+  paymentError.value = ''
+  if (paymentFileInput.value) {
+    paymentFileInput.value.value = ''
+  }
+}
+
+const submitEvidence = async () => {
+  if (!selectedRequest.value) {
+    alert('No selected request.')
+    return
+  }
+
+  // require either a file or a reference ID
+  if (!uploadedFile.value && (!referenceId.value || referenceId.value.trim() === '')) {
+    alert('Please upload a screenshot or enter a transaction reference ID before submitting.')
+    return
+  }
+
+  uploading.value = true
+  paymentError.value = ''
+  paymentSuccess.value = false
+
+  try {
+    const formData = new FormData()
+    formData.append('fk_doc_request_id', Number(selectedRequest.value.id || selectedRequest.value.requestNumber))
+    const userId = user.value?.id ?? user.value?.user_id ?? null
+    if (userId) {
+      formData.append('fk_user_id', Number(userId))
+    }
+    formData.append('request_reference_ticket', selectedRequest.value.requestNumber ?? '')
+    formData.append('paid_amount', Number(selectedRequest.value.amount ?? selectedRequest.value.processing_fee ?? 0))
+    formData.append('gateway', selectedGateway.value ?? '')
+    
+    if (uploadedFile.value) {
+      formData.append('receipt_content', uploadedFile.value)
+    }
+    if (referenceId.value && referenceId.value.trim()) {
+      formData.append('transaction_ref', referenceId.value.trim())
+    }
+
+    const response = await window.axios.post(route('payments.store'), formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+        'X-Requested-With': 'XMLHttpRequest',
+      },
+      withCredentials: true,
+    })
+
+    if (response.data && (response.status === 201 || response.status === 200)) {
+      paymentSuccess.value = true
+      uploading.value = false
+      
+      // Show confirmation modal
+      setTimeout(() => {
+        showQRModal.value = false
+        showPaymentConfirmation.value = true
+        clearEvidence()
+      }, 1000)
+    }
+  } catch (axiosError) {
+    uploading.value = false
+    console.error('Failed to submit payment evidence:', axiosError)
+    if (axiosError.response && axiosError.response.data) {
+      const errors = axiosError.response.data.errors || {}
+      const errorMessage = axiosError.response.data.message || 'Please try again.'
+      paymentError.value = errorMessage
+      alert('Failed to submit payment: ' + errorMessage)
+    } else {
+      paymentError.value = 'An unexpected error occurred.'
+      alert('Failed to submit payment. Please try again.')
+    }
+  }
+}
+
+const acknowledgeOnsite = async () => {
+  if (!selectedRequest.value) {
+    alert('No request selected.')
+    return
+  }
+
+  const payload = {
+    fk_doc_request_id: Number(selectedRequest.value.id ?? selectedRequest.value.requestNumber ?? 0),
+    fk_user_id: Number(user.value?.id ?? user.value?.user_id ?? 0),
+    request_reference_ticket: selectedRequest.value.requestNumber ?? '',
+    paid_amount: Number(selectedRequest.value.amount ?? selectedRequest.value.processing_fee ?? 0),
+    onsite: true,
+  }
+
+  try {
+    const response = await window.axios.post(route('payments.store'), payload, {
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Requested-With': 'XMLHttpRequest',
+      },
+      withCredentials: true,
+    })
+
+    if (response.data && response.status === 201) {
+      isOnsitePayment.value = true
+      showPaymentConfirmation.value = true
+      showDetailsModal.value = false
+      router.reload({ only: ['documentRequests', 'payments'] })
+    }
+  } catch (axiosError) {
+    console.error('Failed to create onsite payment:', axiosError)
+    if (axiosError.response && axiosError.response.data) {
+      alert('Failed to create onsite payment: ' + (axiosError.response.data.message || 'Please try again.'))
+    } else {
+      alert('Failed to create onsite payment. Please try again.')
+    }
+  }
+}
+
+const getRejectionReason = (request) => {
+  const adminFeedback = request?.admin_feedback ?? request?.raw?.admin_feedback ?? null
+  if (adminFeedback && adminFeedback.trim() !== '') {
+    return adminFeedback.trim()
+  }
+  return 'The submitted information does not meet the requirements. Please contact the barangay office for more details.'
+}
+
+const parseDate = (val) => {
+  if (!val) return null
+  if (val instanceof Date && !isNaN(val)) return val
+  try {
+    const d = new Date(val)
+    if (!isNaN(d)) return d
+  } catch (e) {}
+  return null
+}
+
+const getPickupSchedule = (request = null) => {
+  const startRaw = request?.pickup_start ?? request?.raw?.pickup_start ?? null
+  const endRaw = request?.pickup_end ?? request?.raw?.pickup_end ?? null
+
+  const startDate = parseDate(startRaw)
+  const endDate = parseDate(endRaw)
+
+  const dateOptions = { month: 'short', day: '2-digit', year: 'numeric' }
+  const timeOptions = { hour: 'numeric', minute: '2-digit' }
+
+  if (startDate) {
+    const dateStr = startDate.toLocaleDateString('en-US', dateOptions).toUpperCase()
+    const startTimeStr = startDate.toLocaleTimeString('en-US', timeOptions)
+
+    if (endDate) {
+      const sameDay = startDate.toDateString() === endDate.toDateString()
+      const endTimeStr = endDate.toLocaleTimeString('en-US', timeOptions)
+      if (sameDay) {
+        return `${dateStr}, ${startTimeStr} - ${endTimeStr}`
+      } else {
+        const endDateStr = endDate.toLocaleDateString('en-US', dateOptions).toUpperCase()
+        return `${dateStr}, ${startTimeStr} - ${endDateStr}, ${endTimeStr}`
+      }
+    } else {
+      const hasTime = !(startTimeStr === '12:00 AM' && startDate.getHours() === 0 && startDate.getMinutes() === 0)
+      if (hasTime) {
+        return `${dateStr}, ${startTimeStr}`
+      }
+      return `${dateStr}, 9:00 AM - 3:00 PM`
+    }
+  }
+
+  const today = new Date()
+  const pickupDate = new Date(today)
+  pickupDate.setDate(today.getDate() + 3)
+
+  const defaultDateStr = pickupDate.toLocaleDateString('en-US', dateOptions).toUpperCase()
+  return `${defaultDateStr}, 9:00 AM - 3:00 PM`
+}
+
+const formatPaymentStatus = (s) => {
+  if (!s) return 'UNKNOWN'
+  const v = s.toString().toUpperCase()
+  if (v === 'PENDING') return 'Payment Pending'
+  if (v === 'APPROVED' || v === 'PAID' || v === 'SUCCESS') return 'Payment Approved'
+  if (v === 'REJECTED' || v === 'FAILED') return 'Payment Rejected'
+  return v
+}
+
+const getPaymentBadge = (request) => {
+  // prefer normalized attached payment (see previous mapping in mappedDocumentRequests)
+  const p = request?.payment ?? request?.raw?.payment ?? request?.raw?.latest_payment ?? null
+
+  // If there's no payment record, return null -> show "No payment"
+  if (!p) return null
+
+  // try different possible status fields
+  const rawStatus =
+    p.status ??
+    p.payment_status ??
+    p.raw?.status ??
+    p.raw?.payment_status ??
+    null
+
+  const s = rawStatus ? String(rawStatus).toUpperCase().trim() : null
+
+  // map to three buckets
+  if (s) {
+    if (['PENDING', 'PROCESSING', 'AWAITING', 'ONHOLD', 'IN_REVIEW', 'IN-REVIEW'].includes(s)) {
+      return { label: 'Payment Pending', cls: 'pending' }
+    }
+    if (['APPROVED', 'PAID', 'SUCCESS', 'COMPLETED', 'CONFIRMED'].includes(s)) {
+      return { label: 'Payment Approved', cls: 'approved' }
+    }
+    if (['REJECTED', 'FAILED', 'CANCELLED', 'DECLINED'].includes(s)) {
+      return { label: 'Payment Rejected', cls: 'rejected' }
+    }
+  }
+
+  // If payment exists but status unknown, treat as pending to indicate action required/review
+  return { label: 'Payment Pending', cls: 'pending' }
+}
+
+// Filtered document requests
+const filteredDocumentRequests = computed(() => {
+  let filtered = [...mappedDocumentRequests.value]
+
+  // Filter by status
+  if (statusFilter.value !== 'all') {
+    filtered = filtered.filter(request => 
+      request.status.toLowerCase() === statusFilter.value.toLowerCase()
+    )
+  }
+
+  // Filter by search query
+  if (searchQuery.value.trim()) {
+    const query = searchQuery.value.toLowerCase().trim()
+    filtered = filtered.filter(request => {
+      const title = (request.title || '').toLowerCase()
+      const requestNumber = (request.requestNumber || '').toLowerCase()
+      const date = (request.date || '').toLowerCase()
+      const status = (request.status || '').toLowerCase()
+      return title.includes(query) || 
+             requestNumber.includes(query) || 
+             date.includes(query) || 
+             status.includes(query)
+    })
+  }
+
+  // Sort
+  if (sortOption.value === 'newest') {
+    filtered.sort((a, b) => {
+      // Use raw created_at for accurate sorting
+      const dateA = a.raw?.created_at ? new Date(a.raw.created_at) : new Date(0)
+      const dateB = b.raw?.created_at ? new Date(b.raw.created_at) : new Date(0)
+      return dateB - dateA
+    })
+  } else if (sortOption.value === 'oldest') {
+    filtered.sort((a, b) => {
+      // Use raw created_at for accurate sorting
+      const dateA = a.raw?.created_at ? new Date(a.raw.created_at) : new Date(0)
+      const dateB = b.raw?.created_at ? new Date(b.raw.created_at) : new Date(0)
+      return dateA - dateB
+    })
+  }
+
+  return filtered
+})
+
+// Filter functions
+const toggleSortDropdown = () => {
+  showSortDropdown.value = !showSortDropdown.value
+  showStatusDropdown.value = false
+}
+
+const toggleStatusDropdown = () => {
+  showStatusDropdown.value = !showStatusDropdown.value
+  showSortDropdown.value = false
+}
+
+const selectSort = (option) => {
+  sortOption.value = option
+  showSortDropdown.value = false
+}
+
+const selectStatus = (status) => {
+  statusFilter.value = status
+  showStatusDropdown.value = false
+}
+
+const performSearch = () => {
+  // Search is handled by computed property automatically
+}
+
+// Handle click outside to close dropdowns and settings
+const handleClickOutside = (event) => {
+  if (!event.target.closest('.filter-dropdown-wrapper')) {
+    showSortDropdown.value = false
+    showStatusDropdown.value = false
+  }
+  if (!event.target.closest('.header-actions')) {
+    showSettings.value = false
+  }
+}
+
+const formatDateTime = (val) => {
+  if (!val) return ''
+  try {
+    const d = new Date(val)
+    return d.toLocaleString('en-US', { month: 'short', day: '2-digit', year: 'numeric', hour: 'numeric', minute: '2-digit' })
+  } catch (e) { return String(val) }
+}
+
+const canChangePaymentMethod = (request) => {
+  if (!request?.payment) return false
+  
+  const paymentStatus = (request.payment.status ?? '').toString().toUpperCase()
+  if (paymentStatus !== 'PENDING') return false
+  
+  const paymentMethodRaw = request.payment.raw?.paymentMethod?.pay_method_name ?? 
+                          request.payment.raw?.payment_method_name ?? 
+                          request.payment.raw?.paymentMethod ?? 
+                          request.payment.paymentMethod ?? 
+                          request.payment.raw?.pay_method_name ??
+                          request.payment.payment_method_name ??
+                          ''
+  
+  const methodUpper = paymentMethodRaw.toString().toUpperCase().trim()
+  
+  const isCashOrOnsite = methodUpper.includes('CASH') || 
+                         methodUpper.includes('ONSITE') || 
+                         methodUpper.includes('ON-SITE') || 
+                         methodUpper.includes('ON SITE')
+  
+  if (!isCashOrOnsite && (!request.payment.transaction_ref || request.payment.transaction_ref === '' || request.payment.transaction_ref === null)) {
+    return true
+  }
+  
+  return isCashOrOnsite
+}
+
+const viewReceipt = (request) => {
+  selectedReceipt.value = request
+  showReceiptModal.value = true
+}
+
+const closeReceiptModal = () => {
+  showReceiptModal.value = false
+  selectedReceipt.value = null
+}
+
+const handleImageError = (event) => {
+  event.target.style.display = 'none'
+  const container = event.target.closest('.receipt-image-container')
+  if (container) {
+    container.innerHTML = '<p class="no-receipt-message">Failed to load image</p>'
+  }
+}
+
+const printReceipt = () => {
+  if (!selectedReceipt.value) return
+  
+  const receipt = selectedReceipt.value
+  const receiptImageHtml = (receipt.payment?.receipt_image || receipt.payment?.receipt_path)
+    ? `<div class="receipt-image-container">
+        <p class="receipt-image-label">Proof of Payment:</p>
+        <img src="${receipt.payment?.receipt_image || receipt.payment?.receipt_path}" alt="Payment Receipt" class="receipt-image" />
+       </div>`
+    : '<div class="no-receipt-container"><p class="no-receipt-message">No proof of payment available</p></div>'
+  
+  const printWindow = window.open('', '_blank')
+  printWindow.document.write(`
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>Payment Receipt</title>
+      <style>
+        body { font-family: Arial, sans-serif; padding: 40px; }
+        .receipt-header { text-align: center; margin-bottom: 30px; border-bottom: 3px solid #ff8c42; padding-bottom: 20px; }
+        .receipt-title { font-size: 28px; font-weight: 700; color: #ff8c42; margin: 0 0 10px 0; }
+        .receipt-details-box { background: #f8f9fa; padding: 25px; border-radius: 12px; margin-bottom: 25px; }
+        .receipt-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px dashed #e0e0e0; }
+        .receipt-row:last-child { border-bottom: none; }
+        .receipt-label { font-weight: 600; color: #666; font-size: 14px; }
+        .receipt-value { font-weight: 600; color: #333; font-size: 14px; }
+        .receipt-value.amount { color: #239640; font-size: 20px; font-family: 'Courier New', monospace; }
+        .receipt-image-container { margin: 25px 0; text-align: center; }
+        .receipt-image-label { font-weight: 600; color: #666; font-size: 14px; margin-bottom: 10px; }
+        .receipt-image { max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        .receipt-note { background: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; border-radius: 8px; margin: 25px 0; }
+        .receipt-note p { margin: 0; font-size: 13px; color: #856404; line-height: 1.6; }
+      </style>
+    </head>
+    <body>
+      <div class="receipt-header">
+        <h1 class="receipt-title">Payment Receipt</h1>
+        <p style="color: #666; margin: 0;">Barangay</p>
+      </div>
+      <div class="receipt-details-box">
+        <div class="receipt-row">
+          <span class="receipt-label">Request No:</span>
+          <span class="receipt-value">${receipt.requestNumber || 'N/A'}</span>
+        </div>
+        <div class="receipt-row">
+          <span class="receipt-label">Document:</span>
+          <span class="receipt-value">${receipt.title || 'N/A'}</span>
+        </div>
+        <div class="receipt-row">
+          <span class="receipt-label">Date:</span>
+          <span class="receipt-value">${receipt.date || 'N/A'}</span>
+        </div>
+        <div class="receipt-row">
+          <span class="receipt-label">Payer:</span>
+          <span class="receipt-value">${user.value?.name || 'N/A'}</span>
+        </div>
+        <div class="receipt-row">
+          <span class="receipt-label">Amount Paid:</span>
+          <span class="receipt-value amount">₱${((receipt.payment?.amount ?? receipt.amount) || 0).toFixed(2)}</span>
+        </div>
+        ${receipt.payment?.transaction_ref ? `
+        <div class="receipt-row">
+          <span class="receipt-label">Transaction ID:</span>
+          <span class="receipt-value">${receipt.payment.transaction_ref}</span>
+        </div>
+        ` : ''}
+        <div class="receipt-row">
+          <span class="receipt-label">Status:</span>
+          <span class="receipt-value" style="color: ${(receipt.payment?.status?.toUpperCase() === 'APPROVED' || receipt.payment?.status?.toUpperCase() === 'PAID') ? '#239640' : '#dc3545'}">
+            ${formatPaymentStatus(receipt.payment?.status) || 'N/A'}
+          </span>
+        </div>
+      </div>
+      ${receiptImageHtml}
+      <div class="receipt-note">
+        <p>Thank you for your payment. This digital receipt is proof of payment issued by Barangay.</p>
+      </div>
+    </body>
+    </html>
+  `)
+  
+  printWindow.document.close()
+  printWindow.focus()
+  
+  setTimeout(() => {
+    printWindow.print()
+  }, 500)
+}
+
+const downloadReceipt = async () => {
+  try {
+    if (!selectedReceipt.value) return
+    
+    const receipt = selectedReceipt.value
+    const receiptImageHtml = (receipt.payment?.receipt_image || receipt.payment?.receipt_path)
+      ? `<div class="receipt-image-container">
+          <p class="receipt-image-label">Proof of Payment:</p>
+          <img src="${receipt.payment?.receipt_image || receipt.payment?.receipt_path}" alt="Payment Receipt" class="receipt-image" />
+         </div>`
+      : '<div class="no-receipt-container"><p class="no-receipt-message">No proof of payment available</p></div>'
+    
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Payment Receipt - ${receipt.requestNumber}</title>
+        <style>
+          body { font-family: Arial, sans-serif; padding: 40px; }
+          .receipt-header { text-align: center; margin-bottom: 30px; border-bottom: 3px solid #ff8c42; padding-bottom: 20px; }
+          .receipt-title { font-size: 28px; font-weight: 700; color: #ff8c42; margin: 0 0 10px 0; }
+          .receipt-details-box { background: #f8f9fa; padding: 25px; border-radius: 12px; margin-bottom: 25px; }
+          .receipt-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px dashed #e0e0e0; }
+          .receipt-row:last-child { border-bottom: none; }
+          .receipt-label { font-weight: 600; color: #666; font-size: 14px; }
+          .receipt-value { font-weight: 600; color: #333; font-size: 14px; }
+          .receipt-value.amount { color: #239640; font-size: 20px; font-family: 'Courier New', monospace; }
+          .receipt-image-container { margin: 25px 0; text-align: center; }
+          .receipt-image-label { font-weight: 600; color: #666; font-size: 14px; margin-bottom: 10px; }
+          .receipt-image { max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+          .receipt-note { background: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; border-radius: 8px; margin: 25px 0; }
+          .receipt-note p { margin: 0; font-size: 13px; color: #856404; line-height: 1.6; }
+        </style>
+      </head>
+      <body>
+        <div class="receipt-header">
+          <h1 class="receipt-title">Payment Receipt</h1>
+          <p style="color: #666; margin: 0;">Barangay</p>
+        </div>
+        <div class="receipt-details-box">
+          <div class="receipt-row">
+            <span class="receipt-label">Request No:</span>
+            <span class="receipt-value">${receipt.requestNumber || 'N/A'}</span>
+          </div>
+          <div class="receipt-row">
+            <span class="receipt-label">Document:</span>
+            <span class="receipt-value">${receipt.title || 'N/A'}</span>
+          </div>
+          <div class="receipt-row">
+            <span class="receipt-label">Date:</span>
+            <span class="receipt-value">${receipt.date || 'N/A'}</span>
+          </div>
+          <div class="receipt-row">
+            <span class="receipt-label">Payer:</span>
+            <span class="receipt-value">${user.value?.name || 'N/A'}</span>
+          </div>
+          <div class="receipt-row">
+            <span class="receipt-label">Amount Paid:</span>
+            <span class="receipt-value amount">₱${((receipt.payment?.amount ?? receipt.amount) || 0).toFixed(2)}</span>
+          </div>
+          ${receipt.payment?.transaction_ref ? `
+          <div class="receipt-row">
+            <span class="receipt-label">Transaction ID:</span>
+            <span class="receipt-value">${receipt.payment.transaction_ref}</span>
+          </div>
+          ` : ''}
+          <div class="receipt-row">
+            <span class="receipt-label">Status:</span>
+            <span class="receipt-value" style="color: ${(receipt.payment?.status?.toUpperCase() === 'APPROVED' || receipt.payment?.status?.toUpperCase() === 'PAID') ? '#239640' : '#dc3545'}">
+              ${formatPaymentStatus(receipt.payment?.status) || 'N/A'}
+            </span>
+          </div>
+        </div>
+        ${receiptImageHtml}
+        <div class="receipt-note">
+          <p>Thank you for your payment. This digital receipt is proof of payment issued by Barangay.</p>
+        </div>
+      </body>
+      </html>
+    `
+    
+    const blob = new Blob([htmlContent], { type: 'text/html' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `receipt-${receipt.requestNumber}.html`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
+  } catch (err) {
+    console.error('Failed to download receipt:', err)
+    alert('Failed to download receipt. Please try again.')
+  }
 }
 
 const handlePurposeChange = () => {
@@ -1033,7 +2480,18 @@ const submitRequest = () => {
     form.valid_id_content = form.id_front
   }
 
-  form.document_name = selectedDocType.value
+  // Handle Permit type - use the actual permit type as document_name
+  const permitType = selectedPermitType.value || form.extra_fields?.permit_type
+  if (selectedDocType.value === 'Permit' && permitType) {
+    form.document_name = permitType
+    // Ensure permit_type is set in extra_fields
+    if (!form.extra_fields) {
+      form.extra_fields = {}
+    }
+    form.extra_fields.permit_type = permitType
+  } else {
+    form.document_name = selectedDocType.value
+  }
 
   if (isSubmitting.value) return
   isSubmitting.value = true
@@ -1134,6 +2592,9 @@ const submitRequest = () => {
     currentView.value = 'success'
     isSubmitting.value = false
     console.log('Request submitted successfully, ticket:', ticket)
+    
+    // Reload document requests list to show the newly submitted request
+    router.reload({ only: ['documentRequests', 'payments'] })
   }).catch(error => {
     console.error('Error submitting request:', error)
     console.error('Error response:', error.response?.data)
@@ -1150,30 +2611,70 @@ const submitRequest = () => {
   })
 }
 
-const viewRequest = () => {
-  currentView.value = 'selection'
-  alert(`Viewing request #${requestNumber.value}`)
-  router.visit(route('notification_request_resident'))
-}
-
-const handleClickOutside = (event) => {
-    if (!event.target.closest('.header-actions')) {
-        showSettings.value = false
+const viewRequest = async () => {
+  currentView.value = 'list'
+  
+  // Wait for Vue to update the view and for the reloaded data to be available
+  await nextTick()
+  
+  // Function to find and show the request
+  const findAndShowRequest = () => {
+    const ticket = requestNumber.value
+    if (!ticket) return false
+    
+    // Normalize the ticket for comparison (remove # if present)
+    const normalizedTicket = ticket.replace(/^#/, '')
+    
+    // Search in mappedDocumentRequests (which includes all requests)
+    const foundRequest = mappedDocumentRequests.value.find(req => {
+      const reqNumber = (req.requestNumber || '').toString()
+      // Match by requestNumber - handle different formats
+      const normalizedReqNumber = reqNumber.replace(/^#/, '')
+      return normalizedReqNumber === normalizedTicket || 
+             normalizedReqNumber === ticket || 
+             reqNumber === ticket ||
+             reqNumber === `#${ticket}`
+    })
+    
+    if (foundRequest) {
+      // Open the detail modal with the found request
+      viewRequestDetails(foundRequest)
+      return true
     }
+    return false
+  }
+  
+  // Try to find immediately
+  if (!findAndShowRequest()) {
+    // If not found, wait a bit for the async reload to complete and try again
+    setTimeout(() => {
+      if (!findAndShowRequest()) {
+        // Final retry after a longer delay in case the reload takes longer
+        setTimeout(() => {
+          findAndShowRequest()
+        }, 800)
+      }
+    }, 300)
+  }
 }
 
 onMounted(() => {
   document.addEventListener('click', handleClickOutside)
   activeTab.value = 'documents'
 
-  // try to read flashed ticket
+  // try to read flashed ticket - if there's a success ticket, show success view
   try {
     const flashedTicket = page?.props?.value?.flash?.ticket ?? page?.props?.flash?.ticket ?? page?.props?.value?.ticket ?? page?.props?.ticket ?? null
     if (flashedTicket) {
       requestNumber.value = flashedTicket
       currentView.value = 'success'
+    } else {
+      // Default to list view to show submitted requests
+      currentView.value = 'list'
     }
-  } catch (e) {}
+  } catch (e) {
+    currentView.value = 'list'
+  }
 })
 
 onUnmounted(() => {
@@ -1707,6 +3208,44 @@ select option[value=""] {
     display: grid;
     grid-template-columns: 320px 1fr;
     min-height: 600px;
+    gap: 0;
+}
+
+.document-types-wrapper {
+    display: flex;
+    flex-direction: column;
+    background: #f8f9fa;
+    border-right: 1px solid #e0e0e0;
+    padding: 20px 0;
+}
+
+.document-types-wrapper .document-types {
+    padding: 0;
+    margin-top: 0;
+    background: transparent;
+    border-right: none;
+}
+
+.back-btn-selection {
+    background: transparent;
+    border: none;
+    color: #000;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-bottom: 15px;
+    padding: 10px 25px;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+}
+
+.back-btn-selection:hover {
+    color: #ff8c42;
+}
+
+.back-btn-selection svg {
+    margin-right: 6px;
 }
 
 .document-types {
@@ -1781,6 +3320,73 @@ select option[value=""] {
     margin-bottom: 40px;
 }
 
+.permit-type-selection {
+    margin: 30px 0;
+    padding: 25px;
+    background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+    border-radius: 12px;
+    border: 1px solid rgba(0,0,0,0.05);
+}
+
+.permit-type-title {
+    color: #333;
+    font-size: 20px;
+    font-weight: 700;
+    margin-bottom: 20px;
+}
+
+.permit-type-options {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.permit-type-btn {
+    flex: 1;
+    background: white;
+    border: 2px solid #ddd;
+    padding: 15px 25px;
+    border-radius: 10px;
+    font-size: 16px;
+    font-weight: 600;
+    color: #666;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+.permit-type-btn:hover {
+    border-color: #ff8c42;
+    color: #ff8c42;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(255, 140, 66, 0.2);
+}
+
+.permit-type-btn.active {
+    background: linear-gradient(135deg, #ff8c42, #ff7a28);
+    color: white;
+    border-color: #ff8c42;
+    box-shadow: 0 4px 12px rgba(255, 140, 66, 0.4);
+}
+
+.permit-type-description {
+    padding: 15px;
+    background: white;
+    border-radius: 8px;
+    border-left: 4px solid #ff8c42;
+}
+
+.permit-type-description p {
+    margin: 0;
+    font-size: 16px;
+    line-height: 1.6;
+    color: #555;
+}
+
+.permit-type-description strong {
+    color: #ff8c42;
+}
+
 .request-btn {
     background: linear-gradient(135deg, #ff8c42, #ff7a28);
     color: white;
@@ -1797,6 +3403,12 @@ select option[value=""] {
     margin-top: 20px;
 }
 
+.request-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+}
+
 .request-btn:hover {
     transform: translateY(-2px);
     box-shadow: 0 6px 18px rgba(255, 140, 66, 0.4);
@@ -1808,6 +3420,14 @@ select option[value=""] {
     overflow-y: auto;
 }
 
+.form-header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    width: 100%;
+}
+
 .back-btn {
     background: transparent;
     border: none;
@@ -1815,19 +3435,39 @@ select option[value=""] {
     font-size: 14px;
     font-weight: 600;
     cursor: pointer;
-    margin-bottom: 20px;
     transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    padding: 0;
+    flex-shrink: 0;
 }
 
 .back-btn:hover {
-    color: #333;
+    color: #ff8c42;
+}
+
+.form-document-type {
+    font-size: 16px;
+    color: #666;
+    margin: 0;
+    padding: 0;
+    background: transparent;
+    border-radius: 0;
+    text-align: right;
+    flex-shrink: 0;
+    white-space: nowrap;
+}
+
+.form-document-type strong {
+    color: #ff8c42;
+    font-weight: 700;
 }
 
 .form-title {
     font-size: 24px;
     font-weight: 700;
     color: #333;
-    margin-bottom: 20px;
+    margin-bottom: 10px;
     text-align: center;
     text-shadow: 0 1px 2px rgba(0,0,0,0.05);
     display: block;
@@ -2274,6 +3914,83 @@ select option[value=""] {
     .request-form-container {
         padding: 20px;
     }
+
+    /* Responsive Requests List View */
+    .requests-list-view {
+        padding: 20px;
+    }
+
+    .requests-header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 15px;
+    }
+
+    .request-new-btn {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .requests-table-container {
+        overflow-x: auto;
+    }
+
+    .requests-table {
+        min-width: 600px;
+    }
+
+    .requests-table th,
+    .requests-table td {
+        padding: 12px 15px;
+        font-size: 13px;
+    }
+
+    .requests-table th:first-child,
+    .requests-table td:first-child {
+        padding-left: 15px;
+    }
+
+    .requests-table th:last-child,
+    .requests-table td:last-child {
+        padding-right: 15px;
+    }
+
+    .requests-table     .status-badge {
+        font-size: 11px;
+        padding: 6px 12px;
+    }
+
+    /* Filter section responsive */
+    .filter-section {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 15px;
+        padding: 15px;
+    }
+
+    .filter-left {
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+
+    .filter-right {
+        flex-direction: column;
+        width: 100%;
+    }
+
+    .search-container {
+        width: 100%;
+    }
+
+    .search-input {
+        width: 100%;
+        flex: 1;
+    }
+
+    .request-new-btn {
+        width: 100%;
+        justify-content: center;
+    }
 }
 
 @media (max-width: 480px) {
@@ -2310,5 +4027,1350 @@ select option[value=""] {
         height: 100px;
         font-size: 50px;
     }
+
+    /* Mobile Responsive for Requests List */
+    .requests-list-view {
+        padding: 15px;
+    }
+
+    .requests-header {
+        padding-bottom: 10px;
+        margin-bottom: 15px;
+    }
+
+    .request-new-btn {
+        font-size: 12px;
+        padding: 8px 16px;
+    }
+
+    .requests-table {
+        font-size: 12px;
+    }
+
+    .requests-table th,
+    .requests-table td {
+        padding: 10px 12px;
+        font-size: 12px;
+    }
+
+    .requests-table th {
+        font-size: 11px;
+    }
+
+    .requests-table .status-badge {
+        font-size: 10px;
+        padding: 5px 10px;
+    }
+}
+
+/* Requests List View Styles */
+.requests-list-view {
+    padding: 25px 30px;
+    min-height: 600px;
+}
+
+/* Filter Section Styles */
+.filter-section {
+    padding: 20px 25px;
+    background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+    border-bottom: 1px solid #e0e0e0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    border-radius: 12px 12px 0 0;
+}
+
+.filter-left {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.filter-label {
+    font-weight: 600;
+    color: #666;
+    font-size: 14px;
+}
+
+.filter-dropdown-wrapper {
+    position: relative;
+}
+
+.filter-dropdown-btn {
+    padding: 8px 15px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    background: white;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #333;
+}
+
+.filter-dropdown-btn:hover {
+    border-color: #ff8c42;
+}
+
+.filter-arrow {
+    font-size: 10px;
+    transition: transform 0.3s ease;
+    color: #666;
+}
+
+.filter-arrow.rotated {
+    transform: rotate(180deg);
+}
+
+.filter-dropdown-menu {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+    min-width: 150px;
+    z-index: 1000;
+    margin-top: 5px;
+    overflow: hidden;
+    border: 1px solid rgba(0,0,0,0.1);
+}
+
+.filter-dropdown-menu button {
+    display: block;
+    width: 100%;
+    padding: 10px 15px;
+    background: none;
+    border: none;
+    text-align: left;
+    color: #333;
+    cursor: pointer;
+    transition: background 0.2s;
+    font-weight: 500;
+    font-size: 12px;
+}
+
+.filter-dropdown-menu button:hover {
+    background: #fff7ef;
+}
+
+.filter-dropdown-menu button.active {
+    background: #fff7ef;
+    color: #ff8c42;
+    font-weight: 600;
+}
+
+.filter-right {
+    display: flex;
+    gap: 15px;
+    align-items: center;
+}
+
+.search-container {
+    display: flex;
+    gap: 5px;
+    background: white;
+    border-radius: 8px;
+    padding: 2px;
+    border: 1px solid #ddd;
+    align-items: center;
+}
+
+.search-input {
+    padding: 8px 15px;
+    border: none;
+    border-radius: 6px;
+    width: 250px;
+    font-size: 12px;
+    outline: none;
+}
+
+.search-btn {
+    background: transparent;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    color: #666;
+}
+
+.search-btn:hover {
+    background: #f0f0f0;
+    color: #ff8c42;
+}
+
+.search-icon {
+    width: 18px;
+    height: 18px;
+    stroke: currentColor;
+}
+
+.requests-header {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    margin-bottom: 25px;
+    padding-bottom: 15px;
+}
+
+.request-new-btn {
+    background: linear-gradient(135deg, #ff8c42, #ff7a28);
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(255, 140, 66, 0.3);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.request-new-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(255, 140, 66, 0.4);
+}
+
+.request-new-btn:active {
+    transform: translateY(0);
+}
+
+.requests-table-container {
+    background: white;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+    border: 1px solid rgba(0,0,0,0.05);
+}
+
+.requests-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+}
+
+.requests-table thead {
+    background: #f8f9fa;
+    border-bottom: 2px solid #e0e0e0;
+}
+
+.requests-table th {
+    padding: 16px 20px;
+    text-align: left;
+    font-weight: 600;
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: #666;
+}
+
+.requests-table th:first-child {
+    padding-left: 25px;
+}
+
+.requests-table th:nth-child(4) {
+    text-align: center;
+}
+
+.requests-table th:last-child {
+    padding-right: 25px;
+    text-align: center;
+}
+
+.requests-table td:nth-child(4) {
+    text-align: center;
+    vertical-align: middle;
+}
+
+.requests-table td:nth-child(5) {
+    text-align: center;
+    vertical-align: middle;
+}
+
+.payment-status-na {
+    color: #999;
+    font-size: 14px;
+}
+
+.requests-table tbody tr {
+    border-bottom: 1px solid #e9ecef;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    background: white;
+}
+
+.requests-table tbody tr:hover {
+    background: #f5f5f5;
+}
+
+.requests-table tbody tr:last-child {
+    border-bottom: none;
+}
+
+.requests-table td {
+    padding: 18px 20px;
+    font-size: 16px;
+    color: #333;
+    vertical-align: middle;
+}
+
+.requests-table td:first-child {
+    padding-left: 25px;
+    font-weight: 600;
+    color: #2c3e50;
+    font-size: 16px;
+}
+
+.requests-table td:last-child {
+    padding-right: 25px;
+    vertical-align: middle;
+    text-align: center;
+}
+
+.requests-table td:nth-child(2) {
+    color: #ff8c42;
+    font-weight: 700;
+    font-family: 'Courier New', monospace;
+    font-size: 17px;
+}
+
+.requests-table td:nth-child(3) {
+    color: #666;
+    font-size: 15px;
+}
+
+.no-requests {
+    text-align: center;
+    color: #999;
+    font-style: italic;
+    padding: 60px 40px !important;
+    font-size: 15px;
+}
+
+.request-row {
+    transition: all 0.2s ease;
+}
+
+.request-row:hover {
+    background: #f5f5f5 !important;
+}
+
+/* Status badges in table - specific selector to avoid conflicts */
+.requests-table .status-badge {
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: bold;
+    text-transform: uppercase;
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    width: auto;
+    height: auto;
+    margin: 0 auto;
+    line-height: 1;
+}
+
+.requests-table .status-badge .badge-icon {
+    font-size: 12px;
+    line-height: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.requests-table .status-badge .badge-icon-svg {
+    width: 14px;
+    height: 14px;
+    stroke: currentColor;
+}
+
+.requests-table .status-badge .badge-text {
+    font-weight: bold;
+    font-size: 12px;
+    text-transform: uppercase;
+}
+
+.requests-table .status-badge.pending {
+    background: #fff3cd;
+    color: #856404;
+    border: 1px solid #ffeeba;
+}
+
+.requests-table .status-badge.approved {
+    background: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+.requests-table .status-badge.rejected {
+    background: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}
+
+/* Payment List Badge Styles */
+.payment-list-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-weight: bold;
+    font-size: 12px;
+    white-space: nowrap;
+    margin: 0 auto;
+}
+
+/* Payment badge variants */
+.payment-list-badge.pending {
+    background: #fff3cd;
+    color: #856404;
+    border: 1px solid #ffeeba;
+}
+
+.payment-list-badge.approved {
+    background: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+.payment-list-badge.rejected {
+    background: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}
+
+/* When no payment */
+.payment-list-badge.none {
+    background: transparent;
+    color: #6c757d;
+    border: 1px dashed rgba(0, 0, 0, 0.06);
+}
+
+/* Badge icon */
+.payment-list-badge .badge-icon {
+    font-size: 12px;
+    line-height: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.payment-list-badge .badge-icon-svg {
+    width: 14px;
+    height: 14px;
+    stroke: currentColor;
+}
+
+/* Badge text */
+.payment-list-badge .badge-text {
+    font-weight: bold;
+    font-size: 12px;
+    text-transform: uppercase;
+}
+
+/* Modal Styles */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.6);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 10000;
+    padding: 20px;
+}
+
+.modal-content {
+    background: white;
+    border-radius: 15px;
+    max-width: 600px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+    position: relative;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+}
+
+.details-modal {
+    padding: 30px 40px;
+}
+
+.close-modal-btn {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    background: transparent;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    color: #999;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: all 0.2s ease;
+}
+
+.close-modal-btn:hover {
+    background: #f0f0f0;
+    color: #333;
+}
+
+.modal-icon {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.status-badge {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 40px;
+    font-weight: 700;
+}
+
+.approved-icon .status-badge {
+    background: linear-gradient(135deg, #2bb24a, #239640);
+    color: white;
+}
+
+.pending-icon .status-badge {
+    background: linear-gradient(135deg, #ffc107, #ff9800);
+    color: white;
+}
+
+.rejected-icon .status-badge {
+    background: linear-gradient(135deg, #dc3545, #c82333);
+    color: white;
+}
+
+.modal-title {
+    font-size: 24px;
+    font-weight: 700;
+    text-align: center;
+    margin-bottom: 10px;
+    color: #333;
+}
+
+.request-number-display {
+    text-align: center;
+    font-size: 14px;
+    color: #ff8c42;
+    font-weight: 700;
+    margin-bottom: 30px;
+}
+
+.details-content {
+    margin-top: 20px;
+}
+
+.details-message {
+    font-size: 14px;
+    line-height: 1.8;
+    color: #555;
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+.accepted-section,
+.pending-section,
+.rejected-section {
+    margin-top: 20px;
+}
+
+.rejection-box {
+    background: #f8d7da;
+    border: 1px solid #f5c6cb;
+    border-radius: 8px;
+    padding: 15px;
+    margin-top: 15px;
+}
+
+.rejection-box h4 {
+    color: #721c24;
+    font-size: 16px;
+    font-weight: 700;
+    margin-bottom: 10px;
+}
+
+.rejection-box p {
+    color: #721c24;
+    font-size: 14px;
+    margin: 0;
+}
+
+/* Payment Modal Styles */
+.payment-modal {
+    max-width: 500px;
+    padding: 30px 40px;
+}
+
+.payment-options {
+    display: flex;
+    gap: 20px;
+    margin: 30px 0;
+    justify-content: center;
+}
+
+.payment-option-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    padding: 20px 30px;
+    border: 2px solid #e0e0e0;
+    border-radius: 12px;
+    background: white;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    min-width: 150px;
+}
+
+.payment-option-btn:hover {
+    border-color: #ff8c42;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(255, 140, 66, 0.2);
+}
+
+.payment-logo-placeholder {
+    width: 80px;
+    height: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.payment-logo {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+}
+
+.payment-details {
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 8px;
+    margin-top: 20px;
+}
+
+.payment-details p {
+    margin: 5px 0;
+    font-size: 14px;
+    color: #333;
+}
+
+/* QR Modal Styles */
+.qr-modal {
+    max-width: 500px;
+    padding: 30px 40px;
+}
+
+.payment-success-banner {
+    background: #d4edda;
+    border: 1px solid #c3e6cb;
+    border-radius: 8px;
+    padding: 10px;
+    margin-bottom: 15px;
+    text-align: center;
+}
+
+.payment-success-banner p {
+    color: #155724;
+    margin: 0;
+    font-size: 14px;
+}
+
+.qr-preview {
+    text-align: center;
+    margin: 20px 0;
+    padding: 20px;
+    background: #f8f9fa;
+    border-radius: 12px;
+}
+
+.qr-image {
+    max-width: 250px;
+    height: auto;
+    border-radius: 8px;
+}
+
+.qr-placeholder {
+    padding: 40px;
+    color: #999;
+    font-style: italic;
+}
+
+.upload-btn-payment {
+    background: linear-gradient(135deg, #2bb24a, #239640);
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 14px;
+    width: 100%;
+    margin-top: 15px;
+}
+
+.upload-btn-payment:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(43, 178, 74, 0.4);
+}
+
+.evidence-form {
+    margin-top: 15px;
+}
+
+.input-and-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.reference-input {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    font-size: 14px;
+}
+
+.evidence-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.submit-evidence-btn {
+    flex: 1;
+    background: linear-gradient(135deg, #ff8c42, #ff7a28);
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 14px;
+}
+
+.submit-evidence-btn:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(255, 140, 66, 0.4);
+}
+
+.submit-evidence-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.clear-evidence-btn {
+    background: #dc3545;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 14px;
+}
+
+.clear-evidence-btn:hover:not(:disabled) {
+    background: #c82333;
+}
+
+.clear-evidence-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* Payment Status Section */
+.payment-status-section {
+    margin-top: 25px;
+    padding: 20px;
+    background: #f8f9fa;
+    border-radius: 12px;
+}
+
+.section-title-payment {
+    font-size: 16px;
+    font-weight: 700;
+    color: #333;
+    margin-bottom: 15px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.payment-info-card {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    border: 1px solid #e0e0e0;
+}
+
+.payment-status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 14px;
+    font-weight: 700;
+    margin-bottom: 15px;
+}
+
+.payment-status-badge.pending {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.payment-status-badge.approved {
+    background: #d4edda;
+    color: #155724;
+}
+
+.payment-status-badge.rejected {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+.badge-icon {
+    font-size: 16px;
+}
+
+.badge-text {
+    font-size: 14px;
+}
+
+.payment-details-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+    margin-top: 15px;
+}
+
+.payment-detail-item {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.detail-label {
+    font-size: 12px;
+    color: #666;
+    font-weight: 600;
+}
+
+.detail-value {
+    font-size: 14px;
+    color: #333;
+    font-weight: 700;
+}
+
+.receipt-view-btn {
+    background: #ff8c42;
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.receipt-view-btn:hover {
+    background: #ff7a28;
+}
+
+.change-payment-method-section {
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px solid #e0e0e0;
+}
+
+.change-payment-method-btn {
+    width: 100%;
+    background: transparent;
+    border: 2px solid #ff8c42;
+    color: #ff8c42;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 14px;
+}
+
+.change-payment-method-btn:hover {
+    background: #ff8c42;
+    color: white;
+}
+
+.no-payment-card {
+    background: #fff3cd;
+    border: 1px solid #ffc107;
+    border-radius: 8px;
+    padding: 15px;
+    text-align: center;
+}
+
+.no-payment-card p {
+    margin: 0;
+    font-size: 14px;
+    color: #856404;
+}
+
+/* Payment Buttons in Modal */
+.payment-buttons-modal {
+    display: flex;
+    gap: 15px;
+    margin-top: 20px;
+    justify-content: center;
+}
+
+.pay-online-btn-modal {
+    flex: 1;
+    background: linear-gradient(135deg, #2bb24a, #239640);
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 14px;
+}
+
+.pay-online-btn-modal:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(43, 178, 74, 0.4);
+}
+
+.pay-onsite-btn-modal {
+    flex: 1;
+    background: linear-gradient(135deg, #ff8c42, #ff7a28);
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 14px;
+}
+
+.pay-onsite-btn-modal:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(255, 140, 66, 0.4);
+}
+
+/* Pickup Info Styles */
+.pickup-info {
+    background: #f8f9fa;
+    padding: 20px;
+    border-radius: 12px;
+    margin: 20px 0;
+}
+
+.info-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px 0;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.info-item:last-child {
+    border-bottom: none;
+}
+
+.info-label {
+    font-weight: 700;
+    color: #666;
+    font-size: 13px;
+    min-width: 80px;
+}
+
+.info-value {
+    font-weight: 600;
+    color: #333;
+    font-size: 14px;
+    text-align: right;
+    flex: 1;
+}
+
+.info-value.amount {
+    color: #239640;
+    font-size: 18px;
+    font-weight: 700;
+}
+
+/* Request Info Box */
+.request-info-box {
+    background: #f8f9fa;
+    padding: 20px;
+    border-radius: 12px;
+    margin: 20px 0;
+}
+
+/* Feedback Section */
+.feedback-section {
+    margin-top: 25px;
+    padding: 20px;
+    background: #e7f3ff;
+    border-radius: 12px;
+    border-left: 4px solid #2196F3;
+}
+
+.section-title-feedback {
+    font-size: 16px;
+    font-weight: 700;
+    color: #333;
+    margin-bottom: 15px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.feedback-box {
+    background: white;
+    padding: 15px;
+    border-radius: 8px;
+}
+
+.feedback-box p {
+    margin: 0;
+    font-size: 14px;
+    color: #333;
+    line-height: 1.6;
+}
+
+.present-message {
+    text-align: center;
+    margin-top: 25px;
+    padding: 15px;
+    background: #fff3cd;
+    border-radius: 8px;
+    font-size: 14px;
+    color: #856404;
+}
+
+.highlight-number {
+    color: #ff8c42;
+    font-weight: 700;
+    font-size: 18px;
+}
+
+.note-message {
+    font-size: 13px;
+    color: #666;
+    margin-top: 15px;
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    line-height: 1.6;
+}
+
+.note-message.small {
+    font-size: 12px;
+    margin-top: 10px;
+    padding: 10px;
+}
+
+/* Confirmation Modal */
+.confirmation-modal {
+    max-width: 500px;
+    padding: 30px 40px;
+    text-align: center;
+}
+
+.confirmation-icon {
+    margin-bottom: 20px;
+}
+
+.success-icon .status-badge {
+    background: linear-gradient(135deg, #2bb24a, #239640);
+    color: white;
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 40px;
+}
+
+.confirmation-content {
+    margin: 20px 0;
+}
+
+.confirmation-message {
+    font-size: 14px;
+    color: #555;
+    line-height: 1.8;
+    margin-bottom: 20px;
+}
+
+.payment-summary {
+    background: #f8f9fa;
+    padding: 20px;
+    border-radius: 12px;
+    margin: 20px 0;
+}
+
+.summary-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px 0;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.summary-item:last-child {
+    border-bottom: none;
+}
+
+.summary-label {
+    font-weight: 600;
+    color: #666;
+    font-size: 14px;
+}
+
+.summary-value {
+    font-weight: 700;
+    color: #333;
+    font-size: 14px;
+}
+
+.confirmation-note {
+    font-size: 13px;
+    color: #666;
+    margin-top: 15px;
+    line-height: 1.6;
+}
+
+.confirmation-btn {
+    width: 100%;
+    background: linear-gradient(135deg, #ff8c42, #ff7a28);
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 14px;
+    margin-top: 20px;
+}
+
+.confirmation-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(255, 140, 66, 0.4);
+}
+
+/* Receipt Modal Styles */
+.receipt-modal-container {
+    background: white;
+    border-radius: 15px;
+    max-width: 600px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+    position: relative;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+}
+
+.receipt-modal-content {
+    padding: 30px 40px;
+}
+
+.modal-close {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    background: transparent;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    color: #999;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: all 0.2s ease;
+}
+
+.modal-close:hover {
+    background: #f0f0f0;
+    color: #333;
+}
+
+.receipt-title {
+    font-size: 24px;
+    font-weight: 700;
+    text-align: center;
+    margin-bottom: 25px;
+    color: #ff8c42;
+}
+
+.receipt-details-box {
+    background: #f8f9fa;
+    padding: 25px;
+    border-radius: 12px;
+    margin-bottom: 25px;
+}
+
+.receipt-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px 0;
+    border-bottom: 1px dashed #e0e0e0;
+}
+
+.receipt-row:last-child {
+    border-bottom: none;
+}
+
+.receipt-label {
+    font-weight: 600;
+    color: #666;
+    font-size: 14px;
+}
+
+.receipt-value {
+    font-weight: 600;
+    color: #333;
+    font-size: 14px;
+}
+
+.receipt-value.amount {
+    color: #239640;
+    font-size: 20px;
+    font-family: 'Courier New', monospace;
+}
+
+.receipt-image-container {
+    margin: 25px 0;
+    text-align: center;
+}
+
+.receipt-image-label {
+    font-weight: 600;
+    color: #666;
+    font-size: 14px;
+    margin-bottom: 10px;
+}
+
+.receipt-image {
+    max-width: 100%;
+    height: auto;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.no-receipt-container {
+    background: #f8f9fa;
+    padding: 40px;
+    border-radius: 12px;
+    text-align: center;
+}
+
+.no-receipt-message {
+    color: #999;
+    font-size: 14px;
+    font-style: italic;
+    margin: 0;
+}
+
+.receipt-note {
+    background: #fff3cd;
+    border-left: 4px solid #ffc107;
+    padding: 15px;
+    border-radius: 8px;
+    margin: 25px 0;
+}
+
+.receipt-note p {
+    margin: 0;
+    font-size: 13px;
+    color: #856404;
+    line-height: 1.6;
+}
+
+.receipt-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.download-receipt-btn,
+.print-receipt-btn,
+.close-receipt-btn {
+    flex: 1;
+    padding: 12px 20px;
+    border-radius: 8px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 14px;
+    border: none;
+}
+
+.download-receipt-btn {
+    background: linear-gradient(135deg, #2bb24a, #239640);
+    color: white;
+}
+
+.download-receipt-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(43, 178, 74, 0.4);
+}
+
+.print-receipt-btn {
+    background: linear-gradient(135deg, #2196F3, #1976D2);
+    color: white;
+}
+
+.print-receipt-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(33, 150, 243, 0.4);
+}
+
+.close-receipt-btn {
+    background: #6c757d;
+    color: white;
+}
+
+.close-receipt-btn:hover {
+    background: #5a6268;
 }
 </style>

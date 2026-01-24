@@ -14,7 +14,7 @@
           <img src="/assets/SETTINGS.png" alt="Settings" class="settings-btn-img" @click="toggleSettings" />
           <div v-if="showSettings" class="settings-dropdown">
             <Link href="#" class="settings-item" @click="closeSettings">Help Center</Link>
-            <Link href="#" class="settings-item" @click="closeSettings">Terms & Conditions</Link>
+            <button type="button" class="settings-item" @click="openTerms">Terms & Conditions</button>
             <Link href="#" class="settings-item" @click="logout">Sign Out</Link>
           </div>
         </div>
@@ -85,48 +85,173 @@
             </div>
           </div>
 
+          <!-- View 0: Requests List (Default) -->
+          <div v-if="currentView === 'list'" class="requests-list-view">
+            <!-- Filter Bar -->
+            <div class="filter-section">
+              <div class="filter-left">
+                <span class="filter-label">Filter by</span>
+                <div class="filter-dropdown-wrapper">
+                  <button class="filter-dropdown-btn" @click="toggleSortDropdown">
+                    {{ sortOption.toUpperCase() }}
+                    <span class="filter-arrow" :class="{ rotated: showSortDropdown }">▼</span>
+                  </button>
+                  <div v-if="showSortDropdown" class="filter-dropdown-menu">
+                    <button @click="selectSort('newest')" :class="{ active: sortOption === 'newest' }">NEWEST</button>
+                    <button @click="selectSort('oldest')" :class="{ active: sortOption === 'oldest' }">OLDEST</button>
+                  </div>
+                </div>
+                <div class="filter-dropdown-wrapper" style="margin-left: 15px;">
+                  <button class="filter-dropdown-btn" @click="toggleStatusDropdown">
+                    {{ statusFilter === 'all' ? 'ALL STATUS' : statusFilter.toUpperCase() }}
+                    <span class="filter-arrow" :class="{ rotated: showStatusDropdown }">▼</span>
+                  </button>
+                  <div v-if="showStatusDropdown" class="filter-dropdown-menu">
+                    <button @click="selectStatus('all')" :class="{ active: statusFilter === 'all' }">ALL STATUS</button>
+                    <button @click="selectStatus('pending')" :class="{ active: statusFilter === 'pending' }">PENDING</button>
+                    <button @click="selectStatus('approved')" :class="{ active: statusFilter === 'approved' }">APPROVED</button>
+                    <button @click="selectStatus('rejected')" :class="{ active: statusFilter === 'rejected' }">REJECTED</button>
+                  </div>
+                </div>
+              </div>
+              <div class="filter-right">
+                <div class="search-container">
+                  <input 
+                    type="text" 
+                    v-model="searchQuery" 
+                    @input="performSearch"
+                    placeholder="SEARCH..." 
+                    class="search-input" 
+                  />
+                  <button class="search-btn" @click="performSearch">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="search-icon">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+                    </svg>
+                  </button>
+                </div>
+                <button class="request-new-btn" @click="showRequestForm">
+                  ＋ REQUEST EVENT ASSISTANCE
+                </button>
+              </div>
+            </div>
+
+            <div class="requests-table-container">
+              <table class="requests-table">
+                <thead>
+                  <tr>
+                    <th>Event Assistance</th>
+                    <th>Request Number</th>
+                    <th>Date and Time</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr 
+                    v-for="request in filteredEventRequests" 
+                    :key="request.id"
+                    @click="viewRequestDetails(request)"
+                    class="request-row"
+                  >
+                    <td>{{ request.title }}</td>
+                    <td>#{{ request.requestNumber }}</td>
+                    <td>{{ request.date }} | {{ request.time }}</td>
+                    <td>
+                      <span class="status-badge" :class="request.status.toLowerCase()">
+                        <span class="badge-icon">
+                          <template v-if="request.status.toLowerCase() === 'pending'">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="badge-icon-svg">
+                              <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                            </svg>
+                          </template>
+                          <template v-else-if="request.status.toLowerCase() === 'approved'">✓</template>
+                          <template v-else-if="request.status.toLowerCase() === 'rejected'">✕</template>
+                        </span>
+                        <span class="badge-text">{{ request.status }}</span>
+                      </span>
+                    </td>
+                  </tr>
+                  <tr v-if="filteredEventRequests.length === 0">
+                    <td colspan="4" class="no-requests">No event assistance requests found</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
           <!-- View 1: Event Selection -->
           <div v-if="currentView === 'selection'" class="event-selection">
-            <div class="event-types">
-              <!-- Render event buttons -->
-              <button
-                v-for="eventName in eventNames"
-                :key="eventName"
-                class="event-type-btn"
-                :class="{ active: selectedEventType === eventName }"
-                @click="selectEvent(eventName)"
-              >
-                {{ eventName }}
+            <div class="event-types-wrapper">
+              <button class="back-btn-selection" @click="backToList">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width: 16px; height: 16px; display: inline-block; vertical-align: middle; margin-right: 6px;">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+                </svg>
+                BACK TO REQUESTS
               </button>
+              <div class="event-types">
+                <!-- Render event checkboxes -->
+                <label
+                  v-for="eventName in eventNames"
+                  :key="eventName"
+                  class="event-type-checkbox-label"
+                  :class="{ active: selectedEventTypes.includes(eventName) }"
+                >
+                  <input
+                    type="checkbox"
+                    :value="eventName"
+                    v-model="selectedEventTypes"
+                    class="event-type-checkbox"
+                    @change="handleEventTypeToggle(eventName)"
+                  />
+                  <span class="event-type-checkbox-text">{{ eventName }}</span>
+                </label>
+              </div>
             </div>
 
             <div class="event-info">
-              <h3 class="event-title">{{ selectedEventType }}</h3>
-              <div v-if="selectedEventType === 'Court Reservation' && form.court_type" class="court-selected-note">
-                Selected: <strong>{{ form.court_type }} Court</strong>
+              <h3 class="event-title" v-if="selectedEventTypes.length === 0">Select Event Types</h3>
+              <h3 class="event-title" v-else-if="selectedEventTypes.length === 1">{{ selectedEventTypes[0] }}</h3>
+              <h3 class="event-title" v-else>{{ selectedEventTypes.length }} Event Types Selected</h3>
+              
+              <div v-if="selectedEventTypes.length > 0" class="selected-events-summary">
+                <p class="selected-count">Selected: <strong>{{ selectedEventTypes.join(', ') }}</strong></p>
               </div>
 
-              <div class="event-description">
-                <p>{{ eventDescriptions[selectedEventType] }}</p>
+              <!-- Show descriptions for all selected event types -->
+              <div v-if="selectedEventTypes.length > 0" class="event-descriptions-list">
+                <div v-for="eventName in selectedEventTypes" :key="eventName" class="event-description-item">
+                  <h4 class="event-description-title">{{ eventName }}</h4>
+                  <div class="event-description">
+                    <p>{{ eventDescriptions[eventName] }}</p>
+                  </div>
+                  
+                  <!-- Court Type Selection for Court Reservation -->
+                  <div v-if="eventName === 'Court Reservation'" class="court-type-selection">
+                    <label class="court-type-label">Court Type <span class="required-star">*</span></label>
+                    <select 
+                      :value="(form.court_types && form.court_types[eventName]) || ''"
+                      @change="updateCourtType(eventName, $event.target.value)"
+                      class="form-input court-type-select" 
+                      required
+                    >
+                      <option value="">Select Court Type</option>
+                      <option value="Open">Open Court</option>
+                      <option value="Covered">Covered Court</option>
+                    </select>
+                  </div>
+
+                  <div class="requirements-section">
+                    <h4>REQUIREMENTS</h4>
+                    <ol class="requirements-list">
+                      <li v-for="(req, index) in eventRequirements[eventName]" :key="index">
+                        {{ req }}
+                      </li>
+                    </ol>
+                  </div>
+                </div>
               </div>
 
-              <!-- Court Type Selection for Court Reservation -->
-              <div v-if="selectedEventType === 'Court Reservation'" class="court-type-selection">
-                <label class="court-type-label">Court Type <span class="required-star">*</span></label>
-                <select v-model="form.court_type" class="form-input court-type-select" required>
-                  <option value="">Select Court Type</option>
-                  <option value="Open">Open Court</option>
-                  <option value="Covered">Covered Court</option>
-                </select>
-              </div>
-
-              <div class="requirements-section">
-                <h4>REQUIREMENTS</h4>
-                <ol class="requirements-list">
-                  <li v-for="(req, index) in eventRequirements[selectedEventType]" :key="index">
-                    {{ req }}
-                  </li>
-                </ol>
+              <div v-else class="no-selection-message">
+                <p>Please select one or more event types from the list on the left.</p>
               </div>
 
               <!-- Terms and Conditions -->
@@ -169,7 +294,15 @@
 
           <!-- View 2: Request Form -->
           <div v-if="currentView === 'form'" class="request-form-container">
-            <button class="back-btn" @click="backToSelection">◀ BACK TO EVENTS</button>
+            <div class="form-header-row">
+              <button class="back-btn" @click="backToSelection">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width: 16px; height: 16px; display: inline-block; vertical-align: middle; margin-right: 6px;">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+                </svg>
+                BACK TO EVENT SELECTION
+              </button>
+              <p class="form-document-type">Event Type(s): <strong>{{ selectedEventTypes.join(', ') }}</strong></p>
+            </div>
 
             <h3 class="form-title">REQUEST FORM</h3>
 
@@ -337,12 +470,42 @@
                     v-model="form.valid_id_number"
                     placeholder="Enter ID Number"
                     class="form-input"
+                    required
                   />
                 </div>
               </div>
 
+              <!-- Manpower Assistance - Specific Fields -->
+              <div v-if="selectedEventTypes.includes('Manpower Assistance')" class="form-section">
+                <h4 class="section-title">
+                  <svg class="icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" style="width: 20px; height: 20px;">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 0 0 2.625.372 9.337 9.337 0 0 0 4.121-.952 4.125 4.125 0 0 0-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 0 1 8.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0 1 11.964-3.07M12 6.375a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0Zm8.25 2.25a2.625 2.625 0 1 1-5.25 0 2.625 2.625 0 0 1 5.25 0Z" />
+                  </svg>
+                  Manpower Details
+                </h4>
+
+                <div class="dynamic-field-wrapper">
+                  <div class="field-header">
+                    <label class="field-label">
+                      Number of Manpower Needed <span class="required-star">*</span>
+                    </label>
+                    <p class="field-description">Enter the total number of personnel needed for your event</p>
+                  </div>
+                  <div class="field-input-wrapper">
+                    <input 
+                      type="number" 
+                      v-model.number="form.extra_fields.manpower_count" 
+                      placeholder="Enter number of manpower needed" 
+                      class="form-input" 
+                      min="1" 
+                      required 
+                    />
+                  </div>
+                </div>
+              </div>
+
               <!-- Purpose and Documents - Generic for most events -->
-              <div v-if="!['Tent and Tables Borrowing', 'Sports Equipment Borrowing', 'Sound System Borrowing'].includes(selectedEventType)" class="form-section">
+              <div v-if="selectedEventTypes.some(type => !['Tent and Tables Borrowing', 'Sports Equipment Borrowing', 'Sound System Borrowing', 'Manpower Assistance'].includes(type))" class="form-section">
                 <h4 class="section-title">
                   <svg class="icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" style="width: 20px; height: 20px;">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -375,7 +538,7 @@
                     </div>
                     <div class="field-input-wrapper">
                       <div class="upload-section">
-                        <select v-model="form.document_type" class="form-input upload-select">
+                        <select v-model="form.document_type" class="form-input upload-select" required>
                           <option value="">Type of Supporting Document</option>
                           <option v-for="doc in relevantSupportingDocuments" :key="doc" :value="doc">{{ doc }}</option>
                         </select>
@@ -437,7 +600,7 @@
               </div>
 
               <!-- Tent and Tables Borrowing - Specific Fields -->
-              <div v-if="selectedEventType === 'Tent and Tables Borrowing'" class="form-section">
+              <div v-if="selectedEventTypes.includes('Tent and Tables Borrowing')" class="form-section">
                 <h4 class="section-title">
                   <svg class="icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" style="width: 20px; height: 20px;">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 002.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 00-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 00.75-.75 2.25 2.25 0 00-.1-.664m-5.8 0A2.251 2.251 0 0113.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25zM6.75 12h.008v.008H6.75V12zm0 3h.008v.008H6.75V15zm0 3h.008v.008H6.75V18z" />
@@ -515,7 +678,7 @@
               </div>
 
               <!-- Sports Equipment Borrowing - Specific Fields -->
-              <div v-if="selectedEventType === 'Sports Equipment Borrowing'" class="form-section">
+              <div v-if="selectedEventTypes.includes('Sports Equipment Borrowing')" class="form-section">
                 <h4 class="section-title">
                   <svg class="icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" style="width: 20px; height: 20px;">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 002.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 00-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 00.75-.75 2.25 2.25 0 00-.1-.664m-5.8 0A2.251 2.251 0 0113.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25zM6.75 12h.008v.008H6.75V12zm0 3h.008v.008H6.75V15zm0 3h.008v.008H6.75V18z" />
@@ -588,7 +751,7 @@
               </div>
 
               <!-- Sound System Borrowing - Specific Fields -->
-              <div v-if="selectedEventType === 'Sound System Borrowing'" class="form-section">
+              <div v-if="selectedEventTypes.includes('Sound System Borrowing')" class="form-section">
                 <h4 class="section-title">
                   <svg class="icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" style="width: 20px; height: 20px;">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 002.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 00-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 00.75-.75 2.25 2.25 0 00-.1-.664m-5.8 0A2.251 2.251 0 0113.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25zM6.75 12h.008v.008H6.75V12zm0 3h.008v.008H6.75V15zm0 3h.008v.008H6.75V18z" />
@@ -623,12 +786,12 @@
                 <div class="dynamic-field-wrapper">
                   <div class="field-header">
                     <label class="field-label">
-                      Additional Equipment Needed <span class="optional-text">(Optional)</span>
+                      Additional Equipment Needed <span class="required-star">*</span>
                     </label>
                     <p class="field-description">Specify any additional audio equipment needed (e.g., mixer, cables, stands, etc.)</p>
                   </div>
                   <div class="field-input-wrapper">
-                    <textarea v-model="form.extra_fields.additional_equipment" placeholder="Example: Audio mixer, extension cables, microphone stands" rows="3" class="form-textarea"></textarea>
+                    <textarea v-model="form.extra_fields.additional_equipment" placeholder="Example: Audio mixer, extension cables, microphone stands" rows="3" class="form-textarea" required></textarea>
                   </div>
                 </div>
 
@@ -659,11 +822,11 @@
                 <div class="dynamic-field-wrapper">
                   <div class="field-header">
                     <label class="field-label">
-                      Need Technical Assistance? <span class="optional-text">(Optional)</span>
+                      Need Technical Assistance? <span class="required-star">*</span>
                     </label>
                   </div>
                   <div class="field-input-wrapper">
-                    <select v-model="form.extra_fields.need_technician" class="form-input">
+                    <select v-model="form.extra_fields.need_technician" class="form-input" required>
                       <option value="">Select</option>
                       <option value="Yes">Yes, I need technical assistance</option>
                       <option value="No">No, I can handle it myself</option>
@@ -682,52 +845,69 @@
                   Location Details
                 </h4>
 
-                <div v-if="selectedEventType === 'Court Reservation'" class="dynamic-field-wrapper">
-                  <div class="field-header">
-                    <label class="field-label">
-                      Court Location <span class="required-star">*</span>
-                    </label>
+                <!-- Location fields for each selected event type -->
+                <template v-for="eventType in selectedEventTypes" :key="eventType">
+                  <div v-if="eventType === 'Court Reservation'" class="dynamic-field-wrapper">
+                    <div class="field-header">
+                      <label class="field-label">
+                        Court Location ({{ eventType }}) <span class="required-star">*</span>
+                      </label>
+                    </div>
+                    <div class="field-input-wrapper">
+                      <select 
+                        v-model="form.locations[eventType]" 
+                        class="form-input" 
+                        required
+                      >
+                        <option value="">Select Court Location</option>
+                        <!-- Open Court Options -->
+                        <option v-if="form.court_types && form.court_types[eventType] === 'Open'" value="Bagsak Open Court">Bagsak Open Court</option>
+                        <option v-if="form.court_types && form.court_types[eventType] === 'Open'" value="Phase 5 Open Court">Phase 5 Open Court</option>
+                        <option v-if="form.court_types && form.court_types[eventType] === 'Open'" value="Phase 2 Open Court">Phase 2 Open Court</option>
+                        <!-- Covered Court Options -->
+                        <option v-if="form.court_types && form.court_types[eventType] === 'Covered'" value="Phase 2 Covered Court">Phase 2 Covered Court</option>
+                        <option v-if="form.court_types && form.court_types[eventType] === 'Covered'" value="Phase 5Y Covered Court">Phase 5Y Covered Court</option>
+                      </select>
+                    </div>
                   </div>
-                  <div class="field-input-wrapper">
-                    <select v-model="form.location" class="form-input" required>
-                      <option value="">Select Court Location</option>
-                      <!-- Open Court Options -->
-                      <option v-if="form.court_type === 'Open'" value="Bagsak Open Court">Bagsak Open Court</option>
-                      <option v-if="form.court_type === 'Open'" value="Phase 5 Open Court">Phase 5 Open Court</option>
-                      <option v-if="form.court_type === 'Open'" value="Phase 2 Open Court">Phase 2 Open Court</option>
-                      <!-- Covered Court Options -->
-                      <option v-if="form.court_type === 'Covered'" value="Phase 2 Covered Court">Phase 2 Covered Court</option>
-                      <option v-if="form.court_type === 'Covered'" value="Phase 5Y Covered Court">Phase 5Y Covered Court</option>
-                    </select>
-                  </div>
-                </div>
 
-                <div v-else-if="selectedEventType === 'Community Hall Reservation'" class="dynamic-field-wrapper">
-                  <div class="field-header">
-                    <label class="field-label">
-                      Community Hall Location <span class="required-star">*</span>
-                    </label>
+                  <div v-else-if="eventType === 'Community Hall Reservation'" class="dynamic-field-wrapper">
+                    <div class="field-header">
+                      <label class="field-label">
+                        Community Hall Location ({{ eventType }}) <span class="required-star">*</span>
+                      </label>
+                    </div>
+                    <div class="field-input-wrapper">
+                      <select 
+                        v-model="form.locations[eventType]" 
+                        class="form-input" 
+                        required
+                      >
+                        <option value="">Select Community Hall Location</option>
+                        <option value="Phase 2 Community Hall">Phase 2 Community Hall</option>
+                        <option value="Phase 5 Community Hall">Phase 5 Community Hall</option>
+                        <option value="Phase 5Y Community Hall">Phase 5Y Community Hall</option>
+                      </select>
+                    </div>
                   </div>
-                  <div class="field-input-wrapper">
-                    <select v-model="form.location" class="form-input" required>
-                      <option value="">Select Community Hall Location</option>
-                      <option value="Phase 2 Community Hall">Phase 2 Community Hall</option>
-                      <option value="Phase 5 Community Hall">Phase 5 Community Hall</option>
-                      <option value="Phase 5Y Community Hall">Phase 5Y Community Hall</option>
-                    </select>
-                  </div>
-                </div>
 
-                <div v-else class="dynamic-field-wrapper">
-                  <div class="field-header">
-                    <label class="field-label">
-                      Event Location <span class="optional-text">(Optional)</span>
-                    </label>
+                  <div v-else class="dynamic-field-wrapper">
+                    <div class="field-header">
+                      <label class="field-label">
+                        Event Location ({{ eventType }}) <span class="required-star">*</span>
+                      </label>
+                    </div>
+                    <div class="field-input-wrapper">
+                      <input 
+                        type="text" 
+                        v-model="form.locations[eventType]" 
+                        :placeholder="`Enter location for ${eventType}`" 
+                        class="form-input" 
+                        required
+                      />
+                    </div>
                   </div>
-                  <div class="field-input-wrapper">
-                    <input type="text" v-model="form.location" placeholder="Enter event location" class="form-input" />
-                  </div>
-                </div>
+                </template>
               </div>
 
             </div>
@@ -748,8 +928,7 @@
               <p class="request-number">REQUEST NO. #{{ requestNumber }}</p>
 
               <div class="success-message">
-                <p>You have successfully submitted your request for <span class="highlight">{{ selectedEventType }}</span>
-                  <span v-if="selectedEventType === 'Court Reservation' && form.court_type"> — {{ form.court_type }} Court</span>.
+                <p>You have successfully submitted your request for <span class="highlight">{{ selectedEventTypes.join(', ') }}</span>.
                 </p>
                 <p>Your request is now being reviewed by the barangay officials. We will contact you within 2-3 business days regarding the status of your application.</p>
                 <p>Your reference number is <span class="highlight">#{{ requestNumber }}</span>. Please keep this for tracking purposes.</p>
@@ -762,6 +941,130 @@
       </div>
     </div>
   </div>
+
+  <!-- Request Details Modal -->
+  <div v-if="showDetailsModal" class="modal-overlay" @click="closeDetailsModal">
+    <div class="modal-content details-modal" @click.stop>
+      <button class="close-modal-btn" @click="closeDetailsModal">✕</button>
+      
+      <!-- Success/Status Header -->
+      <div class="modal-icon" :class="selectedRequest?.status.toLowerCase() + '-icon'">
+        <div class="status-badge">
+          <span v-if="selectedRequest?.status === 'APPROVED'">✓</span>
+          <span v-if="selectedRequest?.status === 'PENDING'">⏱</span>
+          <span v-if="selectedRequest?.status === 'REJECTED'">✕</span>
+        </div>
+      </div>
+      
+      <h3 class="modal-title">REQUEST {{ selectedRequest?.status }}</h3>
+      <p class="request-number-display">REQUEST NO. #{{ selectedRequest?.requestNumber }}</p>
+      
+      <div class="details-content">
+        <!-- Request Message -->
+        <p class="details-message">
+          Your request for <strong>{{ selectedRequest?.title }}</strong> has been 
+          <strong>{{ selectedRequest?.status.toLowerCase() }}</strong>.
+        </p>
+        
+        <!-- APPROVED Status -->
+        <div v-if="selectedRequest?.status === 'APPROVED'" class="accepted-section">
+          <p class="details-message">
+            Your event assistance request has been approved.
+          </p>
+          
+          <div class="request-info-box">
+            <div class="info-item">
+              <span class="info-label">EVENT TYPE:</span>
+              <span class="info-value">{{ selectedRequest?.title }}</span>
+            </div>
+            <div v-if="selectedRequest?.event_location" class="info-item">
+              <span class="info-label">LOCATION:</span>
+              <span class="info-value">{{ selectedRequest.event_location }}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">SUBMITTED ON:</span>
+              <span class="info-value">{{ selectedRequest?.date }}, {{ selectedRequest?.time }}</span>
+            </div>
+          </div>
+          
+          <p class="present-message">
+            <strong>Present this request number:</strong><br/>
+            <span class="highlight-number">#{{ selectedRequest?.requestNumber }}</span>
+          </p>
+        </div>
+        
+        <!-- PENDING Status -->
+        <div v-if="selectedRequest?.status === 'PENDING'" class="pending-section">
+          <p class="details-message">
+            Your request is currently being reviewed by the barangay officials. You will be notified once a decision has been made.
+          </p>
+          
+          <div class="request-info-box">
+            <div class="info-item">
+              <span class="info-label">SUBMITTED ON:</span>
+              <span class="info-value">{{ selectedRequest?.date }}, {{ selectedRequest?.time }}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">REQUEST TYPE:</span>
+              <span class="info-value">{{ selectedRequest?.title }}</span>
+            </div>
+            <div v-if="selectedRequest?.event_location" class="info-item">
+              <span class="info-label">EVENT LOCATION:</span>
+              <span class="info-value">{{ selectedRequest.event_location }}</span>
+            </div>
+          </div>
+          
+          <p class="note-message">
+            <strong>Note:</strong> Processing time typically takes 2-3 business days. Thank you for your patience.
+          </p>
+        </div>
+        
+        <!-- REJECTED Status -->
+        <div v-if="selectedRequest?.status === 'REJECTED'" class="rejected-section">
+          <p class="details-message">
+            Unfortunately, your request has been rejected. Please review the reason below and contact the barangay office if you have questions.
+          </p>
+          
+          <div class="rejection-box">
+            <h4>Reason for Rejection:</h4>
+            <p>{{ getRejectionReason(selectedRequest) }}</p>
+          </div>
+          
+          <div class="request-info-box">
+            <div class="info-item">
+              <span class="info-label">SUBMITTED ON:</span>
+              <span class="info-value">{{ selectedRequest?.date }}, {{ selectedRequest?.time }}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">REQUEST TYPE:</span>
+              <span class="info-value">{{ selectedRequest?.title }}</span>
+            </div>
+          </div>
+          
+          <p class="note-message">
+            You may submit a new request with the correct information or contact Ms. Mercy Alpaño at the barangay hall for assistance.
+          </p>
+        </div>
+        
+        <!-- Admin Feedback Section -->
+        <div v-if="selectedRequest?.admin_feedback || selectedRequest?.raw?.admin_feedback" class="feedback-section">
+          <h4 class="section-title-feedback">
+            <span class="icon">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" style="width: 20px; height: 20px; display: inline-block; vertical-align: middle;">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M8.625 12a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H8.25m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H12m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 0 1-2.555-.337A5.972 5.972 0 0 1 5.41 20.97a5.969 5.969 0 0 1-.474-.065 4.48 4.48 0 0 0 .978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25Z" />
+              </svg>
+            </span> Approver Comment
+          </h4>
+          <div class="feedback-box">
+            <p>{{ selectedRequest?.admin_feedback ?? selectedRequest?.raw?.admin_feedback }}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Terms & Conditions Modal -->
+  <TermsModal :open="showTerms" @close="closeTerms" />
 </template>
 
 <script setup>
@@ -770,6 +1073,7 @@ import { Head, useForm } from '@inertiajs/vue3'
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { router } from '@inertiajs/vue3'
 import axios from 'axios'
+import TermsModal from '@/Components/TermsModal.vue'
 
 // ensure axios uses X-Requested-With and CSRF (Laravel default)
 axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest'
@@ -820,10 +1124,148 @@ const displayRole = computed(() => {
 // UI state
 const showSettings = ref(false)
 const activeTab = ref('events')
-const currentView = ref('selection')
-const selectedEventType = ref('Court Reservation')
+const currentView = ref('list') // Default to 'list' view to show submitted requests
+const selectedEventTypes = ref([]) // Changed to array for multiple selections
+const selectedEventType = computed(() => selectedEventTypes.value.length > 0 ? selectedEventTypes.value[0] : 'Court Reservation') // Keep for backward compatibility
 const requestNumber = ref('')
 const isSubmitting = ref(false)
+
+// Filter state
+const showSortDropdown = ref(false)
+const showStatusDropdown = ref(false)
+const sortOption = ref('newest')
+const statusFilter = ref('all')
+const searchQuery = ref('')
+
+// Request details modal state
+const showDetailsModal = ref(false)
+const selectedRequest = ref(null)
+
+// Get props from Inertia page
+const eventRequestsRaw = computed(() => {
+  return page?.props?.value?.eventAssistanceRequests ?? page?.props?.eventAssistanceRequests ?? page?.props?.value?.event_assistance_requests ?? page?.props?.event_assistance_requests ?? []
+})
+
+// Map event assistance requests into normalized shape
+const mappedEventRequests = computed(() => {
+  const server = eventRequestsRaw.value || []
+  if (server.length === 0) return []
+
+  return (Array.isArray(server) ? server : []).map((r) => {
+    const createdAt = r.created_at
+    let timestamp = null
+    
+    if (createdAt) {
+      try { 
+        timestamp = new Date(createdAt)
+        if (isNaN(timestamp.getTime())) timestamp = null
+      } catch (e) { 
+        timestamp = null 
+      }
+    }
+
+    let dateStr = ''
+    let timeStr = ''
+    if (timestamp && !isNaN(timestamp.getTime())) {
+      try {
+        dateStr = new Intl.DateTimeFormat('en-US', { year: 'numeric', month: 'short', day: 'numeric' }).format(timestamp)
+        timeStr = new Intl.DateTimeFormat('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }).format(timestamp)
+      } catch (e) {
+        dateStr = timestamp.toLocaleDateString()
+        timeStr = timestamp.toLocaleTimeString()
+      }
+    } else {
+      dateStr = 'N/A'
+      timeStr = 'N/A'
+    }
+
+    const status = (r.status ?? 'PENDING').toString().toUpperCase()
+    const title = r.title ?? r.event_type ?? 'Event Assistance Request'
+    const requestNumber = r.eventassist_request_ticket ?? `EA-${r.event_assist_request_id}`
+
+    return {
+      id: r.event_assist_request_id,
+      requestNumber,
+      title,
+      status,
+      date: dateStr,
+      time: timeStr,
+      type: 'event',
+      event_location: r.event_location ?? null,
+      admin_feedback: r.admin_feedback ?? null,
+      raw: r,
+    }
+  })
+})
+
+// Filtered event requests
+const filteredEventRequests = computed(() => {
+  let filtered = [...mappedEventRequests.value]
+
+  // Filter by status
+  if (statusFilter.value !== 'all') {
+    filtered = filtered.filter(request => 
+      request.status.toLowerCase() === statusFilter.value.toLowerCase()
+    )
+  }
+
+  // Filter by search query
+  if (searchQuery.value.trim()) {
+    const query = searchQuery.value.toLowerCase().trim()
+    filtered = filtered.filter(request => {
+      const title = (request.title || '').toLowerCase()
+      const requestNumber = (request.requestNumber || '').toLowerCase()
+      const date = (request.date || '').toLowerCase()
+      const status = (request.status || '').toLowerCase()
+      return title.includes(query) || 
+             requestNumber.includes(query) || 
+             date.includes(query) || 
+             status.includes(query)
+    })
+  }
+
+  // Sort
+  if (sortOption.value === 'newest') {
+    filtered.sort((a, b) => {
+      const dateA = a.raw?.created_at ? new Date(a.raw.created_at) : new Date(0)
+      const dateB = b.raw?.created_at ? new Date(b.raw.created_at) : new Date(0)
+      return dateB - dateA
+    })
+  } else if (sortOption.value === 'oldest') {
+    filtered.sort((a, b) => {
+      const dateA = a.raw?.created_at ? new Date(a.raw.created_at) : new Date(0)
+      const dateB = b.raw?.created_at ? new Date(b.raw.created_at) : new Date(0)
+      return dateA - dateB
+    })
+  }
+
+  return filtered
+})
+
+// Filter functions
+const toggleSortDropdown = () => {
+  showSortDropdown.value = !showSortDropdown.value
+  showStatusDropdown.value = false
+}
+
+const toggleStatusDropdown = () => {
+  showStatusDropdown.value = !showStatusDropdown.value
+  showSortDropdown.value = false
+}
+
+const selectSort = (option) => {
+  sortOption.value = option
+  showSortDropdown.value = false
+}
+
+const selectStatus = (status) => {
+  statusFilter.value = status
+  showStatusDropdown.value = false
+}
+
+const performSearch = () => {
+  // Search is handled by computed property automatically
+}
 
 // Court options removed - using dropdown instead
 
@@ -833,10 +1275,25 @@ const hasScrolledToBottom = ref(false)
 const termsContainer = ref(null)
 
 const canProceed = computed(() => {
-  if (selectedEventType.value === 'Court Reservation') {
-    return form.court_type && termsAccepted.value && hasScrolledToBottom.value
+  // Check if terms are accepted and scrolled to bottom
+  if (!termsAccepted.value || !hasScrolledToBottom.value) {
+    return false
   }
-  return termsAccepted.value && hasScrolledToBottom.value
+  
+  // If Court Reservation is selected, check if court type is selected
+  if (selectedEventTypes.value.includes('Court Reservation')) {
+    const courtType = form.court_types && form.court_types['Court Reservation']
+    if (!courtType) {
+      return false
+    }
+  }
+  
+  // At least one event type must be selected
+  if (selectedEventTypes.value.length === 0) {
+    return false
+  }
+  
+  return true
 })
 
 const checkTermsScroll = () => {
@@ -881,8 +1338,10 @@ const purposeOptions = [
 
 // Use Inertia form so nested file uploads are handled (forceFormData true on post)
 // NOTE: duration removed from initial state; end_time added
+// Updated to support multiple event types
 const form = useForm({
-  event_type: selectedEventType.value,
+  event_types: [], // Array of selected event types
+  event_type: '', // Keep for backward compatibility, will be comma-separated string
   purpose: '',
   others: '',
   location: '',
@@ -896,8 +1355,10 @@ const form = useForm({
   document_type: '',
   documents: [],         // main uploaded files array (files will be attached)
   extra_fields: {},      // per-event dynamic fields; can contain file objects too
-  // NEW: keep the selected court type (Open / Covered) here; note we intentionally keep event_type as "Court Reservation"
-  court_type: '',
+  // NEW: keep the selected court type per event type (Open / Covered)
+  court_types: {}, // Object mapping event type to court type: { 'Court Reservation': 'Open' }
+  court_type: '', // Keep for backward compatibility
+  locations: {}, // Object mapping event type to location: { 'Court Reservation': 'Phase 2 Covered Court' }
   // ID upload fields (like document requests)
   id_type: '',
   id_front: null,
@@ -906,26 +1367,62 @@ const form = useForm({
   valid_id_number: ''
 })
 
-// keep event_type synced
-watch(selectedEventType, (v) => {
-  form.event_type = v
-  initExtraFieldsForEvent(v)
-  // when user selects another event, clear court type and location
-  if (v !== 'Court Reservation') {
-    form.court_type = ''
+// Update court type with proper reactivity
+const updateCourtType = (eventName, value) => {
+  if (!form.court_types) {
+    form.court_types = {}
   }
-  // Clear location when switching between events (will be set by dropdown)
-  if (v !== 'Court Reservation' && v !== 'Community Hall Reservation') {
-    form.location = ''
+  // Use Vue's reactivity by creating a new object reference
+  form.court_types = {
+    ...form.court_types,
+    [eventName]: value
   }
-})
+}
 
-// Watch court_type to clear location when it changes
-watch(() => form.court_type, () => {
-  if (selectedEventType.value === 'Court Reservation') {
-    form.location = '' // Clear location when court type changes
+// Handle event type toggle
+const handleEventTypeToggle = (eventName) => {
+  // Initialize extra fields for newly selected event types
+  if (selectedEventTypes.value.includes(eventName)) {
+    initExtraFieldsForEvent(eventName)
+    // Initialize court_types object if needed - ensure it's reactive
+    if (!form.court_types) {
+      form.court_types = {}
+    }
+    // Ensure the property exists for reactivity
+    if (eventName === 'Court Reservation' && !form.court_types[eventName]) {
+      form.court_types = {
+        ...form.court_types,
+        [eventName]: ''
+      }
+    }
+    // Initialize locations object if needed
+    if (!form.locations) {
+      form.locations = {}
+    }
+  } else {
+    // Clean up when deselected
+    if (form.court_types && form.court_types[eventName]) {
+      delete form.court_types[eventName]
+      // Force reactivity update
+      form.court_types = { ...form.court_types }
+    }
+    if (form.locations && form.locations[eventName]) {
+      delete form.locations[eventName]
+      // Force reactivity update
+      form.locations = { ...form.locations }
+    }
   }
-})
+}
+
+// Watch selectedEventTypes to update form
+watch(selectedEventTypes, (newTypes) => {
+  form.event_types = [...newTypes]
+  form.event_type = newTypes.join(',') // Keep for backward compatibility
+  // Initialize fields for all selected types
+  newTypes.forEach(eventType => {
+    initExtraFieldsForEvent(eventType)
+  })
+}, { deep: true })
 
 // sample event list, descriptions and requirements (kept from original)
 const eventNames = [
@@ -1034,8 +1531,16 @@ const eventFields = {
   ]
 }
 
-// computed fields for current event
-const currentEventFields = computed(() => eventFields[selectedEventType.value] ?? [])
+// computed fields for current event (for backward compatibility)
+// Returns fields for all selected event types combined
+const currentEventFields = computed(() => {
+  const allFields = []
+  selectedEventTypes.value.forEach(eventType => {
+    const fields = eventFields[eventType] ?? []
+    allFields.push(...fields)
+  })
+  return allFields
+})
 
 // Supporting documents relevant to each event type
 const supportingDocumentsByEvent = {
@@ -1250,13 +1755,88 @@ const removeDynamicFile = (fieldName) => {
 // navigation & UI helpers (kept from your original)
 const toggleSettings = () => { showSettings.value = !showSettings.value }
 const closeSettings = () => { showSettings.value = false }
-const logout = () => { showSettings.value = false; router.visit(route('login')) }
+
+// Terms & Conditions modal
+const showTerms = ref(false)
+const openTerms = () => {
+    showSettings.value = false
+    showTerms.value = true
+}
+const closeTerms = () => {
+    showTerms.value = false
+}
+const logout = () => {
+    showSettings.value = false
+    // Properly logout by calling the logout endpoint
+    router.post('/logout', {}, {
+        onSuccess: () => {
+            // Clear any local storage or session storage if needed
+            if (typeof window !== 'undefined') {
+                localStorage.clear()
+                sessionStorage.clear()
+            }
+            // Redirect to login page after successful logout
+            router.visit(route('login'), {
+                replace: true,
+                preserveState: false,
+                preserveScroll: false
+            })
+        },
+        onError: () => {
+            // Even if logout fails, redirect to login
+            router.visit(route('login'), {
+                replace: true,
+                preserveState: false,
+                preserveScroll: false
+            })
+        },
+        onFinish: () => {
+            // Ensure we redirect even if something goes wrong
+            router.visit(route('login'), {
+                replace: true,
+                preserveState: false,
+                preserveScroll: false
+            })
+        }
+    })
+}
 const setActiveTab = (tab) => { activeTab.value = tab }
 const navigateToPosts = () => { activeTab.value = 'posts'; router.visit(route('announcement_resident')) }
 const navigateToDocuments = () => { activeTab.value = 'documents'; router.visit(route('document_request_select_resident')) }
 const navigateToProfile = () => { activeTab.value = 'profile'; router.visit(route('profile_resident')) }
-const navigateToNotifications = () => { activeTab.value = 'notifications'; router.visit(route('notification_request_resident')) }
+const navigateToNotifications = () => { activeTab.value = 'notifications'; router.visit(route('notification_activities_resident')) }
 const openFAQ = () => { router.visit(route('help_center_resident')) }
+
+// Show request form (switch to selection view)
+const showRequestForm = () => {
+  currentView.value = 'selection'
+}
+
+// View request details (open modal)
+const viewRequestDetails = (request) => {
+  selectedRequest.value = request
+  showDetailsModal.value = true
+}
+
+// Close details modal
+const closeDetailsModal = () => {
+  showDetailsModal.value = false
+  selectedRequest.value = null
+}
+
+// Helper functions for modal
+const getRejectionReason = (request) => {
+  const adminFeedback = request?.admin_feedback ?? request?.raw?.admin_feedback ?? null
+  if (adminFeedback && adminFeedback.trim() !== '') {
+    return adminFeedback.trim()
+  }
+  return 'The submitted information does not meet the requirements. Please contact the barangay office for more details.'
+}
+
+// Go back to list view from form
+const backToList = () => {
+  currentView.value = 'list'
+}
 
 // add these refs near other refs (e.g., mainFileInput)
 const startTimeInput = ref(null)
@@ -1274,23 +1854,41 @@ const focusEndTime = () => {
   }
 }
 
-// Event selection helpers
+// Event selection helpers (kept for backward compatibility but not used with checkboxes)
 const selectEvent = (eventType) => {
-  selectedEventType.value = eventType
-  if (eventType !== 'Court Reservation') {
-    form.court_type = '' // clear any earlier court-type when switching to other events
+  if (!selectedEventTypes.value.includes(eventType)) {
+    selectedEventTypes.value.push(eventType)
   }
-  initExtraFieldsForEvent(eventType)
+  handleEventTypeToggle(eventType)
 }
 
 const proceedToForm = () => {
-  // if user chose the court reservation, require selecting Open/Covered before proceeding
-  if (selectedEventType.value === 'Court Reservation' && !form.court_type) {
-    alert('Please select a Court Type (Open or Covered) before proceeding.')
+  // Check if at least one event type is selected
+  if (selectedEventTypes.value.length === 0) {
+    alert('Please select at least one event type before proceeding.')
     return
   }
 
-  initExtraFieldsForEvent(selectedEventType.value)
+  // Check if Court Reservation is selected and court type is required
+  if (selectedEventTypes.value.includes('Court Reservation')) {
+    const courtType = form.court_types && form.court_types['Court Reservation']
+    if (!courtType) {
+      alert('Please select a Court Type (Open or Covered) for Court Reservation before proceeding.')
+      return
+    }
+  }
+
+  // Initialize fields for all selected event types
+  selectedEventTypes.value.forEach(eventType => {
+    initExtraFieldsForEvent(eventType)
+  })
+
+  // Check terms acceptance
+  if (!termsAccepted.value || !hasScrolledToBottom.value) {
+    alert('Please read and accept the Terms and Conditions before proceeding.')
+    return
+  }
+
   currentView.value = 'form'
 }
 
@@ -1370,19 +1968,58 @@ const submitRequest = async () => {
   try {
     const fd = new FormData()
 
-    // Ensure event_type is always sent
-    if (!form.event_type) {
-      form.event_type = selectedEventType.value
+    // Ensure event_types array is sent
+    if (form.event_types && form.event_types.length > 0) {
+      form.event_types.forEach(eventType => {
+        fd.append('event_types[]', eventType)
+      })
+      // Also send as comma-separated string for backward compatibility
+      form.event_type = form.event_types.join(',')
+    } else if (!form.event_type) {
+      form.event_type = selectedEventTypes.value.join(',')
+    }
+
+    // Send event_types as JSON for easier backend processing
+    fd.append('event_types_json', JSON.stringify(form.event_types || selectedEventTypes.value))
+    
+    // Send locations object as JSON
+    if (form.locations && Object.keys(form.locations).length > 0) {
+      fd.append('locations_json', JSON.stringify(form.locations))
+    }
+    
+    // Send court_types object as JSON
+    if (form.court_types && Object.keys(form.court_types).length > 0) {
+      fd.append('court_types_json', JSON.stringify(form.court_types))
     }
 
     // append scalar fields (include duration and end_time)
-    const scalarKeys = ['event_type','purpose','others','location','event_date','event_time','start_datetime','duration','end_datetime','end_time','attendees','document_type','court_type','id_type','valid_id_number']
+    const scalarKeys = ['event_type','purpose','others','event_date','event_time','start_datetime','duration','end_datetime','end_time','attendees','document_type','id_type','valid_id_number']
     scalarKeys.forEach(k => {
       const value = form[k]
       if (value !== undefined && value !== null && value !== '') {
         fd.append(k, value)
       }
     })
+    
+    // Handle location - use first location or main location field
+    if (form.locations && Object.keys(form.locations).length > 0) {
+      const firstLocation = Object.values(form.locations)[0]
+      if (firstLocation) {
+        fd.append('location', firstLocation)
+      }
+    } else if (form.location) {
+      fd.append('location', form.location)
+    }
+    
+    // Handle court_type - use first court type or main court_type field
+    if (form.court_types && Object.keys(form.court_types).length > 0) {
+      const firstCourtType = Object.values(form.court_types)[0]
+      if (firstCourtType) {
+        fd.append('court_type', firstCourtType)
+      }
+    } else if (form.court_type) {
+      fd.append('court_type', form.court_type)
+    }
     
     // Log what we're sending for debugging
     console.log('Submitting event assistance request:', {
@@ -1490,18 +2127,24 @@ const submitRequest = async () => {
 
 
 const viewRequest = () => { 
-  currentView.value = 'selection'; 
-  alert(`Viewing request #${requestNumber.value}`) 
-  router.visit(route('notification_request_resident'))
+  currentView.value = 'list'
 }
 
 const handleClickOutside = (event) => {
-  if (!event.target.closest('.header-actions')) showSettings.value = false
+  if (!event.target.closest('.filter-dropdown-wrapper')) {
+    showSortDropdown.value = false
+    showStatusDropdown.value = false
+  }
+  if (!event.target.closest('.header-actions')) {
+    showSettings.value = false
+  }
 }
 
 onMounted(() => {
   document.addEventListener('click', handleClickOutside)
   activeTab.value = 'events'
+  // Default to list view to show submitted requests
+  currentView.value = 'list'
 })
 
 onUnmounted(() => {
@@ -1974,6 +2617,22 @@ onUnmounted(() => {
     display: grid;
     grid-template-columns: 320px 1fr;
     min-height: 600px;
+    gap: 0;
+}
+
+.event-types-wrapper {
+    display: flex;
+    flex-direction: column;
+    background: #f8f9fa;
+    border-right: 1px solid #e0e0e0;
+    padding: 20px 0;
+}
+
+.event-types-wrapper .event-types {
+    padding: 0;
+    margin-top: 0;
+    background: transparent;
+    border-right: none;
 }
 
 .event-types {
@@ -2009,6 +2668,98 @@ onUnmounted(() => {
     background: linear-gradient(135deg, #ff8c42, #ff7a28);
     color: white;
     border-left-color: #ff8c42;
+}
+
+/* Checkbox styling for event types */
+.event-type-checkbox-label {
+    display: flex;
+    align-items: center;
+    padding: 15px 25px;
+    cursor: pointer;
+    border-left: 4px solid transparent;
+    transition: all 0.2s;
+    background: transparent;
+    color: #666;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.event-type-checkbox-label:hover {
+    background: #fff;
+    color: #ff8c42;
+}
+
+.event-type-checkbox-label.active {
+    background: #e9ecef;
+    color: #333;
+    border-left-color: #ff8c42;
+}
+
+.event-type-checkbox {
+    width: 18px;
+    height: 18px;
+    margin-right: 12px;
+    cursor: pointer;
+    accent-color: #ff8c42;
+    flex-shrink: 0;
+}
+
+.event-type-checkbox:checked {
+    accent-color: #ff8c42;
+}
+
+.event-type-checkbox-text {
+    flex: 1;
+}
+
+.selected-events-summary {
+    margin-bottom: 20px;
+    padding: 15px;
+    background: #f0f7ff;
+    border-radius: 8px;
+    border-left: 4px solid #ff8c42;
+}
+
+.selected-count {
+    margin: 0;
+    font-size: 16px;
+    color: #333;
+}
+
+.selected-count strong {
+    color: #ff8c42;
+    font-weight: 700;
+}
+
+.event-descriptions-list {
+    margin-bottom: 30px;
+}
+
+.event-description-item {
+    margin-bottom: 30px;
+    padding-bottom: 30px;
+    border-bottom: 2px solid #e0e0e0;
+}
+
+.event-description-item:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+    padding-bottom: 0;
+}
+
+.event-description-title {
+    font-size: 24px;
+    font-weight: 700;
+    color: #ff8c42;
+    margin-bottom: 15px;
+}
+
+.no-selection-message {
+    text-align: center;
+    padding: 40px;
+    color: #999;
+    font-size: 16px;
+    font-style: italic;
 }
 
 .event-info {
@@ -2687,9 +3438,14 @@ onUnmounted(() => {
         grid-template-columns: 1fr;
     }
 
-    .event-types {
+    .event-types-wrapper {
         border-right: none;
         border-bottom: 1px solid #e0e0e0;
+    }
+
+    .event-types {
+        border-right: none;
+        border-bottom: none;
         max-height: 300px;
     }
 
@@ -2769,5 +3525,701 @@ onUnmounted(() => {
         height: 100px;
         font-size: 50px;
     }
+}
+
+/* Requests List View Styles */
+.requests-list-view {
+    padding: 30px 40px;
+    min-height: 600px;
+}
+
+.requests-header {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 25px;
+}
+
+.request-new-btn {
+    background: linear-gradient(135deg, #ff8c42, #ff7a28);
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 12px rgba(255, 140, 66, 0.3);
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.request-new-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 18px rgba(255, 140, 66, 0.4);
+}
+
+.requests-table-container {
+    background: white;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+.requests-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.requests-table thead {
+    background: linear-gradient(135deg, #2bb24a, #239640);
+    color: white;
+}
+
+.requests-table th {
+    padding: 15px 20px;
+    text-align: left;
+    font-weight: 700;
+    font-size: 14px;
+    text-transform: uppercase;
+}
+
+.requests-table tbody tr {
+    border-bottom: 1px solid #e0e0e0;
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.requests-table tbody tr:hover {
+    background: #f8f9fa;
+}
+
+.requests-table tbody tr:last-child {
+    border-bottom: none;
+}
+
+.requests-table td {
+    padding: 15px 20px;
+    font-size: 14px;
+    color: #333;
+}
+
+.no-requests {
+    text-align: center;
+    color: #999;
+    font-style: italic;
+    padding: 40px !important;
+}
+
+.status-badge {
+    display: inline-block;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.status-badge.pending {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.status-badge.approved {
+    background: #d4edda;
+    color: #155724;
+}
+
+.status-badge.rejected {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+/* Modal Styles */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.6);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 10000;
+    padding: 20px;
+}
+
+.modal-content {
+    background: white;
+    border-radius: 15px;
+    max-width: 600px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+    position: relative;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+}
+
+.details-modal {
+    padding: 30px 40px;
+}
+
+.close-modal-btn {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    background: transparent;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    color: #999;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: all 0.2s ease;
+}
+
+.close-modal-btn:hover {
+    background: #f0f0f0;
+    color: #333;
+}
+
+.modal-icon {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.modal-icon .status-badge {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 40px;
+    font-weight: 700;
+}
+
+.approved-icon .status-badge {
+    background: linear-gradient(135deg, #2bb24a, #239640);
+    color: white;
+}
+
+.pending-icon .status-badge {
+    background: linear-gradient(135deg, #ffc107, #ff9800);
+    color: white;
+}
+
+.rejected-icon .status-badge {
+    background: linear-gradient(135deg, #dc3545, #c82333);
+    color: white;
+}
+
+.modal-title {
+    font-size: 24px;
+    font-weight: 700;
+    text-align: center;
+    margin-bottom: 10px;
+    color: #333;
+}
+
+.request-number-display {
+    text-align: center;
+    font-size: 14px;
+    color: #ff8c42;
+    font-weight: 700;
+    margin-bottom: 30px;
+}
+
+.details-content {
+    margin-top: 20px;
+}
+
+.details-message {
+    font-size: 14px;
+    line-height: 1.8;
+    color: #555;
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+.accepted-section,
+.pending-section,
+.rejected-section {
+    margin-top: 20px;
+}
+
+.rejection-box {
+    background: #f8d7da;
+    border: 1px solid #f5c6cb;
+    border-radius: 8px;
+    padding: 15px;
+    margin-top: 15px;
+}
+
+.rejection-box h4 {
+    color: #721c24;
+    font-size: 16px;
+    font-weight: 700;
+    margin-bottom: 10px;
+}
+
+.rejection-box p {
+    color: #721c24;
+    font-size: 14px;
+    margin: 0;
+}
+
+/* Request Info Box */
+.request-info-box {
+    background: #f8f9fa;
+    padding: 20px;
+    border-radius: 12px;
+    margin: 20px 0;
+}
+
+.info-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px 0;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.info-item:last-child {
+    border-bottom: none;
+}
+
+.info-label {
+    font-weight: 700;
+    color: #666;
+    font-size: 13px;
+    min-width: 120px;
+}
+
+.info-value {
+    font-weight: 600;
+    color: #333;
+    font-size: 14px;
+    text-align: right;
+    flex: 1;
+}
+
+.present-message {
+    text-align: center;
+    margin-top: 25px;
+    padding: 15px;
+    background: #fff3cd;
+    border-radius: 8px;
+    font-size: 14px;
+    color: #856404;
+}
+
+.highlight-number {
+    color: #ff8c42;
+    font-weight: 700;
+    font-size: 18px;
+}
+
+.note-message {
+    font-size: 13px;
+    color: #666;
+    margin-top: 15px;
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    line-height: 1.6;
+}
+
+/* Feedback Section */
+.feedback-section {
+    margin-top: 25px;
+    padding: 20px;
+    background: #e7f3ff;
+    border-radius: 12px;
+    border-left: 4px solid #2196F3;
+}
+
+.section-title-feedback {
+    font-size: 16px;
+    font-weight: 700;
+    color: #333;
+    margin-bottom: 15px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.feedback-box {
+    background: white;
+    padding: 15px;
+    border-radius: 8px;
+}
+
+.feedback-box p {
+    margin: 0;
+    font-size: 14px;
+    color: #333;
+    line-height: 1.6;
+}
+
+/* Filter Section Styles */
+.filter-section {
+    padding: 20px 25px;
+    background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+    border-bottom: 1px solid #e0e0e0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    border-radius: 12px 12px 0 0;
+}
+
+.filter-left {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.filter-label {
+    font-weight: 600;
+    color: #666;
+    font-size: 14px;
+}
+
+.filter-dropdown-wrapper {
+    position: relative;
+}
+
+.filter-dropdown-btn {
+    padding: 8px 15px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    background: white;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #333;
+}
+
+.filter-dropdown-btn:hover {
+    border-color: #ff8c42;
+}
+
+.filter-arrow {
+    font-size: 10px;
+    transition: transform 0.3s ease;
+    color: #666;
+}
+
+.filter-arrow.rotated {
+    transform: rotate(180deg);
+}
+
+.filter-dropdown-menu {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+    min-width: 150px;
+    z-index: 1000;
+    margin-top: 5px;
+    overflow: hidden;
+    border: 1px solid rgba(0,0,0,0.1);
+}
+
+.filter-dropdown-menu button {
+    display: block;
+    width: 100%;
+    padding: 10px 15px;
+    background: none;
+    border: none;
+    text-align: left;
+    color: #333;
+    cursor: pointer;
+    transition: background 0.2s;
+    font-weight: 500;
+    font-size: 12px;
+}
+
+.filter-dropdown-menu button:hover {
+    background: #fff7ef;
+}
+
+.filter-dropdown-menu button.active {
+    background: #fff7ef;
+    color: #ff8c42;
+    font-weight: 600;
+}
+
+.filter-right {
+    display: flex;
+    gap: 15px;
+    align-items: center;
+}
+
+.search-container {
+    display: flex;
+    gap: 5px;
+    background: white;
+    border-radius: 8px;
+    padding: 2px;
+    border: 1px solid #ddd;
+    align-items: center;
+}
+
+.search-input {
+    padding: 8px 15px;
+    border: none;
+    border-radius: 6px;
+    width: 250px;
+    font-size: 12px;
+    outline: none;
+}
+
+.search-btn {
+    background: transparent;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    color: #666;
+}
+
+.search-btn:hover {
+    background: #f0f0f0;
+    color: #ff8c42;
+}
+
+.search-icon {
+    width: 18px;
+    height: 18px;
+    stroke: currentColor;
+}
+
+.request-new-btn {
+    background: linear-gradient(135deg, #ff8c42, #ff7a28);
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(255, 140, 66, 0.3);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.request-new-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(255, 140, 66, 0.4);
+}
+
+.request-new-btn:active {
+    transform: translateY(0);
+}
+
+.requests-table-container {
+    background: white;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+    border: 1px solid rgba(0,0,0,0.05);
+}
+
+.requests-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+}
+
+.requests-table thead {
+    background: #f8f9fa;
+    border-bottom: 2px solid #e0e0e0;
+}
+
+.requests-table th {
+    padding: 16px 20px;
+    text-align: left;
+    font-weight: 600;
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: #666;
+}
+
+.requests-table th:first-child {
+    padding-left: 25px;
+}
+
+.requests-table th:nth-child(4) {
+    text-align: center;
+}
+
+.requests-table th:last-child {
+    padding-right: 25px;
+    text-align: center;
+}
+
+.requests-table td:nth-child(4) {
+    text-align: center;
+    vertical-align: middle;
+}
+
+.requests-table tbody tr {
+    border-bottom: 1px solid #e9ecef;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    background: white;
+}
+
+.requests-table tbody tr:hover {
+    background: #f5f5f5;
+}
+
+.requests-table tbody tr:last-child {
+    border-bottom: none;
+}
+
+.requests-table td {
+    padding: 18px 20px;
+    font-size: 16px;
+    color: #333;
+    vertical-align: middle;
+}
+
+.requests-table td:first-child {
+    padding-left: 25px;
+    font-weight: 600;
+    color: #2c3e50;
+    font-size: 16px;
+}
+
+.requests-table td:last-child {
+    padding-right: 25px;
+    vertical-align: middle;
+    text-align: center;
+}
+
+.requests-table td:nth-child(2) {
+    color: #ff8c42;
+    font-weight: 700;
+    font-family: 'Courier New', monospace;
+    font-size: 17px;
+}
+
+.requests-table td:nth-child(3) {
+    color: #666;
+    font-size: 15px;
+}
+
+.requests-table .status-badge {
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: bold;
+    text-transform: uppercase;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border: 1px solid transparent;
+}
+
+.requests-table .status-badge .badge-icon {
+    font-size: 12px;
+    line-height: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.requests-table .status-badge .badge-icon-svg {
+    width: 14px;
+    height: 14px;
+    stroke: currentColor;
+}
+
+.requests-table .status-badge .badge-text {
+    font-weight: bold;
+    font-size: 12px;
+    text-transform: uppercase;
+}
+
+.requests-table .status-badge.pending {
+    background: #fff3cd;
+    color: #856404;
+    border: 1px solid #ffeeba;
+}
+
+.requests-table .status-badge.approved {
+    background: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+.requests-table .status-badge.rejected {
+    background: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}
+
+/* Back button for selection view */
+.back-btn-selection {
+    background: transparent;
+    border: none;
+    color: #000;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-bottom: 15px;
+    padding: 10px 25px;
+    display: inline-flex;
+    align-items: center;
+    transition: all 0.2s ease;
+}
+
+.back-btn-selection:hover {
+    color: #ff8c42;
+    transform: translateX(-3px);
+}
+
+/* Form header row */
+.form-header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.form-document-type {
+    font-size: 14px;
+    color: #666;
+    font-weight: 500;
+}
+
+.form-document-type strong {
+    color: #ff8c42;
+    font-weight: 700;
 }
 </style>

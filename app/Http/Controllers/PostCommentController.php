@@ -77,6 +77,15 @@ class PostCommentController extends Controller
                 ? DB::table('post_comments')->insertGetId($insert)
                 : DB::table('post_comments')->insertGetId($insert, $pkCol);
 
+            // Create notification for post author (only for top-level comments, not replies)
+            if (!$validated['parent_comment_id']) {
+                try {
+                    $this->createCommentNotification($postId, $id, $userId);
+                } catch (\Exception $e) {
+                    Log::error('Error calling createCommentNotification: ' . $e->getMessage());
+                }
+            }
+
             $createdAt = Carbon::parse($now);
 
             // Normalize response structure expected by the Vue components
@@ -248,6 +257,74 @@ class PostCommentController extends Controller
             'success' => true,
             'count' => $count,
         ]);
+    }
+
+    /**
+     * Create notification for post author when someone comments on their post
+     */
+    private function createCommentNotification($postId, $commentId, $commenterId)
+    {
+        try {
+            // Get post author - posts table uses post_id as primary key
+            $post = DB::table('posts')
+                ->where('post_id', $postId)
+                ->first();
+
+            if (!$post) {
+                return;
+            }
+
+            $postAuthorId = $post->fk_post_author_id ?? $post->user_id ?? null;
+            
+            // Allow notifications even for own posts (for testing)
+            if (!$postAuthorId) {
+                return;
+            }
+
+            // Check if notification already exists for this comment
+            // Actual table uses: fk_user_id, notification_type, notification_reference_id
+            $existingNotification = DB::table('notifications')
+                ->where('fk_user_id', $postAuthorId)
+                ->where('notification_type', 'Comment')
+                ->where('notification_reference_id', $commentId)
+                ->first();
+
+            if ($existingNotification) {
+                return; // Notification already exists
+            }
+
+            // Create notification - use actual column names from database
+            try {
+                $notificationId = DB::table('notifications')->insertGetId([
+                    'fk_user_id' => $postAuthorId,
+                    'notification_type' => 'Comment',
+                    'notification_reference_id' => $commentId,
+                    'message' => '', // Required field
+                    'is_read' => false,
+                    'created_at' => now(),
+                ]);
+                
+                Log::info('Comment notification created', [
+                    'notification_id' => $notificationId,
+                    'user_id' => $postAuthorId,
+                    'comment_id' => $commentId,
+                    'post_id' => $postId
+                ]);
+            } catch (\Exception $insertError) {
+                Log::error('Failed to insert comment notification', [
+                    'error' => $insertError->getMessage(),
+                    'user_id' => $postAuthorId,
+                    'comment_id' => $commentId,
+                    'post_id' => $postId
+                ]);
+            }
+        } catch (\Exception $e) {
+            Log::error('Error creating comment notification: ' . $e->getMessage(), [
+                'post_id' => $postId,
+                'comment_id' => $commentId,
+                'post_author_id' => $postAuthorId ?? 'null'
+            ]);
+        }
     }
 }
 

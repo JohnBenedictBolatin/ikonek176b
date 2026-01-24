@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Inertia\Inertia;
-use App\Models\EventAssistanceItem;
+// use App\Models\EventAssistanceItem; // Table doesn't exist - not used in current implementation
 use App\Models\EventAssistanceRequest;
 use App\Models\EventAssistanceDetail;
 use Illuminate\Support\Str;
@@ -16,13 +16,10 @@ class EventAssistanceController extends Controller
 {
     public function create(Request $request)
     {
-        // load items for the items dropdown
-        $items = EventAssistanceItem::select('item_id','item_name','category')->get();
-
-        // Inertia render the Vue page and pass items
+        // Items are not used in the current implementation - event types are used instead
+        // Inertia render the Vue page
         return Inertia::render('User/Resident/R_Event_Assist', [
-            'items' => $items,
-            // You can pass other props as needed
+            'items' => [], // Empty array since table doesn't exist and isn't used
         ]);
     }
 
@@ -36,9 +33,10 @@ class EventAssistanceController extends Controller
             'eventDate' => 'required|date',
             'eventTime' => 'required',
             'purpose' => 'required|in:Personal Celebration,Sports Activity,Barangay Escort,Community Event,Religious or Cultural Activity,Logistical Support',
-            'items' => 'nullable|array',
-            'items.*.item_id' => 'required_with:items|integer|exists:event_assistance_items,item_id',
-            'items.*.quantity' => 'required_with:items|integer|min:1',
+            // Items validation removed - table doesn't exist and isn't used in current implementation
+            // 'items' => 'nullable|array',
+            // 'items.*.item_id' => 'required_with:items|integer|exists:event_assistance_items,item_id',
+            // 'items.*.quantity' => 'required_with:items|integer|min:1',
             'documents.*' => 'nullable|file|max:10240', // adjust file validation
         ]);
 
@@ -100,5 +98,91 @@ class EventAssistanceController extends Controller
                 'message' => 'Unable to create request. '.$e->getMessage()
             ], 500);
         }
+    }
+
+    public function selectPage(Request $request)
+    {
+        $userId = auth()->id();
+        if (!$userId) {
+            abort(403, 'Unauthorized');
+        }
+
+        // Helper: sanitize string to UTF-8
+        $sanitizeString = function ($value) {
+            if (!is_string($value)) {
+                return $value;
+            }
+            if (mb_check_encoding($value, 'UTF-8')) {
+                return $value;
+            }
+            $tryEncodings = ['Windows-1252', 'ISO-8859-1', 'CP1252'];
+            foreach ($tryEncodings as $enc) {
+                $converted = @mb_convert_encoding($value, 'UTF-8', $enc);
+                if ($converted !== false && mb_check_encoding($converted, 'UTF-8')) {
+                    return $converted;
+                }
+            }
+            $stripped = @iconv('UTF-8', 'UTF-8//IGNORE', $value);
+            return $stripped !== false ? $stripped : mb_convert_encoding($value, 'UTF-8', 'UTF-8');
+        };
+
+        // Fetch event assistance requests
+        $eventAssistanceRequests = EventAssistanceRequest::select([
+                'event_assist_request_id',
+                'event_assist_request_ticket',
+                'fk_user_id',
+                'purpose',
+                'event_location',
+                'status',
+                'extra_fields',
+                'created_at',
+                'reviewed_at',
+                'admin_feedback',
+            ])
+            ->where('fk_user_id', $userId)
+            ->orderByDesc('event_assist_request_id')
+            ->limit(100)
+            ->get();
+
+        $eventAssistanceRequestsArray = $eventAssistanceRequests->map(function ($m) use ($sanitizeString) {
+            // Extract event_type from extra_fields for the title
+            $extraFields = $m->extra_fields ?? [];
+            $eventType = is_array($extraFields) ? ($extraFields['event_type'] ?? null) : null;
+            $title = $eventType ?? $sanitizeString($m->purpose ?? 'Event Assistance Request');
+            
+            return [
+                'event_assist_request_id' => $m->event_assist_request_id,
+                'eventassist_request_ticket' => $sanitizeString($m->event_assist_request_ticket ?? ''),
+                'fk_user_id' => $m->fk_user_id,
+                'purpose' => $sanitizeString($m->purpose ?? ''),
+                'title' => $title,
+                'event_type' => $eventType,
+                'event_location' => $sanitizeString($m->event_location ?? ''),
+                'status' => $sanitizeString($m->status ?? 'PENDING'),
+                'created_at' => $m->created_at ? $m->created_at->toIso8601String() : null,
+                'reviewed_at' => $m->reviewed_at ? $m->reviewed_at->toIso8601String() : null,
+                'admin_feedback' => $sanitizeString($m->admin_feedback ?? ''),
+            ];
+        })->all();
+
+        // Get user data
+        $user = auth()->user();
+        $userData = $user ? [
+            'id' => $user->user_id,
+            'name' => $sanitizeString($user->name ?? ''),
+            'email' => $sanitizeString($user->email ?? ''),
+            'fk_role_id' => $user->fk_role_id ?? null,
+            'profile_pic' => $sanitizeString($user->profile_pic ?? ''),
+        ] : null;
+
+        // Items are not used in the current implementation - event types are used instead
+        // If needed in the future, create the event_assistance_items table migration first
+
+        return Inertia::render('User/Resident/R_Event_Assist', [
+            'eventAssistanceRequests' => $eventAssistanceRequestsArray,
+            'event_assistance_requests' => $eventAssistanceRequestsArray,
+            'items' => [], // Empty array since table doesn't exist and isn't used
+            'auth' => ['user' => $userData],
+        ]);
     }
 }

@@ -65,6 +65,7 @@ class EventAssistanceRequestController extends Controller
                     'duration' => ['nullable', 'integer'],
                     'attendees' => ['nullable', 'integer', 'min:0'],
                     'expected_attendees' => ['nullable', 'integer', 'min:0'],
+                    'manpower_count' => ['nullable', 'integer', 'min:1'],
                     'court_type' => ['nullable', 'string'],
                     'document_type' => ['nullable', 'string'],
                     'id_type' => ['nullable', 'string'],
