@@ -159,30 +159,6 @@ For any concerns or questions regarding data privacy, contact us at ikonek176b@d
               <div class="form-row">
                 <div class="form-group half">
                   <div class="select-wrapper">
-                    <select v-model="form.religion" class="form-input" required>
-                      <option value="">Religion*</option>
-                    <option value="Roman Catholic">Roman Catholic</option>
-                    <option value="Islam">Islam</option>
-                    <option value="Iglesia ni Cristo">Iglesia ni Cristo</option>
-                    <option value="Protestant">Protestant</option>
-                    <option value="Baptist">Baptist</option>
-                    <option value="Methodist">Methodist</option>
-                    <option value="Seventh-day Adventist">Seventh-day Adventist</option>
-                    <option value="Jehovah's Witness">Jehovah's Witness</option>
-                    <option value="Buddhism">Buddhism</option>
-                    <option value="Hinduism">Hinduism</option>
-                    <option value="Atheist">Atheist</option>
-                    <option value="Agnostic">Agnostic</option>
-                    <option value="Other">Other</option>
-                  </select>
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="select-icon">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
-                  </svg>
-                </div>
-              </div>
-
-                <div class="form-group half">
-                  <div class="select-wrapper">
                     <select v-model="form.civil_status" class="form-input" required>
                       <option value="">Civil Status</option>
                       <option value="Single">Single</option>
@@ -198,12 +174,6 @@ For any concerns or questions regarding data privacy, contact us at ikonek176b@d
                 </div>
               </div>
 
-              <div v-if="form.religion === 'Other'" class="form-row" style="margin-top:8px;">
-                <div class="form-group">
-                  <input v-model="form.religion_other" placeholder="Specify Religion*" class="form-input" required />
-                </div>
-              </div>
-
               <div class="form-group">
                 <div class="select-wrapper">
                   <select v-model="form.fk_role_id" class="form-input" required>
@@ -212,8 +182,8 @@ For any concerns or questions regarding data privacy, contact us at ikonek176b@d
                     <option value="3">Barangay Secretary</option>
                     <option value="4">Barangay Treasurer</option>
                     <option value="5">Barangay Kagawad</option>
-                    <option value="6">Sangguniang Kabataan Chairman</option>
-                    <option value="7">Sangguniang Kabataan Kagawad</option>
+                    <option value="6">SK Chairman</option>
+                    <option value="7">SK Kagawad</option>
                   </select>
                   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="select-icon">
                     <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
@@ -254,31 +224,104 @@ For any concerns or questions regarding data privacy, contact us at ikonek176b@d
               </h3>
               
               <div class="form-group">
-                <div class="password-input-wrapper" style="position: relative;">
-                  <input :type="showPassword ? 'text' : 'password'" v-model="form.password" @input="clearError('password'); validateMatch()" placeholder="Enter password" class="form-input" required style="padding-right: 45px;" />
-                  <button type="button" @click="showPassword = !showPassword" class="password-toggle-btn" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: #000; display: flex; align-items: center; justify-content: center;">
-                    <svg v-if="showPassword" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="icon-svg" style="width: 20px; height: 20px;">
-                      <path stroke-linecap="round" stroke-linejoin="round" d="M3.98 8.223A10.477 10.477 0 0 0 1.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.451 10.451 0 0 1 12 4.5c4.756 0 8.773 3.162 10.065 7.498a10.522 10.522 0 0 1-4.293 5.774M6.228 6.228 3 3m3.228 3.228 3.65 3.65m7.894 7.894L21 21m-3.228-3.228-3.65-3.65m0 0a3 3 0 1 0-4.243-4.243m4.242 4.242L9.88 9.88" />
-                    </svg>
-                    <svg v-else xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="icon-svg" style="width: 20px; height: 20px;">
-                      <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
-                      <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
-                    </svg>
+                <div class="password-input-wrapper">
+                  <input :type="showPassword ? 'text' : 'password'" v-model="form.password" @input="clearError('password'); validatePasswordRequirements(); validateMatch()" placeholder="Enter password" class="form-input" required style="padding-right: 45px;" />
+                  <button type="button" @click="showPassword = !showPassword" class="password-toggle-btn" style="z-index: 10;">
+                    <template v-if="showPassword">
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="icon-svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M3.98 8.223A10.477 10.477 0 0 0 1.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.451 10.451 0 0 1 12 4.5c4.756 0 8.773 3.162 10.065 7.498a10.522 10.522 0 0 1-4.293 5.774M6.228 6.228 3 3m3.228 3.228 3.65 3.65m7.894 7.894L21 21m-3.228-3.228-3.65-3.65m0 0a3 3 0 1 0-4.243-4.243m4.242 4.242L9.88 9.88" />
+                      </svg>
+                    </template>
+                    <template v-else>
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="icon-svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                      </svg>
+                    </template>
                   </button>
                 </div>
-                <small class="helper-text">Minimum 6 characters.</small>
-                <div class="error-message" v-if="localErrors.password">{{ localErrors.password }}</div>
-                <div class="error-message" v-else-if="form.errors.password">{{ form.errors.password }}</div>
               </div>
 
               <div class="form-group">
-                <div class="password-input-wrapper" style="position: relative;">
+                <div class="password-input-wrapper">
                   <input :type="showConfirmPassword ? 'text' : 'password'" v-model="confirmPassword" @input="clearError('confirmPassword'); validateMatch()" placeholder="Confirm password" class="form-input" required style="padding-right: 45px;" />
-                  <button type="button" @click="showConfirmPassword = !showConfirmPassword" class="password-toggle-btn" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; font-size: 18px; color: #666;">
-                    {{ showConfirmPassword ? '👁️' : '👁️‍🗨️' }}
+                  <button type="button" @click="showConfirmPassword = !showConfirmPassword" class="password-toggle-btn" style="z-index: 10;">
+                    <template v-if="showConfirmPassword">
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="icon-svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M3.98 8.223A10.477 10.477 0 0 0 1.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.451 10.451 0 0 1 12 4.5c4.756 0 8.773 3.162 10.065 7.498a10.522 10.522 0 0 1-4.293 5.774M6.228 6.228 3 3m3.228 3.228 3.65 3.65m7.894 7.894L21 21m-3.228-3.228-3.65-3.65m0 0a3 3 0 1 0-4.243-4.243m4.242 4.242L9.88 9.88" />
+                      </svg>
+                    </template>
+                    <template v-else>
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="icon-svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                      </svg>
+                    </template>
                   </button>
                 </div>
                 <div class="error-message" v-if="localErrors.confirmPassword">{{ localErrors.confirmPassword }}</div>
+                <div class="password-requirements">
+                  <p class="requirements-title">Password Requirements:</p>
+                  <ul class="requirements-list">
+                    <li :class="{ 'requirement-met': hasMinLength, 'requirement-unmet': !hasMinLength }">
+                      <span class="requirement-icon">
+                        <svg v-if="hasMinLength" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="icon-check">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                        </svg>
+                        <svg v-else xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="icon-x">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </span>
+                      At least 8 characters
+                    </li>
+                    <li :class="{ 'requirement-met': hasUppercase, 'requirement-unmet': !hasUppercase }">
+                      <span class="requirement-icon">
+                        <svg v-if="hasUppercase" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="icon-check">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                        </svg>
+                        <svg v-else xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="icon-x">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </span>
+                      At least one uppercase letter (A-Z)
+                    </li>
+                    <li :class="{ 'requirement-met': hasLowercase, 'requirement-unmet': !hasLowercase }">
+                      <span class="requirement-icon">
+                        <svg v-if="hasLowercase" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="icon-check">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                        </svg>
+                        <svg v-else xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="icon-x">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </span>
+                      At least one lowercase letter (a-z)
+                    </li>
+                    <li :class="{ 'requirement-met': hasNumber, 'requirement-unmet': !hasNumber }">
+                      <span class="requirement-icon">
+                        <svg v-if="hasNumber" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="icon-check">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                        </svg>
+                        <svg v-else xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="icon-x">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </span>
+                      At least one number (0-9)
+                    </li>
+                    <li :class="{ 'requirement-met': hasSpecialChar, 'requirement-unmet': !hasSpecialChar }">
+                      <span class="requirement-icon">
+                        <svg v-if="hasSpecialChar" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="icon-check">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                        </svg>
+                        <svg v-else xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="icon-x">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </span>
+                      At least one special character (!@#$%^&*()_+-=[]{}|;:,.<>?)
+                    </li>
+                  </ul>
+                </div>
+                <div class="error-message" v-if="localErrors.password">{{ localErrors.password }}</div>
+                <div class="error-message" v-else-if="form.errors.password">{{ form.errors.password }}</div>
               </div>
             </div>
           </div>
@@ -442,8 +485,6 @@ const form = useForm({
   package: '',
 
   // other personal fields that map to users table
-  religion: '',
-  religion_other: '',
   nationality: 'Filipino',
 })
 
@@ -453,7 +494,24 @@ const showConfirmPassword = ref(false)
 const localErrors = reactive({ password: null, confirmPassword: null })
 
 const passwordsMatch = computed(() => form.password === confirmPassword.value)
-const canSubmit = computed(() => form.password.length >= 6 && confirmPassword.value.length >= 6 && passwordsMatch.value)
+
+// Password requirement validators
+const hasMinLength = computed(() => form.password && form.password.length >= 8)
+const hasUppercase = computed(() => form.password && /[A-Z]/.test(form.password))
+const hasLowercase = computed(() => form.password && /[a-z]/.test(form.password))
+const hasNumber = computed(() => form.password && /[0-9]/.test(form.password))
+const hasSpecialChar = computed(() => form.password && /[!@#$%^&*()_+\-=\[\]{}|;:,.<>?]/.test(form.password))
+
+const canSubmit = computed(() => {
+  return form.password && 
+         hasMinLength.value &&
+         hasUppercase.value &&
+         hasLowercase.value &&
+         hasNumber.value &&
+         hasSpecialChar.value &&
+         confirmPassword.value && 
+         passwordsMatch.value
+})
 
 // ---------- Birthdate split fields & helpers ----------
 const months = [
@@ -562,6 +620,36 @@ function clearError(field) {
   }
 }
 
+function validatePasswordRequirements() {
+  if (!form.password) {
+    localErrors.password = null
+    return
+  }
+  
+  const errors = []
+  if (!hasMinLength.value) {
+    errors.push('Password must be at least 8 characters long')
+  }
+  if (!hasUppercase.value) {
+    errors.push('Password must contain at least one uppercase letter')
+  }
+  if (!hasLowercase.value) {
+    errors.push('Password must contain at least one lowercase letter')
+  }
+  if (!hasNumber.value) {
+    errors.push('Password must contain at least one number')
+  }
+  if (!hasSpecialChar.value) {
+    errors.push('Password must contain at least one special character')
+  }
+  
+  if (errors.length > 0) {
+    localErrors.password = errors.join('. ')
+  } else {
+    localErrors.password = null
+  }
+}
+
 function validateMatch() {
   localErrors.confirmPassword = null
   if (!confirmPassword.value) {
@@ -606,9 +694,14 @@ function submit() {
   localErrors.password = null
   localErrors.confirmPassword = null
 
-  if (form.password.length < 6) localErrors.password = 'Password must be at least 6 characters.'
-  if (!confirmPassword.value) localErrors.confirmPassword = 'Please confirm your password.'
-  else if (!passwordsMatch.value) localErrors.confirmPassword = 'Passwords do not match.'
+  // Validate password requirements
+  validatePasswordRequirements()
+  
+  if (!confirmPassword.value) {
+    localErrors.confirmPassword = 'Please confirm your password.'
+  } else if (!passwordsMatch.value) {
+    localErrors.confirmPassword = 'Passwords do not match.'
+  }
 
   if (localErrors.password || localErrors.confirmPassword) return
 
@@ -617,11 +710,6 @@ function submit() {
 
   // MERGE address fields here (IMPORTANT: done immediately before posting)
   mergeAddressFields()
-
-  // MERGE "other" values into main fields if "Other" is selected
-  if (form.religion === 'Other' && form.religion_other) {
-    form.religion = form.religion_other
-  }
 
   // Ensure fk_role_id is an integer
   if (form.fk_role_id) {
@@ -938,6 +1026,117 @@ html, body {
   color: #e74c3c;
   font-size: 12px;
   margin-top: 4px;
+}
+
+.password-input-wrapper {
+  position: relative;
+}
+
+.password-input-wrapper input[type="password"]::-ms-reveal,
+.password-input-wrapper input[type="password"]::-ms-clear {
+  display: none;
+}
+
+.password-input-wrapper input[type="password"]::-webkit-credentials-auto-fill-button {
+  display: none;
+}
+
+.password-toggle-btn {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  padding: 0;
+  margin: 0;
+  width: 30px;
+  height: 30px;
+}
+
+.password-toggle-btn svg {
+  width: 20px;
+  height: 20px;
+  display: block;
+}
+
+.icon-svg {
+  width: 20px;
+  height: 20px;
+  pointer-events: none;
+}
+
+/* Password Requirements */
+.password-requirements {
+  margin-top: 10px;
+  padding: 12px;
+  background: #f8f9fa;
+  border-radius: 6px;
+  border: 1px solid #e0e0e0;
+}
+
+.requirements-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #333;
+  margin: 0 0 8px 0;
+}
+
+.requirements-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.requirements-list li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: #666;
+  margin-bottom: 6px;
+  transition: color 0.2s;
+}
+
+.requirements-list li:last-child {
+  margin-bottom: 0;
+}
+
+.requirement-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+}
+
+.requirement-met {
+  color: #28a745;
+}
+
+.requirement-unmet {
+  color: #666;
+}
+
+.icon-check {
+  width: 18px;
+  height: 18px;
+  stroke: #28a745;
+  stroke-width: 2.5;
+}
+
+.icon-x {
+  width: 18px;
+  height: 18px;
+  stroke: #999;
+  stroke-width: 2;
 }
 
 /* Form Actions */

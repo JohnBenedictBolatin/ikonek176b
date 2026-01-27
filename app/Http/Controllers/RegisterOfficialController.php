@@ -49,7 +49,7 @@ class RegisterOfficialController extends Controller
             'phase' => ['nullable','string'],
             'package' => ['nullable','string'],
 
-            'password' => ['required','string','min:6'],
+            'password' => ['required','string','min:8'],
             'sex' => ['nullable','string','max:50'],
             'birthdate' => ['nullable','date'],
             'civil_status' => ['nullable','string','max:50'],
@@ -117,8 +117,8 @@ class RegisterOfficialController extends Controller
             3 => 'Barangay Secretary',
             4 => 'Barangay Treasurer',
             5 => 'Barangay Kagawad',
-            6 => 'Sangguniang Kabataan Chairman',
-            7 => 'Sangguniang Kabataan Kagawad',
+            6 => 'SK Chairman',
+            7 => 'SK Kagawad',
         ];
 
         // Set occupation to role name if not provided (since employees already have a position/role)
