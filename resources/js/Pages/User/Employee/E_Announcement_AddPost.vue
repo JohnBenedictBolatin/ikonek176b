@@ -13,9 +13,8 @@
                 <div class="header-actions">
                     <img src="/assets/SETTINGS.png" alt="Settings" class="settings-btn-img" @click="toggleSettings" />
                     <div v-if="showSettings" class="settings-dropdown">
-                        <Link href="#" class="settings-item" @click="closeSettings">Help Center</Link>
-                        <button type="button" class="settings-item" @click="openTerms">Terms & Conditions</button>
-                        <Link href="#" class="settings-item" @click="logout">Sign Out</Link>
+                        <button type="button" class="settings-item" @click="openTerms">TERMS & CONDITIONS</button>
+                        <Link href="#" class="settings-item" @click="logout">SIGN OUT</Link>
                     </div>
                 </div>
             </div>
@@ -77,7 +76,7 @@
                 </div>
 
                 <button class="faq-btn" @click="openFAQ">
-                    ❓ FAQs & Help Center
+                    ❓ FAQS & HELP CENTER
                 </button>
             </div>
 
@@ -164,6 +163,25 @@
                                 <span v-if="selectedTagsData.length === 0" class="no-tags-text">
                                     No tags selected
                                 </span>
+                            </div>
+                        </div>
+
+                        <!-- Error Message Display -->
+                        <div v-if="submitError" class="error-message-container" style="margin-top: 15px; margin-bottom: 15px;">
+                            <div class="error-alert" style="background: #fee; border: 1px solid #fcc; border-radius: 8px; padding: 12px; color: #c33;">
+                                <div style="display: flex; align-items: center; gap: 8px;">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width: 18px; height: 18px; flex-shrink: 0;">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                    <span style="font-weight: 600; font-size: 14px;">{{ submitError }}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Field Error Messages -->
+                        <div v-if="Object.keys(formErrors).length > 0" class="field-errors-container" style="margin-bottom: 15px;">
+                            <div v-for="(error, field) in formErrors" :key="field" class="field-error" style="background: #fff3cd; border: 1px solid #ffc107; border-radius: 6px; padding: 10px; margin-bottom: 8px; color: #856404; font-size: 14px;">
+                                <strong>{{ field.replace('_', ' ') }}:</strong> {{ Array.isArray(error) ? error[0] : error }}
                             </div>
                         </div>
 
@@ -320,6 +338,10 @@ const fileInput = ref(null)
 
 const drafts = ref([])
 
+// Error handling state
+const formErrors = ref({})
+const submitError = ref('')
+
 // computed to map selected IDs to tag objects
 const selectedTagsData = computed(() => {
     if (!props.availableTags || !Array.isArray(props.availableTags)) return []
@@ -454,8 +476,12 @@ const handleFileUpload = (event) => {
 const removeFile = (index) => uploadedFiles.value.splice(index, 1)
 
 const publishPost = () => {
+    // Clear previous errors
+    formErrors.value = {}
+    submitError.value = ''
+    
     if (!postContent.value.trim()) {
-        alert('Please write something before publishing')
+        submitError.value = 'Please write something before publishing.'
         return
     }
     if (selectedTagIds.value.length === 0) {
@@ -488,13 +514,29 @@ const publishPost = () => {
             selectedTagIds.value = []
             uploadedFiles.value = []
             form.reset()
+            formErrors.value = {}
+            submitError.value = ''
             // redirect to announcement index
             router.visit(route('announcement_employee'))
         },
         onError: (errors) => {
             console.error('Server validation errors', errors)
-            if (errors.content) alert(errors.content[0])
-            if (errors.tag_ids) alert(errors.tag_ids[0])
+            // Handle validation errors
+            if (errors && typeof errors === 'object') {
+                formErrors.value = errors
+                const firstError = Object.values(errors).flat()[0]
+                submitError.value = firstError || 'Failed to publish announcement. Please check the form and try again.'
+                
+                // Scroll to error
+                setTimeout(() => {
+                    const errorContainer = document.querySelector('.error-message-container')
+                    if (errorContainer) {
+                        errorContainer.scrollIntoView({ behavior: 'smooth', block: 'center' })
+                    }
+                }, 100)
+            } else {
+                submitError.value = 'An error occurred while publishing your announcement. Please try again.'
+            }
         }
     })
 }
@@ -629,6 +671,7 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside))
     transition: all 0.2s;
     cursor: pointer;
     font-weight: 500;
+    white-space: nowrap;
 }
 
 .settings-item:hover {
@@ -680,7 +723,7 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside))
 
 .profile-name {
     font-weight: 700;
-    font-size: 17px;
+    font-size: 15px;
     text-shadow: 0 1px 3px rgba(0,0,0,0.2);
 }
 

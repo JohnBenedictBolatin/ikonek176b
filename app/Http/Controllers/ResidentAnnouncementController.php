@@ -135,6 +135,7 @@ class ResidentAnnouncementController extends Controller
                 return [
                     'id' => $post->post_id,
                     'author' => $authorName,
+                    'author_id' => $post->fk_post_author_id ?? $post->author?->user_id ?? null,
                     'avatar' => $authorAvatar,
                     'role' => $authorRole,
                     'tags' => $tags,
@@ -158,9 +159,24 @@ class ResidentAnnouncementController extends Controller
                 'count' => $formattedPosts->count()
             ]);
 
+            // Get user restrictions
+            $restrictions = null;
+            if ($authUser) {
+                $restriction = \App\Models\UserRestriction::where('user_id', $authUser->user_id)->first();
+                if ($restriction) {
+                    $restrictions = [
+                        'restrict_posting' => $restriction->restrict_posting ?? false,
+                        'restrict_commenting' => $restriction->restrict_commenting ?? false,
+                        'restrict_document_request' => $restriction->restrict_document_request ?? false,
+                        'restrict_event_assistance_request' => $restriction->restrict_event_assistance_request ?? false,
+                    ];
+                }
+            }
+
             return Inertia::render('User/Resident/R_Announcement', [
                 'posts' => $formattedPosts->values()->toArray(),
                 'canAddPost' => false, // 🔒 Residents cannot add announcements
+                'restrictions' => $restrictions,
                 'auth' => [
                     'user' => $authUser ? [
                         'user_id' => $authUser->user_id,

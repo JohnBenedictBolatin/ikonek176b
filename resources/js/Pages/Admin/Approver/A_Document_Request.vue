@@ -1,4 +1,4 @@
-<template>
+﻿<template>
     <Head>
         <title>Document Request</title>
     </Head>
@@ -15,9 +15,10 @@
                     <img src="/assets/SETTINGS.png" alt="Settings" class="settings-btn-img" @click="toggleSettings" />
                     <!-- Settings Dropdown -->
                     <div v-if="showSettings" class="settings-dropdown">
-                        <Link href="#" class="settings-item" @click="closeSettings">Help Center</Link>
-                        <Link href="#" class="settings-item" @click="closeSettings">Terms & Conditions</Link>
-                        <Link href="#" class="settings-item" @click="logout">Sign Out</Link>
+                        <a href="#" class="settings-item" @click.prevent.stop="openTermsModal">TERMS & CONDITIONS</a>
+                        <Link href="#" class="settings-item" @click.prevent="logout">
+                            SIGN OUT
+                        </Link>
                     </div>
                 </div>
             </div>
@@ -108,6 +109,8 @@
                                 </button>
                                 <div v-if="showFilterDropdown" class="filter-dropdown-menu">
                                     <button @click="selectFilter('all')" :class="{ active: filterOption === 'all' }">ALL</button>
+                                    <button @click="selectFilter('new')" :class="{ active: filterOption === 'new' }">NEW</button>
+                                    <button @click="selectFilter('resubmitted')" :class="{ active: filterOption === 'resubmitted' }">RESUBMITTED</button>
                                     <button @click="selectFilter('clearance')" :class="{ active: filterOption === 'clearance' }">CLEARANCE</button>
                                     <button @click="selectFilter('certificate')" :class="{ active: filterOption === 'certificate' }">CERTIFICATE</button>
                                     <button @click="selectFilter('cedula')" :class="{ active: filterOption === 'cedula' }">CEDULA</button>
@@ -136,7 +139,7 @@
                     <!-- Requests Container -->
                     <div class="requests-container">
                         <div 
-                            v-for="(request, index) in filteredRequests" 
+                            v-for="(request, index) in paginatedRequests" 
                             :key="request.doc_request_id || request.referenceCode || index"
                             class="request-card"
                         >
@@ -144,7 +147,12 @@
                                 <div class="request-left">
                                     <img :src="request.profileImg || '/assets/DEFAULT.jpg'" alt="Profile" class="modal-avatar" />
                                     <div class="request-info">
-                                        <h3 class="request-name">{{ request.name }}</h3>
+                                        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 0; line-height: 1.2;">
+                                            <h3 class="request-name" style="margin: 0;">{{ request.name }}</h3>
+                                            <span v-if="request.admin_feedback && request.status === 'Pending'" class="resubmitted-badge">
+                                                RESUBMITTED
+                                            </span>
+                                        </div>
                                         <p class="request-doc-type">{{ request.documentType }}</p>
                                         <p class="request-ref-code">{{ request.referenceCode }}</p>
                                     </div>
@@ -156,7 +164,7 @@
                                         class="view-btn" 
                                         type="button"
                                     >
-                                        View Request Details
+                                        View Details
                                     </button>
                                 </div>
                             </div>
@@ -165,6 +173,48 @@
                         <!-- No requests message -->
                         <div v-if="filteredRequests.length === 0" class="no-requests" style="grid-column: 1 / -1;">
                             <p>No document requests found matching your criteria.</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Pagination Controls -->
+                    <div v-if="filteredRequests.length > 0" class="pagination-container">
+                        <div class="pagination-info">
+                            Showing {{ (currentPage - 1) * itemsPerPage + 1 }} to {{ Math.min(currentPage * itemsPerPage, filteredRequests.length) }} of {{ filteredRequests.length }} requests
+                        </div>
+                        <div class="pagination-controls">
+                            <button 
+                                class="pagination-btn" 
+                                :disabled="currentPage === 1"
+                                @click="prevPage"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" style="width: 16px; height: 16px;">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+                                </svg>
+                                Previous
+                            </button>
+                            
+                            <div class="pagination-numbers">
+                                <button
+                                    v-for="page in totalPages"
+                                    :key="page"
+                                    class="pagination-number"
+                                    :class="{ active: currentPage === page }"
+                                    @click="goToPage(page)"
+                                >
+                                    {{ page }}
+                                </button>
+                            </div>
+                            
+                            <button 
+                                class="pagination-btn" 
+                                :disabled="currentPage === totalPages"
+                                @click="nextPage"
+                            >
+                                Next
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" style="width: 16px; height: 16px;">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+                                </svg>
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -305,7 +355,7 @@
                         </div>
 
                         <!-- Extra Fields (Dynamic Fields) -->
-                        <div v-if="(selectedRequest.extra_fields && getExtraFieldsCount(selectedRequest.extra_fields) > 0) || selectedRequest.valid_id_type || selectedRequest.valid_id_number" class="detail-section" style="margin-bottom: 24px;">
+                        <div v-if="(displayableExtraFields.length > 0) || selectedRequest.valid_id_type || selectedRequest.valid_id_number" class="detail-section" style="margin-bottom: 24px;">
                             <h4 class="section-title" style="margin-bottom: 16px; font-size: 20px;">Additional Information</h4>
                             <div class="details-grid" style="grid-template-columns: repeat(4, 1fr); gap: 12px 16px;">
                                 <!-- ID Type and ID Number -->
@@ -318,9 +368,22 @@
                                     <p class="detail-value" style="font-size: 15px; margin: 0; line-height: 1.5; color: #1a1a1a;">{{ selectedRequest.valid_id_number }}</p>
                                 </div>
                                 
-                                <!-- Dynamic Extra Fields -->
-                                <template v-for="(value, key) in getExtraFieldsObject(selectedRequest.extra_fields)" :key="key">
-                                    <div class="detail-item" v-if="isValidExtraFieldValue(value)" style="margin: 0; padding: 12px 14px;">
+                                <!-- Dynamic Extra Fields - Display based on document type definition -->
+                                <template v-for="field in displayableExtraFields" :key="field.name">
+                                    <div class="detail-item" style="margin: 0; padding: 12px 14px;">
+                                        <p class="detail-label" style="font-size: 13px; margin-bottom: 6px; color: #6b7280;">{{ field.label }}:</p>
+                                        <p class="detail-value" style="font-size: 15px; margin: 0; line-height: 1.5; color: #1a1a1a;">
+                                            <span v-if="Array.isArray(field.value)">{{ field.value.length > 0 ? field.value.join(', ') : 'Not provided' }}</span>
+                                            <span v-else-if="typeof field.value === 'object' && field.value !== null && !(field.value instanceof File)">{{ JSON.stringify(field.value) }}</span>
+                                            <span v-else-if="field.type === 'number'">{{ typeof field.value === 'number' ? field.value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : String(field.value) }}</span>
+                                            <span v-else>{{ String(field.value) }}</span>
+                                        </p>
+                                    </div>
+                                </template>
+                                
+                                <!-- Also display any extra fields that might not be in the document type definition but exist in extra_fields -->
+                                <template v-for="(value, key) in getExtraFieldsObject(selectedRequest.extra_fields)" :key="'extra-' + key">
+                                    <div class="detail-item" v-if="isValidExtraFieldValue(value) && !displayableExtraFields.find(f => f.name === key)" style="margin: 0; padding: 12px 14px;">
                                         <p class="detail-label" style="font-size: 13px; margin-bottom: 6px; color: #6b7280;">{{ formatFieldName(key) }}:</p>
                                         <p class="detail-value" style="font-size: 15px; margin: 0; line-height: 1.5; color: #1a1a1a;">
                                             <span v-if="Array.isArray(value)">{{ value.length > 0 ? value.join(', ') : 'Not provided' }}</span>
@@ -456,7 +519,7 @@
                                 >
                                     <div class="attachment-info" style="text-align: center;">
                                         <p class="attachment-label" style="font-size: 14px; font-weight: 700; color: #239640; margin: 0 0 8px 0; text-transform: uppercase; letter-spacing: 0.5px;">
-                                            {{ formatFieldName(attachment.field_name || 'Unknown') }}
+                                            {{ getAttachmentFieldLabel(attachment.field_name || 'Unknown') }}
                                         </p>
                                         <p class="attachment-filename" style="font-size: 16px; color: #1a1a1a; font-weight: 600; margin: 0 0 8px 0; display: flex; align-items: center; gap: 8px;">
                                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width: 18px; height: 18px; flex-shrink: 0;">
@@ -583,6 +646,83 @@
             </div>
         </div>
 
+        <!-- Rejection Modal - Placed BEFORE approval modal to test -->
+        <div v-if="isRejectionModalOpen" class="modal-overlay" @click="closeRejectionModal">
+            <div class="modal-container rejection-modal" @click.stop>
+                <button @click="closeRejectionModal" class="modal-close">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width: 20px; height: 20px;">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+                <div class="modal-content">
+                    <h2 class="rejection-title">Reason for Rejection</h2>
+                    <p class="rejection-subtitle">Please provide a clear reason for rejecting this document request</p>
+
+                    <div class="rejection-form">
+                        <div class="form-group">
+                            <label class="form-label">Select Incorrect Fields <span style="color: #e74c3c;">*</span></label>
+                            <p class="field-help-text">Check all fields that need to be corrected:</p>
+                            <div class="incorrect-fields-checklist">
+                                <!-- Standard fields (always available) -->
+                                <label class="checkbox-field-label">
+                                    <input type="checkbox" v-model="selectedIncorrectFields" value="purpose" />
+                                    <span>Purpose</span>
+                                </label>
+                                <label class="checkbox-field-label">
+                                    <input type="checkbox" v-model="selectedIncorrectFields" value="id_type" />
+                                    <span>ID Type</span>
+                                </label>
+                                <label class="checkbox-field-label">
+                                    <input type="checkbox" v-model="selectedIncorrectFields" value="id_number" />
+                                    <span>ID Number</span>
+                                </label>
+                                <label class="checkbox-field-label">
+                                    <input type="checkbox" v-model="selectedIncorrectFields" value="id_front" />
+                                    <span>ID Front Image</span>
+                                </label>
+                                <label class="checkbox-field-label">
+                                    <input type="checkbox" v-model="selectedIncorrectFields" value="id_back" />
+                                    <span>ID Back Image</span>
+                                </label>
+                                
+                                <!-- Dynamic extra fields based on document type - only show fields that exist in the document type definition -->
+                                <template v-if="selectedRequest && selectedRequest.document_type">
+                                    <template v-for="field in getValidDocumentFields(selectedRequest)" :key="field.name">
+                                        <label class="checkbox-field-label">
+                                            <input type="checkbox" v-model="selectedIncorrectFields" :value="field.fullName" />
+                                            <span>{{ field.label }}</span>
+                                        </label>
+                                    </template>
+                                </template>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Rejection Reason <span style="color: #e74c3c;">*</span></label>
+                            <textarea 
+                                v-model="rejectionReason"
+                                class="form-textarea"
+                                rows="4"
+                                placeholder="Explain why this request cannot be approved..."
+                                required
+                            ></textarea>
+                        </div>
+
+                        <div class="rejection-actions">
+                            <button @click="closeRejectionModal" class="cancel-btn">Cancel</button>
+                            <button 
+                                @click="confirmRejection"
+                                class="confirm-reject-btn"
+                                :disabled="isRejecting || selectedIncorrectFields.length === 0 || !rejectionReason.trim()"
+                            >
+                                {{ isRejecting ? 'Processing…' : 'Confirm Rejection' }}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Approval Modal (Pickup Details) -->
         <div v-if="isApprovalModalOpen" class="modal-overlay" @click="closeApprovalModal">
             <div class="modal-container approval-modal" @click.stop>
@@ -612,29 +752,13 @@
 
                     <div class="form-group">
                     <label class="form-label">Pickup Location</label>
-                    <select
-                        v-model="pickupLocation"
-                        class="form-input"
-                        @change="handleLocationChange"
-                        required
-                        style="appearance: none; background-image: url('data:image/svg+xml;charset=UTF-8,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' fill=\'none\' viewBox=\'0 0 24 24\' stroke=\'currentColor\' stroke-width=\'2\'%3E%3Cpath stroke-linecap=\'round\' stroke-linejoin=\'round\' d=\'m19.5 8.25-7.5 7.5-7.5-7.5\' /%3E%3C/svg%3E'); background-repeat: no-repeat; background-position: right 12px center; background-size: 16px; padding-right: 40px;"
-                    >
-                        <option value="" disabled>Select pickup location</option>
-                        <option value="Barangay Hall - Records Office">Barangay Hall - Records Office</option>
-                        <option value="Barangay Hall - Main Office">Barangay Hall - Main Office</option>
-                        <option value="Barangay Hall - Front Desk">Barangay Hall - Front Desk</option>
-                        <option value="Barangay Hall - Treasurer's Office">Barangay Hall - Treasurer's Office</option>
-                        <option value="Barangay Hall - Secretary's Office">Barangay Hall - Secretary's Office</option>
-                        <option value="other">Other (specify)</option>
-                    </select>
                     <input
-                        v-if="pickupLocation === 'other'"
                         type="text"
-                        v-model="customPickupLocation"
+                        value="Barangay 176B - Main Office"
                         class="form-input"
-                        placeholder="Enter custom pickup location"
-                        required
-                        style="margin-top: 10px;"
+                        readonly
+                        disabled
+                        style="background-color: #f5f5f5; cursor: not-allowed;"
                     />
                     </div>
 
@@ -659,14 +783,6 @@
                     </div>
 
                     <div class="form-group">
-                    <label class="form-label">Pickup End (optional)</label>
-                    <div style="display:flex;gap:8px;">
-                        <input type="date" v-model="pickupEndDate" class="form-input" />
-                        <input type="time" v-model="pickupEndTime" class="form-input" />
-                    </div>
-                    </div>
-
-                    <div class="form-group">
                     <label class="form-label">Person to Look For (optional)</label>
                     <input
                         type="text"
@@ -676,17 +792,10 @@
                     />
                     </div>
 
-                    <div class="form-group">
-                    <label class="form-label">Additional Instructions (Optional)</label>
-                    <textarea
-                        v-model="comment"
-                        class="form-textarea"
-                        rows="3"
-                        placeholder="Any special instructions for the resident..."
-                    ></textarea>
-                    </div>
-
                     <div class="approval-actions">
+                    <button @click="closeApprovalModal" class="cancel-btn">
+                        Cancel
+                    </button>
                     <button
                     @click="confirmApproval"
                     class="confirm-btn"
@@ -696,59 +805,57 @@
                     <span v-if="isApproving">Processing…</span>
                     <span v-else>Confirm Approval</span>
                     </button>
-                    <button @click="closeApprovalModal" class="cancel-btn">
-                        Cancel
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Styled Alert Modal -->
+        <div v-if="showAlertModal" class="modal-overlay" @click="closeAlertModal">
+            <div class="styled-confirmation-modal" @click.stop>
+                <div class="styled-modal-header">
+                    <div class="styled-icon-wrapper">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" class="styled-icon info-icon">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
+                        </svg>
+                    </div>
+                    <h3 class="styled-modal-title">{{ alertTitle || 'Notification' }}</h3>
+                </div>
+                <div class="styled-modal-body">
+                    <p class="styled-message">{{ alertMessage }}</p>
+                </div>
+                <div class="styled-modal-footer">
+                    <button @click="closeAlertModal" class="styled-modal-btn">
+                        OK
                     </button>
-                    </div>
                 </div>
             </div>
         </div>
 
-        <!-- Rejection Modal - Using Teleport to render at body level -->
-        <Teleport to="body">
-            <div 
-                v-if="isRejectionModalOpen"
-                class="modal-overlay rejection-modal-overlay" 
-                @click="closeRejectionModal"
-                style="position: fixed !important; inset: 0 !important; background: rgba(0, 0, 0, 0.6) !important; display: flex !important; align-items: center !important; justify-content: center !important; z-index: 99999 !important; visibility: visible !important; opacity: 1 !important;"
-            >
-            <div class="modal-container rejection-modal" @click.stop style="background: white !important; border-radius: 20px; padding: 30px; width: 90%; max-width: 600px; position: relative !important; z-index: 100000 !important;">
-                <button @click="closeRejectionModal" class="modal-close">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width: 20px; height: 20px;">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                </button>
-                <div class="modal-content">
-                    <h2 class="rejection-title">Reason for Rejection</h2>
-                    <p class="rejection-subtitle">Please provide a clear reason for rejecting this assistance request</p>
-
-                    <div class="rejection-form">
-                        <div class="form-group">
-                            <label class="form-label">Rejection Reason</label>
-                            <textarea 
-                                v-model="rejectionReason"
-                                class="form-textarea"
-                                rows="6"
-                                placeholder="Explain why this request cannot be approved..."
-                                required
-                            ></textarea>
-                        </div>
-
-                        <div class="rejection-actions">
-                            <button 
-                                @click="confirmRejection"
-                                class="confirm-reject-btn"
-                                :disabled="isRejecting"
-                            >
-                                {{ isRejecting ? 'Processing…' : 'Confirm Rejection' }}
-                            </button>
-                            <button @click="closeRejectionModal" class="cancel-btn">Cancel</button>
-                        </div>
+        <!-- Styled Confirm Modal -->
+        <div v-if="showConfirmModal" class="modal-overlay" @click="closeConfirmModal">
+            <div class="styled-confirmation-modal" @click.stop>
+                <div class="styled-modal-header">
+                    <div class="styled-icon-wrapper">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" class="styled-icon confirm-icon">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
                     </div>
+                    <h3 class="styled-modal-title">{{ confirmTitle || 'Confirm Action' }}</h3>
+                </div>
+                <div class="styled-modal-body">
+                    <p class="styled-message">{{ confirmMessage }}</p>
+                </div>
+                <div class="styled-modal-footer">
+                    <button @click="confirmAction" class="styled-modal-btn confirm-btn">
+                        Yes
+                    </button>
+                    <button @click="closeConfirmModal" class="styled-modal-btn cancel-btn">
+                        No
+                    </button>
                 </div>
             </div>
         </div>
-        </Teleport>
 
         <!-- Frontend-generated Document Modal -->
         <!-- Attachment Viewer Modal -->
@@ -915,6 +1022,135 @@
                 </div>
             </div>
         </div>
+
+        <!-- Terms and Conditions Modal -->
+        <div v-if="showTermsModal" class="modal-overlay" @click.self="closeTermsModal">
+            <div class="terms-modal" @click.stop>
+                <div class="terms-modal-header">
+                    <h2 class="terms-modal-title">Terms and Conditions</h2>
+                    <button @click="closeTermsModal" class="terms-modal-close">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width: 24px; height: 24px;">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+                <div class="terms-modal-body">
+                    <div class="terms-section">
+                        <h3 class="terms-section-title">1. Role and Responsibilities</h3>
+                        <p class="terms-text">
+                            As an Approver, you are responsible for reviewing and processing document requests and event assistance requests for the iKonek176B system. You must exercise your approval privileges with care and in accordance with barangay policies and regulations. Your decisions directly impact residents' access to essential services and assistance.
+                        </p>
+                    </div>
+
+                    <div class="terms-section">
+                        <h3 class="terms-section-title">2. Access and Security</h3>
+                        <p class="terms-text">
+                            You have been granted access to approval functions for document and event assistance requests. You must maintain the confidentiality of your login credentials and immediately report any suspected security breaches. Sharing your account credentials with unauthorized persons is strictly prohibited and may result in immediate account termination.
+                        </p>
+                    </div>
+
+                    <div class="terms-section">
+                        <h3 class="terms-section-title">3. Request Review and Processing</h3>
+                        <p class="terms-text">
+                            You are responsible for reviewing requests in a timely and fair manner. When processing requests, you must:
+                            <ul class="terms-list">
+                                <li>Verify that all required documents and information are provided</li>
+                                <li>Ensure requests meet the eligibility criteria and documented requirements</li>
+                                <li>Approve or reject requests based on valid criteria and barangay policies</li>
+                                <li>Provide clear feedback when rejecting requests, explaining the reason for rejection</li>
+                                <li>Set appropriate assistance details when approving event assistance requests</li>
+                                <li>Maintain accurate records of all approval decisions</li>
+                            </ul>
+                        </p>
+                    </div>
+
+                    <div class="terms-section">
+                        <h3 class="terms-section-title">4. Data Privacy and Confidentiality</h3>
+                        <p class="terms-text">
+                            You have access to sensitive personal information of residents and officials through request submissions. You must handle all data in accordance with the Data Privacy Act of 2012. Personal information must only be accessed for legitimate approval purposes and must never be disclosed to unauthorized parties or used for personal gain.
+                        </p>
+                    </div>
+
+                    <div class="terms-section">
+                        <h3 class="terms-section-title">5. Approval and Rejection Decisions</h3>
+                        <p class="terms-text">
+                            When approving or rejecting requests, you must ensure that all decisions are justified, documented, and in compliance with barangay policies. Discrimination or bias in processing requests is strictly prohibited. All approval actions are logged and may be subject to audit. You must provide constructive feedback when rejecting requests to help residents understand what is needed.
+                        </p>
+                    </div>
+
+                    <div class="terms-section">
+                        <h3 class="terms-section-title">6. Document Verification</h3>
+                        <p class="terms-text">
+                            You must carefully verify all submitted documents and attachments to ensure they are legitimate and meet the requirements. If documents appear fraudulent, incomplete, or do not match the request details, you must reject the request and document the reason clearly. Failure to properly verify documents may result in improper approvals or service delivery issues.
+                        </p>
+                    </div>
+
+                    <div class="terms-section">
+                        <h3 class="terms-section-title">7. Limitations and Restrictions</h3>
+                        <p class="terms-text">
+                            Your approval privileges do not grant you the right to:
+                            <ul class="terms-list">
+                                <li>Access or modify system code or database structure without authorization</li>
+                                <li>Bypass system security measures or attempt to exploit system vulnerabilities</li>
+                                <li>Use approval functions for personal purposes or to gain unfair advantage</li>
+                                <li>Delete or modify approval logs or audit trails</li>
+                                <li>Grant approval privileges to other users without proper authorization</li>
+                                <li>Approve requests without proper verification</li>
+                            </ul>
+                        </p>
+                    </div>
+
+                    <div class="terms-section">
+                        <h3 class="terms-section-title">8. Prohibited Activities</h3>
+                        <p class="terms-text">
+                            The following activities are strictly prohibited:
+                            <ul class="terms-list">
+                                <li>Unauthorized access to request records or user data</li>
+                                <li>Tampering with request records or documentation</li>
+                                <li>Approving requests without proper verification</li>
+                                <li>Sharing confidential information outside of official channels</li>
+                                <li>Engaging in any activity that compromises system security or integrity</li>
+                                <li>Accepting bribes or favors in exchange for request approval</li>
+                                <li>Discriminating against residents based on personal bias or prejudice</li>
+                            </ul>
+                        </p>
+                    </div>
+
+                    <div class="terms-section">
+                        <h3 class="terms-section-title">9. Accountability and Auditing</h3>
+                        <p class="terms-text">
+                            All approval actions are logged and monitored. You are accountable for all actions performed using your account. Regular audits may be conducted to ensure compliance with these terms and barangay policies. Failure to comply may result in disciplinary action, including but not limited to account suspension or termination.
+                        </p>
+                    </div>
+
+                    <div class="terms-section">
+                        <h3 class="terms-section-title">10. Violations and Consequences</h3>
+                        <p class="terms-text">
+                            Violation of these terms and conditions may result in immediate suspension or termination of your approval account, legal action if applicable, and reporting to appropriate barangay authorities. The severity of consequences will depend on the nature and extent of the violation.
+                        </p>
+                    </div>
+
+                    <div class="terms-section">
+                        <h3 class="terms-section-title">11. Updates to Terms</h3>
+                        <p class="terms-text">
+                            These terms and conditions may be updated periodically. You will be notified of significant changes. Continued use of approval privileges after changes constitutes acceptance of the updated terms.
+                        </p>
+                    </div>
+
+                    <div class="terms-section">
+                        <h3 class="terms-section-title">12. Contact and Support</h3>
+                        <p class="terms-text">
+                            For questions, concerns, or to report issues related to your approval role, contact the Barangay 176B office at ikonek176b@dev.ph or +639193076338.
+                        </p>
+                    </div>
+                </div>
+                <div class="terms-modal-footer">
+                    <button @click="closeTermsModal" class="terms-modal-btn">
+                        I Understand
+                    </button>
+                </div>
+            </div>
+        </div>
     </div>
     </div>
 </template>
@@ -1005,12 +1241,17 @@ const getAttachmentUrl = (attachment) => {
 }
 
 // Reactive UI state
+const showTermsModal = ref(false)
 const showSettings = ref(false)
 const showSortDropdown = ref(false)
 const showFilterDropdown = ref(false)
 const sortOption = ref('newest')
 const filterOption = ref('all')
 const searchQuery = ref('')
+
+// Pagination
+const currentPage = ref(1)
+const itemsPerPage = ref(8)
 const isModalOpen = ref(false)
 const isApprovalModalOpen = ref(false)
 const isRejectionModalOpen = ref(false)
@@ -1022,15 +1263,61 @@ const selectedRequest = ref(null)
 const pickupDate = ref('')
 const pickupTime = ref('')
 const rejectionReason = ref('')
+const selectedIncorrectFields = ref([])
 
 const pickupItem = ref('')
-const pickupLocation = ref('')
-const customPickupLocation = ref('')
-const pickupEndDate = ref('')
-const pickupEndTime = ref('')
+const pickupLocation = ref('Barangay 176B - Main Office') // Fixed location
 const personToLook = ref('')
 const isApproving = ref(false)
 const isRejecting = ref(false)
+
+// Styled confirmation modal state
+const showAlertModal = ref(false)
+const alertMessage = ref('')
+const alertTitle = ref('')
+const showConfirmModal = ref(false)
+const confirmMessage = ref('')
+const confirmTitle = ref('')
+const confirmCallback = ref(null)
+
+// Helper functions for styled modals
+const showAlert = (message, title = 'Notification') => {
+  alertMessage.value = message
+  alertTitle.value = title
+  showAlertModal.value = true
+}
+
+const closeAlertModal = () => {
+  showAlertModal.value = false
+  alertMessage.value = ''
+  alertTitle.value = ''
+}
+
+const showConfirm = (message, title = 'Confirm Action') => {
+  return new Promise((resolve) => {
+    confirmMessage.value = message
+    confirmTitle.value = title
+    confirmCallback.value = resolve
+    showConfirmModal.value = true
+  })
+}
+
+const confirmAction = () => {
+  if (confirmCallback.value) {
+    confirmCallback.value(true)
+  }
+  closeConfirmModal()
+}
+
+const closeConfirmModal = () => {
+  if (confirmCallback.value) {
+    confirmCallback.value(false)
+  }
+  showConfirmModal.value = false
+  confirmMessage.value = ''
+  confirmTitle.value = ''
+  confirmCallback.value = null
+}
 
 // Document preview-related refs
 const generatedDocumentUrl = ref('')         // direct URL from backend (if provided)
@@ -1079,7 +1366,7 @@ const viewValidId = async (request) => {
     if (!requestId) {
       console.error('Request missing ID:', req)
       console.error('Available keys:', Object.keys(req))
-      alert('Request data is incomplete. Please refresh and try again.')
+      showAlert('Request data is incomplete. Please refresh and try again.')
       return
     }
     
@@ -1125,7 +1412,7 @@ const viewValidId = async (request) => {
     isAttachmentModalOpen.value = true
   } catch (error) {
     console.error('Error in viewValidId:', error)
-    alert('An error occurred while opening attachments. Please check the console for details.')
+    showAlert('An error occurred while opening attachments. Please check the console for details.')
   }
 }
 
@@ -1332,6 +1619,124 @@ const isValidExtraFieldValue = (value) => {
   return true
 }
 
+// Document type field definitions (same as in initial form)
+const documentFields = {
+  'Barangay Certificate': [
+    { name: 'duration_of_residency', label: 'Duration of Residency (years)', type: 'number' }
+  ],
+  'Barangay ID': [
+    { name: 'photo', label: '2x2 Photo (2 copies)', type: 'file' },
+    { name: 'supporting_documents', label: 'Supporting Documents for Residency', type: 'file' },
+    { name: 'birth_certificate', label: 'Birth Certificate (for first time applicants)', type: 'file' }
+  ],
+  'Cedula': [
+    { name: 'income_source', label: 'Income Source', type: 'select' },
+    { name: 'annual_income', label: 'Annual Income/Salary (PHP)', type: 'number' },
+    { name: 'business_gross_receipts', label: 'Business Gross Receipts (PHP)', type: 'number' },
+    { name: 'real_property_income', label: 'Real Property Income (PHP)', type: 'number' },
+    { name: 'occupation', label: 'Occupation/Profession', type: 'text' },
+    { name: 'tin', label: 'Tax Identification Number (TIN)', type: 'text' },
+    { name: 'height', label: 'Height (cm)', type: 'number' },
+    { name: 'weight', label: 'Weight (kg)', type: 'number' },
+    { name: 'tax_declaration', label: 'Tax Declaration (if applicable)', type: 'file' },
+    { name: 'supporting_documents', label: 'Supporting Documents for Residency', type: 'file' },
+    { name: 'income_statement', label: 'Income Statement (if employed)', type: 'file' }
+  ],
+  'Certificate of Indigency': [
+    { name: 'household_members', label: 'Household Member Count', type: 'select' },
+    { name: 'income_proof', label: 'Proof of Low Income', type: 'file' },
+    { name: 'proof_of_residency', label: 'Proof of Residency', type: 'file' }
+  ],
+  'Permit': [
+    { name: 'supporting_documents', label: 'Supporting Documents for Residency', type: 'file' },
+    { name: 'barangay_clearance', label: 'Barangay Clearance', type: 'file' }
+  ],
+}
+
+const buildingPermitFields = [
+  { name: 'building_type', label: 'Building Type', type: 'select' },
+  { name: 'building_reg_number', label: 'Building Registration Number', type: 'text' },
+  { name: 'building_plans', label: 'Building Plans (3 copies)', type: 'file' },
+  { name: 'engineer_cert', label: 'Engineer\'s Certification', type: 'file' },
+  { name: 'lot_title', label: 'Lot Title or Tax Declaration', type: 'file' },
+]
+
+const businessPermitFields = [
+  { name: 'business_name', label: 'Business Name', type: 'text' },
+  { name: 'business_type', label: 'Business Type', type: 'select' },
+  { name: 'dtI_sec_number', label: 'DTI/SEC Registration Number', type: 'text' },
+  { name: 'business_registration', label: 'Business Registration Documents', type: 'file' },
+  { name: 'lease_contract', label: 'Lease Contract (if renting)', type: 'file' },
+  { name: 'dti_registration', label: 'DTI Registration Document', type: 'file' },
+  { name: 'location_plan', label: 'Location Plan', type: 'file' },
+]
+
+// Get field label from document type definition for attachments
+const getAttachmentFieldLabel = (fieldName) => {
+  if (!fieldName) return 'Unknown'
+  
+  // Special cases for ID fields
+  if (fieldName === 'id_front') return 'ID Front'
+  if (fieldName === 'id_back') return 'ID Back'
+  
+  // Try to get label from document type definition
+  if (selectedRequest.value) {
+    const docTypeName = selectedRequest.value.document_type?.name || 
+                        selectedRequest.value.documentType || 
+                        selectedRequest.value.document_type ||
+                        null
+    
+    if (docTypeName) {
+      let allFields = [...(documentFields[docTypeName] || [])]
+      
+      // For Permit, add fields based on permit_type
+      if (docTypeName === 'Permit') {
+        const extraFields = getExtraFieldsObject(selectedRequest.value.extra_fields)
+        const permitType = extraFields?.permit_type
+        if (permitType === 'Building Permit') {
+          allFields = [...allFields, ...buildingPermitFields]
+        } else if (permitType === 'Business Permit') {
+          allFields = [...allFields, ...businessPermitFields]
+        }
+      }
+      
+      const fieldDef = allFields.find(f => f.name === fieldName)
+      if (fieldDef && fieldDef.label) {
+        return fieldDef.label
+      }
+    }
+  }
+  
+  // Fallback to formatted field name
+  return formatFieldName(fieldName)
+}
+
+// Get all valid field names for a document type
+const getValidFieldsForDocumentType = (docTypeName, extraFields = {}) => {
+  const validFields = ['purpose', 'id_type', 'id_number', 'id_front', 'id_back']
+  
+  const baseFields = documentFields[docTypeName] || []
+  baseFields.forEach(field => {
+    validFields.push(`extra_fields.${field.name}`)
+  })
+  
+  // For Permit, check permit_type and add appropriate fields
+  if (docTypeName === 'Permit') {
+    const permitType = extraFields?.permit_type
+    if (permitType === 'Building Permit') {
+      buildingPermitFields.forEach(field => {
+        validFields.push(`extra_fields.${field.name}`)
+      })
+    } else if (permitType === 'Business Permit') {
+      businessPermitFields.forEach(field => {
+        validFields.push(`extra_fields.${field.name}`)
+      })
+    }
+  }
+  
+  return validFields
+}
+
 const formatFileSize = (bytes) => {
   if (!bytes || bytes === 0) return '0 Bytes'
   const k = 1024
@@ -1492,37 +1897,113 @@ const filteredRequests = computed(() => {
   }
 
   if (filterOption.value !== 'all') {
-    filtered = filtered.filter(item => 
-      (item.documentType || '').toLowerCase().includes(filterOption.value.toLowerCase())
-    )
+    if (filterOption.value === 'new') {
+      // Show only new requests (no admin_feedback)
+      filtered = filtered.filter(item => !item.admin_feedback || item.admin_feedback.trim() === '')
+    } else if (filterOption.value === 'resubmitted') {
+      // Show only resubmitted requests (has admin_feedback)
+      filtered = filtered.filter(item => item.admin_feedback && item.admin_feedback.trim() !== '')
+    } else {
+      // Document type filters (clearance, certificate, cedula, id)
+      filtered = filtered.filter(item => 
+        (item.documentType || '').toLowerCase().includes(filterOption.value.toLowerCase())
+      )
+    }
   }
 
-  if (sortOption.value === 'newest') {
-    filtered.sort((a, b) => b.dateObj - a.dateObj)
-  } else if (sortOption.value === 'oldest') {
-    filtered.sort((a, b) => a.dateObj - b.dateObj)
-  } else if (sortOption.value === 'relevant') {
-    const urgentKeywords = ['urgent', 'asap', 'soonest', 'deadline']
-    filtered.sort((a, b) => {
+  // Sort: resubmitted requests (with admin_feedback) go to top, then by sort option
+  filtered.sort((a, b) => {
+    const aResubmitted = !!(a.admin_feedback && a.admin_feedback.trim() !== '')
+    const bResubmitted = !!(b.admin_feedback && b.admin_feedback.trim() !== '')
+    
+    // If one is resubmitted and the other isn't, resubmitted goes first
+    if (aResubmitted && !bResubmitted) return -1
+    if (!aResubmitted && bResubmitted) return 1
+    
+    // Both are same resubmission status, sort by sort option
+    if (sortOption.value === 'newest') {
+      return b.dateObj - a.dateObj
+    } else if (sortOption.value === 'oldest') {
+      return a.dateObj - b.dateObj
+    } else if (sortOption.value === 'relevant') {
+      const urgentKeywords = ['urgent', 'asap', 'soonest', 'deadline']
       const aUrgent = urgentKeywords.some(keyword => (a.description || '').toLowerCase().includes(keyword))
       const bUrgent = urgentKeywords.some(keyword => (b.description || '').toLowerCase().includes(keyword))
       if (aUrgent && !bUrgent) return -1
       if (!aUrgent && bUrgent) return 1
       return b.dateObj - a.dateObj
-    })
-  }
+    }
+    
+    return b.dateObj - a.dateObj
+  })
 
   return filtered
 })
 
+// Paginated requests
+const paginatedRequests = computed(() => {
+  const start = (currentPage.value - 1) * itemsPerPage.value
+  const end = start + itemsPerPage.value
+  return filteredRequests.value.slice(start, end)
+})
+
+// Total pages
+const totalPages = computed(() => {
+  return Math.ceil(filteredRequests.value.length / itemsPerPage.value)
+})
+
+// Pagination functions
+const goToPage = (page) => {
+  if (page >= 1 && page <= totalPages.value) {
+    currentPage.value = page
+    // Scroll to top of requests container
+    const requestsContainer = document.querySelector('.requests-container')
+    if (requestsContainer) {
+      requestsContainer.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }
+  }
+}
+
+const nextPage = () => {
+  if (currentPage.value < totalPages.value) {
+    goToPage(currentPage.value + 1)
+  }
+}
+
+const prevPage = () => {
+  if (currentPage.value > 1) {
+    goToPage(currentPage.value - 1)
+  }
+}
+
+// Watch for filter changes to reset to page 1
+watch([filterOption, searchQuery, sortOption], () => {
+  currentPage.value = 1
+})
+
 // --- UI methods ---
+// Terms & Conditions Modal
+const openTermsModal = (e) => {
+    if (e) {
+        e.preventDefault()
+        e.stopPropagation()
+    }
+    showSettings.value = false
+    showTermsModal.value = true
+}
+
+const closeTermsModal = () => {
+    showTermsModal.value = false
+}
+
+// Settings and other UI methods
 const toggleSettings = () => { showSettings.value = !showSettings.value }
 const closeSettings = () => { showSettings.value = false }
 const toggleSortDropdown = () => { showSortDropdown.value = !showSortDropdown.value; showFilterDropdown.value = false }
 const toggleFilterDropdown = () => { showFilterDropdown.value = !showFilterDropdown.value; showSortDropdown.value = false }
 const selectSort = (option) => { sortOption.value = option; showSortDropdown.value = false }
 const selectFilter = (option) => { filterOption.value = option; showFilterDropdown.value = false }
-const logout = () => { showSettings.value = false; router.visit(route('login')) }
+const logout = () => { showSettings.value = false; router.visit(route('login_approver')) }
 const performSearch = () => {
   // Perform search functionality
 }
@@ -1535,7 +2016,7 @@ const viewRequestDetails = async (request) => {
   
   if (!request) {
     console.error('Request is null or undefined')
-    alert('Error: Request data is missing')
+    showAlert('Error: Request data is missing')
     return
   }
   
@@ -1699,9 +2180,10 @@ const closeAllTabs = () => {
  * Default `true` keeps previous behaviour for Cancel/overlay clicks. Pass `false` when you want everything closed.
  */
 const openApprovalModal = () => {
-  // Ensure all other modals are closed (including attachment modal)
+  // Ensure all other modals are closed (including attachment modal and rejection modal)
   isDocumentModalOpen.value = false
   isAttachmentModalOpen.value = false
+  isRejectionModalOpen.value = false  // Explicitly close rejection modal
   cleanupGeneratedDocument()
   
   // Close main modal and open approval modal
@@ -1713,29 +2195,17 @@ const openApprovalModal = () => {
   tomorrow.setDate(tomorrow.getDate() + 1)
   pickupDate.value = tomorrow.toISOString().split('T')[0]
   pickupTime.value = '09:00'
-  pickupEndDate.value = ''
-  pickupEndTime.value = ''
   pickupItem.value = selectedRequest.value?.documentType ?? ''
-  pickupLocation.value = ''
-  customPickupLocation.value = ''
+  pickupLocation.value = 'Barangay 176B - Main Office' // Fixed location
   personToLook.value = ''
-}
-
-const handleLocationChange = () => {
-  if (pickupLocation.value !== 'other') {
-    customPickupLocation.value = ''
-  }
 }
 
 const closeApprovalModal = (reopenMain = true) => {
   isApprovalModalOpen.value = false
   pickupDate.value = ''
   pickupTime.value = ''
-  pickupEndDate.value = ''
-  pickupEndTime.value = ''
   pickupItem.value = ''
-  pickupLocation.value = ''
-  customPickupLocation.value = ''
+  pickupLocation.value = 'Barangay 176B - Main Office' // Fixed location
   personToLook.value = ''
   if (reopenMain) {
     // only reopen the main modal when user cancelled or clicked overlay
@@ -2148,7 +2618,7 @@ const closeDocumentModal = () => {
   cleanupGeneratedDocument()
 }
 
-const printGeneratedDocument = () => {
+const printGeneratedDocument = async () => {
   // Try iframe method first
   const iframe = document.getElementById('doc-preview-iframe')
   
@@ -2199,14 +2669,14 @@ const openDocumentForPrinting = () => {
           }, 500)
         }
       } else {
-        alert('Please allow pop-ups for this site to print the document, or use the Download button.')
+        showAlert('Please allow pop-ups for this site to print the document, or use the Download button.')
       }
     } catch (e) {
       console.error('Failed to open print window:', e)
-      alert('Could not open print dialog. Please use the Download button to save and print the document.')
+      showAlert('Could not open print dialog. Please use the Download button to save and print the document.')
     }
   } else {
-    alert('Document URL not available. Please try downloading the document instead.')
+    showAlert('Document URL not available. Please try downloading the document instead.')
   }
 }
 
@@ -2240,8 +2710,8 @@ const handleIframeError = () => {
 }
 
 // Ask user if they want to print the document
-const askToPrint = () => {
-  const userWantsToPrint = confirm('Document generated successfully! Would you like to print it now?')
+const askToPrint = async () => {
+  const userWantsToPrint = await showConfirm('Document generated successfully! Would you like to print it now?', 'Print Document')
   if (userWantsToPrint) {
     // Give iframe more time to load before attempting print
     setTimeout(() => {
@@ -2281,30 +2751,62 @@ const otherAttachments = computed(() => {
   })
 })
 
+// Get all non-file fields to display based on document type definition
+const displayableExtraFields = computed(() => {
+  if (!selectedRequest.value) return []
+  
+  // Handle both document_type object and direct documentType string
+  const docTypeName = selectedRequest.value.document_type?.name || 
+                      selectedRequest.value.documentType || 
+                      selectedRequest.value.document_type ||
+                      null
+  if (!docTypeName) return []
+  
+  const extraFields = getExtraFieldsObject(selectedRequest.value.extra_fields)
+  
+  // Get base fields for the document type
+  let allFields = [...(documentFields[docTypeName] || [])]
+  
+  // For Permit, add fields based on permit_type
+  if (docTypeName === 'Permit') {
+    const permitType = extraFields?.permit_type
+    if (permitType === 'Building Permit') {
+      allFields = [...allFields, ...buildingPermitFields]
+    } else if (permitType === 'Business Permit') {
+      allFields = [...allFields, ...businessPermitFields]
+    }
+  }
+  
+  // Filter to only non-file fields and check if they have values
+  const nonFileFields = allFields.filter(field => field.type !== 'file')
+  
+  // Return fields that have values in extra_fields
+  return nonFileFields.map(field => {
+    const value = extraFields[field.name]
+    return {
+      ...field,
+      value: value,
+      hasValue: isValidExtraFieldValue(value)
+    }
+  }).filter(field => field.hasValue)
+})
+
 // CONFIRM APPROVAL (modified only for showing generated document - all other logic kept)
 const confirmApproval = async () => {
   if (!pickupDate.value || !pickupTime.value) {
-    alert('Please set both pickup date and time')
-    return
-  }
-  if (!pickupLocation.value) {
-    alert('Please select a pickup location')
-    return
-  }
-  if (pickupLocation.value === 'other' && !customPickupLocation.value) {
-    alert('Please enter a custom pickup location')
+    showAlert('Please set both pickup date and time', 'Missing Information')
     return
   }
   if (!selectedRequest.value || !selectedRequest.value.doc_request_id) {
-    alert('No request selected')
+    showAlert('No request selected', 'Error')
     return
   }
 
   const payload = {
     pickup_item: pickupItem.value || null,
-    pickup_location: (pickupLocation.value === 'other' ? customPickupLocation.value : pickupLocation.value) || null,
+    pickup_location: 'Barangay 176B - Main Office', // Fixed location
     pickup_start: buildDateTime(pickupDate.value, pickupTime.value),
-    pickup_end: (pickupEndDate.value && pickupEndTime.value) ? buildDateTime(pickupEndDate.value, pickupEndTime.value) : null,
+    pickup_end: null, // Removed field
     person_to_look: personToLook.value || null,
     status: 'Approved',
     fk_approver_id: user.value?.id ?? user.value?.user_id ?? null,
@@ -2315,8 +2817,28 @@ const confirmApproval = async () => {
   isApproving.value = true
   const url = buildUrl('document_requests.approve', selectedRequest.value.doc_request_id)
 
+  // Get CSRF token - try multiple sources
+  let csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
+  if (!csrfToken) {
+    const xsrfToken = document.cookie.split('; ').find(row => row.startsWith('XSRF-TOKEN='))
+    if (xsrfToken) {
+      csrfToken = decodeURIComponent(xsrfToken.split('=')[1])
+    }
+  }
+
+  // Use window.axios if available, otherwise use axios
+  const axiosInstance = window.axios || axios
+
   try {
-    const res = await axios.post(url, payload)
+    const res = await axiosInstance.post(url, payload, {
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'X-Requested-With': 'XMLHttpRequest',
+        ...(csrfToken && { 'X-CSRF-TOKEN': csrfToken }),
+      },
+      withCredentials: true,
+    })
     if (res?.data?.success) {
       // Remove the request from localRequests since it's now approved (should be in history)
       const idx = localRequests.value.findIndex(r => r.doc_request_id === selectedRequest.value.doc_request_id)
@@ -2330,11 +2852,11 @@ const confirmApproval = async () => {
 
       // Show appropriate message
       if (documentGenerated) {
-        alert('Request is approved. Document generated successfully!')
+        showAlert('Request is approved. Document generated successfully!', 'Success')
       } else if (documentError) {
-        alert(`Request is approved, but document generation failed: ${documentError}\n\nPlease check the logs or try regenerating the document.`)
+        showAlert(`Request is approved, but document generation failed: ${documentError}\n\nPlease check the logs or try regenerating the document.`, 'Warning')
       } else {
-        alert('Request is approved.')
+        showAlert('Request is approved.', 'Success')
       }
 
       // Handle document download - prefer DOCX, fallback to PDF
@@ -2401,72 +2923,171 @@ const confirmApproval = async () => {
       // IMPORTANT: NO closeAllTabs() call here — user will manually close the document modal.
       // Rejection flow still keeps automatic close behavior as before.
     } else {
-      alert(res?.data?.message ?? 'Approval completed, but server returned unexpected response.')
+      showAlert(res?.data?.message ?? 'Approval completed, but server returned unexpected response.', 'Notification')
     }
   } catch (err) {
     console.error('Approval error:', err)
     const errors = err?.response?.data?.errors
     if (errors) {
       const flat = Object.values(errors).flat().join('\n')
-      alert('Approval failed:\n' + flat)
+      showAlert('Approval failed:\n' + flat, 'Error')
     } else {
       const msg = err?.response?.data?.message ?? err.message ?? 'Network or server error'
-      alert('Approval failed: ' + msg)
+      showAlert('Approval failed: ' + msg, 'Error')
     }
   } finally {
     isApproving.value = false
   }
 }
 
-const handleRejectClick = async (event) => {
-  // Explicitly stop all event propagation
-  if (event) {
-    event.preventDefault()
-    event.stopPropagation()
-    event.stopImmediatePropagation()
-  }
+// Quick reject handler from request card
+const handleQuickReject = async (request) => {
+  console.log('handleQuickReject called with request:', request)
   
-  // Check if request is selected
-  if (!selectedRequest.value || !selectedRequest.value.doc_request_id) {
-    alert('No request selected')
-    return
-  }
+  // Set the selected request
+  selectedRequest.value = request
   
-  // Get rejection reason from user via prompt
-  const rejectionReason = prompt('Please provide a reason for rejecting this request:')
+  // Ensure approval modal and other modals are closed
+  isApprovalModalOpen.value = false
+  isDocumentModalOpen.value = false
+  isAttachmentModalOpen.value = false
+  isModalOpen.value = false
+  cleanupGeneratedDocument()
   
-  if (!rejectionReason || !rejectionReason.trim()) {
-    // User cancelled or entered empty reason
-    if (rejectionReason !== null) {
-      alert('Rejection reason is required. Request not rejected.')
+  // Reset rejection form
+  rejectionReason.value = ''
+  selectedIncorrectFields.value = []
+  
+  // Open rejection modal directly
+  isRejectionModalOpen.value = true
+  console.log('Setting isRejectionModalOpen to true')
+  console.log('isRejectionModalOpen after setting:', isRejectionModalOpen.value)
+  
+  // Force DOM update and check if modal exists
+  await nextTick()
+  console.log('After nextTick, isRejectionModalOpen:', isRejectionModalOpen.value)
+  
+  // Check if modal element exists in DOM (Teleport renders to body)
+  setTimeout(() => {
+    // Try multiple selectors - check both document and body
+    const modalElement = document.querySelector('.rejection-modal') || 
+                         document.body.querySelector('.rejection-modal') ||
+                         document.querySelector('.modal-overlay:has(.rejection-modal)') ||
+                         document.querySelector('[class*="rejection"]')
+    console.log('Modal element in DOM:', modalElement)
+    console.log('All modal overlays in document:', document.querySelectorAll('.modal-overlay'))
+    console.log('All modal overlays in body:', document.body.querySelectorAll('.modal-overlay'))
+    console.log('All rejection modals:', document.querySelectorAll('.rejection-modal'))
+    console.log('Body children count:', document.body.children.length)
+    console.log('Body HTML snippet:', document.body.innerHTML.substring(0, 500))
+    
+    if (modalElement) {
+      const styles = window.getComputedStyle(modalElement)
+      console.log('Modal display:', styles.display)
+      console.log('Modal visibility:', styles.visibility)
+      console.log('Modal opacity:', styles.opacity)
+      console.log('Modal z-index:', styles.zIndex)
+      console.log('Modal position:', styles.position)
+    } else {
+      console.error('Modal element NOT found in DOM!')
+      console.log('isRejectionModalOpen value:', isRejectionModalOpen.value)
+      console.log('Checking Vue instance...')
     }
-    return
-  }
-  
-  // Confirm rejection
-  const confirmed = confirm(`Are you sure you want to reject this request?\n\nReason: ${rejectionReason.trim()}`)
-  
-  if (!confirmed) {
-    console.log('Rejection cancelled by user')
-    return
-  }
-  
-  // Submit the rejection
-  await submitRejection(rejectionReason.trim())
+  }, 100)
 }
 
-const submitRejection = async (reason) => {
+// Quick approve handler from request card
+const handleQuickApprove = (request) => {
+  // Set the selected request
+  selectedRequest.value = request
+  
+  // Open approval modal
+  openApprovalModal()
+}
+
+// Reject handler from modal - simplified like event request
+const handleRejectClick = () => {
+  // Close main modal and open rejection modal (simple, like event request)
+  isModalOpen.value = false
+  isRejectionModalOpen.value = true
+  
+  // Reset rejection form
+  rejectionReason.value = ''
+  selectedIncorrectFields.value = []
+}
+
+const confirmRejection = async () => {
+  if (!rejectionReason.value || !rejectionReason.value.trim()) {
+    showAlert('Rejection reason is required.', 'Missing Information')
+    return
+  }
+
+  if (selectedIncorrectFields.value.length === 0) {
+    showAlert('Please select at least one incorrect field.', 'Missing Information')
+    return
+  }
+
+  // Validate that all selected fields are valid for the document type
+  if (selectedRequest.value && selectedRequest.value.document_type) {
+    const docTypeName = selectedRequest.value.document_type.name || selectedRequest.value.documentType
+    const extraFields = getExtraFieldsObject(selectedRequest.value.extra_fields)
+    const validFields = getValidFieldsForDocumentType(docTypeName, extraFields)
+    
+    const invalidFields = selectedIncorrectFields.value.filter(field => !validFields.includes(field))
+    if (invalidFields.length > 0) {
+      showAlert(`The following fields are not valid for this document type: ${invalidFields.join(', ')}. Please unselect them.`, 'Invalid Fields')
+      return
+    }
+  }
+
+  await submitRejection(rejectionReason.value.trim(), selectedIncorrectFields.value)
+}
+
+// Get valid document fields for the selected request
+const getValidDocumentFields = (request) => {
+  if (!request || !request.document_type) return []
+  
+  const docTypeName = request.document_type.name || request.documentType
+  const extraFields = getExtraFieldsObject(request.extra_fields)
+  const baseFields = documentFields[docTypeName] || []
+  
+  let allFields = [...baseFields]
+  
+  // For Permit, check permit_type and add appropriate fields
+  if (docTypeName === 'Permit') {
+    const permitType = extraFields?.permit_type
+    if (permitType === 'Building Permit') {
+      allFields = [...allFields, ...buildingPermitFields]
+    } else if (permitType === 'Business Permit') {
+      allFields = [...allFields, ...businessPermitFields]
+    }
+  }
+  
+  return allFields.map(field => ({
+    name: field.name,
+    label: field.label,
+    fullName: `extra_fields.${field.name}`
+  }))
+}
+
+const submitRejection = async (reason, incorrectFields) => {
   if (isRejecting.value) return
   isRejecting.value = true
 
   if (!reason || !reason.trim()) {
-    alert("Rejection reason is required")
+    showAlert("Rejection reason is required", 'Missing Information')
+    isRejecting.value = false
+    return
+  }
+
+  if (!incorrectFields || incorrectFields.length === 0) {
+    showAlert("Please select at least one incorrect field", 'Missing Information')
     isRejecting.value = false
     return
   }
 
   if (!selectedRequest.value || !selectedRequest.value.doc_request_id) {
-    alert('No request selected')
+    showAlert('No request selected', 'Error')
     isRejecting.value = false
     return
   }
@@ -2475,41 +3096,73 @@ const submitRejection = async (reason) => {
     status: 'Rejected',
     rejection_reason: reason.trim(),
     admin_feedback: reason.trim(),
+    incorrect_fields: incorrectFields,
   }
+
+  const url = buildUrl('document_requests.reject', selectedRequest.value.doc_request_id)
+
+  // Get CSRF token - try multiple sources
+  let csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
+  if (!csrfToken) {
+    // Try to get from Inertia page props if available
+    const page = window.$inertia?.page || {}
+    csrfToken = page.props?.csrf || page.props?.value?.csrf || null
+  }
+  if (!csrfToken) {
+    // Try to get from cookie (Laravel stores it as XSRF-TOKEN)
+    const xsrfToken = document.cookie.split('; ').find(row => row.startsWith('XSRF-TOKEN='))
+    if (xsrfToken) {
+      csrfToken = decodeURIComponent(xsrfToken.split('=')[1])
+    }
+  }
+
+  // Use window.axios if available, otherwise use axios
+  const axiosInstance = window.axios || axios
 
   try {
     console.log('Submitting rejection with reason:', reason.trim())
-    await router.post(
-      `/document-requests/${selectedRequest.value.doc_request_id}/reject`,
-      payload,
-      {
-        preserveState: false,
-        onSuccess: () => {
-          // Remove the request from localRequests since it's now rejected (should be in history)
-          const idx = localRequests.value.findIndex(r => r.doc_request_id === selectedRequest.value.doc_request_id)
-          if (idx > -1) {
-            localRequests.value.splice(idx, 1)
-          }
-
-          // Close modal and reset
-          isModalOpen.value = false
-          selectedRequest.value = null
-
-          // Show success message
-          alert('Request rejected successfully.')
-          console.log('Rejection successful')
-          router.reload()
-        },
-        onError: (errors) => {
-          console.error('Rejection error', errors)
-          const errorMessages = Object.values(errors).flat().join('\n')
-          alert('Failed to reject request:\n' + (errorMessages || 'Unknown error occurred'))
-        }
+    console.log('Submitting rejection with incorrect_fields:', incorrectFields)
+    console.log('incorrect_fields type:', typeof incorrectFields, 'is array:', Array.isArray(incorrectFields))
+    const res = await axiosInstance.post(url, payload, {
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'X-Requested-With': 'XMLHttpRequest',
+        ...(csrfToken && { 'X-CSRF-TOKEN': csrfToken }),
+      },
+      withCredentials: true,
+    })
+    if (res?.data?.success) {
+      // Remove the request from localRequests since it's now rejected (should be in history)
+      const idx = localRequests.value.findIndex(r => r.doc_request_id === selectedRequest.value.doc_request_id)
+      if (idx > -1) {
+        localRequests.value.splice(idx, 1)
       }
-    )
+
+      // Close modals and reset
+      isRejectionModalOpen.value = false
+      isModalOpen.value = false
+      selectedRequest.value = null
+      rejectionReason.value = ''
+      selectedIncorrectFields.value = []
+
+      // Show success message
+      showAlert('Request rejected successfully.', 'Success')
+      console.log('Rejection successful')
+      router.reload()
+    } else {
+      showAlert(res?.data?.message ?? 'Rejection completed, but server returned unexpected response.', 'Notification')
+    }
   } catch (err) {
     console.error('Reject exception', err)
-    alert('An error occurred while rejecting the request.')
+    const errors = err?.response?.data?.errors
+    if (errors) {
+      const flat = Object.values(errors).flat().join('\n')
+      showAlert('Rejection failed:\n' + flat, 'Error')
+    } else {
+      const msg = err?.response?.data?.message ?? err?.response?.data?.error ?? err.message ?? 'Network or server error'
+      showAlert('Rejection failed: ' + msg, 'Error')
+    }
   } finally {
     isRejecting.value = false
   }
@@ -2518,66 +3171,9 @@ const submitRejection = async (reason) => {
 const closeRejectionModal = () => {
   isRejectionModalOpen.value = false
   rejectionReason.value = ''
-  // Main modal stays open (no need to reopen it)
-}
-
-const confirmRejection = async () => {
-  if (isRejecting.value) return
-  isRejecting.value = true
-
-  if (!rejectionReason.value.trim()) {
-    alert("Please provide a reason for rejection")
-    isRejecting.value = false
-    return
-  }
-
-  if (!selectedRequest.value || !selectedRequest.value.doc_request_id) {
-    alert('No request selected')
-    isRejecting.value = false
-    return
-  }
-
-  const payload = {
-    status: 'Rejected',
-    rejection_reason: rejectionReason.value.trim(),
-    admin_feedback: rejectionReason.value.trim(),
-  }
-
-  try {
-    await router.post(
-      `/document-requests/${selectedRequest.value.doc_request_id}/reject`,
-      payload,
-      {
-        preserveState: false,
-        onSuccess: () => {
-          // Remove the request from localRequests since it's now rejected (should be in history)
-          const idx = localRequests.value.findIndex(r => r.doc_request_id === selectedRequest.value.doc_request_id)
-          if (idx > -1) {
-            localRequests.value.splice(idx, 1)
-          }
-
-          // close modals / reset local fields
-          isRejectionModalOpen.value = false
-          selectedRequest.value = null
-          rejectionReason.value = ''
-
-          // show alert and refresh
-          alert('Request rejected successfully.')
-          router.reload()
-        },
-        onError: (errors) => {
-          console.error('Rejection error', errors)
-          const errorMessages = Object.values(errors).flat().join('\n')
-          alert('Failed to reject request:\n' + (errorMessages || 'Unknown error occurred'))
-        }
-      }
-    )
-  } catch (err) {
-    console.error('Reject exception', err)
-    alert('An error occurred while rejecting the request.')
-  } finally {
-    isRejecting.value = false
-  }
+  selectedIncorrectFields.value = []
+  // Reopen main modal (like event request)
+  isModalOpen.value = true
 }
 
 const navigateToDashboard = () => {
@@ -2593,6 +3189,10 @@ const navigateToHistory = () => {
 }
 
 const handleClickOutside = (event) => {
+  // Don't close anything if clicking on the terms modal
+  if (event.target.closest('.terms-modal') || event.target.closest('.modal-overlay')) {
+    return
+  }
   if (!event.target.closest('.header-actions')) {
     showSettings.value = false
   }
@@ -2690,7 +3290,7 @@ onUnmounted(() => {
     background: white;
     border-radius: 12px;
     box-shadow: 0 8px 25px rgba(0,0,0,0.15);
-    min-width: 200px;
+    min-width: 240px;
     z-index: 1000;
     margin-top: 10px;
     border: 1px solid rgba(0,0,0,0.1);
@@ -2706,6 +3306,7 @@ onUnmounted(() => {
     transition: all 0.2s;
     cursor: pointer;
     font-weight: 500;
+    white-space: nowrap;
 }
 
 .settings-item:hover {
@@ -2896,6 +3497,7 @@ onUnmounted(() => {
     transition: all 0.2s;
     display: flex;
     align-items: center;
+    text-transform: uppercase;
     gap: 8px;
     min-width: 120px;
     justify-content: space-between;
@@ -2935,6 +3537,7 @@ onUnmounted(() => {
     padding: 10px 15px;
     background: none;
     border: none;
+    text-transform: uppercase;
     text-align: left;
     color: #333;
     cursor: pointer;
@@ -3000,9 +3603,7 @@ onUnmounted(() => {
 
 /* Requests Container */
 .requests-container {
-    padding: 25px;
-    max-height: calc(100vh - 350px);
-    overflow-y: auto;
+    padding: 25px 25px 10px 25px;
     display: grid;
     grid-template-columns: repeat(2, 1fr);
     gap: 20px;
@@ -3012,7 +3613,7 @@ onUnmounted(() => {
     background: white;
     border: 1px solid #e0e0e0;
     border-radius: 12px;
-    padding: 20px;
+    padding: 16px 20px;
     box-shadow: 0 4px 12px rgba(0,0,0,0.06);
     transition: all 0.3s ease;
 }
@@ -3053,17 +3654,31 @@ onUnmounted(() => {
     margin: 0 0 5px 0;
 }
 
+.resubmitted-badge {
+    display: inline-block;
+    background: transparent;
+    color: #ff8c42;
+    border: 2px solid #ff8c42;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+}
+
 .request-doc-type {
     font-size: 14px;
     color: #239640;
     font-weight: 600;
-    margin: 3px 0;
+    margin: 2px 0;
 }
 
 .request-ref-code {
     font-size: 12px;
     color: #999;
-    margin: 3px 0;
+    margin: 2px 0;
     font-family: monospace;
 }
 
@@ -3094,12 +3709,155 @@ onUnmounted(() => {
     pointer-events: auto;
     position: relative;
     z-index: 10;
+    text-transform: uppercase;
 }
 
 .view-btn:hover {
     background: #1e7e34;
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(35, 150, 64, 0.4);
+}
+
+.quick-approve-btn {
+    background: #239640;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 13px;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(35, 150, 64, 0.3);
+    pointer-events: auto;
+    position: relative;
+    z-index: 10;
+    text-transform: uppercase;
+}
+
+.quick-approve-btn:hover {
+    background: #1e7e34;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(35, 150, 64, 0.4);
+}
+
+.quick-reject-btn {
+    background: #ef4444;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 13px;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
+    pointer-events: auto;
+    position: relative;
+    z-index: 10;
+    text-transform: uppercase;
+}
+
+.quick-reject-btn:hover {
+    background: #dc2626;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
+}
+
+/* Pagination Styles */
+.pagination-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: -5px;
+    padding: 15px 20px;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.pagination-info {
+    font-size: 14px;
+    color: #666;
+    font-weight: 500;
+}
+
+.pagination-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.pagination-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 18px;
+    background: #fff;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #333;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-transform: uppercase;
+}
+
+.pagination-btn:hover:not(:disabled) {
+    background: #ff8c42;
+    border-color: #ff8c42;
+    color: #fff;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(255, 140, 66, 0.3);
+}
+
+.pagination-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background: #f5f5f5;
+}
+
+.pagination-numbers {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+}
+
+.pagination-number {
+    min-width: 40px;
+    height: 40px;
+    padding: 0 12px;
+    background: #fff;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #333;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.pagination-number:hover {
+    background: #f8f9fa;
+    border-color: #ff8c42;
+    color: #ff8c42;
+    transform: translateY(-1px);
+}
+
+.pagination-number.active {
+    background: linear-gradient(135deg, #ff8c42, #ff7a28);
+    border-color: #ff8c42;
+    color: #fff;
+    box-shadow: 0 2px 8px rgba(255, 140, 66, 0.3);
+}
+
+.pagination-number.active:hover {
+    background: linear-gradient(135deg, #ff7a28, #ff6a18);
+    transform: translateY(-1px);
 }
 
 .no-requests {
@@ -3618,6 +4376,7 @@ div.modal-overlay:has(.attachment-modal) {
     font-size: 16px;
     transition: all 0.3s ease;
     box-shadow: 0 2px 8px rgba(35, 150, 64, 0.25);
+    text-transform: uppercase;
     letter-spacing: 0.01em;
 }
 
@@ -3638,6 +4397,7 @@ div.modal-overlay:has(.attachment-modal) {
     font-size: 16px;
     transition: all 0.3s ease;
     box-shadow: 0 2px 8px rgba(239, 68, 68, 0.25);
+    text-transform: uppercase;
     letter-spacing: 0.01em;
 }
 
@@ -3729,6 +4489,7 @@ div.modal-overlay:has(.attachment-modal) {
     font-weight: 700;
     font-size: 15px;
     transition: all 0.3s ease;
+    text-transform: uppercase;
     box-shadow: 0 2px 8px rgba(35, 150, 64, 0.3);
 }
 
@@ -3740,23 +4501,23 @@ div.modal-overlay:has(.attachment-modal) {
 
 .cancel-btn {
     flex: 1;
-    background: #6b7280;
-    color: white;
-    border: none;
+    background: white;
+    color: #666;
+    border: 1px solid #e0e0e0;
     padding: 14px 32px;
     border-radius: 12px;
     cursor: pointer;
     font-weight: 600;
     font-size: 16px;
     transition: all 0.3s ease;
-    box-shadow: 0 2px 8px rgba(107, 114, 128, 0.25);
-    letter-spacing: 0.01em;
+    text-transform: uppercase;
 }
 
 .cancel-btn:hover {
-    background: #4b5563;
+    background: #f5f5f5;
+    border-color: #d0d0d0;
     transform: translateY(-2px);
-    box-shadow: 0 4px 16px rgba(107, 114, 128, 0.35);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 /* Rejection Modal Styles */
@@ -3798,13 +4559,69 @@ div.modal-overlay:has(.attachment-modal) {
     font-weight: 700;
     font-size: 15px;
     transition: all 0.3s ease;
+    text-transform: uppercase;
     box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
 }
 
-.confirm-reject-btn:hover {
+.confirm-reject-btn:hover:not(:disabled) {
     background: linear-gradient(135deg, #dc2626, #b91c1c);
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
+}
+
+.confirm-reject-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.incorrect-fields-checklist {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    margin-top: 10px;
+    max-height: 300px;
+    overflow-y: auto;
+    border: 1px solid #e0e0e0;
+}
+
+.checkbox-field-label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    padding: 10px;
+    border-radius: 6px;
+    transition: background 0.2s;
+    user-select: none;
+}
+
+.checkbox-field-label:hover {
+    background: #e9ecef;
+}
+
+.checkbox-field-label input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+    accent-color: #ef4444;
+}
+
+.checkbox-field-label span {
+    font-size: 14px;
+    font-weight: 500;
+    color: #333;
+    flex: 1;
+}
+
+.field-help-text {
+    font-size: 13px;
+    color: #666;
+    margin-bottom: 10px;
+    font-style: italic;
 }
 
 /* Custom Scrollbar */
@@ -3896,5 +4713,141 @@ div.modal-overlay:has(.attachment-modal) {
         width: 100%;
         align-items: flex-start;
     }
+}
+
+/* Terms and Conditions Modal Styles */
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Ensure terms modal overlay has proper z-index */
+.modal-overlay:has(.terms-modal) {
+    z-index: 10000 !important;
+}
+
+.terms-modal {
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    max-width: 800px;
+    width: 90%;
+    max-height: 90vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    animation: slideUp 0.3s ease;
+    position: relative;
+    z-index: 10001;
+}
+
+.terms-modal-header {
+    background: white;
+    padding: 25px 30px;
+    border-bottom: 1px solid #e0e0e0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.terms-modal-title {
+    margin: 0;
+    font-size: 28px;
+    font-weight: 700;
+    color: #333;
+}
+
+.terms-modal-close {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 8px;
+    color: #666;
+    transition: all 0.2s ease;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.terms-modal-close:hover {
+    background: #f0f0f0;
+    color: #333;
+}
+
+.terms-modal-body {
+    padding: 30px;
+    overflow-y: auto;
+    flex: 1;
+}
+
+.terms-section {
+    margin-bottom: 25px;
+}
+
+.terms-section:last-child {
+    margin-bottom: 0;
+}
+
+.terms-section-title {
+    margin: 0 0 12px 0;
+    font-size: 18px;
+    font-weight: 700;
+    color: #239640;
+}
+
+.terms-text {
+    margin: 0;
+    font-size: 15px;
+    line-height: 1.7;
+    color: #555;
+    text-align: justify;
+}
+
+.terms-list {
+    margin: 10px 0 0 20px;
+    padding: 0;
+}
+
+.terms-list li {
+    margin-bottom: 8px;
+    font-size: 15px;
+    line-height: 1.6;
+    color: #555;
+}
+
+.terms-modal-footer {
+    padding: 20px 30px;
+    border-top: 1px solid #e0e0e0;
+    display: flex;
+    justify-content: center;
+    background: #f8f9fa;
+    flex-shrink: 0;
+}
+
+.terms-modal-btn {
+    padding: 12px 50px;
+    background: #ff8c42;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(255, 140, 66, 0.3);
+}
+
+.terms-modal-btn:hover {
+    background: #ff7a28;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(255, 140, 66, 0.4);
 }
 </style>

@@ -413,6 +413,7 @@ onUnmounted(() => {
     border-bottom: 1px solid #f0f0f0;
     cursor: pointer;
     font-weight: 500;
+    white-space: nowrap;
 }
 
 .settings-item:hover {
@@ -454,7 +455,7 @@ onUnmounted(() => {
 
 .profile-name {
     font-weight: 700;
-    font-size: 17px;
+    font-size: 15px;
 }
 
 .profile-role {

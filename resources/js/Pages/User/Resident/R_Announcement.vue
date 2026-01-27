@@ -15,15 +15,140 @@
                     <img src="/assets/SETTINGS.png" alt="Settings" class="settings-btn-img" @click="toggleSettings" />
                     <!-- Settings Dropdown -->
                     <div v-if="showSettings" class="settings-dropdown">
-                        <Link href="#" class="settings-item" @click="closeSettings">Help Center</Link>
-                        <button type="button" class="settings-item" @click="openTerms">Terms & Conditions</button>
-                        <Link href="#" class="settings-item" @click="logout">Sign Out</Link>
+                        <a href="#" class="settings-item" @click.prevent.stop="openTermsModal">TERMS & CONDITIONS</a>
+                        <Link href="#" class="settings-item" @click="logout">SIGN OUT</Link>
                     </div>
                 </div>
             </div>
         </div>
 
-        <TermsModal :open="showTerms" @close="closeTerms" />
+        <!-- Terms and Conditions Modal -->
+        <div v-if="showTermsModal" class="modal-overlay" @click.self="closeTermsModal">
+            <div class="terms-modal" @click.stop>
+                <div class="terms-modal-header">
+                    <h2 class="terms-modal-title">Terms and Conditions</h2>
+                    <button @click="closeTermsModal" class="terms-modal-close">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width: 24px; height: 24px;">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+                <div class="terms-modal-body">
+                    <div class="terms-section">
+                        <h3 class="terms-section-title">1. Account Registration and Access</h3>
+                        <p class="terms-text">
+                            By creating an account and using the iKonek176B portal, you agree to provide accurate, current, and complete information during registration. You are responsible for maintaining the confidentiality of your account credentials and for all activities that occur under your account. You must immediately notify Barangay 176B of any unauthorized use of your account or any other breach of security.
+                        </p>
+                    </div>
+
+                    <div class="terms-section">
+                        <h3 class="terms-section-title">2. Use of Services</h3>
+                        <p class="terms-text">
+                            The iKonek176B portal is provided for legitimate barangay-related purposes only. You may use the portal to:
+                            <ul class="terms-list">
+                                <li>Submit document requests (e.g., Barangay Certificate, Barangay ID, Business Permit)</li>
+                                <li>Request event assistance for community activities</li>
+                                <li>View announcements and community updates</li>
+                                <li>Participate in community discussions and forums</li>
+                                <li>Access your request history and status</li>
+                            </ul>
+                        </p>
+                    </div>
+
+                    <div class="terms-section">
+                        <h3 class="terms-section-title">3. Accurate Information</h3>
+                        <p class="terms-text">
+                            You are responsible for ensuring that all information you submit through the portal is accurate, truthful, and complete. Providing false, misleading, or incomplete information may result in rejection of your requests, suspension of your account, and possible legal action. You must update your account information promptly if any changes occur.
+                        </p>
+                    </div>
+
+                    <div class="terms-section">
+                        <h3 class="terms-section-title">4. Document Requests</h3>
+                        <p class="terms-text">
+                            When submitting document requests, you must:
+                            <ul class="terms-list">
+                                <li>Provide all required documents and information</li>
+                                <li>Ensure documents are authentic and valid</li>
+                                <li>Pay applicable processing fees as required</li>
+                                <li>Follow pickup instructions and deadlines</li>
+                                <li>Use documents only for their intended legal purposes</li>
+                            </ul>
+                            The barangay reserves the right to verify all submitted information and documents. Approval of requests is subject to verification and compliance with barangay policies and regulations.
+                        </p>
+                    </div>
+
+                    <div class="terms-section">
+                        <h3 class="terms-section-title">5. Event Assistance Requests</h3>
+                        <p class="terms-text">
+                            When requesting event assistance, you must provide accurate event details, including date, time, location, and purpose. Event assistance is subject to availability and approval by barangay officials. You are responsible for ensuring your event complies with all applicable laws, regulations, and barangay policies. The barangay reserves the right to deny or cancel event assistance for any reason.
+                        </p>
+                    </div>
+
+                    <div class="terms-section">
+                        <h3 class="terms-section-title">6. Payment and Fees</h3>
+                        <p class="terms-text">
+                            Some services may require payment of processing fees. All fees must be paid according to the payment methods provided. Payments are non-refundable unless otherwise stated. The barangay is not responsible for delays or issues caused by payment processing errors or failures. You are responsible for ensuring payments are made correctly and on time.
+                        </p>
+                    </div>
+
+                    <div class="terms-section">
+                        <h3 class="terms-section-title">7. Data Privacy</h3>
+                        <p class="terms-text">
+                            Your personal information is collected and processed in accordance with the Data Privacy Act of 2012 (Republic Act No. 10173). The barangay will use your information only for legitimate purposes related to service delivery, record-keeping, and compliance with legal requirements. Your information will not be shared with unauthorized third parties except as required by law.
+                        </p>
+                    </div>
+
+                    <div class="terms-section">
+                        <h3 class="terms-section-title">8. Prohibited Activities</h3>
+                        <p class="terms-text">
+                            You are strictly prohibited from:
+                            <ul class="terms-list">
+                                <li>Using the portal for any illegal or unauthorized purpose</li>
+                                <li>Submitting false, fraudulent, or misleading information</li>
+                                <li>Attempting to gain unauthorized access to the system or other users' accounts</li>
+                                <li>Interfering with or disrupting the portal's operation</li>
+                                <li>Harassing, threatening, or abusing other users or barangay officials</li>
+                                <li>Posting inappropriate, offensive, or defamatory content</li>
+                                <li>Violating any applicable laws or regulations</li>
+                            </ul>
+                        </p>
+                    </div>
+
+                    <div class="terms-section">
+                        <h3 class="terms-section-title">9. Account Suspension and Termination</h3>
+                        <p class="terms-text">
+                            The barangay reserves the right to suspend or terminate your account at any time, with or without notice, if you violate these terms and conditions, engage in prohibited activities, or for any other reason deemed necessary by barangay officials. Upon termination, your right to use the portal will immediately cease.
+                        </p>
+                    </div>
+
+                    <div class="terms-section">
+                        <h3 class="terms-section-title">10. Limitation of Liability</h3>
+                        <p class="terms-text">
+                            The barangay is not liable for any delays, errors, or failures in service delivery caused by technical issues, system maintenance, incorrect information provided by users, or circumstances beyond the barangay's reasonable control. The barangay does not guarantee uninterrupted or error-free access to the portal.
+                        </p>
+                    </div>
+
+                    <div class="terms-section">
+                        <h3 class="terms-section-title">11. Updates to Terms</h3>
+                        <p class="terms-text">
+                            These terms and conditions may be updated periodically. You will be notified of significant changes through the portal or other communication channels. Continued use of the portal after changes constitutes acceptance of the updated terms.
+                        </p>
+                    </div>
+
+                    <div class="terms-section">
+                        <h3 class="terms-section-title">12. Contact and Support</h3>
+                        <p class="terms-text">
+                            For questions, concerns, or to report issues related to your account or the portal, contact the Barangay 176B office at ikonek176b@dev.ph or +639193076338. For technical support or assistance with using the portal, please visit the Help Center section.
+                        </p>
+                    </div>
+                </div>
+                <div class="terms-modal-footer">
+                    <button @click="closeTermsModal" class="terms-modal-btn">
+                        I UNDERSTAND
+                    </button>
+                </div>
+            </div>
+        </div>
 
         <!-- Main Content Area - Full Width -->
         <div class="main-layout">
@@ -81,6 +206,7 @@
                             <path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0" />
                         </svg>
                         Notifications
+                        <span v-if="unreadCount > 0" class="unread-badge-nav">{{ unreadCount }}</span>
                     </Link>
                     <Link 
                         href="#" 
@@ -99,7 +225,7 @@
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="nav-icon">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 5.25h.008v.008H12v-.008Z" />
                     </svg>
-                    FAQs & Help Center
+                    FAQS & HELP CENTER
                 </button>
             </div>
 
@@ -356,11 +482,11 @@
                                     </button>
                                 </div>
                                 <div class="post-options">
-                                    <button class="report-post-btn" @click="reportPost(selectedPost.id)">
+                                    <button v-if="!isPostOwner(selectedPost)" class="report-post-btn" @click="reportPost(selectedPost.id)">
                                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="report-icon">
                                             <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
                                         </svg>
-                                        Report
+                                        REPORT
                                     </button>
                                 </div>
                             </div>
@@ -368,7 +494,24 @@
 
                         <!-- Comments Section -->
                         <div class="comments-section">
-                            <h3 class="comments-title">Comments ({{ selectedPost.commentsList ? selectedPost.commentsList.length : 0 }})</h3>
+                            <div class="comments-header-section">
+                                <h3 class="comments-title">Comments ({{ selectedPost.commentsList ? selectedPost.commentsList.length : 0 }})</h3>
+                                <div class="comment-filter-wrapper">
+                                    <span class="filter-label">Sort by</span>
+                                    <div class="filter-dropdown-wrapper">
+                                        <button class="filter-dropdown-btn" @click="toggleCommentSortDropdown">
+                                            {{ commentSortOption.toUpperCase() }}
+                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="filter-arrow" :class="{ rotated: showCommentSortDropdown }">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+                                            </svg>
+                                        </button>
+                                        <div v-if="showCommentSortDropdown" class="filter-dropdown-menu">
+                                            <button @click="selectCommentSort('newest')" :class="{ active: commentSortOption === 'newest' }">NEWEST</button>
+                                            <button @click="selectCommentSort('oldest')" :class="{ active: commentSortOption === 'oldest' }">OLDEST</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                             
                             <!-- Add Comment Form -->
                             <div class="add-comment-form">
@@ -378,16 +521,21 @@
                                         v-model="newComment" 
                                         placeholder="Write a comment..."
                                         class="comment-input"
+                                        :class="{ 'error-input': commentError }"
                                         rows="3"
+                                        @input="commentError = ''"
                                     ></textarea>
-                                    <button @click="addComment" class="submit-comment-btn">Post Comment</button>
+                                    <div v-if="commentError" class="error-message-small" style="color: #dc3545; font-size: 12px; margin-top: 5px; margin-bottom: 5px;">
+                                        {{ commentError }}
+                                    </div>
+                                    <button @click="addComment" class="submit-comment-btn">POST COMMENT</button>
                                 </div>
                             </div>
 
                             <!-- Comments List -->
                             <div class="comments-list">
                                 <div 
-                                    v-for="comment in selectedPost.commentsList" 
+                                    v-for="comment in sortedComments" 
                                     :key="comment.id"
                                     class="comment-item"
                                 >
@@ -398,12 +546,20 @@
                                                 <span class="comment-author">{{ comment.author }}</span>
                                                 <span class="comment-date">{{ formatCommentDate(comment.date) }}</span>
                                             </div>
-                                            <button class="report-btn" @click="reportComment(comment.id)">
-                                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="report-icon-small">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
-                                                </svg>
-                                                Report
-                                            </button>
+                                            <div class="comment-actions-header">
+                                                <button v-if="isCommentOwner(comment)" class="delete-btn" @click="confirmDeleteComment(comment.id)">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="report-icon-small">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+                                                    </svg>
+                                                    DELETE
+                                                </button>
+                                                <button v-if="!isCommentOwner(comment)" class="report-btn" @click="reportComment(comment.id)">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="report-icon-small">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
+                                                    </svg>
+                                                    REPORT
+                                                </button>
+                                            </div>
                                         </div>
                                         <p class="comment-text">{{ comment.text }}</p>
                                         <div class="comment-actions">
@@ -415,7 +571,7 @@
                                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="reaction-icon-small">
                                                     <path stroke-linecap="round" stroke-linejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12Z" />
                                                 </svg>
-                                                {{ comment.likes || 0 }}
+                                                <span class="reaction-count">{{ comment.likes || 0 }}</span>
                                             </button>
                                             <button 
                                                 class="comment-reaction-btn"
@@ -426,13 +582,13 @@
                                                     <path stroke-linecap="round" stroke-linejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12Z" />
                                                     <path stroke-linecap="round" stroke-linejoin="round" d="M3 3l18 18" />
                                                 </svg>
-                                                {{ comment.dislikes || 0 }}
+                                                <span class="reaction-count">{{ comment.dislikes || 0 }}</span>
                                             </button>
                                             <button 
                                                 class="reply-btn"
                                                 @click="toggleReplyForm(comment.id)"
                                             >
-                                                Reply
+                                                REPLY
                                             </button>
                                         </div>
 
@@ -450,7 +606,15 @@
                                                             <span class="comment-author">{{ reply.author }}</span>
                                                             <span class="comment-date">{{ formatCommentDate(reply.date) }}</span>
                                                         </div>
-                                                        <button class="report-btn" @click="reportComment(reply.id)">🚩 Report</button>
+                                                        <div class="comment-actions-header">
+                                                            <button v-if="isCommentOwner(reply)" class="delete-btn" @click="confirmDeleteComment(reply.id, comment.id)">
+                                                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="report-icon-small">
+                                                                    <path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+                                                                </svg>
+                                                                DELETE
+                                                            </button>
+                                                            <button v-if="!isCommentOwner(reply)" class="report-btn" @click="reportComment(reply.id)">🚩 Report</button>
+                                                        </div>
                                                     </div>
                                                     <p class="comment-text">{{ reply.text }}</p>
                                                     <div class="comment-actions">
@@ -462,7 +626,7 @@
                                                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="reaction-icon-small">
                                                                 <path stroke-linecap="round" stroke-linejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12Z" />
                                                             </svg>
-                                                            {{ reply.likes || 0 }}
+                                                            <span class="reaction-count">{{ reply.likes || 0 }}</span>
                                                         </button>
                                                         <button 
                                                             class="comment-reaction-btn"
@@ -473,7 +637,7 @@
                                                                 <path stroke-linecap="round" stroke-linejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12Z" />
                                                                 <path stroke-linecap="round" stroke-linejoin="round" d="M3 3l18 18" />
                                                             </svg>
-                                                            {{ reply.dislikes || 0 }}
+                                                            <span class="reaction-count">{{ reply.dislikes || 0 }}</span>
                                                         </button>
                                                     </div>
                                                 </div>
@@ -491,7 +655,7 @@
                                                     rows="2"
                                                 ></textarea>
                                                 <div class="reply-actions">
-                                                    <button @click="addReply(comment.id)" class="submit-reply-btn">Reply</button>
+                                                    <button @click="addReply(comment.id)" class="submit-reply-btn">REPLY</button>
                                                     <button @click="cancelReply" class="cancel-reply-btn">Cancel</button>
                                                 </div>
                                             </div>
@@ -591,8 +755,31 @@
                     ></textarea>
                 </div>
                 <div class="report-modal-footer">
-                    <button class="cancel-report-btn" @click="closeReportModal">Cancel</button>
-                    <button class="submit-report-btn" @click="submitReport" :disabled="reportReasons.length === 0">Submit Report</button>
+                    <button class="cancel-report-btn" @click="closeReportModal">CANCEL</button>
+                    <button class="submit-report-btn" @click="submitReport" :disabled="reportReasons.length === 0">SUBMIT REPORT</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Delete Confirmation Modal -->
+        <div v-if="showDeleteModal" class="report-modal-overlay" @click="closeDeleteModal">
+            <div class="report-modal" @click.stop>
+                <div class="report-modal-header">
+                    <h3>Delete Comment</h3>
+                    <button class="close-modal-btn" @click="closeDeleteModal">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="close-icon">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+                <div class="report-modal-body">
+                    <p class="report-description">
+                        Are you sure you want to delete this comment? This action cannot be undone.
+                    </p>
+                </div>
+                <div class="report-modal-footer">
+                    <button class="cancel-report-btn" @click="closeDeleteModal">CANCEL</button>
+                    <button class="submit-report-btn delete-confirm-btn" @click="handleDelete">DELETE</button>
                 </div>
             </div>
         </div>
@@ -606,7 +793,6 @@ import { Head } from '@inertiajs/vue3'
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { router } from '@inertiajs/vue3'
 import axios from 'axios'
-import TermsModal from '@/Components/TermsModal.vue'
 
 // Define props - receive posts from backend
 const props = defineProps({
@@ -617,6 +803,10 @@ const props = defineProps({
     auth: {
         type: Object,
         default: () => ({})
+    },
+    restrictions: {
+        type: Object,
+        default: () => null
     }
 })
 
@@ -702,10 +892,12 @@ const showSettings = ref(false)
 const showModeDropdown = ref(false)
 const showSortDropdown = ref(false)
 const showFilterDropdown = ref(false)
+const showCommentSortDropdown = ref(false)
 const activeTab = ref('posts')
 const currentTab = ref('announcements')
 const sortOption = ref('newest')
 const filterOption = ref('all')
+const commentSortOption = ref('newest')
 const searchQuery = ref('')
 const selectedPost = ref(null)
 const newComment = ref('')
@@ -719,6 +911,30 @@ const reportTargetId = ref(null)
 const trendingTags = ref([])
 const loadingTrendingTags = ref(false)
 const selectedTrendingTag = ref(null)
+const showDeleteModal = ref(false)
+
+// Error handling state
+const commentError = ref('')
+const reportError = ref('')
+const reactionError = ref('')
+const deleteType = ref('') // 'comment' only (residents can't delete announcement posts)
+const deleteTargetId = ref(null)
+const deleteTargetParentId = ref(null) // For replies, store parent comment ID
+const unreadCount = ref(0)
+
+// Fetch unread notification count
+const fetchUnreadCount = async () => {
+    try {
+        const response = await axios.get('/api/notifications')
+        if (response.data.success) {
+            const notifications = response.data.notifications || []
+            unreadCount.value = notifications.filter(n => !n.is_read).length
+        }
+    } catch (error) {
+        console.error('Error fetching unread count:', error)
+        unreadCount.value = 0
+    }
+}
 
 // Initialize posts from props
 // Unified posts ref used by the template
@@ -769,6 +985,7 @@ function normalizePost(raw) {
     return {
         id,
         author: authorName,
+        author_id: raw.author_id ?? raw.author?.user_id ?? null,
         avatar: avatar || '/assets/DEFAULT.jpg',
         role: raw.role ?? 'Resident',
         tags,
@@ -809,6 +1026,50 @@ function updatePostsFromProps() {
 watch(() => props.posts, updatePostsFromProps, { immediate: true, deep: true })
 watch(() => page.props.posts, updatePostsFromProps, { immediate: true, deep: true })
 
+// Polling interval for checking deleted posts
+let deletedPostsCheckInterval = null
+
+// Check for deleted posts and remove them from the list
+const checkDeletedPosts = async () => {
+    if (posts.value.length === 0) return
+    
+    try {
+        const postIds = posts.value.map(p => p.id).filter(Boolean)
+        if (postIds.length === 0) return
+        
+        const response = await axios.post(route('api.posts.check'), {
+            post_ids: postIds
+        })
+        
+        if (response.data.success) {
+            const existingPostIds = response.data.existing_posts || []
+            const deletedPostIds = postIds.filter(id => !existingPostIds.includes(id))
+            
+            if (deletedPostIds.length > 0) {
+                // Remove deleted posts from the list
+                const initialCount = posts.value.length
+                posts.value = posts.value.filter(p => !deletedPostIds.includes(p.id))
+                
+                // If a selected post was deleted, close it
+                if (selectedPost.value && deletedPostIds.includes(selectedPost.value.id)) {
+                    closePost()
+                }
+                
+                console.log(`🗑️ Removed ${initialCount - posts.value.length} deleted post(s)`)
+            }
+        }
+    } catch (error) {
+        console.error('Error checking deleted posts:', error)
+    }
+}
+
+// Handle visibility change to check for deleted posts when user returns to tab
+const handleVisibilityChange = () => {
+    if (!document.hidden) {
+        checkDeletedPosts()
+    }
+}
+
 // Scroll to post if post parameter is in URL
 onMounted(() => {
     // Wait for posts to load, then check for post parameter
@@ -819,6 +1080,19 @@ onMounted(() => {
             scrollToPost(postId)
         }
     }, 1000)
+    
+    // Set up polling to check for deleted posts every 10 seconds
+    deletedPostsCheckInterval = setInterval(() => {
+        checkDeletedPosts()
+    }, 10000) // Check every 10 seconds
+    
+    // Also check when the page becomes visible (user switches back to tab)
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    
+    // Initial check after 5 seconds
+    setTimeout(() => {
+        checkDeletedPosts()
+    }, 5000)
 })
 
 // Function to scroll to a specific post
@@ -960,13 +1234,17 @@ const closeSettings = () => {
     showSettings.value = false
 }
 
-const openTerms = () => {
+const showTermsModal = ref(false)
+const openTermsModal = (e) => {
+    if (e) {
+        e.preventDefault()
+        e.stopPropagation()
+    }
     showSettings.value = false
-    showTerms.value = true
+    showTermsModal.value = true
 }
-
-const closeTerms = () => {
-    showTerms.value = false
+const closeTermsModal = () => {
+    showTermsModal.value = false
 }
 
 const toggleModeDropdown = () => {
@@ -992,6 +1270,32 @@ const selectFilter = (option) => {
     filterOption.value = option
     showFilterDropdown.value = false
 }
+
+const toggleCommentSortDropdown = () => {
+    showCommentSortDropdown.value = !showCommentSortDropdown.value
+}
+
+const selectCommentSort = (option) => {
+    commentSortOption.value = option
+    showCommentSortDropdown.value = false
+}
+
+// Sorted comments computed property
+const sortedComments = computed(() => {
+    if (!selectedPost.value || !selectedPost.value.commentsList) {
+        return []
+    }
+    
+    const comments = [...selectedPost.value.commentsList]
+    
+    if (commentSortOption.value === 'newest') {
+        return comments.sort((a, b) => new Date(b.date) - new Date(a.date))
+    } else if (commentSortOption.value === 'oldest') {
+        return comments.sort((a, b) => new Date(a.date) - new Date(b.date))
+    }
+    
+    return comments
+})
 
 const logout = () => {
     showSettings.value = false
@@ -1078,7 +1382,17 @@ const closePost = () => {
 }
 
 const addComment = async () => {
-    if (!newComment.value.trim() || !selectedPost.value) return
+    commentError.value = ''
+    
+    if (!newComment.value.trim()) {
+        commentError.value = 'Please enter a comment before submitting.'
+        return
+    }
+    
+    if (!selectedPost.value) {
+        commentError.value = 'No post selected. Please refresh the page and try again.'
+        return
+    }
     
     try {
         const response = await axios.post(route('posts.comments.store', selectedPost.value.id), {
@@ -1095,10 +1409,27 @@ const addComment = async () => {
             }
             
             newComment.value = ''
+            commentError.value = ''
+        } else {
+            commentError.value = response.data.message || 'Failed to add comment. Please try again.'
         }
     } catch (error) {
         console.error('Error adding comment:', error)
-        alert('Failed to add comment. Please try again.')
+        if (error.response) {
+            if (error.response.status === 422) {
+                const errors = error.response.data.errors || {}
+                const firstError = Object.values(errors).flat()[0]
+                commentError.value = firstError || 'Validation error. Please check your comment and try again.'
+            } else if (error.response.status === 403) {
+                commentError.value = 'You do not have permission to comment on this post.'
+            } else {
+                commentError.value = error.response.data?.message || 'Failed to add comment. Please try again.'
+            }
+        } else if (error.request) {
+            commentError.value = 'Network error. Please check your internet connection and try again.'
+        } else {
+            commentError.value = error.message || 'An unexpected error occurred. Please try again.'
+        }
     }
 }
 
@@ -1118,7 +1449,17 @@ const cancelReply = () => {
 }
 
 const addReply = async (commentId) => {
-    if (!newReply.value.trim() || !selectedPost.value) return
+    commentError.value = ''
+    
+    if (!newReply.value.trim()) {
+        commentError.value = 'Please enter a reply before submitting.'
+        return
+    }
+    
+    if (!selectedPost.value) {
+        commentError.value = 'No post selected. Please refresh the page and try again.'
+        return
+    }
     
     try {
         const response = await axios.post(route('posts.comments.store', selectedPost.value.id), {
@@ -1136,89 +1477,107 @@ const addReply = async (commentId) => {
         }
     } catch (error) {
         console.error('Error adding reply:', error)
-        alert('Failed to add reply. Please try again.')
-    }
-}
-
-const toggleCommentLike = (commentId) => {
-    if (selectedPost.value) {
-        const comment = selectedPost.value.commentsList.find(c => c.id === commentId)
-        if (comment) {
-            if (comment.userLiked) {
-                comment.likes--
-                comment.userLiked = false
+        if (error.response) {
+            if (error.response.status === 422) {
+                const errors = error.response.data.errors || {}
+                const firstError = Object.values(errors).flat()[0]
+                commentError.value = firstError || 'Validation error. Please check your reply and try again.'
+            } else if (error.response.status === 403) {
+                commentError.value = 'You do not have permission to reply to this comment.'
             } else {
-                if (comment.userDisliked) {
-                    comment.dislikes--
-                    comment.userDisliked = false
-                }
-                comment.likes++
-                comment.userLiked = true
+                commentError.value = error.response.data?.message || 'Failed to add reply. Please try again.'
             }
+        } else if (error.request) {
+            commentError.value = 'Network error. Please check your internet connection and try again.'
+        } else {
+            commentError.value = error.message || 'An unexpected error occurred. Please try again.'
         }
     }
 }
 
-const toggleCommentDislike = (commentId) => {
-    if (selectedPost.value) {
-        const comment = selectedPost.value.commentsList.find(c => c.id === commentId)
-        if (comment) {
-            if (comment.userDisliked) {
-                comment.dislikes--
-                comment.userDisliked = false
-            } else {
-                if (comment.userLiked) {
-                    comment.likes--
-                    comment.userLiked = false
-                }
-                comment.dislikes++
-                comment.userDisliked = true
+const toggleCommentLike = async (commentId) => {
+    try {
+        const response = await axios.post(route('comments.reactions.toggle', commentId), {
+            reaction_type: 'Like'
+        })
+        
+        if (response.data.success) {
+            const comment = selectedPost.value.commentsList.find(c => c.id === commentId)
+            if (comment) {
+                comment.likes = response.data.likes
+                comment.dislikes = response.data.dislikes
+                comment.userLiked = response.data.userLiked
+                comment.userDisliked = response.data.userDisliked
             }
         }
+    } catch (error) {
+        console.error('Error toggling comment like:', error)
     }
 }
 
-const toggleReplyLike = (commentId, replyId) => {
-    if (selectedPost.value) {
-        const comment = selectedPost.value.commentsList.find(c => c.id === commentId)
-        if (comment) {
-            const reply = comment.replies.find(r => r.id === replyId)
-            if (reply) {
-                if (reply.userLiked) {
-                    reply.likes--
-                    reply.userLiked = false
-                } else {
-                    if (reply.userDisliked) {
-                        reply.dislikes--
-                        reply.userDisliked = false
-                    }
-                    reply.likes++
-                    reply.userLiked = true
-                }
+const toggleCommentDislike = async (commentId) => {
+    try {
+        const response = await axios.post(route('comments.reactions.toggle', commentId), {
+            reaction_type: 'Dislike'
+        })
+        
+        if (response.data.success) {
+            const comment = selectedPost.value.commentsList.find(c => c.id === commentId)
+            if (comment) {
+                comment.likes = response.data.likes
+                comment.dislikes = response.data.dislikes
+                comment.userLiked = response.data.userLiked
+                comment.userDisliked = response.data.userDisliked
             }
         }
+    } catch (error) {
+        console.error('Error toggling comment dislike:', error)
     }
 }
 
-const toggleReplyDislike = (commentId, replyId) => {
-    if (selectedPost.value) {
-        const comment = selectedPost.value.commentsList.find(c => c.id === commentId)
-        if (comment) {
-            const reply = comment.replies.find(r => r.id === replyId)
-            if (reply) {
-                if (reply.userDisliked) {
-                    reply.dislikes--
-                    reply.userDisliked = false
-                } else {
-                    if (reply.userLiked) {
-                        reply.likes--
-                        reply.userLiked = false
-                    }
-                    reply.dislikes++
-                    reply.userDisliked = true
+const toggleReplyLike = async (commentId, replyId) => {
+    try {
+        const response = await axios.post(route('comments.reactions.toggle', replyId), {
+            reaction_type: 'Like'
+        })
+        
+        if (response.data.success) {
+            const comment = selectedPost.value.commentsList.find(c => c.id === commentId)
+            if (comment) {
+                const reply = comment.replies.find(r => r.id === replyId)
+                if (reply) {
+                    reply.likes = response.data.likes
+                    reply.dislikes = response.data.dislikes
+                    reply.userLiked = response.data.userLiked
+                    reply.userDisliked = response.data.userDisliked
                 }
             }
         }
+    } catch (error) {
+        console.error('Error toggling reply like:', error)
+    }
+}
+
+const toggleReplyDislike = async (commentId, replyId) => {
+    try {
+        const response = await axios.post(route('comments.reactions.toggle', replyId), {
+            reaction_type: 'Dislike'
+        })
+        
+        if (response.data.success) {
+            const comment = selectedPost.value.commentsList.find(c => c.id === commentId)
+            if (comment) {
+                const reply = comment.replies.find(r => r.id === replyId)
+                if (reply) {
+                    reply.likes = response.data.likes
+                    reply.dislikes = response.data.dislikes
+                    reply.userLiked = response.data.userLiked
+                    reply.userDisliked = response.data.userDisliked
+                }
+            }
+        }
+    } catch (error) {
+        console.error('Error toggling reply dislike:', error)
     }
 }
 
@@ -1240,11 +1599,19 @@ const closeReportModal = () => {
     reportReasons.value = []
     reportDetails.value = ''
     reportTargetId.value = null
+    reportError.value = ''
 }
 
 const submitReport = async () => {
+    reportError.value = ''
+    
     if (!reportReasons.value || reportReasons.value.length === 0) {
-        alert('Please select at least one reason for reporting.')
+        reportError.value = 'Please select at least one reason for reporting.'
+        return
+    }
+    
+    if (reportReasons.value.includes('other') && !reportDetails.value.trim()) {
+        reportError.value = 'Please provide additional details when selecting "Other" as a reason.'
         return
     }
 
@@ -1275,6 +1642,72 @@ const submitReport = async () => {
         alert('Comment reporting is not yet implemented.')
         closeReportModal()
     }
+}
+
+// Delete functions
+const confirmDeleteComment = (commentId, parentId = null) => {
+    deleteType.value = 'comment'
+    deleteTargetId.value = commentId
+    deleteTargetParentId.value = parentId
+    showDeleteModal.value = true
+}
+
+const closeDeleteModal = () => {
+    showDeleteModal.value = false
+    deleteType.value = ''
+    deleteTargetId.value = null
+    deleteTargetParentId.value = null
+}
+
+const deleteComment = async () => {
+    if (!deleteTargetId.value || !selectedPost.value) return
+    
+    try {
+        const response = await axios.delete(route('comments.destroy', deleteTargetId.value))
+        
+        if (response.data.success) {
+            if (deleteTargetParentId.value) {
+                // It's a reply - remove from parent comment's replies
+                const parentComment = selectedPost.value.commentsList.find(c => c.id === deleteTargetParentId.value)
+                if (parentComment) {
+                    parentComment.replies = parentComment.replies.filter(r => r.id !== deleteTargetId.value)
+                }
+            } else {
+                // It's a top-level comment - remove from comments list
+                selectedPost.value.commentsList = selectedPost.value.commentsList.filter(c => c.id !== deleteTargetId.value)
+            }
+            
+            // Update comment count
+            const originalPost = posts.value.find(p => p.id === selectedPost.value.id)
+            if (originalPost) {
+                originalPost.comments = Math.max(0, originalPost.comments - 1)
+            }
+            selectedPost.value.comments = Math.max(0, selectedPost.value.comments - 1)
+            
+            closeDeleteModal()
+        } else {
+            alert(response.data.message || 'Failed to delete comment.')
+        }
+    } catch (error) {
+        console.error('Error deleting comment:', error)
+        alert(error.response?.data?.message || 'Failed to delete comment. Please try again.')
+    }
+}
+
+const handleDelete = () => {
+    if (deleteType.value === 'comment') {
+        deleteComment()
+    }
+}
+
+// Check if user owns a post
+const isPostOwner = (post) => {
+    return post.author_id === (user.value?.user_id ?? user.value?.id)
+}
+
+// Check if user owns a comment
+const isCommentOwner = (comment) => {
+    return comment.author_id === (user.value?.user_id ?? user.value?.id)
 }
 
 const formatCommentDate = (date) => {
@@ -1321,6 +1754,19 @@ const toggleLike = async (postId) => {
         }
     } catch (error) {
         console.error('Error toggling like:', error)
+        if (error.response) {
+            if (error.response.status === 403) {
+                reactionError.value = 'You do not have permission to react to this post.'
+            } else {
+                reactionError.value = error.response.data?.message || 'Failed to update reaction. Please try again.'
+            }
+        } else if (error.request) {
+            reactionError.value = 'Network error. Please check your internet connection and try again.'
+        } else {
+            reactionError.value = error.message || 'An unexpected error occurred. Please try again.'
+        }
+        // Clear error after 3 seconds
+        setTimeout(() => { reactionError.value = '' }, 3000)
     }
 }
 
@@ -1348,6 +1794,19 @@ const toggleDislike = async (postId) => {
         }
     } catch (error) {
         console.error('Error toggling dislike:', error)
+        if (error.response) {
+            if (error.response.status === 403) {
+                reactionError.value = 'You do not have permission to react to this post.'
+            } else {
+                reactionError.value = error.response.data?.message || 'Failed to update reaction. Please try again.'
+            }
+        } else if (error.request) {
+            reactionError.value = 'Network error. Please check your internet connection and try again.'
+        } else {
+            reactionError.value = error.message || 'An unexpected error occurred. Please try again.'
+        }
+        // Clear error after 3 seconds
+        setTimeout(() => { reactionError.value = '' }, 3000)
     }
 }
 
@@ -1416,6 +1875,7 @@ const handleClickOutside = (event) => {
     if (!event.target.closest('.filter-dropdown-wrapper')) {
         showSortDropdown.value = false
         showFilterDropdown.value = false
+        showCommentSortDropdown.value = false
     }
 }
 
@@ -1436,6 +1896,17 @@ onMounted(() => {
     // Fetch trending tags
     fetchTrendingTags()
     
+    // Fetch unread notification count
+    fetchUnreadCount()
+    
+    // Set up polling to update unread count every 30 seconds
+    const unreadCountInterval = setInterval(() => {
+        fetchUnreadCount()
+    }, 30000)
+    
+    // Store interval ID for cleanup
+    window.unreadCountInterval = unreadCountInterval
+    
     console.log('✅ Employee Discussion Component mounted')
     console.log('📊 Initial posts:', posts.value.length)
     console.log('👤 User:', user.value)
@@ -1444,6 +1915,21 @@ onMounted(() => {
 
 onUnmounted(() => {
     document.removeEventListener('click', handleClickOutside)
+    
+    // Clear polling interval
+    if (deletedPostsCheckInterval) {
+        clearInterval(deletedPostsCheckInterval)
+        deletedPostsCheckInterval = null
+    }
+    
+    // Remove visibility change listener
+    document.removeEventListener('visibilitychange', handleVisibilityChange)
+    
+    // Clear unread count polling interval
+    if (window.unreadCountInterval) {
+        clearInterval(window.unreadCountInterval)
+        window.unreadCountInterval = null
+    }
 })
 </script>
 
@@ -1614,6 +2100,7 @@ onUnmounted(() => {
     transition: all 0.2s;
     cursor: pointer;
     font-weight: 500;
+    white-space: nowrap;
 }
 
 .settings-item:hover {
@@ -1671,7 +2158,7 @@ onUnmounted(() => {
 
 .profile-name {
     font-weight: 700;
-    font-size: 17px;
+    font-size: 15px;
     text-shadow: 0 1px 3px rgba(0,0,0,0.2);
 }
 
@@ -1719,9 +2206,20 @@ onUnmounted(() => {
     border-bottom: none;
 }
 
-.nav-item:hover {
+.nav-item:hover:not(.disabled-nav) {
     background: #fff7ef;
     transform: translateX(3px);
+}
+
+.nav-item.disabled-nav {
+    opacity: 0.5;
+    cursor: not-allowed;
+    color: #999;
+}
+
+.nav-item.disabled-nav:hover {
+    background: #f5f5f5;
+    transform: none;
 }
 
 .nav-item.active {
@@ -1729,6 +2227,19 @@ onUnmounted(() => {
     color: #ff8c42;
     font-weight: 600;
     border-left: 4px solid #ff8c42;
+}
+
+.unread-badge-nav {
+    background: linear-gradient(135deg, #ff8c42, #ff7a28);
+    color: white;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 4px 8px;
+    border-radius: 12px;
+    min-width: 20px;
+    text-align: center;
+    margin-left: auto;
+    box-shadow: 0 2px 6px rgba(255, 140, 66, 0.4);
 }
 
 .faq-btn {
@@ -2264,11 +2775,11 @@ onUnmounted(() => {
 }
 
 .post-header-text {
-    font-size: 20px;
-    font-weight: 600;
+    font-size: 24px;
+    font-weight: 700;
     color: #2e2e2e;
-    margin: 0 0 12px 0;
-    line-height: 1.4;
+    margin: 0 0 20px 0;
+    line-height: 1.5;
     letter-spacing: -0.3px;
     text-transform: none;
 }
@@ -2282,8 +2793,8 @@ onUnmounted(() => {
 }
 
 .post-text {
-    font-size: 15px;
-    line-height: 1.6;
+    font-size: 16px;
+    line-height: 1.7;
     color: #555;
     margin: 0;
 }
@@ -2405,9 +2916,11 @@ onUnmounted(() => {
 
 /* Post Detail View Styles */
 .post-detail-container {
-    padding: 20px 25px;
-    max-height: calc(100vh - 350px);
+    padding: 30px 40px;
+    max-height: calc(100vh - 200px);
     overflow-y: auto;
+    display: flex;
+    flex-direction: column;
 }
 
 .back-btn {
@@ -2437,25 +2950,43 @@ onUnmounted(() => {
 
 .post-detail {
     background: white;
-    border-radius: 15px;
-    padding: 25px;
-    margin-bottom: 25px;
+    border-radius: 15px 15px 0 0;
+    padding: 40px 50px;
+    margin-bottom: 0;
     box-shadow: 0 4px 15px rgba(0,0,0,0.08);
 }
 
 /* Comments Section */
 .comments-section {
     background: white;
-    border-radius: 15px;
-    padding: 25px;
+    border-radius: 0 0 15px 15px;
+    padding: 40px 50px;
     box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+    flex: 1;
+    min-height: 400px;
+    margin-top: 0;
+}
+
+.comments-header-section {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 25px;
+    flex-wrap: wrap;
+    gap: 15px;
 }
 
 .comments-title {
     font-size: 20px;
     font-weight: 700;
-    margin-bottom: 20px;
+    margin: 0;
     color: #333;
+}
+
+.comment-filter-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 12px;
 }
 
 /* Add Comment Form */
@@ -2591,6 +3122,41 @@ onUnmounted(() => {
     background: rgba(220, 53, 69, 0.1);
 }
 
+.delete-btn {
+    background: none;
+    border: none;
+    color: #dc3545;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    transition: all 0.2s;
+    margin-right: 8px;
+}
+
+.delete-btn:hover {
+    background: rgba(220, 53, 69, 0.1);
+}
+
+.comment-actions-header {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.delete-confirm-btn {
+    background: #dc3545 !important;
+    color: white !important;
+}
+
+.delete-confirm-btn:hover {
+    background: #c82333 !important;
+}
+
 .report-icon {
     width: 18px;
     height: 18px;
@@ -2630,6 +3196,22 @@ onUnmounted(() => {
     font-weight: 600;
     cursor: pointer;
     transition: all 0.3s ease;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 6px;
+}
+
+.reaction-icon-small {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+}
+
+.reaction-count {
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1;
 }
 
 .comment-reaction-btn:hover,
@@ -2675,18 +3257,19 @@ onUnmounted(() => {
 }
 
 .cancel-reply-btn {
-    background: #f8f9fa;
+    background: white;
     border: 1px solid #e0e0e0;
-    color: #666;
+    color: #4a4a4a;
     padding: 8px 16px;
     border-radius: 6px;
-    font-weight: 600;
+    font-weight: 500;
     cursor: pointer;
     transition: all 0.2s;
 }
 
 .cancel-reply-btn:hover {
-    background: #e9ecef;
+    background: #f8f9fa;
+    border-color: #d0d0d0;
 }
 
 .submit-reply-btn {
@@ -2787,16 +3370,16 @@ onUnmounted(() => {
 .post-images {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 10px;
-    margin-top: 20px;
+    gap: 15px;
+    margin-top: 30px;
 }
 
 .post-image {
     width: 100%;
-    height: 200px;
+    height: 280px;
     object-fit: cover;
-    border-radius: 10px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
     cursor: pointer;
     transition: transform 0.3s ease;
 }
@@ -2965,18 +3548,19 @@ onUnmounted(() => {
 }
 
 .cancel-report-btn {
-    background: #f8f9fa;
+    background: white;
     border: 1px solid #e0e0e0;
-    color: #666;
+    color: #4a4a4a;
     padding: 10px 20px;
     border-radius: 8px;
-    font-weight: 600;
+    font-weight: 500;
     cursor: pointer;
     transition: all 0.2s;
 }
 
 .cancel-report-btn:hover {
-    background: #e9ecef;
+    background: #f8f9fa;
+    border-color: #d0d0d0;
 }
 
 .submit-report-btn {
@@ -3259,5 +3843,154 @@ onUnmounted(() => {
     .post-card {
         padding: 20px 15px;
     }
+}
+
+/* Terms and Conditions Modal Styles */
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.6);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 10000;
+    padding: 20px;
+}
+
+.modal-overlay:has(.terms-modal) {
+    z-index: 10000 !important;
+}
+
+.terms-modal {
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    max-width: 800px;
+    width: 90%;
+    max-height: 90vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    animation: slideUp 0.3s ease;
+    position: relative;
+    z-index: 10001;
+}
+
+.terms-modal-header {
+    background: white;
+    padding: 25px 30px;
+    border-bottom: 1px solid #e0e0e0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.terms-modal-title {
+    margin: 0;
+    font-size: 28px;
+    font-weight: 700;
+    color: #333;
+}
+
+.terms-modal-close {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 8px;
+    color: #666;
+    transition: all 0.2s ease;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.terms-modal-close:hover {
+    background: #f0f0f0;
+    color: #333;
+}
+
+.terms-modal-body {
+    padding: 30px;
+    overflow-y: auto;
+    flex: 1;
+}
+
+.terms-section {
+    margin-bottom: 25px;
+}
+
+.terms-section:last-child {
+    margin-bottom: 0;
+}
+
+.terms-section-title {
+    margin: 0 0 12px 0;
+    font-size: 18px;
+    font-weight: 700;
+    color: #ff8c42;
+}
+
+.terms-text {
+    margin: 0;
+    font-size: 15px;
+    line-height: 1.7;
+    color: #555;
+    text-align: justify;
+}
+
+.terms-list {
+    margin: 10px 0 0 20px;
+    padding: 0;
+}
+
+.terms-list li {
+    margin-bottom: 8px;
+    font-size: 15px;
+    line-height: 1.6;
+    color: #555;
+}
+
+.terms-modal-footer {
+    padding: 20px 30px;
+    border-top: 1px solid #e0e0e0;
+    display: flex;
+    justify-content: center;
+    background: #f8f9fa;
+    flex-shrink: 0;
+}
+
+.terms-modal-btn {
+    padding: 12px 50px;
+    background: #ff8c42;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(255, 140, 66, 0.3);
+}
+
+.terms-modal-btn:hover {
+    background: #ff7a28;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(255, 140, 66, 0.4);
 }
 </style>

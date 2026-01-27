@@ -61,6 +61,7 @@ class DocumentRequest extends Model
         // 'created_at' removed - let Laravel manage it automatically via timestamps
         'reviewed_at',
         'admin_feedback',
+        'incorrect_fields',
         'extra_fields',
     ];
 
@@ -72,6 +73,7 @@ class DocumentRequest extends Model
         'reviewed_at'            => 'datetime',
         'applied_processing_fee' => 'float',
         'is_requestor_minor'     => 'boolean',
+        'incorrect_fields'       => 'array',
         'extra_fields'           => 'array',
     ];
 

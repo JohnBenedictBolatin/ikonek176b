@@ -81,6 +81,8 @@ class SmsService
      */
     public function sendOtp(string $phoneNumber): array
     {
+        $startTime = microtime(true);
+        
         Log::info('=== SmsService::sendOtp called ===', [
             'provider' => $this->providerName,
             'phone' => $phoneNumber,
@@ -88,13 +90,16 @@ class SmsService
         ]);
 
         // Check rate limiting (max 10 OTP requests per hour per number)
+        $rateLimitStart = microtime(true);
         $rateLimitKey = "otp_rate_limit:{$phoneNumber}";
         $attempts = Cache::get($rateLimitKey, 0);
+        $rateLimitTime = microtime(true) - $rateLimitStart;
 
         if ($attempts >= 10) {
             Log::warning('OTP rate limit exceeded', [
                 'phone' => $phoneNumber,
-                'attempts' => $attempts
+                'attempts' => $attempts,
+                'rate_limit_check_ms' => round($rateLimitTime * 1000, 2)
             ]);
             return [
                 'success' => false,
@@ -107,6 +112,7 @@ class SmsService
         // Otherwise fall back to sending OTP via regular SMS
         $result = null;
         $otpCode = null;
+        $providerStartTime = microtime(true);
 
         if ($this->provider instanceof SemaphoreService) {
             // Semaphore has a dedicated OTP endpoint that auto-generates the code
@@ -126,18 +132,27 @@ class SmsService
             }
         }
 
+        $providerTime = microtime(true) - $providerStartTime;
+
         if ($result['success'] && $otpCode) {
             // Store OTP in cache with 5 minute expiration
+            $cacheStart = microtime(true);
             $cacheKey = "otp:{$phoneNumber}";
             Cache::put($cacheKey, $otpCode, now()->addMinutes(5));
 
             // Increment rate limit counter
             Cache::put($rateLimitKey, $attempts + 1, now()->addHour());
+            $cacheTime = microtime(true) - $cacheStart;
 
+            $totalTime = microtime(true) - $startTime;
             Log::info('OTP sent successfully', [
                 'provider' => $this->providerName,
                 'phone_number' => $phoneNumber,
-                'message_id' => $result['message_id'] ?? null
+                'message_id' => $result['message_id'] ?? null,
+                'rate_limit_check_ms' => round($rateLimitTime * 1000, 2),
+                'provider_call_ms' => round($providerTime * 1000, 2),
+                'cache_write_ms' => round($cacheTime * 1000, 2),
+                'total_time_ms' => round($totalTime * 1000, 2)
             ]);
 
             return [
@@ -148,6 +163,15 @@ class SmsService
                 'status' => $result['status'] ?? null
             ];
         }
+
+        $totalTime = microtime(true) - $startTime;
+        Log::warning('OTP send failed in SmsService', [
+            'provider' => $this->providerName,
+            'phone_number' => $phoneNumber,
+            'provider_call_ms' => round($providerTime * 1000, 2),
+            'total_time_ms' => round($totalTime * 1000, 2),
+            'error_message' => $result['message'] ?? 'Unknown error'
+        ]);
 
         return [
             'success' => false,
@@ -205,6 +229,10 @@ class SmsService
         return $this->provider->formatPhoneNumber($phoneNumber);
     }
 }
+
+
+
+
 
 
 

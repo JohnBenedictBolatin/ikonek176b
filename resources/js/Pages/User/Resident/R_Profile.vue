@@ -15,9 +15,8 @@
                     <img src="/assets/SETTINGS.png" alt="Settings" class="settings-btn-img" @click="toggleSettings" />
                     <!-- Settings Dropdown -->
                     <div v-if="showSettings" class="settings-dropdown">
-                        <Link href="#" class="settings-item" @click.prevent="navigateToHelpCenter">Help Center</Link>
-                        <button type="button" class="settings-item" @click="openTerms">Terms & Conditions</button>
-                        <Link href="#" class="settings-item" @click="logout">Sign Out</Link>
+                        <a href="#" class="settings-item" @click.prevent.stop="openTermsModal">TERMS & CONDITIONS</a>
+                        <Link href="#" class="settings-item" @click.prevent="logout">SIGN OUT</Link>
                     </div>
                 </div>
             </div>
@@ -79,6 +78,7 @@
                             <path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0" />
                         </svg>
                         Notifications
+                        <span v-if="unreadCount > 0" class="unread-badge-nav">{{ unreadCount }}</span>
                     </Link>
                     <Link 
                         href="#" 
@@ -97,7 +97,7 @@
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="nav-icon">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 5.25h.008v.008H12v-.008Z" />
                     </svg>
-                    FAQs & Help Center
+                    FAQS & HELP CENTER
                 </button>
             </div>
 
@@ -122,7 +122,7 @@
                             <div class="profile-photo-section">
                                 <img :src="profilePictureUrl" alt="User Photo" class="profile-photo" />
                                 <div class="button-stats-row">
-                                    <button class="edit-profile-btn" @click="showEditModal = true">Edit Profile Picture</button>
+                                    <button class="edit-profile-btn" @click="showEditModal = true">EDIT PROFILE PICTURE</button>
                                 </div>
                             </div>
                             <div class="profile-info-section">
@@ -311,27 +311,164 @@
                         style="display: none"
                     />
                     <button class="upload-btn-modal" @click="triggerFileInput">
-                        {{ pictureForm.profile_picture ? 'Change Image' : 'Choose Image' }}
+                        {{ pictureForm.profile_picture ? 'CHANGE IMAGE' : 'CHOOSE IMAGE' }}
                     </button>
                     <p v-if="pictureForm.profile_picture" class="file-name">{{ pictureForm.profile_picture.name }}</p>
                 </div>
                 
+                <!-- Error Message Display -->
+                <div v-if="profileError" class="error-message-container" style="margin-top: 15px; margin-bottom: 15px;">
+                    <div class="error-alert" style="background: #fee; border: 1px solid #fcc; border-radius: 8px; padding: 12px; color: #c33;">
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width: 18px; height: 18px; flex-shrink: 0;">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            <span style="font-weight: 600; font-size: 14px;">{{ profileError }}</span>
+                        </div>
+                    </div>
+                </div>
+                
                 <div class="modal-actions">
-                    <button class="cancel-btn" @click="closeEditModal">Cancel</button>
+                    <button class="cancel-btn" @click="closeEditModal">CANCEL</button>
                     <button 
                         class="save-btn" 
                         @click="saveProfilePicture"
-                        :disabled="!pictureForm.profile_picture || pictureForm.processing"
+                        :disabled="!pictureForm.profile_picture || pictureForm.processing || isUploading"
                     >
-                        {{ pictureForm.processing ? 'Uploading...' : 'Save Changes' }}
+                        {{ (pictureForm.processing || isUploading) ? 'UPLOADING...' : 'SAVE CHANGES' }}
                     </button>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Terms & Conditions Modal -->
-    <TermsModal :open="showTerms" @close="closeTerms" />
+    <!-- Terms and Conditions Modal -->
+    <div v-if="showTermsModal" class="modal-overlay" @click.self="closeTermsModal">
+        <div class="terms-modal" @click.stop>
+            <div class="terms-modal-header">
+                <h2 class="terms-modal-title">Terms and Conditions</h2>
+                <button @click="closeTermsModal" class="terms-modal-close">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width: 24px; height: 24px;">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+            <div class="terms-modal-body">
+                <div class="terms-section">
+                    <h3 class="terms-section-title">1. Account Registration and Access</h3>
+                    <p class="terms-text">
+                        By creating an account and using the iKonek176B portal, you agree to provide accurate, current, and complete information during registration. You are responsible for maintaining the confidentiality of your account credentials and for all activities that occur under your account. You must immediately notify Barangay 176B of any unauthorized use of your account or any other breach of security.
+                    </p>
+                </div>
+
+                <div class="terms-section">
+                    <h3 class="terms-section-title">2. Use of Services</h3>
+                    <p class="terms-text">
+                        The iKonek176B portal is provided for legitimate barangay-related purposes only. You may use the portal to:
+                        <ul class="terms-list">
+                            <li>Submit document requests (e.g., Barangay Certificate, Barangay ID, Business Permit)</li>
+                            <li>Request event assistance for community activities</li>
+                            <li>View announcements and community updates</li>
+                            <li>Participate in community discussions and forums</li>
+                            <li>Access your request history and status</li>
+                        </ul>
+                    </p>
+                </div>
+
+                <div class="terms-section">
+                    <h3 class="terms-section-title">3. Accurate Information</h3>
+                    <p class="terms-text">
+                        You are responsible for ensuring that all information you submit through the portal is accurate, truthful, and complete. Providing false, misleading, or incomplete information may result in rejection of your requests, suspension of your account, and possible legal action. You must update your account information promptly if any changes occur.
+                    </p>
+                </div>
+
+                <div class="terms-section">
+                    <h3 class="terms-section-title">4. Document Requests</h3>
+                    <p class="terms-text">
+                        When submitting document requests, you must:
+                        <ul class="terms-list">
+                            <li>Provide all required documents and information</li>
+                            <li>Ensure documents are authentic and valid</li>
+                            <li>Pay applicable processing fees as required</li>
+                            <li>Follow pickup instructions and deadlines</li>
+                            <li>Use documents only for their intended legal purposes</li>
+                        </ul>
+                        The barangay reserves the right to verify all submitted information and documents. Approval of requests is subject to verification and compliance with barangay policies and regulations.
+                    </p>
+                </div>
+
+                <div class="terms-section">
+                    <h3 class="terms-section-title">5. Event Assistance Requests</h3>
+                    <p class="terms-text">
+                        When requesting event assistance, you must provide accurate event details, including date, time, location, and purpose. Event assistance is subject to availability and approval by barangay officials. You are responsible for ensuring your event complies with all applicable laws, regulations, and barangay policies. The barangay reserves the right to deny or cancel event assistance for any reason.
+                    </p>
+                </div>
+
+                <div class="terms-section">
+                    <h3 class="terms-section-title">6. Payment and Fees</h3>
+                    <p class="terms-text">
+                        Some services may require payment of processing fees. All fees must be paid according to the payment methods provided. Payments are non-refundable unless otherwise stated. The barangay is not responsible for delays or issues caused by payment processing errors or failures. You are responsible for ensuring payments are made correctly and on time.
+                    </p>
+                </div>
+
+                <div class="terms-section">
+                    <h3 class="terms-section-title">7. Data Privacy</h3>
+                    <p class="terms-text">
+                        Your personal information is collected and processed in accordance with the Data Privacy Act of 2012 (Republic Act No. 10173). The barangay will use your information only for legitimate purposes related to service delivery, record-keeping, and compliance with legal requirements. Your information will not be shared with unauthorized third parties except as required by law.
+                    </p>
+                </div>
+
+                <div class="terms-section">
+                    <h3 class="terms-section-title">8. Prohibited Activities</h3>
+                    <p class="terms-text">
+                        You are strictly prohibited from:
+                        <ul class="terms-list">
+                            <li>Using the portal for any illegal or unauthorized purpose</li>
+                            <li>Submitting false, fraudulent, or misleading information</li>
+                            <li>Attempting to gain unauthorized access to the system or other users' accounts</li>
+                            <li>Interfering with or disrupting the portal's operation</li>
+                            <li>Harassing, threatening, or abusing other users or barangay officials</li>
+                            <li>Posting inappropriate, offensive, or defamatory content</li>
+                            <li>Violating any applicable laws or regulations</li>
+                        </ul>
+                    </p>
+                </div>
+
+                <div class="terms-section">
+                    <h3 class="terms-section-title">9. Account Suspension and Termination</h3>
+                    <p class="terms-text">
+                        The barangay reserves the right to suspend or terminate your account at any time, with or without notice, if you violate these terms and conditions, engage in prohibited activities, or for any other reason deemed necessary by barangay officials. Upon termination, your right to use the portal will immediately cease.
+                    </p>
+                </div>
+
+                <div class="terms-section">
+                    <h3 class="terms-section-title">10. Limitation of Liability</h3>
+                    <p class="terms-text">
+                        The barangay is not liable for any delays, errors, or failures in service delivery caused by technical issues, system maintenance, incorrect information provided by users, or circumstances beyond the barangay's reasonable control. The barangay does not guarantee uninterrupted or error-free access to the portal.
+                    </p>
+                </div>
+
+                <div class="terms-section">
+                    <h3 class="terms-section-title">11. Updates to Terms</h3>
+                    <p class="terms-text">
+                        These terms and conditions may be updated periodically. You will be notified of significant changes through the portal or other communication channels. Continued use of the portal after changes constitutes acceptance of the updated terms.
+                    </p>
+                </div>
+
+                <div class="terms-section">
+                    <h3 class="terms-section-title">12. Contact and Support</h3>
+                    <p class="terms-text">
+                        For questions, concerns, or to report issues related to your account or the portal, contact the Barangay 176B office at ikonek176b@dev.ph or +639193076338. For technical support or assistance with using the portal, please visit the Help Center section.
+                    </p>
+                </div>
+            </div>
+            <div class="terms-modal-footer">
+                <button @click="closeTermsModal" class="terms-modal-btn">
+                    I UNDERSTAND
+                </button>
+            </div>
+        </div>
+    </div>
 </template>
 
 <script setup>
@@ -339,7 +476,7 @@ import { Link, usePage, useForm } from '@inertiajs/vue3'
 import { Head } from '@inertiajs/vue3'
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { router } from '@inertiajs/vue3'
-import TermsModal from '@/Components/TermsModal.vue'
+import axios from 'axios'
 
 // --- Inertia-shared auth user ---
 const page = usePage()
@@ -429,6 +566,26 @@ const showFilterDropdown = ref(false)
 const activeTab = ref('profile')
 const sortOption = ref('newest')
 const filterOption = ref('all')
+const unreadCount = ref(0)
+
+// Error handling state
+const profileErrors = ref({})
+const profileError = ref('')
+const isUploading = ref(false)
+
+// Fetch unread notification count
+const fetchUnreadCount = async () => {
+    try {
+        const response = await axios.get('/api/notifications')
+        if (response.data.success) {
+            const notifications = response.data.notifications || []
+            unreadCount.value = notifications.filter(n => !n.is_read).length
+        }
+    } catch (error) {
+        console.error('Error fetching unread count:', error)
+        unreadCount.value = 0
+    }
+}
 
 // Get user posts from props
 const userPostsRaw = computed(() => {
@@ -573,13 +730,17 @@ const selectFilter = (option) => {
 }
 
 // Terms & Conditions modal
-const showTerms = ref(false)
-const openTerms = () => {
+const showTermsModal = ref(false)
+const openTermsModal = (e) => {
+    if (e) {
+        e.preventDefault()
+        e.stopPropagation()
+    }
     showSettings.value = false
-    showTerms.value = true
+    showTermsModal.value = true
 }
-const closeTerms = () => {
-    showTerms.value = false
+const closeTermsModal = () => {
+    showTermsModal.value = false
 }
 
 const logout = () => {
@@ -693,19 +854,6 @@ const openFAQ = () => {
     router.visit(route('help_center_resident'))
 }
 
-const navigateToHelpCenter = () => {
-    showSettings.value = false
-    // Navigate to help center based on user role
-    const roleId = user.value?.fk_role_id ?? 1
-    if (roleId === 1) {
-        // Resident
-        router.visit(route('help_center_resident'))
-    } else {
-        // Employee/Official
-        router.visit(route('help_center_employee'))
-    }
-}
-
 const formatDate = (date) => {
     if (!date) return ''
     const d = date instanceof Date ? date : new Date(date)
@@ -780,10 +928,31 @@ const handleFileSelect = (event) => {
 }
 
 const saveProfilePicture = () => {
+    // Clear previous errors
+    profileErrors.value = {}
+    profileError.value = ''
+    
     if (!pictureForm.profile_picture) {
-        alert('Please select an image first.')
+        profileError.value = 'Please select an image first.'
         return
     }
+    
+    // Validate file type
+    const file = pictureForm.profile_picture
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp']
+    if (!allowedTypes.includes(file.type)) {
+        profileError.value = 'Please upload a valid image file (JPEG, PNG, or WebP).'
+        return
+    }
+    
+    // Validate file size (max 5MB)
+    const maxSize = 5 * 1024 * 1024 // 5MB
+    if (file.size > maxSize) {
+        profileError.value = 'Image size must be less than 5MB. Please compress your image and try again.'
+        return
+    }
+    
+    isUploading.value = true
     
     pictureForm.post(route('profile.update_picture'), {
         preserveScroll: true,
@@ -792,13 +961,30 @@ const saveProfilePicture = () => {
             showEditModal.value = false
             previewImage.value = null
             pictureForm.profile_picture = null
+            profileError.value = ''
+            profileErrors.value = {}
+            isUploading.value = false
             // Refresh the page to show updated profile picture everywhere
             router.reload({ only: ['auth'] })
         },
         onError: (errors) => {
             console.error('Error uploading profile picture:', errors)
-            alert('Failed to upload profile picture. Please try again.')
+            isUploading.value = false
+            
+            // Handle validation errors
+            if (errors && typeof errors === 'object') {
+                const errorMessages = Object.values(errors).flat()
+                profileError.value = errorMessages[0] || 'Failed to upload profile picture. Please try again.'
+                profileErrors.value = errors
+            } else if (typeof errors === 'string') {
+                profileError.value = errors
+            } else {
+                profileError.value = 'Failed to upload profile picture. Please check the file and try again.'
+            }
         },
+        onFinish: () => {
+            isUploading.value = false
+        }
     })
 }
 
@@ -807,6 +993,9 @@ const closeEditModal = () => {
     previewImage.value = null
     pictureForm.profile_picture = null
     pictureForm.clearErrors()
+    profileError.value = ''
+    profileErrors.value = {}
+    isUploading.value = false
     // Reset file input
     if (fileInput.value) {
         fileInput.value.value = ''
@@ -827,10 +1016,27 @@ const handleClickOutside = (event) => {
 onMounted(() => {
     document.addEventListener('click', handleClickOutside)
     activeTab.value = 'profile'
+    
+    // Fetch unread notification count
+    fetchUnreadCount()
+    
+    // Set up polling to update unread count every 30 seconds
+    const unreadCountInterval = setInterval(() => {
+        fetchUnreadCount()
+    }, 30000)
+    
+    // Store interval ID for cleanup
+    window.unreadCountInterval = unreadCountInterval
 })
 
 onUnmounted(() => {
     document.removeEventListener('click', handleClickOutside)
+    
+    // Clear unread count polling interval
+    if (window.unreadCountInterval) {
+        clearInterval(window.unreadCountInterval)
+        window.unreadCountInterval = null
+    }
 })
 </script>
 
@@ -926,6 +1132,7 @@ onUnmounted(() => {
     transition: all 0.2s;
     cursor: pointer;
     font-weight: 500;
+    white-space: nowrap;
 }
 
 .settings-item:hover {
@@ -979,7 +1186,7 @@ onUnmounted(() => {
 
 .profile-name {
     font-weight: 700;
-    font-size: 17px;
+    font-size: 15px;
     text-shadow: 0 1px 3px rgba(0,0,0,0.2);
 }
 
@@ -1036,6 +1243,19 @@ onUnmounted(() => {
     color: #ff8c42;
     font-weight: 600;
     border-left: 4px solid #ff8c42;
+}
+
+.unread-badge-nav {
+    background: linear-gradient(135deg, #ff8c42, #ff7a28);
+    color: white;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 4px 8px;
+    border-radius: 12px;
+    min-width: 20px;
+    text-align: center;
+    margin-left: auto;
+    box-shadow: 0 2px 6px rgba(255, 140, 66, 0.4);
 }
 
 .faq-btn {
@@ -1997,12 +2217,14 @@ onUnmounted(() => {
 }
 
 .cancel-btn {
-    background: #e0e0e0;
-    color: #333;
+    background: white;
+    border: 1px solid #e0e0e0;
+    color: #4a4a4a;
 }
 
 .cancel-btn:hover {
-    background: #d0d0d0;
+    background: #f8f9fa;
+    border-color: #d0d0d0;
     transform: translateY(-2px);
 }
 
@@ -2020,5 +2242,140 @@ onUnmounted(() => {
 .save-btn:disabled {
     opacity: 0.6;
     cursor: not-allowed;
+}
+
+/* Terms and Conditions Modal Styles */
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.modal-overlay:has(.terms-modal) {
+    z-index: 10000 !important;
+}
+
+.terms-modal {
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    max-width: 800px;
+    width: 90%;
+    max-height: 90vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    animation: slideUp 0.3s ease;
+    position: relative;
+    z-index: 10001;
+}
+
+.terms-modal-header {
+    background: white;
+    padding: 25px 30px;
+    border-bottom: 1px solid #e0e0e0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.terms-modal-title {
+    margin: 0;
+    font-size: 28px;
+    font-weight: 700;
+    color: #333;
+}
+
+.terms-modal-close {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 8px;
+    color: #666;
+    transition: all 0.2s ease;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.terms-modal-close:hover {
+    background: #f0f0f0;
+    color: #333;
+}
+
+.terms-modal-body {
+    padding: 30px;
+    overflow-y: auto;
+    flex: 1;
+}
+
+.terms-section {
+    margin-bottom: 25px;
+}
+
+.terms-section:last-child {
+    margin-bottom: 0;
+}
+
+.terms-section-title {
+    margin: 0 0 12px 0;
+    font-size: 18px;
+    font-weight: 700;
+    color: #ff8c42;
+}
+
+.terms-text {
+    margin: 0;
+    font-size: 15px;
+    line-height: 1.7;
+    color: #555;
+    text-align: justify;
+}
+
+.terms-list {
+    margin: 10px 0 0 20px;
+    padding: 0;
+}
+
+.terms-list li {
+    margin-bottom: 8px;
+    font-size: 15px;
+    line-height: 1.6;
+    color: #555;
+}
+
+.terms-modal-footer {
+    padding: 20px 30px;
+    border-top: 1px solid #e0e0e0;
+    display: flex;
+    justify-content: center;
+    background: #f8f9fa;
+    flex-shrink: 0;
+}
+
+.terms-modal-btn {
+    padding: 12px 50px;
+    background: #ff8c42;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(255, 140, 66, 0.3);
+}
+
+.terms-modal-btn:hover {
+    background: #ff7a28;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(255, 140, 66, 0.4);
 }
 </style>

@@ -39,6 +39,8 @@ class User extends Authenticatable
     protected $casts = [
         'birthdate' => 'date',
         'created_at' => 'datetime',
+        'phase' => 'string',
+        'package' => 'string',
     ];
 
     protected $appends = ['name'];
@@ -63,5 +65,16 @@ class User extends Authenticatable
     public function credential()
     {
         return $this->hasOne(\App\Models\UserCredential::class, 'fk_user_id', 'user_id');
+    }
+
+    // Mutators to ensure phase and package are always strings for MySQL ENUM
+    public function setPhaseAttribute($value)
+    {
+        $this->attributes['phase'] = $value !== null ? (string)$value : null;
+    }
+
+    public function setPackageAttribute($value)
+    {
+        $this->attributes['package'] = $value !== null ? (string)$value : null;
     }
 }

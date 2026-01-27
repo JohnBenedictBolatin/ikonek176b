@@ -13,16 +13,15 @@
         Privacy Notice
       </h2>
       <p class="justified-text">
-       Thank you for registering! Your privacy is important to us. This platform collects personal information such as your name, contact details, and address when you request barangay documents or use our community interaction features. We may also gather non-personal data like device and browser information to improve the system's performance and security.
+       This registration form is used by the System Administrator to register Barangay Officials into the iKonek176B system. The personal information collected (name, contact details, address, and other relevant data) will be used to create a user account with an official title/role designation. Officials are registered as residents with their respective titles and will have access to the same community features as other residents.
       </p>
       <p class="justified-text">
-All information collected is used only to process your requests, verify your identity, enable communication with barangay officials, and improve our services. We ensure that your data is stored securely and protected against unauthorized access. While we take appropriate security measures, please note that no system can guarantee absolute security.
-We do not sell or share your personal data with third parties, except with authorized barangay personnel or government agencies when required by law. As a user, you have the right to access, correct, or delete your personal information, or to withdraw your consent at any time by contacting us at ikonek176b@dev.ph
-Our website uses cookies to improve user experience.
+All information collected is used to create and manage user accounts, verify identity, enable communication within the community, and process barangay-related requests and services. We ensure that all data is stored securely and protected against unauthorized access. While we take appropriate security measures, please note that no system can guarantee absolute security.
+We do not sell or share personal data with third parties, except with authorized barangay personnel or government agencies when required by law. As a registered user, you have the right to access, correct, or update your personal information at any time through the system or by contacting the System Administrator.
       </p>
       <p class="justified-text">
-        By using iKonek176B, you agree to the terms of this Privacy Policy.
-For any concerns, contact us at ikonek176b@dev.ph, +639193076338, or visit the Barangay 176B office.
+        By registering this official, you acknowledge that the information provided will be used to create a user account with an official title designation in the iKonek176B system.
+For any concerns or questions regarding data privacy, contact us at ikonek176b@dev.ph, +639193076338, or visit the Barangay 176B office.
       </p>
       <div class="privacy-checkbox-container">
         <label class="privacy-checkbox-label">
@@ -327,8 +326,9 @@ For any concerns, contact us at ikonek176b@dev.ph, +639193076338, or visit the B
               <div class="select-wrapper">
                 <select v-model="form.phase" class="form-input" required>
                   <option value="">Phase</option>
-                  <option value="Phase 2">2</option>
-                  <option value="Phase 5">5</option>
+                  <option value="Phase 2">Phase 2</option>
+                  <option value="Phase 3">Phase 3</option>
+                  <option value="Phase 5">Phase 5</option>
                 </select>
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="select-icon">
                   <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />

@@ -59,6 +59,7 @@ class RegisterOfficialController extends Controller
             'religion' => ['nullable','string','max:255'],
             'nationality' => ['nullable','string','max:255'],
             'occupation' => ['nullable','string','max:255'],
+            'place_of_birth' => ['nullable','string','max:255'],
 
             // email belongs to user_credentials table in your schema
             'email' => ['nullable','email', Rule::unique('user_credentials','email')],
@@ -142,7 +143,7 @@ class RegisterOfficialController extends Controller
             'province' => $data['province'] ?? null,
             'sex' => $data['sex'] ?? null,
             'birthdate' => $data['birthdate'] ?? null,
-            'place_of_birth' => null,
+            'place_of_birth' => $data['place_of_birth'] ?? '',
             'religion' => $data['religion'] ?? null,
             'nationality' => $data['nationality'] ?? null,
             'occupation' => $occupation, // Use role-based occupation if not provided

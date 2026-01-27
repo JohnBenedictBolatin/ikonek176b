@@ -13,9 +13,8 @@
                 <div class="header-actions">
                     <img src="/assets/SETTINGS.png" alt="Settings" class="settings-btn-img" @click="toggleSettings" />
                     <div v-if="showSettings" class="settings-dropdown">
-                        <Link href="#" class="settings-item" @click="closeSettings">Help Center</Link>
-                        <button type="button" class="settings-item" @click="openTerms">Terms & Conditions</button>
-                        <Link href="#" class="settings-item" @click="logout">Sign Out</Link>
+                        <a href="#" class="settings-item" @click.prevent.stop="openTerms">TERMS & CONDITIONS</a>
+                        <Link href="#" class="settings-item" @click="logout">SIGN OUT</Link>
                     </div>
                 </div>
             </div>
@@ -95,7 +94,7 @@
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="nav-icon">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 5.25h.008v.008H12v-.008Z" />
                     </svg>
-                    FAQs & Help Center
+                    FAQS & HELP CENTER
                 </button>
             </div>
 
@@ -173,6 +172,54 @@
                             </div>
                         </div>
 
+                        <!-- Poll Section -->
+                        <div class="poll-section">
+                            <label class="poll-toggle">
+                                <input 
+                                    type="checkbox" 
+                                    v-model="isPoll"
+                                    @change="togglePoll"
+                                />
+                                <span class="poll-toggle-label">Create a Poll</span>
+                            </label>
+                            
+                            <div v-if="isPoll" class="poll-options-container">
+                                <div class="poll-options-header">
+                                    <span class="poll-options-label">Poll Options (minimum 2, maximum 10)</span>
+                                    <button 
+                                        v-if="pollOptions.length < 10"
+                                        type="button"
+                                        class="add-poll-option-btn"
+                                        @click="addPollOption"
+                                    >
+                                        + Add Option
+                                    </button>
+                                </div>
+                                
+                                <div 
+                                    v-for="(option, index) in pollOptions" 
+                                    :key="index"
+                                    class="poll-option-input-wrapper"
+                                >
+                                    <input 
+                                        v-model="pollOptions[index]"
+                                        type="text"
+                                        :placeholder="`Option ${index + 1}`"
+                                        class="poll-option-input"
+                                        maxlength="255"
+                                    />
+                                    <button 
+                                        v-if="pollOptions.length > 2"
+                                        type="button"
+                                        class="remove-poll-option-btn"
+                                        @click="removePollOption(index)"
+                                    >
+                                        ✕
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
                         <!-- Tags Selection -->
                         <div class="tags-section">
                             <span class="tags-label">TAGS:</span>
@@ -193,6 +240,25 @@
                         </div>
 
                         
+
+                        <!-- Error Message Display -->
+                        <div v-if="submitError" class="error-message-container" style="margin-top: 15px; margin-bottom: 15px;">
+                            <div class="error-alert" style="background: #fee; border: 1px solid #fcc; border-radius: 8px; padding: 12px; color: #c33;">
+                                <div style="display: flex; align-items: center; gap: 8px;">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width: 18px; height: 18px; flex-shrink: 0;">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                    <span style="font-weight: 600; font-size: 14px;">{{ submitError }}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Field Error Messages -->
+                        <div v-if="Object.keys(formErrors).length > 0" class="field-errors-container" style="margin-bottom: 15px;">
+                            <div v-for="(error, field) in formErrors" :key="field" class="field-error" style="background: #fff3cd; border: 1px solid #ffc107; border-radius: 6px; padding: 10px; margin-bottom: 8px; color: #856404; font-size: 14px;">
+                                <strong>{{ field.replace('_', ' ') }}:</strong> {{ Array.isArray(error) ? error[0] : error }}
+                            </div>
+                        </div>
 
                         <!-- Publish Button -->
                         <button class="publish-btn" @click="publishPost" :disabled="form.processing">
@@ -254,15 +320,174 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button class="modal-cancel-btn" @click="closeTagsModal">Cancel</button>
-                    <button class="modal-confirm-btn" @click="confirmTags">Confirm</button>
+                    <button class="modal-cancel-btn" @click="closeTagsModal">CANCEL</button>
+                    <button class="modal-confirm-btn" @click="confirmTags">CONFIRM</button>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Terms & Conditions Modal -->
-    <TermsModal :open="showTerms" @close="closeTerms" />
+    <!-- Terms and Conditions Modal -->
+    <div v-if="showTermsModal" class="modal-overlay" @click.self="closeTermsModal">
+        <div class="terms-modal" @click.stop>
+            <div class="terms-modal-header">
+                <h2 class="terms-modal-title">Terms and Conditions</h2>
+                <button @click="closeTermsModal" class="terms-modal-close">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width: 24px; height: 24px;">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+            <div class="terms-modal-body">
+                <div class="terms-section">
+                    <h3 class="terms-section-title">1. Account Registration and Access</h3>
+                    <p class="terms-text">
+                        By creating an account and using the iKonek176B portal, you agree to provide accurate, current, and complete information during registration. You are responsible for maintaining the confidentiality of your account credentials and for all activities that occur under your account. You must immediately notify Barangay 176B of any unauthorized use of your account or any other breach of security.
+                    </p>
+                </div>
+
+                <div class="terms-section">
+                    <h3 class="terms-section-title">2. Use of Services</h3>
+                    <p class="terms-text">
+                        The iKonek176B portal is provided for legitimate barangay-related purposes only. You may use the portal to:
+                        <ul class="terms-list">
+                            <li>Submit document requests (e.g., Barangay Certificate, Barangay ID, Business Permit)</li>
+                            <li>Request event assistance for community activities</li>
+                            <li>View announcements and community updates</li>
+                            <li>Participate in community discussions and forums</li>
+                            <li>Access your request history and status</li>
+                        </ul>
+                    </p>
+                </div>
+
+                <div class="terms-section">
+                    <h3 class="terms-section-title">3. Accurate Information</h3>
+                    <p class="terms-text">
+                        You are responsible for ensuring that all information you submit through the portal is accurate, truthful, and complete. Providing false, misleading, or incomplete information may result in rejection of your requests, suspension of your account, and possible legal action. You must update your account information promptly if any changes occur.
+                    </p>
+                </div>
+
+                <div class="terms-section">
+                    <h3 class="terms-section-title">4. Document Requests</h3>
+                    <p class="terms-text">
+                        When submitting document requests, you must:
+                        <ul class="terms-list">
+                            <li>Provide all required documents and information</li>
+                            <li>Ensure documents are authentic and valid</li>
+                            <li>Pay applicable processing fees as required</li>
+                            <li>Follow pickup instructions and deadlines</li>
+                            <li>Use documents only for their intended legal purposes</li>
+                        </ul>
+                        The barangay reserves the right to verify all submitted information and documents. Approval of requests is subject to verification and compliance with barangay policies and regulations.
+                    </p>
+                </div>
+
+                <div class="terms-section">
+                    <h3 class="terms-section-title">5. Event Assistance Requests</h3>
+                    <p class="terms-text">
+                        When requesting event assistance, you must provide accurate event details, including date, time, location, and purpose. Event assistance is subject to availability and approval by barangay officials. You are responsible for ensuring your event complies with all applicable laws, regulations, and barangay policies. The barangay reserves the right to deny or cancel event assistance for any reason.
+                    </p>
+                </div>
+
+                <div class="terms-section">
+                    <h3 class="terms-section-title">6. Payment and Fees</h3>
+                    <p class="terms-text">
+                        Some services may require payment of processing fees. All fees must be paid according to the payment methods provided. Payments are non-refundable unless otherwise stated. The barangay is not responsible for delays or issues caused by payment processing errors or failures. You are responsible for ensuring payments are made correctly and on time.
+                    </p>
+                </div>
+
+                <div class="terms-section">
+                    <h3 class="terms-section-title">7. Data Privacy</h3>
+                    <p class="terms-text">
+                        Your personal information is collected and processed in accordance with the Data Privacy Act of 2012 (Republic Act No. 10173). The barangay will use your information only for legitimate purposes related to service delivery, record-keeping, and compliance with legal requirements. Your information will not be shared with unauthorized third parties except as required by law.
+                    </p>
+                </div>
+
+                <div class="terms-section">
+                    <h3 class="terms-section-title">8. Prohibited Activities</h3>
+                    <p class="terms-text">
+                        You are strictly prohibited from:
+                        <ul class="terms-list">
+                            <li>Using the portal for any illegal or unauthorized purpose</li>
+                            <li>Submitting false, fraudulent, or misleading information</li>
+                            <li>Attempting to gain unauthorized access to the system or other users' accounts</li>
+                            <li>Interfering with or disrupting the portal's operation</li>
+                            <li>Harassing, threatening, or abusing other users or barangay officials</li>
+                            <li>Posting inappropriate, offensive, or defamatory content</li>
+                            <li>Violating any applicable laws or regulations</li>
+                        </ul>
+                    </p>
+                </div>
+
+                <div class="terms-section">
+                    <h3 class="terms-section-title">9. Account Suspension and Termination</h3>
+                    <p class="terms-text">
+                        The barangay reserves the right to suspend or terminate your account at any time, with or without notice, if you violate these terms and conditions, engage in prohibited activities, or for any other reason deemed necessary by barangay officials. Upon termination, your right to use the portal will immediately cease.
+                    </p>
+                </div>
+
+                <div class="terms-section">
+                    <h3 class="terms-section-title">10. Limitation of Liability</h3>
+                    <p class="terms-text">
+                        The barangay is not liable for any delays, errors, or failures in service delivery caused by technical issues, system maintenance, incorrect information provided by users, or circumstances beyond the barangay's reasonable control. The barangay does not guarantee uninterrupted or error-free access to the portal.
+                    </p>
+                </div>
+
+                <div class="terms-section">
+                    <h3 class="terms-section-title">11. Updates to Terms</h3>
+                    <p class="terms-text">
+                        These terms and conditions may be updated periodically. You will be notified of significant changes through the portal or other communication channels. Continued use of the portal after changes constitutes acceptance of the updated terms.
+                    </p>
+                </div>
+
+                <div class="terms-section">
+                    <h3 class="terms-section-title">12. Contact and Support</h3>
+                    <p class="terms-text">
+                        For questions, concerns, or to report issues related to your account or the portal, contact the Barangay 176B office at ikonek176b@dev.ph or +639193076338. For technical support or assistance with using the portal, please visit the Help Center section.
+                    </p>
+                </div>
+            </div>
+            <div class="terms-modal-footer">
+                <button @click="closeTermsModal" class="terms-modal-btn">
+                    I UNDERSTAND
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Success Confirmation Modal -->
+    <div v-if="showSuccessModal" class="modal-overlay success-modal-overlay" @click.stop>
+        <div class="success-modal" @click.stop>
+            <div class="success-modal-header">
+                <div class="success-icon-wrapper">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" class="success-icon">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                </div>
+                <h3 class="success-modal-title">
+                    {{ publishedPostIsPoll ? 'Poll Published Successfully!' : 'Post Published Successfully!' }}
+                </h3>
+            </div>
+            <div class="success-modal-body">
+                <p class="success-message" v-if="publishedPostIsPoll">
+                    Your poll has been successfully published and is now visible on the discussions page. 
+                    Other residents and barangay officials can now view your poll, vote on the options, react, and comment. 
+                    You can track the poll results in real-time as community members participate. 
+                    Thank you for engaging the community with your poll!
+                </p>
+                <p class="success-message" v-else>
+                    Your post has been successfully published and is now visible on the discussions page. 
+                    Other residents and barangay officials can now view, react, and comment on your post. 
+                    Thank you for contributing to the community discussions!
+                </p>
+            </div>
+            <div class="success-modal-footer">
+                <button @click="closeSuccessModal" class="success-modal-btn">
+                    OK
+                </button>
+            </div>
+        </div>
+    </div>
 </template>
 
 <script setup>
@@ -270,7 +495,6 @@ import { Link, usePage } from '@inertiajs/vue3'
 import { Head } from '@inertiajs/vue3'
 import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { useForm, router } from '@inertiajs/vue3'
-import TermsModal from '@/Components/TermsModal.vue'
 
 const props = defineProps({
     availableTags: {
@@ -358,8 +582,18 @@ const selectedTagIds = ref([])
 const showTagsModal = ref(false)
 const uploadedFiles = ref([])
 const fileInput = ref(null)
+const isPoll = ref(false)
+const pollOptions = ref(['', ''])
 
 const drafts = ref([])
+
+// Error handling state
+const formErrors = ref({})
+const submitError = ref('')
+
+// Success modal state
+const showSuccessModal = ref(false)
+const publishedPostIsPoll = ref(false)
 
 // computed to map selected IDs to tag objects
 const selectedTagsData = computed(() => {
@@ -373,7 +607,8 @@ const form = useForm({
     tag_ids: [],      // will be an array of tag ids
     image: null,
     video_path: null,
-    is_poll: 0,
+    is_poll: false,
+    poll_options: [],
     status: 'published',
 })
 
@@ -410,13 +645,17 @@ const toggleSettings = () => showSettings.value = !showSettings.value
 const closeSettings = () => showSettings.value = false
 
 // Terms & Conditions modal
-const showTerms = ref(false)
-const openTerms = () => {
+const showTermsModal = ref(false)
+const openTerms = (e) => {
+    if (e) {
+        e.preventDefault()
+        e.stopPropagation()
+    }
     showSettings.value = false
-    showTerms.value = true
+    showTermsModal.value = true
 }
-const closeTerms = () => {
-    showTerms.value = false
+const closeTermsModal = () => {
+    showTermsModal.value = false
 }
 
 const logout = () => {
@@ -495,21 +734,55 @@ const handleFileUpload = (event) => {
 
 const removeFile = (index) => uploadedFiles.value.splice(index, 1)
 
+const togglePoll = () => {
+    if (!isPoll.value) {
+        pollOptions.value = ['', '']
+    }
+}
+
+const addPollOption = () => {
+    if (pollOptions.value.length < 10) {
+        pollOptions.value.push('')
+    }
+}
+
+const removePollOption = (index) => {
+    if (pollOptions.value.length > 2) {
+        pollOptions.value.splice(index, 1)
+    }
+}
+
 const publishPost = () => {
+    // Clear previous errors
+    formErrors.value = {}
+    submitError.value = ''
+    
     if (!postContent.value.trim()) {
-        alert('Please write something before publishing')
+        submitError.value = 'Please write something before publishing.'
         return
     }
     if (selectedTagIds.value.length === 0) {
         alert('Please select at least one tag')
         return
     }
+    
+    // Validate poll if it's enabled
+    if (isPoll.value) {
+        const validOptions = pollOptions.value.filter(opt => opt.trim().length > 0)
+        if (validOptions.length < 2) {
+            alert('Please provide at least 2 poll options')
+            return
+        }
+    }
 
     // prepare form
     form.clearErrors()
     form.header = postHeader.value.trim()
     form.content = postContent.value
-    form.tag_ids = selectedTagIds.value.slice()
+    // Ensure tag_ids is always an array, even if empty (though validation should prevent empty)
+    form.tag_ids = Array.isArray(selectedTagIds.value) ? selectedTagIds.value.slice() : []
+    form.is_poll = isPoll.value
+    form.poll_options = isPoll.value ? pollOptions.value.filter(opt => opt.trim().length > 0) : []
 
     // include first file if available (you can change to send all files)
     if (uploadedFiles.value.length > 0) {
@@ -520,23 +793,49 @@ const publishPost = () => {
 
     form.post(route('posts.store'), {
         preserveState: false,
+        preserveScroll: false,
         onStart: () => console.log('Posting...'),
         onSuccess: (page) => {
-            console.log('Post published, clearing form')
-            // reset local UI state
-            postHeader.value = ''
-            postContent.value = ''
-            charCount.value = 0
-            selectedTagIds.value = []
-            uploadedFiles.value = []
-            form.reset() // reset form fields
-            // redirect to discussion index
-            router.visit(route('discussion_resident'))
+            console.log('Post published successfully')
+            // Track if this was a poll post
+            publishedPostIsPoll.value = isPoll.value && pollOptions.value.filter(opt => opt.trim().length > 0).length >= 2
+            // Show success modal instead of redirecting immediately
+            showSuccessModal.value = true
+            // Prevent body scrolling while modal is open
+            document.body.style.overflow = 'hidden'
         },
         onError: (errors) => {
             console.error('Server validation errors', errors)
-            if (errors.content) alert(errors.content[0])
-            if (errors.tag_ids) alert(errors.tag_ids[0])
+            console.error('Form data sent:', {
+                header: form.header,
+                content: form.content,
+                tag_ids: form.tag_ids,
+                is_poll: form.is_poll,
+                poll_options: form.poll_options
+            })
+            // Handle validation errors
+            if (errors && typeof errors === 'object') {
+                formErrors.value = errors
+                // Get the first error message from any field
+                const errorMessages = Object.values(errors).flat()
+                const firstError = errorMessages.length > 0 ? errorMessages[0] : 'Failed to publish post. Please check the form and try again.'
+                submitError.value = firstError
+                
+                // If tag_ids validation failed, show a more specific message
+                if (errors.tag_ids) {
+                    submitError.value = Array.isArray(errors.tag_ids) ? errors.tag_ids[0] : 'Please select at least one tag before publishing.'
+                }
+                
+                // Scroll to error
+                setTimeout(() => {
+                    const errorContainer = document.querySelector('.error-message-container')
+                    if (errorContainer) {
+                        errorContainer.scrollIntoView({ behavior: 'smooth', block: 'center' })
+                    }
+                }, 100)
+            } else {
+                submitError.value = 'An error occurred while publishing your post. Please try again.'
+            }
         }
     })
 }
@@ -544,6 +843,31 @@ const publishPost = () => {
 const deleteDraft = (draftId) => {
     const idx = drafts.value.findIndex(d => d.id === draftId)
     if (idx > -1) drafts.value.splice(idx, 1)
+}
+
+const closeSuccessModal = () => {
+    showSuccessModal.value = false
+    publishedPostIsPoll.value = false
+    document.body.style.overflow = ''
+    // Reset form state
+    postHeader.value = ''
+    postContent.value = ''
+    charCount.value = 0
+    selectedTagIds.value = []
+    uploadedFiles.value = []
+    isPoll.value = false
+    pollOptions.value = ['', '']
+    form.reset()
+    formErrors.value = {}
+    submitError.value = ''
+    // Redirect to discussion page after closing modal
+    setTimeout(() => {
+        router.visit(route('discussion_resident'), {
+            replace: true,
+            preserveState: false,
+            preserveScroll: false
+        })
+    }, 300)
 }
 
 const openFAQ = () => console.log('Opening FAQ')
@@ -557,7 +881,11 @@ onMounted(() => {
     activeTab.value = 'posts'
 })
 
-onUnmounted(() => document.removeEventListener('click', handleClickOutside))
+onUnmounted(() => {
+    document.removeEventListener('click', handleClickOutside)
+    // Restore body overflow in case modal was open
+    document.body.style.overflow = ''
+})
 </script>
 
 <style scoped>
@@ -565,13 +893,14 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside))
     position: fixed;
     top: 0;
     left: 0;
-    width: 100vw;
-    height: 100vh;
-    background: rgba(0,0,0,0.4);
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.6);
     display: flex;
     justify-content: center;
     align-items: center;
     z-index: 9999;
+    padding: 20px;
 }
 
 .modal-content {
@@ -722,6 +1051,7 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside))
     transition: all 0.2s;
     cursor: pointer;
     font-weight: 500;
+    white-space: nowrap;
 }
 
 .settings-item:hover {
@@ -773,7 +1103,7 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside))
 
 .profile-name {
     font-weight: 700;
-    font-size: 17px;
+    font-size: 15px;
     text-shadow: 0 1px 3px rgba(0,0,0,0.2);
 }
 
@@ -1282,12 +1612,14 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside))
 }
 
 .modal-cancel-btn {
-    background: #f8f9fa;
-    color: #333;
+    background: white;
+    border: 1px solid #e0e0e0;
+    color: #4a4a4a;
 }
 
 .modal-cancel-btn:hover {
-    background: #e9ecef;
+    background: #f8f9fa;
+    border-color: #d0d0d0;
 }
 
 .modal-confirm-btn {
@@ -1471,5 +1803,361 @@ html::-webkit-scrollbar-thumb {
 body::-webkit-scrollbar-thumb:hover,
 html::-webkit-scrollbar-thumb:hover {
     background: #666;
+}
+
+/* Poll Section Styles */
+.poll-section {
+    margin-bottom: 25px;
+    padding: 20px;
+    background: #f8f9fa;
+    border-radius: 12px;
+    border: 1px solid #e0e0e0;
+}
+
+.poll-toggle {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    margin-bottom: 15px;
+}
+
+.poll-toggle input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+    accent-color: #ff8c42;
+}
+
+.poll-toggle-label {
+    font-size: 16px;
+    font-weight: 700;
+    color: #333;
+    cursor: pointer;
+}
+
+.poll-options-container {
+    margin-top: 15px;
+}
+
+.poll-options-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.poll-options-label {
+    font-size: 14px;
+    font-weight: 600;
+    color: #666;
+}
+
+.add-poll-option-btn {
+    background: linear-gradient(135deg, #2bb24a, #239640);
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.add-poll-option-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(43, 178, 74, 0.3);
+}
+
+.poll-option-input-wrapper {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 10px;
+    align-items: center;
+}
+
+.poll-option-input {
+    flex: 1;
+    padding: 12px 15px;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    font-size: 14px;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    transition: border-color 0.2s;
+}
+
+.poll-option-input:focus {
+    outline: none;
+    border-color: #ff8c42;
+}
+
+.remove-poll-option-btn {
+    background: rgba(220, 53, 69, 0.1);
+    border: 1px solid rgba(220, 53, 69, 0.3);
+    color: #dc3545;
+    padding: 10px 15px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: 700;
+    transition: all 0.2s;
+    min-width: 40px;
+}
+
+.remove-poll-option-btn:hover {
+    background: rgba(220, 53, 69, 0.2);
+    border-color: #dc3545;
+}
+
+/* Terms and Conditions Modal Styles */
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.modal-overlay:has(.terms-modal) {
+    z-index: 10000 !important;
+}
+
+.terms-modal {
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    max-width: 800px;
+    width: 90%;
+    max-height: 90vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    animation: slideUp 0.3s ease;
+    position: relative;
+    z-index: 10001;
+}
+
+.terms-modal-header {
+    background: white;
+    padding: 25px 30px;
+    border-bottom: 1px solid #e0e0e0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.terms-modal-title {
+    margin: 0;
+    font-size: 28px;
+    font-weight: 700;
+    color: #333;
+}
+
+.terms-modal-close {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 8px;
+    color: #666;
+    transition: all 0.2s ease;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.terms-modal-close:hover {
+    background: #f0f0f0;
+    color: #333;
+}
+
+.terms-modal-body {
+    padding: 30px;
+    overflow-y: auto;
+    flex: 1;
+}
+
+.terms-section {
+    margin-bottom: 25px;
+}
+
+.terms-section:last-child {
+    margin-bottom: 0;
+}
+
+.terms-section-title {
+    margin: 0 0 12px 0;
+    font-size: 18px;
+    font-weight: 700;
+    color: #ff8c42;
+}
+
+.terms-text {
+    margin: 0;
+    font-size: 15px;
+    line-height: 1.7;
+    color: #555;
+    text-align: justify;
+}
+
+.terms-list {
+    margin: 10px 0 0 20px;
+    padding: 0;
+}
+
+.terms-list li {
+    margin-bottom: 8px;
+    font-size: 15px;
+    line-height: 1.6;
+    color: #555;
+}
+
+.terms-modal-footer {
+    padding: 20px 30px;
+    border-top: 1px solid #e0e0e0;
+    display: flex;
+    justify-content: center;
+    background: #f8f9fa;
+    flex-shrink: 0;
+}
+
+.terms-modal-btn {
+    padding: 12px 50px;
+    background: #ff8c42;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(255, 140, 66, 0.3);
+}
+
+.terms-modal-btn:hover {
+    background: #ff7a28;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(255, 140, 66, 0.4);
+}
+
+/* Success Modal Styles */
+.success-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.6);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 10002;
+    padding: 20px;
+}
+
+@keyframes slideUp {
+    from {
+        transform: translateY(20px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.success-modal {
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    max-width: 550px;
+    width: 90%;
+    overflow: hidden;
+    animation: slideUp 0.3s ease;
+    position: relative;
+    z-index: 10003;
+}
+
+.success-modal-header {
+    background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+    padding: 35px 30px 25px 30px;
+    text-align: center;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.success-icon-wrapper {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 20px;
+}
+
+.success-icon {
+    width: 100px;
+    height: 100px;
+    color: #239640;
+    background: rgba(35, 150, 64, 0.1);
+    border-radius: 50%;
+    padding: 20px;
+    box-shadow: 0 4px 12px rgba(35, 150, 64, 0.2);
+}
+
+.success-modal-title {
+    margin: 0;
+    font-size: 26px;
+    font-weight: 700;
+    color: #239640;
+    line-height: 1.3;
+}
+
+.success-modal-body {
+    padding: 30px 35px;
+    text-align: center;
+    background: white;
+}
+
+.success-message {
+    margin: 0;
+    font-size: 16px;
+    line-height: 1.7;
+    color: #555;
+    text-align: justify;
+}
+
+.success-modal-footer {
+    padding: 25px 30px;
+    border-top: 1px solid #e0e0e0;
+    display: flex;
+    justify-content: center;
+    background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+}
+
+.success-modal-btn {
+    padding: 14px 50px;
+    background: linear-gradient(135deg, #239640, #1e7d35);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 12px rgba(35, 150, 64, 0.3);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.success-modal-btn:hover {
+    background: linear-gradient(135deg, #1e7d35, #166529);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(35, 150, 64, 0.4);
+}
+
+.success-modal-btn:active {
+    transform: translateY(0);
 }
 </style>

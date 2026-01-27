@@ -7,6 +7,8 @@ use App\Models\RegistrationReq;
 use App\Models\User;
 use App\Models\UserCredential;
 use App\Services\OtpService;
+use App\Services\SmsService;
+use App\Services\BackgroundCheckService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Auth;
@@ -37,8 +39,8 @@ class RegisterRequestController extends Controller
             return $this->indexJson($request);
         }
 
-        // Fetch only requests with registration_status = 'pending'
-        $requests = RegistrationReq::where('registration_status', 'pending')
+        // Fetch only requests with registration_status = 'Pending'
+        $requests = RegistrationReq::where('registration_status', 'Pending')
             ->orderByDesc('created_at')
             ->get()
             ->map(function ($r) {
@@ -163,6 +165,22 @@ class RegisterRequestController extends Controller
      */
     public function approve(Request $request, $id)
     {
+        try {
+            // Log immediately at the start - use error_log as backup
+            error_log('=== REGISTRATION APPROVE METHOD CALLED === ID: ' . $id);
+            \Log::info('=== REGISTRATION APPROVE METHOD CALLED ===', [
+                'registration_request_id' => $id,
+                'request_method' => $request->method(),
+                'request_url' => $request->fullUrl(),
+                'request_path' => $request->path(),
+                'user_id' => Auth::id(),
+                'is_authenticated' => Auth::check(),
+                'timestamp' => now()->toDateTimeString(),
+            ]);
+        } catch (\Throwable $logEx) {
+            error_log('Failed to log approval start: ' . $logEx->getMessage());
+        }
+        
         // Check if user is authenticated
         if (!Auth::check()) {
             \Log::warning('Unauthorized approve attempt', [
@@ -180,12 +198,6 @@ class RegisterRequestController extends Controller
             ], 401);
         }
 
-        \Log::info('=== REGISTRATION APPROVE METHOD CALLED ===', [
-            'registration_request_id' => $id,
-            'user_id' => Auth::id(),
-            'timestamp' => now()->toDateTimeString(),
-        ]);
-
         $request->validate([
             'comment' => 'nullable|string',
             'offenses' => 'nullable|array',
@@ -198,7 +210,7 @@ class RegisterRequestController extends Controller
             $result = DB::transaction(function () use ($id, $request) {
                 $r = RegistrationReq::findOrFail($id);
 
-                if (($r->registration_status ?? '') === 'approved') {
+                if (strtolower($r->registration_status ?? '') === 'approved') {
                     throw new \Exception('This request is already approved.');
                 }
 
@@ -219,9 +231,76 @@ class RegisterRequestController extends Controller
                         continue;
                     }
 
+                    // Set created_at if it's in fillable
+                    if ($col === 'created_at') {
+                        $userData[$col] = $r->created_at ?? now();
+                        continue;
+                    }
+
+                    // Handle place_of_birth - set to empty string if null (since column may not allow null)
+                    if ($col === 'place_of_birth') {
+                        $userData[$col] = $r->place_of_birth ?? '';
+                        continue;
+                    }
+
+                    // Handle phase - normalize to "Phase X" format (VARCHAR, no ENUM restrictions)
+                    if ($col === 'phase') {
+                        $phaseValue = $r->phase ?? null;
+                        if ($phaseValue) {
+                            // Normalize to "Phase X" format
+                            if (preg_match('/^Phase\s*(\d+)$/i', (string)$phaseValue, $matches)) {
+                                $userData[$col] = 'Phase ' . $matches[1];
+                            } elseif (preg_match('/^(\d+)$/', (string)$phaseValue, $matches)) {
+                                // If it's just a number, convert to "Phase X" format
+                                $userData[$col] = 'Phase ' . $matches[1];
+                            } else {
+                                // Already in correct format or invalid - use as is
+                                $userData[$col] = trim((string)$phaseValue);
+                            }
+                        } else {
+                            $userData[$col] = null;
+                        }
+                        \Log::info('Phase normalization during approval', [
+                            'original' => $r->phase,
+                            'normalized' => $userData[$col],
+                            'registration_request_id' => $r->registration_request_id,
+                        ]);
+                        continue;
+                    }
+
+                    // Handle package - normalize to "Package X" format (VARCHAR, no ENUM restrictions)
+                    if ($col === 'package') {
+                        $packageValue = $r->package ?? null;
+                        if ($packageValue) {
+                            // Normalize to "Package X" format
+                            if (preg_match('/^Package\s*(\d+)$/i', (string)$packageValue, $matches)) {
+                                $userData[$col] = 'Package ' . $matches[1];
+                            } elseif (preg_match('/^(\d+)$/', (string)$packageValue, $matches)) {
+                                // If it's just a number, convert to "Package X" format
+                                $userData[$col] = 'Package ' . $matches[1];
+                            } else {
+                                // Already in correct format or invalid - use as is
+                                $userData[$col] = trim((string)$packageValue);
+                            }
+                        } else {
+                            $userData[$col] = null;
+                        }
+                        \Log::info('Package normalization during approval', [
+                            'original' => $r->package,
+                            'normalized' => $userData[$col],
+                            'registration_request_id' => $r->registration_request_id,
+                        ]);
+                        continue;
+                    }
+
                     // direct copy if attribute exists on registration request
                     if (array_key_exists($col, $r->getAttributes())) {
-                        $userData[$col] = $r->getAttribute($col);
+                        $value = $r->getAttribute($col);
+                        // Convert null to empty string for string columns that might not allow null
+                        if ($value === null && in_array($col, ['place_of_birth', 'religion', 'nationality', 'occupation'])) {
+                            $value = '';
+                        }
+                        $userData[$col] = $value;
                         continue;
                     }
 
@@ -231,12 +310,57 @@ class RegisterRequestController extends Controller
                     }
                 }
 
-                // Create the user without ever specifying the primary key
-                $user = User::create($userData);
+                // Log phase and package values before creating user
+                \Log::info('User data before creation', [
+                    'registration_request_id' => $r->registration_request_id,
+                    'phase' => $userData['phase'] ?? 'NOT SET',
+                    'phase_type' => gettype($userData['phase'] ?? null),
+                    'phase_value' => var_export($userData['phase'] ?? null, true),
+                    'package' => $userData['package'] ?? 'NOT SET',
+                    'package_type' => gettype($userData['package'] ?? null),
+                    'package_value' => var_export($userData['package'] ?? null, true),
+                    'user_data_keys' => array_keys($userData),
+                ]);
 
-                if (!$user || !$user->user_id) {
+                // Phase and package are already normalized to "Phase X" / "Package X" format above
+                // No additional conversion needed since they're now VARCHAR
+
+                // Create the user without ever specifying the primary key
+                \Log::info('Creating user from registration request', [
+                    'registration_request_id' => $r->registration_request_id,
+                    'user_data_keys' => array_keys($userData),
+                    'phase_final' => $userData['phase'] ?? 'NULL',
+                    'package_final' => $userData['package'] ?? 'NULL',
+                    'phase_type' => isset($userData['phase']) ? gettype($userData['phase']) : 'not set',
+                    'package_type' => isset($userData['package']) ? gettype($userData['package']) : 'not set',
+                    'name' => ($userData['first_name'] ?? '') . ' ' . ($userData['last_name'] ?? ''),
+                ]);
+                
+                // Use DB::table() directly to bypass Eloquent type conversion
+                $userId = DB::table('users')->insertGetId($userData);
+                
+                if (!$userId) {
+                    \Log::error('Failed to insert user record', [
+                        'registration_request_id' => $r->registration_request_id,
+                        'user_data' => $userData,
+                    ]);
                     throw new \Exception('Failed to create user record.');
                 }
+                
+                $user = User::find($userId);
+
+                if (!$user || !$user->user_id) {
+                    \Log::error('Failed to create user record', [
+                        'registration_request_id' => $r->registration_request_id,
+                        'user_data' => $userData,
+                    ]);
+                    throw new \Exception('Failed to create user record.');
+                }
+                
+                \Log::info('User created successfully', [
+                    'user_id' => $user->user_id,
+                    'registration_request_id' => $r->registration_request_id,
+                ]);
 
                 // Build credentials data only from fields that the UserCredential model accepts
                 $credData = [];
@@ -253,13 +377,16 @@ class RegisterRequestController extends Controller
                     }
 
                     // Allow request override for contact numbers
+                    // Normalize phone numbers (remove non-digits) to match login behavior
                     if ($col === 'contact_number') {
-                        $credData[$col] = $request->input('contact_number') ?? $r->contact_number ?? null;
+                        $rawNumber = $request->input('contact_number') ?? $r->contact_number ?? null;
+                        $credData[$col] = $rawNumber ? preg_replace('/\D/', '', $rawNumber) : null;
                         continue;
                     }
 
                     if ($col === 'secondary_contact_number') {
-                        $credData[$col] = $request->input('secondary_contact_number') ?? $r->secondary_contact_number ?? null;
+                        $rawNumber = $request->input('secondary_contact_number') ?? $r->secondary_contact_number ?? null;
+                        $credData[$col] = $rawNumber ? preg_replace('/\D/', '', $rawNumber) : null;
                         continue;
                     }
 
@@ -272,8 +399,12 @@ class RegisterRequestController extends Controller
                     if ($col === 'email') {
                         $credData[$col] = $r->email ?? null;
                     } elseif ($col === 'password') {
-                        // We copy password as-is (assumed hashed). Change if you want to re-hash.
-                        $credData[$col] = $r->password ?? null;
+                        // We copy password as-is (assumed hashed from registration)
+                        $password = $r->password ?? null;
+                        if (empty($password)) {
+                            throw new \Exception('Password is missing from registration request. Cannot create user credentials.');
+                        }
+                        $credData[$col] = $password;
                     }
                 }
 
@@ -283,34 +414,129 @@ class RegisterRequestController extends Controller
                 }
 
                 // Create credential (do NOT pass user_cred_id)
+                \Log::info('Creating user credentials from registration request', [
+                    'user_id' => $user->user_id,
+                    'registration_request_id' => $r->registration_request_id,
+                    'has_password' => !empty($credData['password']),
+                    'has_contact_number' => !empty($credData['contact_number']),
+                ]);
+                
                 $userCred = UserCredential::create($credData);
 
                 if (!$userCred || !$userCred->user_cred_id) {
+                    \Log::error('Failed to create user credentials', [
+                        'user_id' => $user->user_id,
+                        'registration_request_id' => $r->registration_request_id,
+                        'cred_data_keys' => array_keys($credData),
+                    ]);
                     throw new \Exception('Failed to create user credentials.');
                 }
+                
+                \Log::info('User credentials created successfully', [
+                    'user_cred_id' => $userCred->user_cred_id,
+                    'user_id' => $user->user_id,
+                    'registration_request_id' => $r->registration_request_id,
+                ]);
 
-                // Update registration request to approved (we may optionally store admin feedback)
-                $r->registration_status = 'Approved';
-
-                // if ($request->filled('comment') && Schema::hasColumn($r->getTable(), 'admin_feedback')) {
-                //     $r->admin_feedback = $request->input('comment');
-                // }
-
-                // if ($request->has('offenses') && Schema::hasColumn($r->getTable(), 'offense_type')) {
-                //     $r->offense_type = is_array($request->input('offenses')) ? json_encode($request->input('offenses')) : $request->input('offenses');
-                // }
-
-                // Optionally link back to new user id if registration_requests has such a column
-                if (Schema::hasColumn($r->getTable(), 'user_id')) {
-                    // This writes the new auto-incremented user id into the registration request row
-                    $r->user_id = $user->user_id;
+                // Perform automatic background check
+                try {
+                    $backgroundCheckService = new BackgroundCheckService();
+                    
+                    // Match registrant against resident database
+                    $birthdate = $r->birthdate ? Carbon::parse($r->birthdate)->format('Y-m-d') : null;
+                    $matchedResident = null;
+                    
+                    if ($birthdate) {
+                        $matchedResident = $backgroundCheckService->findMatchingResident(
+                            $r->first_name ?? '',
+                            $r->middle_name ?? null,
+                            $r->last_name ?? '',
+                            $r->suffix ?? null,
+                            $birthdate
+                        );
+                    }
+                    
+                    if ($matchedResident) {
+                        \Log::info('Resident match found, performing background check', [
+                            'user_id' => $user->user_id,
+                            'resident_id' => $matchedResident->resident_id,
+                        ]);
+                        
+                        // Calculate restrictions based on offenses
+                        $restrictionData = $backgroundCheckService->calculateRestrictions($matchedResident);
+                        
+                        // Copy offenses to user_offenses table
+                        $backgroundCheckService->copyOffensesToUser($user->user_id, $matchedResident);
+                        
+                        // Apply restrictions if any
+                        if ($restrictionData['has_restrictions']) {
+                            $backgroundCheckService->applyRestrictions(
+                                $user->user_id,
+                                $restrictionData,
+                                Auth::id() // Admin who approved
+                            );
+                            
+                            \Log::info('Restrictions applied automatically', [
+                                'user_id' => $user->user_id,
+                                'restricted_document_types' => $restrictionData['restricted_document_types'],
+                                'restricted_event_types' => $restrictionData['restricted_event_types'],
+                            ]);
+                        } else {
+                            \Log::info('No restrictions needed - resident has no Medium/High offenses', [
+                                'user_id' => $user->user_id,
+                                'resident_id' => $matchedResident->resident_id,
+                            ]);
+                        }
+                    } else {
+                        \Log::info('No resident match found - no background check performed', [
+                            'user_id' => $user->user_id,
+                            'name' => ($r->first_name ?? '') . ' ' . ($r->last_name ?? ''),
+                            'birthdate' => $birthdate,
+                        ]);
+                    }
+                } catch (\Throwable $bgCheckEx) {
+                    // Don't fail the approval if background check fails
+                    \Log::error('Background check error during approval', [
+                        'error' => $bgCheckEx->getMessage(),
+                        'trace' => $bgCheckEx->getTraceAsString(),
+                        'user_id' => $user->user_id ?? null,
+                        'registration_request_id' => $r->registration_request_id,
+                    ]);
                 }
 
-                if (Schema::hasColumn($r->getTable(), 'updated_at')) {
-                    $r->updated_at = now();
+                // Update registration status INSIDE transaction to ensure atomicity
+                // Use DB::table() directly since model has timestamps disabled
+                $rowsAffected = DB::table('registration_requests')
+                    ->where('registration_request_id', $id)
+                    ->update(['registration_status' => 'Approved']);
+                
+                if ($rowsAffected === 0) {
+                    \Log::error('Failed to update registration status - no rows affected', [
+                        'registration_request_id' => $id,
+                    ]);
+                    throw new \Exception('Failed to update registration status.');
                 }
-
-                $r->save();
+                
+                // Verify the update by querying directly
+                $updatedStatus = DB::table('registration_requests')
+                    ->where('registration_request_id', $id)
+                    ->value('registration_status');
+                
+                \Log::info('Registration request status updated inside transaction', [
+                    'registration_request_id' => $id,
+                    'status' => 'Approved',
+                    'rows_affected' => $rowsAffected,
+                    'verified_status' => $updatedStatus,
+                ]);
+                
+                if ($updatedStatus !== 'Approved') {
+                    \Log::error('Status update verification failed', [
+                        'registration_request_id' => $id,
+                        'expected' => 'Approved',
+                        'actual' => $updatedStatus,
+                    ]);
+                    throw new \Exception('Status update verification failed.');
+                }
 
                 // Store phone number and name for SMS (before transaction completes)
                 $phoneNumber = $r->contact_number ?? $r->secondary_contact_number ?? null;
@@ -356,7 +582,7 @@ class RegisterRequestController extends Controller
                 ]);
                 
                 if ($phoneNumber) {
-                    $message = "Hello {$fullName}, your registration request has been APPROVED. You can now log in to iKonek176B using your credentials. Thank you!";
+                    $message = "Hello {$fullName}, your registration request has been APPROVED. You can now log in to iKonek176B using your contact number and password. Thank you!";
                     
                     \Log::info('Calling SMS service for registration approval', [
                         'phone' => substr($phoneNumber, 0, 4) . '****',
@@ -365,9 +591,10 @@ class RegisterRequestController extends Controller
                         'full_message' => $message, // Log full message for debugging
                     ]);
                     
-                    $smsService = new OtpService();
-                    \Log::info('About to call sendSms method', [
+                    $smsService = new SmsService();
+                    \Log::info('About to call sendSms method via Semaphore', [
                         'phone' => substr($phoneNumber, 0, 4) . '****',
+                        'provider' => $smsService->getProviderName(),
                     ]);
                     $smsResult = $smsService->sendSms($phoneNumber, $message);
                     \Log::info('sendSms method returned', [
@@ -481,7 +708,7 @@ class RegisterRequestController extends Controller
                 $r = RegistrationReq::findOrFail($id);
 
                 // Optional: prevent deletion of already-approved users
-                if (($r->registration_status ?? '') === 'approved') {
+                if (strtolower($r->registration_status ?? '') === 'approved') {
                     throw new \Exception('Cannot reject/delete an already approved request.');
                 }
 
@@ -515,9 +742,10 @@ class RegisterRequestController extends Controller
                         'full_message' => $message, // Log full message for debugging
                     ]);
                     
-                    $smsService = new OtpService();
-                    \Log::info('About to call sendSms method for rejection', [
+                    $smsService = new SmsService();
+                    \Log::info('About to call sendSms method for rejection via Semaphore', [
                         'phone' => substr($phoneNumber, 0, 4) . '****',
+                        'provider' => $smsService->getProviderName(),
                     ]);
                     $smsResult = $smsService->sendSms($phoneNumber, $message);
                     \Log::info('sendSms method returned for rejection', [

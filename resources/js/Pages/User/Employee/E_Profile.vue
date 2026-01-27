@@ -15,9 +15,9 @@
                     <img src="/assets/SETTINGS.png" alt="Settings" class="settings-btn-img" @click="toggleSettings" />
                     <!-- Settings Dropdown -->
                     <div v-if="showSettings" class="settings-dropdown">
-                        <Link href="#" class="settings-item" @click="closeSettings">Help Center</Link>
-                        <button type="button" class="settings-item" @click="openTerms">Terms & Conditions</button>
-                        <Link href="#" class="settings-item" @click="logout">Sign Out</Link>
+                        <Link href="#" class="settings-item" @click.prevent="navigateToHelpCenter">HELP CENTER</Link>
+                        <button type="button" class="settings-item" @click="openTerms">TERMS & CONDITIONS</button>
+                        <Link href="#" class="settings-item" @click="logout">SIGN OUT</Link>
                     </div>
                 </div>
             </div>
@@ -79,6 +79,7 @@
                             <path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0" />
                         </svg>
                         Notifications
+                        <span v-if="unreadCount > 0" class="unread-badge-nav">{{ unreadCount }}</span>
                     </Link>
                     <Link 
                         href="#" 
@@ -97,7 +98,7 @@
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="nav-icon">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 5.25h.008v.008H12v-.008Z" />
                     </svg>
-                    FAQs & Help Center
+                    FAQS & HELP CENTER
                 </button>
             </div>
 
@@ -121,15 +122,18 @@
                         <div class="profile-details-card">
                             <div class="profile-photo-section">
                                 <img :src="profilePictureUrl" alt="User Photo" class="profile-photo" />
-                                <button class="edit-profile-btn" @click="showEditModal = true">Edit Profile Picture</button>
+                                <div class="button-stats-row">
+                                    <button class="edit-profile-btn" @click="showEditModal = true">EDIT PROFILE PICTURE</button>
+                                </div>
                             </div>
                             <div class="profile-info-section">
-                                <h3 class="profile-display-name">{{ user?.name || 'Unknown User' }}</h3>
-                                <div class="profile-badge">{{ displayRole.toUpperCase() }}</div>
-                                <p class="profile-description">
-                                    {{ user?.profile_description || 'No description available.' }}
-                                </p>
-                                <div class="profile-stats">
+                                <div class="profile-header-info">
+                                    <div class="profile-name-stats-row">
+                                        <div class="profile-name-badge-group">
+                                            <h3 class="profile-display-name">{{ user?.name || 'Unknown User' }}</h3>
+                                            <div class="profile-badge">{{ displayRole.toUpperCase() }}</div>
+                                        </div>
+                                        <div class="profile-stats">
                                     <div class="stat-item">
                                         <div class="stat-value">{{ stats?.posts || 0 }}</div>
                                         <div class="stat-label">Posts</div>
@@ -141,6 +145,24 @@
                                     <div class="stat-item">
                                         <div class="stat-value">{{ stats?.comments || 0 }}</div>
                                         <div class="stat-label">Comments</div>
+                                    </div>
+                                </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Basic Information -->
+                                <div class="user-info-grid" v-if="userInfo">
+                                    <div class="info-item" v-if="userInfo.contact_number">
+                                        <span class="info-label">Contact:</span>
+                                        <span class="info-value">{{ userInfo.contact_number }}</span>
+                                    </div>
+                                    <div class="info-item" v-if="userInfo.birthdate">
+                                        <span class="info-label">Birthdate:</span>
+                                        <span class="info-value">{{ userInfo.birthdate }}</span>
+                                    </div>
+                                    <div class="info-item" v-if="userInfo.sex">
+                                        <span class="info-label">Sex:</span>
+                                        <span class="info-value">{{ userInfo.sex }}</span>
                                     </div>
                                 </div>
                             </div>
@@ -267,19 +289,31 @@
                         style="display: none"
                     />
                     <button class="upload-btn-modal" @click="triggerFileInput">
-                        {{ pictureForm.profile_picture ? 'Change Image' : 'Choose Image' }}
+                        {{ pictureForm.profile_picture ? 'CHANGE IMAGE' : 'CHOOSE IMAGE' }}
                     </button>
                     <p v-if="pictureForm.profile_picture" class="file-name">{{ pictureForm.profile_picture.name }}</p>
                 </div>
                 
+                <!-- Error Message Display -->
+                <div v-if="profileError" class="error-message-container" style="margin-top: 15px; margin-bottom: 15px;">
+                    <div class="error-alert" style="background: #fee; border: 1px solid #fcc; border-radius: 8px; padding: 12px; color: #c33;">
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width: 18px; height: 18px; flex-shrink: 0;">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            <span style="font-weight: 600; font-size: 14px;">{{ profileError }}</span>
+                        </div>
+                    </div>
+                </div>
+                
                 <div class="modal-actions">
-                    <button class="cancel-btn" @click="closeEditModal">Cancel</button>
+                    <button class="cancel-btn" @click="closeEditModal">CANCEL</button>
                     <button 
                         class="save-btn" 
                         @click="saveProfilePicture"
-                        :disabled="!pictureForm.profile_picture || pictureForm.processing"
+                        :disabled="!pictureForm.profile_picture || pictureForm.processing || isUploading"
                     >
-                        {{ pictureForm.processing ? 'Uploading...' : 'Save Changes' }}
+                        {{ (pictureForm.processing || isUploading) ? 'UPLOADING...' : 'SAVE CHANGES' }}
                     </button>
                 </div>
             </div>
@@ -295,6 +329,7 @@ import { Link, usePage, useForm } from '@inertiajs/vue3'
 import { Head } from '@inertiajs/vue3'
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { router } from '@inertiajs/vue3'
+import axios from 'axios'
 import TermsModal from '@/Components/TermsModal.vue'
 
 // --- Inertia-shared auth user ---
@@ -319,6 +354,17 @@ const getPageProp = (key) => {
 // Get stats from props
 const stats = computed(() => getPageProp('stats') ?? { posts: 0, reactions: 0, comments: 0 })
 
+// Get user info from props
+const userInfo = computed(() => getPageProp('userInfo') ?? null)
+
+// Unread notification count
+const unreadCount = ref(0)
+
+// Error handling state
+const profileErrors = ref({})
+const profileError = ref('')
+const isUploading = ref(false)
+
 // map of role_id -> role_name
 const roleMap = {
   1: 'Resident',
@@ -340,16 +386,23 @@ const displayRole = computed(() => {
 const profilePictureUrl = computed(() => {
   if (user.value?.profile_pic) {
     const pic = user.value.profile_pic
+    let url = ''
     // If it's a full URL, return as is
     if (pic.startsWith('http')) {
-      return pic
+      url = pic
     }
     // If it already has /storage/, return as is
-    if (pic.startsWith('/storage/')) {
-      return pic
+    else if (pic.startsWith('/storage/')) {
+      url = pic
     }
     // Otherwise prepend storage path
-    return `/storage/${pic}`
+    else {
+      url = `/storage/${pic}`
+    }
+    // Add cache-busting parameter based on profile_pic value to force browser reload when it changes
+    // Use a hash of the profile_pic path as version to ensure same image gets same URL
+    const version = pic ? pic.split('/').pop() + pic.length : Date.now()
+    return url + (url.includes('?') ? '&' : '?') + `v=${version}`
   }
   return '/assets/DEFAULT.jpg'
 })
@@ -471,6 +524,33 @@ const selectSort = (option) => {
 const selectFilter = (option) => {
     filterOption.value = option
     showFilterDropdown.value = false
+}
+
+// Fetch unread notification count
+const fetchUnreadCount = async () => {
+    try {
+        const response = await axios.get('/api/notifications')
+        if (response.data.success) {
+            const notifications = response.data.notifications || []
+            unreadCount.value = notifications.filter(n => !n.is_read).length
+        }
+    } catch (error) {
+        console.error('Error fetching unread count:', error)
+        unreadCount.value = 0
+    }
+}
+
+const navigateToHelpCenter = () => {
+    showSettings.value = false
+    // Navigate to help center based on user role
+    const roleId = user.value?.fk_role_id ?? 2
+    if (roleId === 1) {
+        // Resident
+        router.visit(route('help_center_resident'))
+    } else {
+        // Employee/Official
+        router.visit(route('help_center_employee'))
+    }
 }
 
 const logout = () => {
@@ -610,10 +690,31 @@ const handleFileSelect = (event) => {
 }
 
 const saveProfilePicture = () => {
+    // Clear previous errors
+    profileErrors.value = {}
+    profileError.value = ''
+    
     if (!pictureForm.profile_picture) {
-        alert('Please select an image first.')
+        profileError.value = 'Please select an image first.'
         return
     }
+    
+    // Validate file type
+    const file = pictureForm.profile_picture
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp']
+    if (!allowedTypes.includes(file.type)) {
+        profileError.value = 'Please upload a valid image file (JPEG, PNG, or WebP).'
+        return
+    }
+    
+    // Validate file size (max 5MB)
+    const maxSize = 5 * 1024 * 1024 // 5MB
+    if (file.size > maxSize) {
+        profileError.value = 'Image size must be less than 5MB. Please compress your image and try again.'
+        return
+    }
+    
+    isUploading.value = true
     
     pictureForm.post(route('profile_employee.update_picture'), {
         preserveScroll: true,
@@ -622,13 +723,30 @@ const saveProfilePicture = () => {
             showEditModal.value = false
             previewImage.value = null
             pictureForm.profile_picture = null
+            profileError.value = ''
+            profileErrors.value = {}
+            isUploading.value = false
             // Refresh the page to show updated profile picture everywhere
             router.reload({ only: ['auth'] })
         },
         onError: (errors) => {
             console.error('Error uploading profile picture:', errors)
-            alert('Failed to upload profile picture. Please try again.')
+            isUploading.value = false
+            
+            // Handle validation errors
+            if (errors && typeof errors === 'object') {
+                const errorMessages = Object.values(errors).flat()
+                profileError.value = errorMessages[0] || 'Failed to upload profile picture. Please try again.'
+                profileErrors.value = errors
+            } else if (typeof errors === 'string') {
+                profileError.value = errors
+            } else {
+                profileError.value = 'Failed to upload profile picture. Please check the file and try again.'
+            }
         },
+        onFinish: () => {
+            isUploading.value = false
+        }
     })
 }
 
@@ -697,10 +815,27 @@ const handleClickOutside = (event) => {
 onMounted(() => {
     document.addEventListener('click', handleClickOutside)
     activeTab.value = 'profile'
+    
+    // Fetch unread count on mount
+    fetchUnreadCount()
+    
+    // Set up polling to update unread count every 30 seconds
+    const unreadCountInterval = setInterval(() => {
+        fetchUnreadCount()
+    }, 30000)
+    
+    // Store interval ID for cleanup
+    window.unreadCountInterval = unreadCountInterval
 })
 
 onUnmounted(() => {
     document.removeEventListener('click', handleClickOutside)
+    
+    // Clear unread count polling interval
+    if (window.unreadCountInterval) {
+        clearInterval(window.unreadCountInterval)
+        window.unreadCountInterval = null
+    }
 })
 </script>
 
@@ -796,6 +931,7 @@ onUnmounted(() => {
     transition: all 0.2s;
     cursor: pointer;
     font-weight: 500;
+    white-space: nowrap;
 }
 
 .settings-item:hover {
@@ -849,7 +985,7 @@ onUnmounted(() => {
 
 .profile-name {
     font-weight: 700;
-    font-size: 17px;
+    font-size: 15px;
     text-shadow: 0 1px 3px rgba(0,0,0,0.2);
 }
 
@@ -896,6 +1032,19 @@ onUnmounted(() => {
 
 .nav-item:last-child {
     border-bottom: none;
+}
+
+.unread-badge-nav {
+    background: linear-gradient(135deg, #ff8c42, #ff7a28);
+    color: white;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 4px 8px;
+    border-radius: 12px;
+    min-width: 20px;
+    text-align: center;
+    margin-left: auto;
+    box-shadow: 0 2px 6px rgba(255, 140, 66, 0.4);
 }
 
 .nav-item:hover {
@@ -1033,27 +1182,52 @@ position: relative;
 .profile-info-section {
     display: flex;
     flex-direction: column;
-    gap: 15px;
+    gap: 12px;
+}
+
+.profile-header-info {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 5px;
+}
+
+.profile-name-stats-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 24px;
+    width: 100%;
+}
+
+.profile-name-badge-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    flex: 1;
 }
 
 .profile-display-name {
-    font-size: 28px;
+    font-size: 32px;
     font-weight: 700;
-    color: #333;
+    color: #1a1a1a;
     margin: 0;
+    letter-spacing: -0.5px;
+    line-height: 1.2;
 }
 
 .profile-badge {
-    font-size: 12px;
-    background: #ff7a28;
+    font-size: 11px;
+    background: #239640;
     color: white;
-    padding: 6px 16px;
-    border-radius: 20px;
+    padding: 6px 14px;
+    border-radius: 12px;
     display: inline-block;
     width: fit-content;
     font-weight: 600;
     text-transform: uppercase;
-    box-shadow: 0 2px 8px rgba(255, 140, 66, 0.3);
+    letter-spacing: 0.5px;
+    box-shadow: 0 2px 4px rgba(35, 150, 64, 0.2);
 }
 
 .profile-description {
@@ -1063,10 +1237,50 @@ position: relative;
     margin: 10px 0;
 }
 
+.user-info-grid {
+    background: #fafbfc;
+    border-radius: 16px;
+    padding: 24px 28px;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px 24px;
+    margin: 16px 0;
+    border: 1px solid #f0f0f0;
+}
+
+.user-info-grid .info-item {
+    display: flex;
+    gap: 12px;
+    font-size: 14px;
+    align-items: flex-start;
+    padding: 4px 0;
+}
+
+.user-info-grid .info-item:last-child {
+    grid-column: 1 / -1;
+}
+
+.user-info-grid .info-label {
+    font-weight: 600;
+    color: #666;
+    min-width: 110px;
+    flex-shrink: 0;
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.user-info-grid .info-value {
+    color: #1a1a1a;
+    flex: 1;
+    font-weight: 500;
+}
+
 .profile-stats {
     display: flex;
-    gap: 40px;
-    margin-top: 20px;
+    gap: 32px;
+    align-items: flex-start;
+    flex-shrink: 0;
 }
 
 .stat-item {
@@ -1546,12 +1760,42 @@ position: relative;
         justify-content: center;
     }
     
+    .button-stats-row {
+        flex-direction: column;
+        gap: 15px;
+    }
+    
+    .edit-profile-btn {
+        width: 100%;
+    }
+    
+    .profile-name-stats-row {
+        flex-direction: column;
+        gap: 20px;
+        align-items: center;
+    }
+    
+    .profile-name-badge-group {
+        align-items: center;
+        text-align: center;
+    }
+    
     .profile-badge {
         margin: 0 auto;
     }
     
     .profile-stats {
+        width: 100%;
         justify-content: center;
+    }
+    
+    .user-info-grid {
+        grid-template-columns: 1fr;
+        gap: 8px;
+    }
+    
+    .user-info-grid .info-item:last-child {
+        grid-column: 1;
     }
     
     .filter-section {

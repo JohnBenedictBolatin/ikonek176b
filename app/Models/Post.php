@@ -55,4 +55,12 @@ class Post extends Model
     {
         return $this->hasMany(\App\Models\PostReport::class, 'fk_post_id', 'post_id');
     }
+
+    /**
+     * Poll relation
+     */
+    public function poll()
+    {
+        return $this->hasOne(\App\Models\PostPoll::class, 'post_id', 'post_id');
+    }
 }

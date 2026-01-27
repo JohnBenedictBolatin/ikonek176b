@@ -222,6 +222,12 @@ class EmployeeDiscussionController extends Controller
                 return redirect()->back()->with('error', 'You must be logged in to post.');
             }
 
+            // Check if user is restricted from posting
+            $restriction = \App\Models\UserRestriction::where('user_id', $userId)->first();
+            if ($restriction && $restriction->restrict_posting) {
+                return redirect()->back()->with('error', 'You are restricted from creating posts. Please check your notifications for more information.');
+            }
+
             $post = new Post();
             $post->fk_post_author_id = $userId;
             $post->section = 'Discussion';

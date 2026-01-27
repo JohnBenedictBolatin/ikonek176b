@@ -13,9 +13,8 @@
         <div class="header-actions">
           <img src="/assets/SETTINGS.png" alt="Settings" class="settings-btn-img" @click="toggleSettings" />
           <div v-if="showSettings" class="settings-dropdown">
-            <Link href="#" class="settings-item" @click="closeSettings">Help Center</Link>
-            <button type="button" class="settings-item" @click="openTerms">Terms & Conditions</button>
-            <Link href="#" class="settings-item" @click="logout">Sign Out</Link>
+            <a href="#" class="settings-item" @click.prevent.stop="openTermsModal">TERMS & CONDITIONS</a>
+            <Link href="#" class="settings-item" @click="logout">SIGN OUT</Link>
           </div>
         </div>
       </div>
@@ -57,6 +56,7 @@
               <path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0" />
             </svg>
             Notifications
+            <span v-if="unreadCount > 0" class="unread-badge-nav">{{ unreadCount }}</span>
           </Link>
           <Link href="#" class="nav-item" :class="{ active: activeTab === 'profile' }" @click="navigateToProfile">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="nav-icon">
@@ -70,7 +70,7 @@
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="nav-icon">
             <path stroke-linecap="round" stroke-linejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 5.25h.008v.008H12v-.008Z" />
           </svg>
-          FAQs & Help Center
+          FAQS & HELP CENTER
         </button>
       </div>
 
@@ -82,6 +82,19 @@
             <h2>Event Assistance</h2>
             <div class="header-icon">
               <img src="/assets/ICON.png" alt="iKONEK" class="small-logo" />
+            </div>
+          </div>
+
+          <!-- Restriction Banner -->
+          <div v-if="restrictions?.restrict_event_assistance_request" class="restriction-banner">
+            <div class="restriction-content">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" style="width: 24px; height: 24px; color: #e74c3c; flex-shrink: 0;">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+              </svg>
+              <div class="restriction-text">
+                <strong>Access Restricted</strong>
+                <p>You are restricted from making event assistance requests. Please contact the admin for more information.</p>
+              </div>
             </div>
           </div>
 
@@ -109,6 +122,7 @@
                   <div v-if="showStatusDropdown" class="filter-dropdown-menu">
                     <button @click="selectStatus('all')" :class="{ active: statusFilter === 'all' }">ALL STATUS</button>
                     <button @click="selectStatus('pending')" :class="{ active: statusFilter === 'pending' }">PENDING</button>
+                    <button @click="selectStatus('resubmitted')" :class="{ active: statusFilter === 'resubmitted' }">RESUBMITTED</button>
                     <button @click="selectStatus('approved')" :class="{ active: statusFilter === 'approved' }">APPROVED</button>
                     <button @click="selectStatus('rejected')" :class="{ active: statusFilter === 'rejected' }">REJECTED</button>
                   </div>
@@ -129,8 +143,13 @@
                     </svg>
                   </button>
                 </div>
-                <button class="request-new-btn" @click="showRequestForm">
-                  ＋ REQUEST EVENT ASSISTANCE
+                <button 
+                    class="request-new-btn" 
+                    :class="{ 'disabled': restrictions?.restrict_event_assistance_request }"
+                    @click="showRequestForm"
+                    :disabled="restrictions?.restrict_event_assistance_request"
+                >
+                    ＋ REQUEST EVENT ASSISTANCE
                 </button>
               </div>
             </div>
@@ -147,8 +166,9 @@
                 </thead>
                 <tbody>
                   <tr 
-                    v-for="request in filteredEventRequests" 
+                    v-for="request in paginatedEventRequests" 
                     :key="request.id"
+                    :data-request-id="request.id"
                     @click="viewRequestDetails(request)"
                     class="request-row"
                   >
@@ -175,6 +195,48 @@
                   </tr>
                 </tbody>
               </table>
+              
+              <!-- Pagination Controls -->
+              <div v-if="filteredEventRequests.length > 0" class="pagination-container">
+                <div class="pagination-info">
+                  Showing {{ (currentPage - 1) * itemsPerPage + 1 }} to {{ Math.min(currentPage * itemsPerPage, filteredEventRequests.length) }} of {{ filteredEventRequests.length }} requests
+                </div>
+                <div class="pagination-controls">
+                  <button 
+                    class="pagination-btn" 
+                    :disabled="currentPage === 1"
+                    @click="prevPage"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" style="width: 16px; height: 16px;">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+                    </svg>
+                    Previous
+                  </button>
+                  
+                  <div class="pagination-numbers">
+                    <button
+                      v-for="page in totalPages"
+                      :key="page"
+                      class="pagination-number"
+                      :class="{ active: currentPage === page }"
+                      @click="goToPage(page)"
+                    >
+                      {{ page }}
+                    </button>
+                  </div>
+                  
+                  <button 
+                    class="pagination-btn" 
+                    :disabled="currentPage === totalPages"
+                    @click="nextPage"
+                  >
+                    Next
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" style="width: 16px; height: 16px;">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -190,19 +252,27 @@
               <div class="event-types">
                 <!-- Render event checkboxes -->
                 <label
-                  v-for="eventName in eventNames"
-                  :key="eventName"
+                  v-for="event in eventTypesWithStatus"
+                  :key="event.name"
                   class="event-type-checkbox-label"
-                  :class="{ active: selectedEventTypes.includes(eventName) }"
+                  :class="{ 
+                    active: selectedEventTypes.includes(event.name),
+                    disabled: event.restricted
+                  }"
                 >
                   <input
                     type="checkbox"
-                    :value="eventName"
+                    :value="event.name"
                     v-model="selectedEventTypes"
                     class="event-type-checkbox"
-                    @change="handleEventTypeToggle(eventName)"
+                    :disabled="event.restricted"
+                    :title="event.restricted ? 'This event type is restricted due to past offenses. Please contact the admin for more information.' : ''"
+                    @change="!event.restricted && handleEventTypeToggle(event.name)"
                   />
-                  <span class="event-type-checkbox-text">{{ eventName }}</span>
+                  <span class="event-type-checkbox-text">
+                    {{ event.name }}
+                    <span v-if="event.restricted" class="restricted-badge" title="Restricted">🔒</span>
+                  </span>
                 </label>
               </div>
             </div>
@@ -912,9 +982,33 @@
 
             </div>
 
-            <button class="submit-btn" :disabled="isSubmitting" @click="submitRequest">
+            <!-- Error Message Display -->
+            <div v-if="submitError" class="error-message-container" style="margin-top: 20px; margin-bottom: 15px;">
+                <div class="error-alert" style="background: #fee; border: 1px solid #fcc; border-radius: 8px; padding: 15px; color: #c33;">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width: 20px; height: 20px; flex-shrink: 0;">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <span style="font-weight: 600;">{{ submitError }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Field Error Messages -->
+            <div v-if="Object.keys(formErrors).length > 0" class="field-errors-container" style="margin-bottom: 15px;">
+                <div v-for="(error, field) in formErrors" :key="field" class="field-error" style="background: #fff3cd; border: 1px solid #ffc107; border-radius: 6px; padding: 10px; margin-bottom: 8px; color: #856404; font-size: 14px;">
+                    <strong>{{ field.replace('_', ' ').replace('extra_fields.', '') }}:</strong> {{ error }}
+                </div>
+            </div>
+
+            <button 
+              class="submit-btn" 
+              :disabled="isSubmitting || restrictions?.restrict_event_assistance_request"
+              @click="submitRequest"
+              :title="restrictions?.restrict_event_assistance_request ? 'You are restricted from making event assistance requests. Please contact the admin for more information.' : ''"
+            >
               <span v-if="!isSubmitting">SUBMIT REQUEST</span>
-              <span v-else>Submitting...</span>
+              <span v-else>SUBMITTING...</span>
             </button>
           </div>
 
@@ -951,7 +1045,12 @@
       <div class="modal-icon" :class="selectedRequest?.status.toLowerCase() + '-icon'">
         <div class="status-badge">
           <span v-if="selectedRequest?.status === 'APPROVED'">✓</span>
-          <span v-if="selectedRequest?.status === 'PENDING'">⏱</span>
+          <span v-if="selectedRequest?.status === 'PENDING'">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" style="width: 32px; height: 32px; display: block; margin: 0 auto;">
+              <circle cx="12" cy="12" r="10"/>
+              <path stroke-linecap="round" d="M12 6v6l4 2"/>
+            </svg>
+          </span>
           <span v-if="selectedRequest?.status === 'REJECTED'">✕</span>
         </div>
       </div>
@@ -1042,12 +1141,18 @@
           </div>
           
           <p class="note-message">
-            You may submit a new request with the correct information or contact Ms. Mercy Alpaño at the barangay hall for assistance.
+            You can edit and resubmit this request by clicking the button below, or contact Ms. Mercy Alpaño at the barangay hall for assistance.
           </p>
+          
+          <div class="appeal-actions">
+            <button @click="appealRequest" class="appeal-btn">
+              EDIT REQUEST
+            </button>
+          </div>
         </div>
         
-        <!-- Admin Feedback Section -->
-        <div v-if="selectedRequest?.admin_feedback || selectedRequest?.raw?.admin_feedback" class="feedback-section">
+        <!-- Admin Feedback Section - Hidden for rejected requests -->
+        <div v-if="selectedRequest?.status !== 'REJECTED' && (selectedRequest?.admin_feedback || selectedRequest?.raw?.admin_feedback)" class="feedback-section">
           <h4 class="section-title-feedback">
             <span class="icon">
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" style="width: 20px; height: 20px; display: inline-block; vertical-align: middle;">
@@ -1064,16 +1169,141 @@
   </div>
 
   <!-- Terms & Conditions Modal -->
-  <TermsModal :open="showTerms" @close="closeTerms" />
+  <!-- Terms and Conditions Modal -->
+  <div v-if="showTermsModal" class="modal-overlay" @click.self="closeTermsModal">
+      <div class="terms-modal" @click.stop>
+          <div class="terms-modal-header">
+              <h2 class="terms-modal-title">Terms and Conditions</h2>
+              <button @click="closeTermsModal" class="terms-modal-close">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width: 24px; height: 24px;">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+              </button>
+          </div>
+          <div class="terms-modal-body">
+              <div class="terms-section">
+                  <h3 class="terms-section-title">1. Account Registration and Access</h3>
+                  <p class="terms-text">
+                      By creating an account and using the iKonek176B portal, you agree to provide accurate, current, and complete information during registration. You are responsible for maintaining the confidentiality of your account credentials and for all activities that occur under your account. You must immediately notify Barangay 176B of any unauthorized use of your account or any other breach of security.
+                  </p>
+              </div>
+
+              <div class="terms-section">
+                  <h3 class="terms-section-title">2. Use of Services</h3>
+                  <p class="terms-text">
+                      The iKonek176B portal is provided for legitimate barangay-related purposes only. You may use the portal to:
+                      <ul class="terms-list">
+                          <li>Submit document requests (e.g., Barangay Certificate, Barangay ID, Business Permit)</li>
+                          <li>Request event assistance for community activities</li>
+                          <li>View announcements and community updates</li>
+                          <li>Participate in community discussions and forums</li>
+                          <li>Access your request history and status</li>
+                      </ul>
+                  </p>
+              </div>
+
+              <div class="terms-section">
+                  <h3 class="terms-section-title">3. Accurate Information</h3>
+                  <p class="terms-text">
+                      You are responsible for ensuring that all information you submit through the portal is accurate, truthful, and complete. Providing false, misleading, or incomplete information may result in rejection of your requests, suspension of your account, and possible legal action. You must update your account information promptly if any changes occur.
+                  </p>
+              </div>
+
+              <div class="terms-section">
+                  <h3 class="terms-section-title">4. Document Requests</h3>
+                  <p class="terms-text">
+                      When submitting document requests, you must:
+                      <ul class="terms-list">
+                          <li>Provide all required documents and information</li>
+                          <li>Ensure documents are authentic and valid</li>
+                          <li>Pay applicable processing fees as required</li>
+                          <li>Follow pickup instructions and deadlines</li>
+                          <li>Use documents only for their intended legal purposes</li>
+                      </ul>
+                      The barangay reserves the right to verify all submitted information and documents. Approval of requests is subject to verification and compliance with barangay policies and regulations.
+                  </p>
+              </div>
+
+              <div class="terms-section">
+                  <h3 class="terms-section-title">5. Event Assistance Requests</h3>
+                  <p class="terms-text">
+                      When requesting event assistance, you must provide accurate event details, including date, time, location, and purpose. Event assistance is subject to availability and approval by barangay officials. You are responsible for ensuring your event complies with all applicable laws, regulations, and barangay policies. The barangay reserves the right to deny or cancel event assistance for any reason.
+                  </p>
+              </div>
+
+              <div class="terms-section">
+                  <h3 class="terms-section-title">6. Payment and Fees</h3>
+                  <p class="terms-text">
+                      Some services may require payment of processing fees. All fees must be paid according to the payment methods provided. Payments are non-refundable unless otherwise stated. The barangay is not responsible for delays or issues caused by payment processing errors or failures. You are responsible for ensuring payments are made correctly and on time.
+                  </p>
+              </div>
+
+              <div class="terms-section">
+                  <h3 class="terms-section-title">7. Data Privacy</h3>
+                  <p class="terms-text">
+                      Your personal information is collected and processed in accordance with the Data Privacy Act of 2012 (Republic Act No. 10173). The barangay will use your information only for legitimate purposes related to service delivery, record-keeping, and compliance with legal requirements. Your information will not be shared with unauthorized third parties except as required by law.
+                  </p>
+              </div>
+
+              <div class="terms-section">
+                  <h3 class="terms-section-title">8. Prohibited Activities</h3>
+                  <p class="terms-text">
+                      You are strictly prohibited from:
+                      <ul class="terms-list">
+                          <li>Using the portal for any illegal or unauthorized purpose</li>
+                          <li>Submitting false, fraudulent, or misleading information</li>
+                          <li>Attempting to gain unauthorized access to the system or other users' accounts</li>
+                          <li>Interfering with or disrupting the portal's operation</li>
+                          <li>Harassing, threatening, or abusing other users or barangay officials</li>
+                          <li>Posting inappropriate, offensive, or defamatory content</li>
+                          <li>Violating any applicable laws or regulations</li>
+                      </ul>
+                  </p>
+              </div>
+
+              <div class="terms-section">
+                  <h3 class="terms-section-title">9. Account Suspension and Termination</h3>
+                  <p class="terms-text">
+                      The barangay reserves the right to suspend or terminate your account at any time, with or without notice, if you violate these terms and conditions, engage in prohibited activities, or for any other reason deemed necessary by barangay officials. Upon termination, your right to use the portal will immediately cease.
+                  </p>
+              </div>
+
+              <div class="terms-section">
+                  <h3 class="terms-section-title">10. Limitation of Liability</h3>
+                  <p class="terms-text">
+                      The barangay is not liable for any delays, errors, or failures in service delivery caused by technical issues, system maintenance, incorrect information provided by users, or circumstances beyond the barangay's reasonable control. The barangay does not guarantee uninterrupted or error-free access to the portal.
+                  </p>
+              </div>
+
+              <div class="terms-section">
+                  <h3 class="terms-section-title">11. Updates to Terms</h3>
+                  <p class="terms-text">
+                      These terms and conditions may be updated periodically. You will be notified of significant changes through the portal or other communication channels. Continued use of the portal after changes constitutes acceptance of the updated terms.
+                  </p>
+              </div>
+
+              <div class="terms-section">
+                  <h3 class="terms-section-title">12. Contact and Support</h3>
+                  <p class="terms-text">
+                      For questions, concerns, or to report issues related to your account or the portal, contact the Barangay 176B office at ikonek176b@dev.ph or +639193076338. For technical support or assistance with using the portal, please visit the Help Center section.
+                  </p>
+              </div>
+          </div>
+          <div class="terms-modal-footer">
+              <button @click="closeTermsModal" class="terms-modal-btn">
+                  I UNDERSTAND
+              </button>
+          </div>
+      </div>
+  </div>
 </template>
 
 <script setup>
 import { Link, usePage } from '@inertiajs/vue3'
 import { Head, useForm } from '@inertiajs/vue3'
-import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { router } from '@inertiajs/vue3'
 import axios from 'axios'
-import TermsModal from '@/Components/TermsModal.vue'
 
 // ensure axios uses X-Requested-With and CSRF (Laravel default)
 axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest'
@@ -1083,6 +1313,17 @@ if (csrf) axios.defaults.headers.common['X-CSRF-TOKEN'] = csrf
 // --- Inertia-shared auth user ---
 const page = usePage()
 const user = computed(() => page?.props?.value?.auth?.user ?? page?.props?.auth?.user ?? null)
+const restrictions = computed(() => {
+  // Check from auth.user.restrictions first (from HandleInertiaRequests or controller)
+  if (user.value?.restrictions) {
+    return user.value.restrictions
+  }
+  // Fallback to separate restrictions prop
+  return page?.props?.value?.restrictions ?? page?.props?.restrictions ?? null
+})
+const eventTypes = computed(() => page?.props?.value?.eventTypes ?? page?.props?.eventTypes ?? [])
+const availableEventTypes = computed(() => page?.props?.value?.availableEventTypes ?? page?.props?.availableEventTypes ?? [])
+const restrictedEventTypes = computed(() => page?.props?.value?.restrictedEventTypes ?? page?.props?.restrictedEventTypes ?? [])
 
 // Profile picture URL
 const profilePictureUrl = computed(() => {
@@ -1125,10 +1366,30 @@ const displayRole = computed(() => {
 const showSettings = ref(false)
 const activeTab = ref('events')
 const currentView = ref('list') // Default to 'list' view to show submitted requests
+const unreadCount = ref(0)
+
+// Fetch unread notification count
+const fetchUnreadCount = async () => {
+    try {
+        const response = await axios.get('/api/notifications')
+        if (response.data.success) {
+            const notifications = response.data.notifications || []
+            unreadCount.value = notifications.filter(n => !n.is_read).length
+        }
+    } catch (error) {
+        console.error('Error fetching unread count:', error)
+        unreadCount.value = 0
+    }
+}
 const selectedEventTypes = ref([]) // Changed to array for multiple selections
 const selectedEventType = computed(() => selectedEventTypes.value.length > 0 ? selectedEventTypes.value[0] : 'Court Reservation') // Keep for backward compatibility
 const requestNumber = ref('')
 const isSubmitting = ref(false)
+
+// Error handling state
+const formErrors = ref({})
+const submitError = ref('')
+const fieldErrors = ref({})
 
 // Filter state
 const showSortDropdown = ref(false)
@@ -1136,6 +1397,10 @@ const showStatusDropdown = ref(false)
 const sortOption = ref('newest')
 const statusFilter = ref('all')
 const searchQuery = ref('')
+
+// Pagination
+const currentPage = ref(1)
+const itemsPerPage = ref(5)
 
 // Request details modal state
 const showDetailsModal = ref(false)
@@ -1203,7 +1468,14 @@ const filteredEventRequests = computed(() => {
   let filtered = [...mappedEventRequests.value]
 
   // Filter by status
-  if (statusFilter.value !== 'all') {
+  if (statusFilter.value === 'resubmitted') {
+    // Show only resubmitted requests (has admin_feedback and status is Pending)
+    filtered = filtered.filter(request => 
+      request.admin_feedback && 
+      request.admin_feedback.trim() !== '' && 
+      (request.status.toLowerCase() === 'pending' || request.status.toLowerCase() === 'resubmitted')
+    )
+  } else if (statusFilter.value !== 'all') {
     filtered = filtered.filter(request => 
       request.status.toLowerCase() === statusFilter.value.toLowerCase()
     )
@@ -1240,6 +1512,47 @@ const filteredEventRequests = computed(() => {
   }
 
   return filtered
+})
+
+// Paginated requests
+const paginatedEventRequests = computed(() => {
+  const start = (currentPage.value - 1) * itemsPerPage.value
+  const end = start + itemsPerPage.value
+  return filteredEventRequests.value.slice(start, end)
+})
+
+// Total pages
+const totalPages = computed(() => {
+  return Math.ceil(filteredEventRequests.value.length / itemsPerPage.value)
+})
+
+// Pagination functions
+const goToPage = (page) => {
+  if (page >= 1 && page <= totalPages.value) {
+    currentPage.value = page
+    // Scroll to top of table
+    const tableContainer = document.querySelector('.requests-table-container')
+    if (tableContainer) {
+      tableContainer.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }
+  }
+}
+
+const nextPage = () => {
+  if (currentPage.value < totalPages.value) {
+    goToPage(currentPage.value + 1)
+  }
+}
+
+const prevPage = () => {
+  if (currentPage.value > 1) {
+    goToPage(currentPage.value - 1)
+  }
+}
+
+// Watch for filter changes to reset to page 1
+watch([statusFilter, searchQuery, sortOption], () => {
+  currentPage.value = 1
 })
 
 // Filter functions
@@ -1425,10 +1738,42 @@ watch(selectedEventTypes, (newTypes) => {
 }, { deep: true })
 
 // sample event list, descriptions and requirements (kept from original)
-const eventNames = [
+const allEventNames = [
   'Court Reservation', 'Community Hall Reservation', 'Manpower Assistance', 'Tent and Tables Borrowing',
   'Sports Equipment Borrowing', 'Sound System Borrowing'
 ]
+
+// Create event types list with availability status
+const eventTypesWithStatus = computed(() => {
+    // If backend provided eventTypes with restriction status, use those
+    if (eventTypes.value && eventTypes.value.length > 0) {
+        return eventTypes.value.map(event => ({
+            name: event.name,
+            available: event.available !== false,
+            restricted: event.restricted === true
+        }))
+    }
+    
+    // Fallback: if backend provided availableEventTypes, use those and mark others as restricted
+    if (availableEventTypes.value && availableEventTypes.value.length > 0) {
+        const availableNames = availableEventTypes.value
+        return allEventNames.map(eventName => ({
+            name: eventName,
+            available: availableNames.includes(eventName),
+            restricted: !availableNames.includes(eventName) && restrictedEventTypes.value.length > 0
+        }))
+    }
+    
+    // Final fallback: if no backend data, show all as available
+    return allEventNames.map(eventName => ({
+        name: eventName,
+        available: true,
+        restricted: false
+    }))
+})
+
+// For backward compatibility, keep eventNames as computed
+const eventNames = computed(() => eventTypesWithStatus.value.map(event => event.name))
 
 const eventDescriptions = {
     'Court Reservation': 'Ang Court Reservation ay para sa mga residente na nais gumamit ng barangay covered court para sa basketball, volleyball, o iba pang sports activities. Libre ito at maaaring i-schedule ayon sa availability at guidelines.',
@@ -1470,64 +1815,64 @@ const eventRequirements = {
 // Define dynamic per-event fields (similar structure to previous docs mapping)
 const eventFields = {
   'Funeral Assistance': [
-    { name: 'death_certificate', label: 'Death Certificate', type: 'file', required: true, accept: '.pdf,image/*' },
-    { name: 'relation_to_deceased', label: 'Relation to Deceased', type: 'text', required: true },
-    { name: 'funeral_service_contract', label: 'Funeral Service Contract (if any)', type: 'file', required: false, accept: '.pdf' }
+    { name: 'death_certificate', label: 'Death Certificate', type: 'file', required: false, accept: '.pdf,image/*' },
+    { name: 'relation_to_deceased', label: 'Relation to Deceased', type: 'text', required: false },
+    { name: 'funeral_service_contract', label: 'Funeral Service Contract', type: 'file', required: false, accept: '.pdf' }
   ],
 
   'Court Reservation': [
-    { name: 'waiver_form', label: 'Waiver Form', type: 'file', required: true, accept: '.pdf' },
+    { name: 'waiver_form', label: 'Waiver Form', type: 'file', required: false, accept: '.pdf' },
     { name: 'tournament_type', label: 'Tournament Type', type: 'select', required: false, options: ['Basketball', 'Volleyball', 'Badminton', 'Other'], placeholder: 'Select tournament type' },
   ],
 
   'Covered Court Event': [
-    { name: 'event_proposal', label: 'Event Proposal / Details', type: 'file', required: true, accept: '.pdf' },
-    { name: 'organizer_contact', label: 'Organizer Contact Number', type: 'text', required: true }
+    { name: 'event_proposal', label: 'Event Proposal / Details', type: 'file', required: false, accept: '.pdf' },
+    { name: 'organizer_contact', label: 'Organizer Contact Number', type: 'text', required: false }
   ],
 
   'Community Hall Reservation': [
-    { name: 'purpose_letter', label: 'Purpose of Use Letter', type: 'file', required: true, accept: '.pdf' },
+    { name: 'purpose_letter', label: 'Purpose of Use Letter', type: 'file', required: false, accept: '.pdf' },
     { name: 'expected_guests', label: 'Expected Guests', type: 'number', required: false }
   ],
 
   'Medical Mission Assistance': [
-    { name: 'medical_records', label: 'Medical Records (if available)', type: 'file', required: false, accept: '.pdf,image/*' },
-    { name: 'target_group', label: 'Target Group', type: 'select', required: true, options: ['Children', 'Adults', 'Senior Citizens', 'All'], placeholder: 'Select target group' }
+    { name: 'medical_records', label: 'Medical Records', type: 'file', required: false, accept: '.pdf,image/*' },
+    { name: 'target_group', label: 'Target Group', type: 'select', required: false, options: ['Children', 'Adults', 'Senior Citizens', 'All'], placeholder: 'Select target group' }
   ],
 
   'Feeding Program Request': [
     { name: 'organization_certificate', label: 'Organization Certificate', type: 'file', required: false, accept: '.pdf' },
-    { name: 'list_of_beneficiaries', label: 'List of Beneficiaries (file)', type: 'file', required: true, accept: '.pdf' }
+    { name: 'list_of_beneficiaries', label: 'List of Beneficiaries (file)', type: 'file', required: false, accept: '.pdf' }
   ],
 
   'Sports Equipment Lending': [
-    { name: 'equipment_list', label: 'Equipment List (what you want to borrow)', type: 'textarea', required: true },
+    { name: 'equipment_list', label: 'Equipment List (what you want to borrow)', type: 'textarea', required: false },
     { name: 'deposit_receipt', label: 'Deposit Receipt', type: 'file', required: false, accept: '.pdf,image/*' }
   ],
 
   'Sound System Rental': [
-    { name: 'rental_hours', label: 'Number of Hours', type: 'number', required: true },
+    { name: 'rental_hours', label: 'Number of Hours', type: 'number', required: false },
     { name: 'technician_request', label: 'Need Technician?', type: 'select', required: false, options: ['Yes','No'] }
   ],
 
   'Tent and Tables Rental': [
-    { name: 'quantity_needed', label: 'Quantity Needed (tents/tables/chairs)', type: 'text', required: true },
+    { name: 'quantity_needed', label: 'Quantity Needed (tents/tables/chairs)', type: 'text', required: false },
     { name: 'rental_deposit', label: 'Rental Deposit Proof', type: 'file', required: false, accept: '.pdf,image/*' }
   ],
 
   'Ambulance Service Request': [
-    { name: 'patient_name', label: 'Patient Name', type: 'text', required: true },
+    { name: 'patient_name', label: 'Patient Name', type: 'text', required: false },
     { name: 'medical_certificate', label: 'Medical Certificate / Referral', type: 'file', required: false, accept: '.pdf,image/*' }
   ],
 
   'Disaster Relief Assistance': [
-    { name: 'incident_report', label: 'Incident Report / BLOTTER', type: 'file', required: true, accept: '.pdf,image/*' },
+    { name: 'incident_report', label: 'Incident Report / BLOTTER', type: 'file', required: false, accept: '.pdf,image/*' },
     { name: 'photos_of_damage', label: 'Photos of Damage', type: 'file', required: false, accept: 'image/*' }
   ],
 
   'Livelihood Program Application': [
-    { name: 'livelihood_proposal', label: 'Livelihood Proposal', type: 'file', required: true, accept: '.pdf' },
-    { name: 'proof_low_income', label: 'Proof of Low Income (if required)', type: 'file', required: false, accept: '.pdf,image/*' }
+    { name: 'livelihood_proposal', label: 'Livelihood Proposal', type: 'file', required: false, accept: '.pdf' },
+    { name: 'proof_low_income', label: 'Proof of Low Income', type: 'file', required: false, accept: '.pdf,image/*' }
   ]
 }
 
@@ -1757,13 +2102,17 @@ const toggleSettings = () => { showSettings.value = !showSettings.value }
 const closeSettings = () => { showSettings.value = false }
 
 // Terms & Conditions modal
-const showTerms = ref(false)
-const openTerms = () => {
+const showTermsModal = ref(false)
+const openTermsModal = (e) => {
+    if (e) {
+        e.preventDefault()
+        e.stopPropagation()
+    }
     showSettings.value = false
-    showTerms.value = true
+    showTermsModal.value = true
 }
-const closeTerms = () => {
-    showTerms.value = false
+const closeTermsModal = () => {
+    showTermsModal.value = false
 }
 const logout = () => {
     showSettings.value = false
@@ -1809,6 +2158,10 @@ const openFAQ = () => { router.visit(route('help_center_resident')) }
 
 // Show request form (switch to selection view)
 const showRequestForm = () => {
+  if (restrictions?.restrict_event_assistance_request) {
+    alert('You are restricted from making event assistance requests. Please contact the admin for more information.')
+    return
+  }
   currentView.value = 'selection'
 }
 
@@ -1825,6 +2178,42 @@ const closeDetailsModal = () => {
 }
 
 // Helper functions for modal
+const appealRequest = () => {
+  if (!selectedRequest.value) {
+    alert('No request selected. Please select a request first.')
+    return
+  }
+
+  if (selectedRequest.value.status?.toUpperCase() !== 'REJECTED') {
+    alert('Only rejected requests can be appealed.')
+    return
+  }
+
+  const confirmed = confirm('Do you want to edit and resubmit this rejected request? The request will be reset to pending status and you can fix any issues.')
+  if (!confirmed) return
+
+  // Get request ID from various possible locations
+  const requestId = selectedRequest.value.id 
+    ?? selectedRequest.value.raw?.event_assist_request_id 
+    ?? selectedRequest.value.event_assist_request_id
+    ?? null
+
+  if (!requestId) {
+    alert('Invalid request ID. Please try again.')
+    console.error('Request ID not found. Request object:', selectedRequest.value)
+    return
+  }
+
+  // Use the same pattern as other navigation functions in this file
+  try {
+    router.visit(route('event_assistance_appeal', { id: requestId }))
+  } catch (error) {
+    console.error('Error navigating to appeal form:', error)
+    // Fallback to direct URL construction
+    router.visit(`/event-assistance/${requestId}/appeal`)
+  }
+}
+
 const getRejectionReason = (request) => {
   const adminFeedback = request?.admin_feedback ?? request?.raw?.admin_feedback ?? null
   if (adminFeedback && adminFeedback.trim() !== '') {
@@ -1899,24 +2288,98 @@ const backToSelection = () => {
 // basic submission with dynamic validation and Inertia POST (forceFormData)
 const testing = true // flip to false to enable stricter client validation
 
+// Clear errors helper
+const clearErrors = () => {
+  formErrors.value = {}
+  submitError.value = ''
+  fieldErrors.value = {}
+}
+
+// Validation helper
+const validateEventForm = () => {
+  clearErrors()
+  let isValid = true
+  const errors = {}
+
+  // Check if user is restricted
+  if (restrictions?.restrict_event_assistance_request) {
+    submitError.value = 'You are restricted from making event assistance requests. Please contact the admin for more information.'
+    isValid = false
+    return isValid
+  }
+
+  // Validate basic fields
+  if (!form.purpose || form.purpose.trim() === '') {
+    errors.purpose = 'Please select a purpose for your request.'
+    isValid = false
+  }
+  if (!form.event_date) {
+    errors.event_date = 'Please select an event date.'
+    isValid = false
+  }
+  if (!form.event_time) {
+    errors.event_time = 'Please select an event time.'
+    isValid = false
+  }
+
+  // Validate ID fields
+  if (!form.id_type) {
+    errors.id_type = 'Please select a type of identification.'
+    isValid = false
+  }
+  if (form.id_type) {
+    if (!form.id_front) {
+      errors.id_front = 'Please upload the front of your ID.'
+      isValid = false
+    }
+    if (!form.id_back) {
+      errors.id_back = 'Please upload the back of your ID.'
+      isValid = false
+    }
+    if (!form.valid_id_number || form.valid_id_number.trim() === '') {
+      errors.valid_id_number = `Please enter ${idNumberLabel.value}`
+      isValid = false
+    }
+  }
+
+  // Validate dynamic required fields
+  const missingFields = currentEventFields.value
+    .filter(f => f.required)
+    .filter(f => {
+      const v = form.extra_fields?.[f.name]
+      if (f.type === 'file') return !v
+      if (f.type === 'checkbox') return !Array.isArray(v) || v.length === 0
+      return v === null || v === '' || v === undefined
+    })
+
+  missingFields.forEach(field => {
+    errors[`extra_fields.${field.name}`] = `${field.label} is required.`
+    isValid = false
+  })
+
+  formErrors.value = errors
+  return isValid
+}
+
 const submitRequest = async () => {
-  if (!testing) {
-    if (!form.purpose) { alert('Please select a purpose'); return }
-    if (!form.event_date || !form.event_time) { alert('Please specify event date/time'); return }
-    
-    // Validate ID upload for all event types (like document requests)
-    if (!form.id_type) {
-      alert('Please select a type of identification.')
-      return
+  // Clear previous errors
+  clearErrors()
+
+  // Validate form
+  if (!validateEventForm()) {
+    // Scroll to first error
+    const firstErrorField = Object.keys(formErrors.value)[0]
+    if (firstErrorField) {
+      setTimeout(() => {
+        const errorElement = document.querySelector(`[data-field="${firstErrorField}"]`) || 
+                            document.querySelector(`[name="${firstErrorField}"]`)
+        if (errorElement) {
+          errorElement.scrollIntoView({ behavior: 'smooth', block: 'center' })
+          errorElement.focus()
+        }
+      }, 100)
     }
-    if (!form.id_front || !form.id_back) {
-      alert('Please upload both the front and back of your selected ID.')
-      return
-    }
-    if (!form.valid_id_number) {
-      alert(`Please enter ${idNumberLabel.value}`)
-      return
-    }
+    return
   }
 
   // set duration to 1 hour as requested
@@ -2097,37 +2560,113 @@ const submitRequest = async () => {
     console.error('Error response:', err.response?.data)
     isSubmitting.value = false
     
+    // Handle different error types
     if (err.response) {
+      // Server responded with error
       if (err.response.status === 422) {
         // Validation errors
-        const errors = err.response.data.errors || {}
-        const errorMessages = err.response.data.message || 'Validation error'
-        const firstKey = Object.keys(errors)[0]
-        const firstMsg = firstKey ? (errors[firstKey][0] || errorMessages) : errorMessages
-        alert(`Validation Error: ${firstMsg}`)
-      } else if (err.response.data && err.response.data.message) {
-        // Server error with message
-        alert(`Error: ${err.response.data.message}`)
+        const validationErrors = err.response.data.errors || {}
+        const newErrors = {}
+        
+        // Map validation errors to form fields
+        Object.keys(validationErrors).forEach(key => {
+          const errorMessages = Array.isArray(validationErrors[key]) 
+            ? validationErrors[key] 
+            : [validationErrors[key]]
+          newErrors[key] = errorMessages[0]
+        })
+        
+        formErrors.value = { ...formErrors.value, ...newErrors }
+        
+        // Set general error message
+        const firstError = Object.values(validationErrors)[0]
+        submitError.value = Array.isArray(firstError) ? firstError[0] : firstError
+        
+        // Scroll to first error
+        const firstErrorField = Object.keys(newErrors)[0]
+        if (firstErrorField) {
+          setTimeout(() => {
+            const errorElement = document.querySelector(`[data-field="${firstErrorField}"]`) || 
+                                document.querySelector(`[name="${firstErrorField}"]`)
+            if (errorElement) {
+              errorElement.scrollIntoView({ behavior: 'smooth', block: 'center' })
+              errorElement.focus()
+            }
+          }, 100)
+        }
+      } else if (err.response.status === 403) {
+        submitError.value = 'You do not have permission to perform this action.'
+      } else if (err.response.status === 500) {
+        submitError.value = 'A server error occurred. Please try again later or contact support.'
       } else {
-        // Generic server error
-        alert('An error occurred while submitting. Please try again.')
+        submitError.value = err.response.data?.message || 'An error occurred while submitting your request. Please try again.'
       }
-    } else if (err.message) {
-      // Network or other error
-      alert(`Error: ${err.message}`)
+    } else if (err.request) {
+      // Request made but no response received
+      submitError.value = 'Network error. Please check your internet connection and try again.'
     } else {
-      // Unknown error
-      console.error('Submit error', err)
-      alert('An error occurred while submitting. Please try again.')
+      // Error setting up request
+      submitError.value = err.message || 'An unexpected error occurred. Please try again.'
     }
+    
+    // Scroll to error message
+    setTimeout(() => {
+      const errorContainer = document.querySelector('.error-message-container')
+      if (errorContainer) {
+        errorContainer.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      }
+    }, 100)
   } finally {
     isSubmitting.value = false
   }
 }
 
 
-const viewRequest = () => { 
+const viewRequest = async () => {
   currentView.value = 'list'
+  
+  // Wait for Vue to update the view and for the reloaded data to be available
+  await nextTick()
+  
+  // Function to find and show the request
+  const findAndShowRequest = () => {
+    const ticket = requestNumber.value
+    if (!ticket) return false
+    
+    // Normalize the ticket for comparison (remove # if present)
+    const normalizedTicket = ticket.replace(/^#/, '')
+    
+    // Search in mappedEventRequests (which includes all requests)
+    const foundRequest = mappedEventRequests.value.find(req => {
+      const reqNumber = (req.requestNumber || '').toString()
+      // Match by requestNumber - handle different formats
+      const normalizedReqNumber = reqNumber.replace(/^#/, '')
+      return normalizedReqNumber === normalizedTicket || 
+             normalizedReqNumber === ticket || 
+             reqNumber === ticket ||
+             reqNumber === `#${ticket}`
+    })
+    
+    if (foundRequest) {
+      // Open the detail modal with the found request
+      viewRequestDetails(foundRequest)
+      return true
+    }
+    return false
+  }
+  
+  // Try to find immediately
+  if (!findAndShowRequest()) {
+    // If not found, wait a bit for the async reload to complete and try again
+    setTimeout(() => {
+      if (!findAndShowRequest()) {
+        // Final retry after a longer delay in case the reload takes longer
+        setTimeout(() => {
+          findAndShowRequest()
+        }, 800)
+      }
+    }, 300)
+  }
 }
 
 const handleClickOutside = (event) => {
@@ -2140,15 +2679,89 @@ const handleClickOutside = (event) => {
   }
 }
 
+// Function to scroll to a specific request and highlight it
+const scrollToRequest = async (requestId) => {
+  // Find the request in the full filtered list
+  const requestIndex = filteredEventRequests.value.findIndex(req => req.id === requestId)
+  
+  if (requestIndex === -1) {
+    // Request not found in filtered list
+    return
+  }
+  
+  // Calculate which page the request is on (0-indexed, so add 1)
+  const targetPage = Math.floor(requestIndex / itemsPerPage.value) + 1
+  
+  // Navigate to the correct page if not already there
+  if (currentPage.value !== targetPage) {
+    goToPage(targetPage)
+    // Wait for Vue to update the DOM after page change
+    await nextTick()
+    // Give a bit more time for the scroll animation to complete
+    await new Promise(resolve => setTimeout(resolve, 300))
+  }
+  
+  // Now find and highlight the request element
+  await nextTick()
+  const requestElement = document.querySelector(`[data-request-id="${requestId}"]`)
+  if (requestElement) {
+    requestElement.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    // Highlight the request briefly with light green (same as posts)
+    requestElement.style.transition = 'background-color 0.3s'
+    requestElement.style.backgroundColor = '#d4edda'
+    setTimeout(() => {
+      requestElement.style.backgroundColor = ''
+    }, 2000)
+  }
+}
+
 onMounted(() => {
   document.addEventListener('click', handleClickOutside)
   activeTab.value = 'events'
   // Default to list view to show submitted requests
   currentView.value = 'list'
+  
+  // Fetch unread notification count
+  fetchUnreadCount()
+  
+  // Set up polling to update unread count every 30 seconds
+  const unreadCountInterval = setInterval(() => {
+    fetchUnreadCount()
+  }, 30000)
+  
+  // Store interval ID for cleanup
+  window.unreadCountInterval = unreadCountInterval
+
+  // Check for request query parameter from notification click
+  const urlParams = new URLSearchParams(window.location.search)
+  const requestId = urlParams.get('request')
+  if (requestId) {
+    // Convert to number if it's a numeric string
+    const requestIdNum = Number(requestId)
+    if (!isNaN(requestIdNum)) {
+      // Try to scroll to request, with retries in case data isn't loaded yet
+      const tryScrollToRequest = async (retries = 3) => {
+        if (mappedEventRequests.value.length > 0) {
+          await scrollToRequest(requestIdNum)
+        } else if (retries > 0) {
+          // Wait a bit and retry if data isn't loaded yet
+          setTimeout(() => tryScrollToRequest(retries - 1), 500)
+        }
+      }
+      // Start trying after a short delay to allow initial render
+      setTimeout(() => tryScrollToRequest(), 500)
+    }
+  }
 })
 
 onUnmounted(() => {
   document.removeEventListener('click', handleClickOutside)
+  
+  // Clear unread count polling interval
+  if (window.unreadCountInterval) {
+    clearInterval(window.unreadCountInterval)
+    window.unreadCountInterval = null
+  }
 })
 </script>
 
@@ -2454,6 +3067,7 @@ onUnmounted(() => {
     border-bottom: 1px solid #f0f0f0;
     cursor: pointer;
     font-weight: 500;
+    white-space: nowrap;
 }
 
 .settings-item:hover {
@@ -2498,7 +3112,7 @@ onUnmounted(() => {
 
 .profile-name {
     font-weight: 700;
-    font-size: 17px;
+    font-size: 15px;
     text-shadow: 0 1px 3px rgba(0,0,0,0.2);
 }
 
@@ -2556,6 +3170,19 @@ onUnmounted(() => {
     color: #ff8c42;
     font-weight: 600;
     border-left: 4px solid #ff8c42;
+}
+
+.unread-badge-nav {
+    background: linear-gradient(135deg, #ff8c42, #ff7a28);
+    color: white;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 4px 8px;
+    border-radius: 12px;
+    min-width: 20px;
+    text-align: center;
+    margin-left: auto;
+    box-shadow: 0 2px 6px rgba(255, 140, 66, 0.4);
 }
 
 .faq-btn {
@@ -2687,6 +3314,34 @@ onUnmounted(() => {
 .event-type-checkbox-label:hover {
     background: #fff;
     color: #ff8c42;
+}
+
+.event-type-checkbox-label.disabled,
+.event-type-checkbox-label:has(input:disabled) {
+  opacity: 0.6;
+  cursor: not-allowed;
+  background: #f5f5f5;
+}
+
+.event-type-checkbox-label.disabled:hover,
+.event-type-checkbox-label:has(input:disabled):hover {
+  background: #f5f5f5;
+  border-color: #e0e0e0;
+}
+
+.event-type-checkbox-label.disabled .event-type-checkbox-text,
+.event-type-checkbox-label:has(input:disabled) .event-type-checkbox-text {
+  color: #999;
+}
+
+.event-type-checkbox:disabled {
+  cursor: not-allowed;
+}
+
+.restricted-badge {
+  margin-left: 8px;
+  font-size: 12px;
+  opacity: 0.8;
 }
 
 .event-type-checkbox-label.active {
@@ -3303,6 +3958,13 @@ onUnmounted(() => {
     margin-left: auto;    /* Pushes it to the right */
 }
 
+.submit-btn:disabled {
+    background: #ccc;
+    color: #666;
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
 
 .success-container {
     padding: 60px 40px;
@@ -3634,6 +4296,101 @@ onUnmounted(() => {
 .status-badge.rejected {
     background: #f8d7da;
     color: #721c24;
+}
+
+/* Pagination Styles */
+.pagination-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 30px;
+    padding: 20px;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.pagination-info {
+    font-size: 14px;
+    color: #666;
+    font-weight: 500;
+}
+
+.pagination-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.pagination-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 18px;
+    background: #fff;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #333;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.pagination-btn:hover:not(:disabled) {
+    background: #ff8c42;
+    border-color: #ff8c42;
+    color: #fff;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(255, 140, 66, 0.3);
+}
+
+.pagination-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background: #f5f5f5;
+}
+
+.pagination-numbers {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+}
+
+.pagination-number {
+    min-width: 40px;
+    height: 40px;
+    padding: 0 12px;
+    background: #fff;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #333;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.pagination-number:hover {
+    background: #f8f9fa;
+    border-color: #ff8c42;
+    color: #ff8c42;
+    transform: translateY(-1px);
+}
+
+.pagination-number.active {
+    background: linear-gradient(135deg, #ff8c42, #ff7a28);
+    border-color: #ff8c42;
+    color: #fff;
+    box-shadow: 0 2px 8px rgba(255, 140, 66, 0.3);
+}
+
+.pagination-number.active:hover {
+    background: linear-gradient(135deg, #ff7a28, #ff6a18);
+    transform: translateY(-1px);
 }
 
 /* Modal Styles */
@@ -4029,9 +4786,71 @@ onUnmounted(() => {
     letter-spacing: 0.5px;
 }
 
-.request-new-btn:hover {
+.request-new-btn:hover:not(.disabled) {
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(255, 140, 66, 0.4);
+}
+
+.request-new-btn.disabled {
+    background: #ccc;
+    color: #666;
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+.request-new-wrapper {
+    position: relative;
+    display: inline-block;
+}
+
+.restriction-info-icon {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    background: #e74c3c;
+    color: white;
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: help;
+    z-index: 10;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.restriction-banner {
+    background: linear-gradient(135deg, #fee, #fdd);
+    border-left: 4px solid #e74c3c;
+    padding: 15px 25px;
+    margin: 20px 25px;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(231, 76, 60, 0.2);
+}
+
+.restriction-content {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+}
+
+.restriction-text {
+    flex: 1;
+}
+
+.restriction-text strong {
+    display: block;
+    color: #e74c3c;
+    font-size: 16px;
+    margin-bottom: 5px;
+}
+
+.restriction-text p {
+    color: #c0392b;
+    font-size: 14px;
+    margin: 0;
+    line-height: 1.5;
 }
 
 .request-new-btn:active {
@@ -4221,5 +5040,170 @@ onUnmounted(() => {
 .form-document-type strong {
     color: #ff8c42;
     font-weight: 700;
+}
+
+.appeal-actions {
+    margin-top: 20px;
+    display: flex;
+    justify-content: center;
+}
+
+.appeal-btn {
+    background: linear-gradient(135deg, #ff8c42, #ff7a28);
+    color: white;
+    border: none;
+    padding: 15px 40px;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 12px rgba(255, 140, 66, 0.3);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.appeal-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 18px rgba(255, 140, 66, 0.4);
+}
+
+.appeal-btn:active {
+    transform: translateY(0);
+}
+
+/* Terms and Conditions Modal Styles */
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.modal-overlay:has(.terms-modal) {
+    z-index: 10000 !important;
+}
+
+.terms-modal {
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    max-width: 800px;
+    width: 90%;
+    max-height: 90vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    animation: slideUp 0.3s ease;
+    position: relative;
+    z-index: 10001;
+}
+
+.terms-modal-header {
+    background: white;
+    padding: 25px 30px;
+    border-bottom: 1px solid #e0e0e0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.terms-modal-title {
+    margin: 0;
+    font-size: 28px;
+    font-weight: 700;
+    color: #333;
+}
+
+.terms-modal-close {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 8px;
+    color: #666;
+    transition: all 0.2s ease;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.terms-modal-close:hover {
+    background: #f0f0f0;
+    color: #333;
+}
+
+.terms-modal-body {
+    padding: 30px;
+    overflow-y: auto;
+    flex: 1;
+}
+
+.terms-section {
+    margin-bottom: 25px;
+}
+
+.terms-section:last-child {
+    margin-bottom: 0;
+}
+
+.terms-section-title {
+    margin: 0 0 12px 0;
+    font-size: 18px;
+    font-weight: 700;
+    color: #ff8c42;
+}
+
+.terms-text {
+    margin: 0;
+    font-size: 15px;
+    line-height: 1.7;
+    color: #555;
+    text-align: justify;
+}
+
+.terms-list {
+    margin: 10px 0 0 20px;
+    padding: 0;
+}
+
+.terms-list li {
+    margin-bottom: 8px;
+    font-size: 15px;
+    line-height: 1.6;
+    color: #555;
+}
+
+.terms-modal-footer {
+    padding: 20px 30px;
+    border-top: 1px solid #e0e0e0;
+    display: flex;
+    justify-content: center;
+    background: #f8f9fa;
+    flex-shrink: 0;
+}
+
+.terms-modal-btn {
+    padding: 12px 50px;
+    background: #ff8c42;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(255, 140, 66, 0.3);
+}
+
+.terms-modal-btn:hover {
+    background: #ff7a28;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(255, 140, 66, 0.4);
 }
 </style>

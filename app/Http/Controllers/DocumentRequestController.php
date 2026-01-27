@@ -69,6 +69,7 @@ class DocumentRequestController extends Controller
         }
 
         // Eager-load related tables: documentType, user, userCredential
+        // Order by created_at DESC to show most recent first (resubmissions will be at top)
         $rows = DocumentRequest::with(['documentType', 'user', 'userCredential'])
             ->where('fk_user_id', $userId)
             ->orderBy('created_at', 'desc')
@@ -152,6 +153,9 @@ class DocumentRequestController extends Controller
                 'last_name' => $lastName,
                 'suffix' => $suffix,
                 'contact_number' => $contactNumber,
+                // Add fields to identify resubmitted requests
+                'admin_feedback' => $r->admin_feedback ?? null,
+                'incorrect_fields' => $r->incorrect_fields ?? null,
             ];
         };
 
@@ -197,7 +201,9 @@ class DocumentRequestController extends Controller
         }
 
         // Eager-load documentType, user, userCredential, and attachments relationships
-        $query = DocumentRequest::with(['documentType', 'user', 'userCredential', 'attachments'])->orderBy('created_at', 'desc');
+        // Order by created_at DESC to show most recent first (resubmissions will be at top)
+        $query = DocumentRequest::with(['documentType', 'user', 'userCredential', 'attachments'])
+            ->orderBy('created_at', 'desc');
 
         if (is_string($requestedStatus) && strtolower($requestedStatus) !== 'all') {
             // Normalize status: capitalize first letter, rest lowercase (Pending, Approved, Rejected)
@@ -452,7 +458,9 @@ class DocumentRequestController extends Controller
         }
 
         $requestedStatus = $request->query('status', 'Pending');
-        $query = DocumentRequest::with(['documentType', 'user', 'userCredential', 'attachments', 'approver'])->orderBy('created_at', 'desc');
+        // Order by created_at DESC to show most recent first (resubmissions will be at top)
+        $query = DocumentRequest::with(['documentType', 'user', 'userCredential', 'attachments', 'approver'])
+            ->orderBy('created_at', 'desc');
 
         if (is_string($requestedStatus) && strtolower($requestedStatus) !== 'all') {
             $statusFilter = ucfirst(strtolower($requestedStatus));
@@ -700,6 +708,34 @@ class DocumentRequestController extends Controller
     }
 
     /**
+     * Safely format datetime for form input
+     */
+    private function formatDateTimeForForm($value, $format = 'Y-m-d\TH:i')
+    {
+        if (!$value) {
+            return null;
+        }
+
+        // If it's already a Carbon instance or DateTime
+        if ($value instanceof \Carbon\Carbon || $value instanceof \DateTime) {
+            return $value->format($format);
+        }
+
+        // If it's a string, try to parse it
+        if (is_string($value)) {
+            try {
+                $carbon = \Carbon\Carbon::parse($value);
+                return $carbon->format($format);
+            } catch (\Exception $e) {
+                // If parsing fails, return the string as-is or null
+                return null;
+            }
+        }
+
+        return null;
+    }
+
+    /**
      * Clean array data to ensure valid UTF-8 for JSON encoding
      */
     private function cleanArrayForJson($data)
@@ -804,8 +840,39 @@ class DocumentRequestController extends Controller
             'admin_feedback'  => $data['admin_feedback'] ?? $doc->admin_feedback,
         ];
 
-        DB::transaction(function () use ($doc, $update) {
+        DB::transaction(function () use ($doc, $update, $data) {
             $doc->update($update);
+            
+            // Create notification for the user
+            $userId = $doc->fk_user_id;
+            $documentType = $doc->documentType?->document_name ?? 'document';
+            $ticket = $doc->doc_request_ticket ?? 'N/A';
+            
+            if ($data['status'] === 'Approved') {
+                $notificationMessage = "Your {$documentType} request (Ticket: {$ticket}) has been APPROVED.";
+                if (!empty($data['admin_feedback'])) {
+                    $notificationMessage .= " " . substr($data['admin_feedback'], 0, 100);
+                }
+            } elseif ($data['status'] === 'Rejected') {
+                $notificationMessage = "Your {$documentType} request (Ticket: {$ticket}) has been REJECTED.";
+                $feedback = $data['admin_feedback'] ?? null;
+                if (!empty($feedback)) {
+                    $notificationMessage .= " Reason: " . substr($feedback, 0, 100);
+                }
+            } else {
+                $notificationMessage = null;
+            }
+            
+            if ($notificationMessage && $userId) {
+                DB::table('notifications')->insert([
+                    'fk_user_id' => $userId,
+                    'message' => $notificationMessage,
+                    'notification_type' => 'DocumentRequest',
+                    'notification_reference_id' => $doc->doc_request_id,
+                    'is_read' => false,
+                    'created_at' => now(),
+                ]);
+            }
         });
 
         // Reload with all necessary relationships for document generation
@@ -989,7 +1056,7 @@ class DocumentRequestController extends Controller
 
         $authUser = $request->user();
         if (! $authUser) {
-            return redirect()->back()->with('error', 'Unauthenticated');
+            return response()->json(['error' => 'Unauthenticated'], 401);
         }
 
         $data = $request->validate([
@@ -998,6 +1065,8 @@ class DocumentRequestController extends Controller
             'reviewed_at'    => ['nullable', 'date_format:Y-m-d H:i:s'],
             'rejection_reason' => ['nullable', 'string'],
             'admin_feedback'  => ['nullable', 'string'],
+            'incorrect_fields' => ['nullable', 'array'],
+            'incorrect_fields.*' => ['nullable', 'string'],
         ]);
 
         try {
@@ -1011,10 +1080,52 @@ class DocumentRequestController extends Controller
                 'fk_approver_id' => $data['fk_approver_id'] ?? $authUser->getKey(),
                 'reviewed_at'    => $data['reviewed_at'] ?? Carbon::now()->toDateTimeString(),
                 'admin_feedback' => $feedback,
+                'incorrect_fields' => $data['incorrect_fields'] ?? null,
             ];
 
-            DB::transaction(function () use ($doc, $update) {
+            \Log::info('Storing incorrect_fields in reject method', [
+                'doc_request_id' => $id,
+                'incorrect_fields_received' => $data['incorrect_fields'] ?? null,
+                'incorrect_fields_type' => gettype($data['incorrect_fields'] ?? null),
+                'incorrect_fields_is_array' => is_array($data['incorrect_fields'] ?? null),
+            ]);
+
+            DB::transaction(function () use ($doc, $update, $feedback, $id) {
                 $doc->update($update);
+                
+                // Refresh the model to get the latest data
+                $doc->refresh();
+                
+                \Log::info('After update - verifying incorrect_fields stored', [
+                    'doc_request_id' => $id,
+                    'incorrect_fields_received' => $update['incorrect_fields'] ?? null,
+                    'incorrect_fields_stored' => $doc->incorrect_fields,
+                    'incorrect_fields_type' => gettype($doc->incorrect_fields),
+                    'incorrect_fields_is_array' => is_array($doc->incorrect_fields),
+                    'full_doc_incorrect_fields' => $doc->getAttributes()['incorrect_fields'] ?? 'not in attributes',
+                ]);
+                
+                // Create notification for the user
+                $userId = $doc->fk_user_id;
+                $documentType = $doc->documentType?->document_name ?? 'document';
+                $ticket = $doc->doc_request_ticket ?? 'N/A';
+                
+                $notificationMessage = "Your {$documentType} request (Ticket: {$ticket}) has been REJECTED.";
+                if (!empty($feedback)) {
+                    $notificationMessage .= " Reason: " . substr($feedback, 0, 100);
+                }
+                $notificationMessage .= " You can fix your uploaded request fields and resubmit your request through the website.";
+                
+                if ($userId) {
+                    DB::table('notifications')->insert([
+                        'fk_user_id' => $userId,
+                        'message' => $notificationMessage,
+                        'notification_type' => 'DocumentRequest',
+                        'notification_reference_id' => $doc->doc_request_id,
+                        'is_read' => false,
+                        'created_at' => now(),
+                    ]);
+                }
             });
 
             \Log::info('Transaction completed, preparing SMS notification for document request rejection', [
@@ -1053,7 +1164,7 @@ class DocumentRequestController extends Controller
                     if (!empty($feedback)) {
                         $message .= " Reason: " . substr($feedback, 0, 100);
                     }
-                    $message .= " Please contact the barangay office for more information. Thank you.";
+                    $message .= " You can fix your uploaded request fields and resubmit your request through the website. Please contact the barangay office for more information. Thank you.";
                     
                     \Log::info('Calling SMS service for document request rejection', [
                         'phone' => substr($phoneNumber, 0, 4) . '****',
@@ -1094,10 +1205,457 @@ class DocumentRequestController extends Controller
                 ]);
             }
 
-            return redirect()->back()->with('success', 'Request rejected successfully.');
+            // Reload the document request to get updated data
+            $doc = DocumentRequest::with(['documentType', 'user'])->findOrFail($id);
+
+            $responseData = [
+                'doc_request_id'  => $doc->doc_request_id,
+                'doc_request_ticket' => $doc->doc_request_ticket,
+                'status' => $doc->status,
+                'fk_approver_id' => $doc->fk_approver_id,
+                'reviewed_at' => $doc->reviewed_at,
+                'admin_feedback' => $doc->admin_feedback,
+                'incorrect_fields' => $doc->incorrect_fields,
+                'updated_at' => $doc->updated_at?->toDateTimeString(),
+            ];
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Request rejected successfully.',
+                'data' => $responseData,
+            ]);
         } catch (\Throwable $ex) {
-            \Log::error('Reject exception: ' . $ex->getMessage());
-            return redirect()->back()->with('error', 'Failed to reject the request.');
+            \Log::error('Reject exception: ' . $ex->getMessage(), [
+                'trace' => $ex->getTraceAsString(),
+                'doc_request_id' => $id,
+            ]);
+            return response()->json([
+                'success' => false,
+                'error' => 'Failed to reject the request.',
+                'message' => $ex->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Show appeal form for rejected request
+     * Automatically resets status to Pending when accessed
+     */
+    public function appealForm(Request $request, $id)
+    {
+        $authUser = $request->user();
+        if (!$authUser) {
+            return redirect()->route('login');
+        }
+
+        $doc = DocumentRequest::with(['documentType', 'attachments', 'user'])
+            ->where('doc_request_id', $id)
+            ->firstOrFail();
+
+        // Check if user owns this request
+        $userId = $authUser->user_id ?? $authUser->id ?? null;
+        if ($doc->fk_user_id != $userId) {
+            abort(403, 'Unauthorized');
+        }
+
+        // Check if request is rejected
+        if (strtoupper($doc->status) !== 'REJECTED') {
+            return redirect()->back()->with('error', 'Only rejected requests can be appealed.');
+        }
+
+        // Log incorrect_fields BEFORE resetting status
+        \Log::info('appealForm - BEFORE status reset', [
+            'doc_request_id' => $id,
+            'incorrect_fields_before' => $doc->incorrect_fields,
+            'incorrect_fields_type' => gettype($doc->incorrect_fields),
+            'incorrect_fields_is_array' => is_array($doc->incorrect_fields),
+        ]);
+
+        // Automatically reset status to Pending when accessing appeal form
+        // IMPORTANT: Keep incorrect_fields so user knows which fields to fix
+        $doc->status = 'Pending';
+        $doc->fk_approver_id = null;
+        $doc->reviewed_at = null;
+        // DO NOT clear incorrect_fields here - we need them to know which fields are editable
+        $doc->save();
+
+        // Log incorrect_fields AFTER resetting status
+        \Log::info('appealForm - AFTER status reset', [
+            'doc_request_id' => $id,
+            'incorrect_fields_after' => $doc->fresh()->incorrect_fields,
+            'incorrect_fields_type' => gettype($doc->fresh()->incorrect_fields),
+            'incorrect_fields_is_array' => is_array($doc->fresh()->incorrect_fields),
+        ]);
+
+        // Get valid ID type name if exists
+        $validIdTypeName = null;
+        if ($doc->fk_valid_id_type_id) {
+            $validIdType = \App\Models\ValidIdType::find($doc->fk_valid_id_type_id);
+            $validIdTypeName = $validIdType?->valid_id_type_name ?? null;
+        }
+
+        // Prepare request data for editing
+        $requestData = [
+            'doc_request_id' => $doc->doc_request_id,
+            'doc_request_ticket' => $doc->doc_request_ticket,
+            'document_type' => $doc->documentType ? [
+                'id' => $doc->documentType->document_type_id,
+                'name' => $doc->documentType->document_name,
+                'processing_fee' => $doc->documentType->processing_fee ?? null,
+            ] : null,
+            'document_name' => $doc->documentType?->document_name ?? null,
+            'fk_document_type_id' => $doc->fk_document_type_id,
+            'last_name' => $doc->last_name,
+            'first_name' => $doc->first_name,
+            'middle_name' => $doc->middle_name,
+            'suffix' => $doc->suffix,
+            'house_number' => $doc->house_number,
+            'phase' => $doc->phase,
+            'package' => $doc->package,
+            'birthdate' => $this->formatDateTimeForForm($doc->birthdate, 'Y-m-d'),
+            'is_requestor_minor' => $doc->is_requestor_minor,
+            'sex' => $doc->sex,
+            'civil_status' => $doc->civil_status,
+            'contact_number' => $doc->contact_number,
+            'email' => $doc->email,
+            'purpose' => $doc->purpose,
+            'reason_type' => $doc->reason_type,
+            'id_type' => $validIdTypeName,
+            'fk_valid_id_type_id' => $doc->fk_valid_id_type_id,
+            'valid_id_number' => $doc->valid_id_number,
+            'pickup_item' => $doc->pickup_item,
+            'pickup_location' => $doc->pickup_location,
+            'pickup_start' => $this->formatDateTimeForForm($doc->pickup_start, 'Y-m-d\TH:i'),
+            'pickup_end' => $this->formatDateTimeForForm($doc->pickup_end, 'Y-m-d\TH:i'),
+            'person_to_look' => $doc->person_to_look,
+            'extra_fields' => $doc->extra_fields ?? [],
+            'attachments' => $doc->attachments->map(function ($att) {
+                return [
+                    'id' => $att->attachment_id,
+                    'field_name' => $att->field_name,
+                    'file_name' => $att->file_name,
+                    'file_path' => $att->file_path,
+                    'file_type' => $att->file_type,
+                    'url' => $att->file_path ? Storage::url($att->file_path) : null,
+                ];
+            })->toArray(),
+            'admin_feedback' => $doc->admin_feedback,
+            'incorrect_fields' => $doc->incorrect_fields ?? [],
+        ];
+
+        // Get fresh data to ensure we have the latest incorrect_fields
+        $doc->refresh();
+        $requestData['incorrect_fields'] = $doc->incorrect_fields ?? [];
+
+        \Log::info('Appeal form accessed, status reset to Pending', [
+            'doc_request_id' => $id,
+            'user_id' => $userId,
+            'incorrect_fields_in_requestData' => $requestData['incorrect_fields'],
+            'incorrect_fields_type' => gettype($requestData['incorrect_fields']),
+            'incorrect_fields_is_array' => is_array($requestData['incorrect_fields']),
+            'incorrect_fields_raw_from_db' => $doc->incorrect_fields,
+            'incorrect_fields_raw_type' => gettype($doc->incorrect_fields),
+        ]);
+
+        // If this is an AJAX/JSON request, return JSON instead of Inertia page
+        if ($request->wantsJson() || $request->expectsJson() || $request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'requestData' => $requestData,
+            ]);
+        }
+
+        return Inertia::render('User/Resident/R_Document_Request_Appeal', [
+            'requestData' => $requestData,
+        ]);
+    }
+
+    /**
+     * Handle appeal submission - reset status to Pending and allow editing
+     */
+    public function appeal(Request $request, $id)
+    {
+        $authUser = $request->user();
+        if (!$authUser) {
+            return response()->json(['error' => 'Unauthenticated'], 401);
+        }
+
+        $doc = DocumentRequest::where('doc_request_id', $id)->firstOrFail();
+
+        // Check if user owns this request
+        $userId = $authUser->user_id ?? $authUser->id ?? null;
+        if ($doc->fk_user_id != $userId) {
+            return response()->json(['error' => 'Unauthorized'], 403);
+        }
+
+        // Check if request is rejected
+        if (strtoupper($doc->status) !== 'REJECTED') {
+            return response()->json(['error' => 'Only rejected requests can be appealed.'], 400);
+        }
+
+        // Log incorrect_fields BEFORE resetting status
+        \Log::info('appeal POST - BEFORE status reset', [
+            'doc_request_id' => $id,
+            'incorrect_fields_before' => $doc->incorrect_fields,
+            'incorrect_fields_type' => gettype($doc->incorrect_fields),
+            'incorrect_fields_is_array' => is_array($doc->incorrect_fields),
+        ]);
+
+        try {
+            // Reset status to Pending and clear review information
+            // IMPORTANT: Keep incorrect_fields so user knows which fields to fix
+            $doc->status = 'Pending';
+            $doc->fk_approver_id = null;
+            $doc->reviewed_at = null;
+            // Keep admin_feedback for reference but clear it if user wants to resubmit
+            // Actually, let's keep it so user can see what was wrong
+            // $doc->admin_feedback = null;
+            // DO NOT clear incorrect_fields here - we need them to know which fields are editable
+            
+            $doc->save();
+
+            // Log incorrect_fields AFTER resetting status
+            \Log::info('appeal POST - AFTER status reset', [
+                'doc_request_id' => $id,
+                'incorrect_fields_after' => $doc->fresh()->incorrect_fields,
+                'incorrect_fields_type' => gettype($doc->fresh()->incorrect_fields),
+                'incorrect_fields_is_array' => is_array($doc->fresh()->incorrect_fields),
+            ]);
+
+            \Log::info('Document request appealed', [
+                'doc_request_id' => $id,
+                'user_id' => $userId,
+                'ticket' => $doc->doc_request_ticket,
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Request has been reset to pending. You can now edit and resubmit it.',
+                'data' => [
+                    'doc_request_id' => $doc->doc_request_id,
+                    'status' => $doc->status,
+                ],
+            ]);
+        } catch (\Throwable $ex) {
+            \Log::error('Appeal exception: ' . $ex->getMessage());
+            return response()->json(['error' => 'Failed to appeal the request.'], 500);
+        }
+    }
+
+    /**
+     * Update an existing document request (for appeals/resubmissions)
+     */
+    public function update(Request $request, $id)
+    {
+        \Log::info('=== DOCUMENT REQUEST UPDATE CALLED ===', [
+            'doc_request_id' => $id,
+            'user_id' => Auth::id(),
+        ]);
+
+        $authUser = $request->user();
+        if (!$authUser) {
+            return response()->json(['error' => 'Unauthenticated'], 401);
+        }
+
+        $doc = DocumentRequest::where('doc_request_id', $id)->firstOrFail();
+
+        // Check if user owns this request
+        $userId = $authUser->user_id ?? $authUser->id ?? null;
+        if ($doc->fk_user_id != $userId) {
+            return response()->json(['error' => 'Unauthorized'], 403);
+        }
+
+        // Check if request is Pending (should be after appeal)
+        if (strtoupper($doc->status) !== 'PENDING') {
+            return response()->json(['error' => 'Only pending requests can be updated. Please appeal your rejected request first.'], 400);
+        }
+
+        // Use the same validation as store method
+        try {
+            $request->validate([
+                'fk_document_type_id' => ['nullable', 'integer', 'exists:document_types,document_type_id'],
+                'document_name' => ['nullable', 'string', 'max:150'],
+                'last_name' => ['nullable', 'string', 'max:50'],
+                'first_name' => ['nullable', 'string', 'max:50'],
+                'middle_name' => ['nullable', 'string', 'max:20'],
+                'suffix' => ['nullable', 'string', 'max:20'],
+                'birthdate' => ['nullable', 'date'],
+                'sex' => ['nullable', Rule::in(['Male','Female'])],
+                'civil_status' => ['nullable', Rule::in(['Single','Married','Widowed','Separated'])],
+                'contact_number' => ['nullable', 'string', 'max:50'],
+                'purpose' => ['nullable', 'string'],
+                'reason_type' => ['nullable', 'string', 'max:100'],
+                'id_type' => ['nullable', 'string', 'max:100'],
+                'valid_id_content' => ['nullable', 'file', 'mimes:jpg,jpeg,png,pdf','max:20480'],
+                'id_front' => ['nullable', 'file', 'mimes:jpg,jpeg,png,pdf','max:20480'],
+                'id_back'  => ['nullable', 'file', 'mimes:jpg,jpeg,png,pdf','max:20480'],
+                'valid_id_number' => ['nullable', 'string', 'max:255'],
+                'id_number' => ['nullable', 'string', 'max:255'],
+                'pickup_item' => ['nullable', 'string', 'max:255'],
+                'pickup_location' => ['nullable', 'string', 'max:255'],
+                'pickup_start' => ['nullable', 'date'],
+                'pickup_end' => ['nullable', 'date'],
+                'person_to_look' => ['nullable', 'string', 'max:255'],
+                'extra_fields' => ['nullable', 'array'],
+                'extra_fields.*' => ['nullable'],
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => $e->errors()
+            ], 422);
+        }
+
+        try {
+            DB::beginTransaction();
+
+            // Update basic fields (similar to store method logic)
+            $updateData = [];
+            
+            if ($request->filled('purpose')) {
+                $updateData['purpose'] = $request->input('purpose');
+            }
+            if ($request->filled('last_name')) {
+                $updateData['last_name'] = $request->input('last_name');
+            }
+            if ($request->filled('first_name')) {
+                $updateData['first_name'] = $request->input('first_name');
+            }
+            if ($request->filled('middle_name')) {
+                $updateData['middle_name'] = $request->input('middle_name');
+            }
+            if ($request->filled('suffix')) {
+                $updateData['suffix'] = $request->input('suffix');
+            }
+            if ($request->filled('contact_number')) {
+                $updateData['contact_number'] = $request->input('contact_number');
+            }
+            if ($request->filled('valid_id_number')) {
+                $updateData['valid_id_number'] = $request->input('valid_id_number');
+            }
+            if ($request->filled('pickup_item')) {
+                $updateData['pickup_item'] = $request->input('pickup_item');
+            }
+            if ($request->filled('pickup_location')) {
+                $updateData['pickup_location'] = $request->input('pickup_location');
+            }
+            if ($request->filled('person_to_look')) {
+                $updateData['person_to_look'] = $request->input('person_to_look');
+            }
+
+            // Handle extra_fields - merge with existing, only update provided fields
+            if ($request->has('extra_fields')) {
+                $newExtraFields = $request->input('extra_fields', []);
+                
+                // Ensure existing fields are properly decoded if they're stored as JSON string
+                $existingExtraFields = $doc->extra_fields ?? [];
+                if (is_string($existingExtraFields)) {
+                    try {
+                        $decoded = json_decode($existingExtraFields, true);
+                        if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+                            $existingExtraFields = $decoded;
+                        } else {
+                            $existingExtraFields = [];
+                        }
+                    } catch (\Exception $e) {
+                        \Log::warning('Failed to decode existing extra_fields during update: ' . $e->getMessage());
+                        $existingExtraFields = [];
+                    }
+                }
+                if (!is_array($existingExtraFields)) {
+                    $existingExtraFields = [];
+                }
+                
+                // Merge: keep ALL existing fields, update only the ones provided in newExtraFields
+                // This ensures that fields that weren't changed are preserved
+                $mergedExtraFields = array_merge($existingExtraFields, $newExtraFields);
+                
+                // Remove null/empty string values that might overwrite existing valid values
+                // Only remove if the new value is explicitly null or empty string
+                foreach ($mergedExtraFields as $key => $value) {
+                    // If newExtraFields has this key and value is null/empty, but existing had a value, keep existing
+                    if (isset($newExtraFields[$key]) && 
+                        ($newExtraFields[$key] === null || $newExtraFields[$key] === '') &&
+                        isset($existingExtraFields[$key]) && 
+                        $existingExtraFields[$key] !== null && 
+                        $existingExtraFields[$key] !== '') {
+                        // Keep the existing value if new value is empty/null
+                        $mergedExtraFields[$key] = $existingExtraFields[$key];
+                    }
+                }
+                
+                $updateData['extra_fields'] = $mergedExtraFields;
+            }
+
+            // Handle file uploads - update valid_id_content if new file provided
+            if ($request->hasFile('valid_id_content')) {
+                $file = $request->file('valid_id_content');
+                $updateData['valid_id_content'] = file_get_contents($file->getRealPath(), FILE_BINARY);
+            } elseif ($request->hasFile('id_front')) {
+                $file = $request->file('id_front');
+                $updateData['valid_id_content'] = file_get_contents($file->getRealPath(), FILE_BINARY);
+            }
+
+            // Clear incorrect_fields when resubmitting (user has fixed the issues)
+            // Keep admin_feedback to identify this as a resubmission
+            $updateData['incorrect_fields'] = null;
+            
+            // Update created_at to current time so resubmission brings the request back to the top
+            $updateData['created_at'] = now();
+            
+            // Update the document request
+            $doc->update($updateData);
+
+            // Handle new file attachments in extra_fields
+            if ($request->has('extra_fields')) {
+                $extraFields = $request->input('extra_fields', []);
+                foreach ($extraFields as $fieldName => $value) {
+                    if ($request->hasFile("extra_fields.{$fieldName}") || $request->hasFile("extra_fields[{$fieldName}]")) {
+                        $file = $request->file("extra_fields.{$fieldName}") ?? $request->file("extra_fields[{$fieldName}]");
+                        if ($file && $file->isValid()) {
+                            $path = $file->store('document_request_attachments', 'public');
+                            
+                            // Delete old attachment for this field if exists
+                            DocumentRequestAttachment::where('fk_doc_request_id', $doc->doc_request_id)
+                                ->where('field_name', $fieldName)
+                                ->delete();
+                            
+                            // Create new attachment
+                            DocumentRequestAttachment::create([
+                                'fk_doc_request_id' => $doc->doc_request_id,
+                                'field_name' => $fieldName,
+                                'file_name' => $file->getClientOriginalName(),
+                                'file_path' => $path,
+                                'file_type' => $file->getMimeType(),
+                            ]);
+                        }
+                    }
+                }
+            }
+
+            DB::commit();
+
+            \Log::info('Document request updated successfully', [
+                'doc_request_id' => $id,
+                'user_id' => $userId,
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Request updated successfully. Your request has been resubmitted for review.',
+                'data' => [
+                    'doc_request_id' => $doc->doc_request_id,
+                    'doc_request_ticket' => $doc->doc_request_ticket,
+                    'status' => $doc->status,
+                ],
+            ]);
+        } catch (\Throwable $ex) {
+            DB::rollBack();
+            \Log::error('Update exception: ' . $ex->getMessage(), [
+                'trace' => $ex->getTraceAsString(),
+            ]);
+            return response()->json(['error' => 'Failed to update the request: ' . $ex->getMessage()], 500);
         }
     }
 
@@ -1200,6 +1758,15 @@ class DocumentRequestController extends Controller
         ]);
         
         try {
+            $userId = Auth::id();
+            if ($userId) {
+                // Check if user is restricted from document requests
+                $restriction = \App\Models\UserRestriction::where('user_id', $userId)->first();
+                if ($restriction && $restriction->restrict_document_request) {
+                    return redirect()->back()->with('error', 'You are restricted from making document requests. Please check your notifications for more information.');
+                }
+            }
+
             $request->validate([
             'fk_document_type_id' => ['nullable', 'integer', 'exists:document_types,document_type_id'],
             'document_name' => ['nullable', 'string', 'max:150'],
@@ -1302,6 +1869,43 @@ class DocumentRequestController extends Controller
                 'permit_type' => $permitType ?? null,
                 'extra_fields' => $request->input('extra_fields', []),
             ]);
+        }
+        
+        // Check if this specific document type is restricted for the user
+        if ($fk_document_type_id && $userId) {
+            $userRestriction = \App\Models\UserRestriction::where('user_id', $userId)->first();
+            if ($userRestriction) {
+                $restrictedDocTypeIds = $userRestriction->restricted_document_types ?? [];
+                $allowedDocTypeIds = $userRestriction->allowed_document_types ?? [];
+                
+                // Check if this document type is restricted
+                $isRestricted = in_array($fk_document_type_id, $restrictedDocTypeIds);
+                $isAllowed = !empty($allowedDocTypeIds) && in_array($fk_document_type_id, $allowedDocTypeIds);
+                
+                // If restricted and not explicitly allowed, reject the request
+                if ($isRestricted && !$isAllowed) {
+                    $docType = DocumentType::find($fk_document_type_id);
+                    $docTypeName = $docType ? $docType->document_name : 'this document type';
+                    
+                    \Log::warning('User attempted to request restricted document type', [
+                        'user_id' => $userId,
+                        'document_type_id' => $fk_document_type_id,
+                        'document_name' => $docTypeName,
+                    ]);
+                    
+                    if ($request->wantsJson() || $request->ajax() || !$request->header('X-Inertia')) {
+                        return response()->json([
+                            'success' => false,
+                            'message' => "You are restricted from requesting {$docTypeName}. Please contact the admin for more information.",
+                            'errors' => ['fk_document_type_id' => ["You are restricted from requesting {$docTypeName}."]]
+                        ], 403);
+                    }
+                    
+                    return redirect()->back()
+                        ->withInput()
+                        ->with('error', "You are restricted from requesting {$docTypeName}. Please contact the admin for more information.");
+                }
+            }
         }
 
         // Contact number priority
@@ -2590,10 +3194,69 @@ class DocumentRequestController extends Controller
             'profile_pic' => $sanitizeString($user->profile_pic ?? ''),
         ] : null;
 
+        // Get user restrictions
+        $restrictions = null;
+        $availableDocumentTypes = [];
+        $restrictedDocumentTypeIds = [];
+        
+        if ($user) {
+            $restriction = \App\Models\UserRestriction::where('user_id', $user->user_id)->first();
+            if ($restriction) {
+                $restrictions = [
+                    'restrict_posting' => $restriction->restrict_posting ?? false,
+                    'restrict_commenting' => $restriction->restrict_commenting ?? false,
+                    'restrict_document_request' => $restriction->restrict_document_request ?? false,
+                    'restrict_event_assistance_request' => $restriction->restrict_event_assistance_request ?? false,
+                ];
+                
+                // Get restricted document type IDs
+                $restrictedDocumentTypeIds = $restriction->restricted_document_types ?? [];
+                $allowedDocumentTypeIds = $restriction->allowed_document_types ?? [];
+            }
+        }
+        
+        // Get all document types from database
+        $allDocumentTypes = DocumentType::all();
+        
+        // Build document types list with restriction status (show all, but mark restricted ones)
+        $documentTypesList = [];
+        foreach ($allDocumentTypes as $docType) {
+            $docTypeId = $docType->document_type_id;
+            $docName = $docType->document_name;
+            
+            // Check if this document type is restricted
+            $isRestricted = in_array($docTypeId, $restrictedDocumentTypeIds);
+            
+            // Check if this document type is explicitly allowed (override)
+            $isAllowed = !empty($allowedDocumentTypeIds) && in_array($docTypeId, $allowedDocumentTypeIds);
+            
+            // Determine if it's actually restricted (restricted but not allowed)
+            $actuallyRestricted = $isRestricted && !$isAllowed;
+            
+            // Add to list with restriction status
+            $documentTypesList[] = [
+                'id' => $docTypeId,
+                'name' => $docName,
+                'processing_fee' => $docType->processing_fee ?? null,
+                'restricted' => $actuallyRestricted,
+                'available' => !$actuallyRestricted,
+            ];
+        }
+        
+        // Only show document types that exist in the database
+        // No hardcoded fallback - only show what's actually in the database
+        
+        // For backward compatibility, also provide availableDocumentTypes (only non-restricted)
+        $availableDocumentTypes = collect($documentTypesList)->where('available', true)->values()->toArray();
+
         return Inertia::render('User/Resident/R_Document_Request_Select', [
             'documentRequests' => $documentRequestsArray,
             'document_requests' => $documentRequestsArray,
             'payments' => $paymentsArray,
+            'restrictions' => $restrictions,
+            'documentTypes' => $documentTypesList, // All document types with restriction status
+            'availableDocumentTypes' => $availableDocumentTypes, // Only available ones (for backward compatibility)
+            'restrictedDocumentTypeIds' => $restrictedDocumentTypeIds,
             'auth' => ['user' => $userData],
         ]);
     }

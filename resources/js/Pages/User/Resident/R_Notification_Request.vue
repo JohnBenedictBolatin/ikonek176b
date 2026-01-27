@@ -13,9 +13,8 @@
                 <div class="header-actions">
                     <img src="/assets/SETTINGS.png" alt="Settings" class="settings-btn-img" @click="toggleSettings" />
                     <div v-if="showSettings" class="settings-dropdown">
-                        <Link href="#" class="settings-item" @click="closeSettings">Help Center</Link>
-                        <button type="button" class="settings-item" @click="openTerms">Terms & Conditions</button>
-                        <Link href="#" class="settings-item" @click="logout">Sign Out</Link>
+                        <a href="#" class="settings-item" @click.prevent.stop="openTermsModal">TERMS & CONDITIONS</a>
+                        <Link href="#" class="settings-item" @click="logout">SIGN OUT</Link>
                     </div>
                 </div>
             </div>
@@ -95,7 +94,7 @@
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="nav-icon">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 5.25h.008v.008H12v-.008Z" />
                     </svg>
-                    FAQs & Help Center
+                    FAQS & HELP CENTER
                 </button>
             </div>
 
@@ -346,6 +345,9 @@
                                   (!selectedRequest?.payment || 
                                     selectedRequest?.payment?.status?.toUpperCase() === 'REJECTED')" 
                             class="payment-buttons-modal">
+                            <div v-if="paymentError" class="error-message" style="color: #dc3545; font-size: 14px; margin-bottom: 12px; padding: 10px; background-color: #f8d7da; border-radius: 4px; border: 1px solid #f5c6cb; width: 100%;">
+                                {{ paymentError }}
+                            </div>
                             <button class="pay-online-btn-modal" @click="showPaymentGateway(selectedRequest)">
                                 Pay Online
                             </button>
@@ -391,7 +393,7 @@
                                         <span class="detail-value">{{ selectedRequest.payment.transaction_ref }}</span>
                                     </div>
 
-                                    <div v-if="selectedRequest.payment.paid_at" class="payment-detail-item">
+                                    <div v-if="selectedRequest.payment.paid_at && (selectedRequest.payment.status?.toLowerCase() === 'approved' || selectedRequest.payment.status?.toLowerCase() === 'paid')" class="payment-detail-item">
                                         <span class="detail-label">Paid At:</span>
                                         <span class="detail-value">{{ formatDateTime(selectedRequest.payment.paid_at) }}</span>
                                     </div>
@@ -573,10 +575,14 @@
               </div>
 
               <div v-if="uploadedFile" class="evidence-form">
+                  <div v-if="paymentError" class="error-message" style="color: #dc3545; font-size: 14px; margin-bottom: 12px; padding: 10px; background-color: #f8d7da; border-radius: 4px; border: 1px solid #f5c6cb;">
+                      {{ paymentError }}
+                  </div>
                   <div class="input-and-actions">
                       <input
                           type="text"
                           v-model="referenceId"
+                          @input="paymentError = ''"
                           placeholder="Enter Transaction Reference ID"
                           class="reference-input"
                       />
@@ -661,12 +667,12 @@
 
                     <div class="receipt-actions">
                         <button class="download-receipt-btn" @click="downloadReceipt" v-if="selectedReceipt?.payment?.receipt_image || selectedReceipt?.payment?.receipt_path">
-                            Download
+                            DOWNLOAD
                         </button>
                         <button class="print-receipt-btn" @click="printReceipt" v-if="selectedReceipt?.payment?.receipt_image || selectedReceipt?.payment?.receipt_path">
-                            Print
+                            PRINT
                         </button>
-                        <button class="close-receipt-btn" @click="closeReceiptModal">Close</button>
+                        <button class="close-receipt-btn" @click="closeReceiptModal">CLOSE</button>
                     </div>
                 </div>
             </div>
@@ -731,8 +737,133 @@
         </div>
     </div>
 
-    <!-- Terms & Conditions Modal -->
-    <TermsModal :open="showTerms" @close="closeTerms" />
+    <!-- Terms and Conditions Modal -->
+    <div v-if="showTermsModal" class="modal-overlay" @click.self="closeTermsModal">
+        <div class="terms-modal" @click.stop>
+            <div class="terms-modal-header">
+                <h2 class="terms-modal-title">Terms and Conditions</h2>
+                <button @click="closeTermsModal" class="terms-modal-close">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width: 24px; height: 24px;">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+            <div class="terms-modal-body">
+                <div class="terms-section">
+                    <h3 class="terms-section-title">1. Account Registration and Access</h3>
+                    <p class="terms-text">
+                        By creating an account and using the iKonek176B portal, you agree to provide accurate, current, and complete information during registration. You are responsible for maintaining the confidentiality of your account credentials and for all activities that occur under your account. You must immediately notify Barangay 176B of any unauthorized use of your account or any other breach of security.
+                    </p>
+                </div>
+
+                <div class="terms-section">
+                    <h3 class="terms-section-title">2. Use of Services</h3>
+                    <p class="terms-text">
+                        The iKonek176B portal is provided for legitimate barangay-related purposes only. You may use the portal to:
+                        <ul class="terms-list">
+                            <li>Submit document requests (e.g., Barangay Certificate, Barangay ID, Business Permit)</li>
+                            <li>Request event assistance for community activities</li>
+                            <li>View announcements and community updates</li>
+                            <li>Participate in community discussions and forums</li>
+                            <li>Access your request history and status</li>
+                        </ul>
+                    </p>
+                </div>
+
+                <div class="terms-section">
+                    <h3 class="terms-section-title">3. Accurate Information</h3>
+                    <p class="terms-text">
+                        You are responsible for ensuring that all information you submit through the portal is accurate, truthful, and complete. Providing false, misleading, or incomplete information may result in rejection of your requests, suspension of your account, and possible legal action. You must update your account information promptly if any changes occur.
+                    </p>
+                </div>
+
+                <div class="terms-section">
+                    <h3 class="terms-section-title">4. Document Requests</h3>
+                    <p class="terms-text">
+                        When submitting document requests, you must:
+                        <ul class="terms-list">
+                            <li>Provide all required documents and information</li>
+                            <li>Ensure documents are authentic and valid</li>
+                            <li>Pay applicable processing fees as required</li>
+                            <li>Follow pickup instructions and deadlines</li>
+                            <li>Use documents only for their intended legal purposes</li>
+                        </ul>
+                        The barangay reserves the right to verify all submitted information and documents. Approval of requests is subject to verification and compliance with barangay policies and regulations.
+                    </p>
+                </div>
+
+                <div class="terms-section">
+                    <h3 class="terms-section-title">5. Event Assistance Requests</h3>
+                    <p class="terms-text">
+                        When requesting event assistance, you must provide accurate event details, including date, time, location, and purpose. Event assistance is subject to availability and approval by barangay officials. You are responsible for ensuring your event complies with all applicable laws, regulations, and barangay policies. The barangay reserves the right to deny or cancel event assistance for any reason.
+                    </p>
+                </div>
+
+                <div class="terms-section">
+                    <h3 class="terms-section-title">6. Payment and Fees</h3>
+                    <p class="terms-text">
+                        Some services may require payment of processing fees. All fees must be paid according to the payment methods provided. Payments are non-refundable unless otherwise stated. The barangay is not responsible for delays or issues caused by payment processing errors or failures. You are responsible for ensuring payments are made correctly and on time.
+                    </p>
+                </div>
+
+                <div class="terms-section">
+                    <h3 class="terms-section-title">7. Data Privacy</h3>
+                    <p class="terms-text">
+                        Your personal information is collected and processed in accordance with the Data Privacy Act of 2012 (Republic Act No. 10173). The barangay will use your information only for legitimate purposes related to service delivery, record-keeping, and compliance with legal requirements. Your information will not be shared with unauthorized third parties except as required by law.
+                    </p>
+                </div>
+
+                <div class="terms-section">
+                    <h3 class="terms-section-title">8. Prohibited Activities</h3>
+                    <p class="terms-text">
+                        You are strictly prohibited from:
+                        <ul class="terms-list">
+                            <li>Using the portal for any illegal or unauthorized purpose</li>
+                            <li>Submitting false, fraudulent, or misleading information</li>
+                            <li>Attempting to gain unauthorized access to the system or other users' accounts</li>
+                            <li>Interfering with or disrupting the portal's operation</li>
+                            <li>Harassing, threatening, or abusing other users or barangay officials</li>
+                            <li>Posting inappropriate, offensive, or defamatory content</li>
+                            <li>Violating any applicable laws or regulations</li>
+                        </ul>
+                    </p>
+                </div>
+
+                <div class="terms-section">
+                    <h3 class="terms-section-title">9. Account Suspension and Termination</h3>
+                    <p class="terms-text">
+                        The barangay reserves the right to suspend or terminate your account at any time, with or without notice, if you violate these terms and conditions, engage in prohibited activities, or for any other reason deemed necessary by barangay officials. Upon termination, your right to use the portal will immediately cease.
+                    </p>
+                </div>
+
+                <div class="terms-section">
+                    <h3 class="terms-section-title">10. Limitation of Liability</h3>
+                    <p class="terms-text">
+                        The barangay is not liable for any delays, errors, or failures in service delivery caused by technical issues, system maintenance, incorrect information provided by users, or circumstances beyond the barangay's reasonable control. The barangay does not guarantee uninterrupted or error-free access to the portal.
+                    </p>
+                </div>
+
+                <div class="terms-section">
+                    <h3 class="terms-section-title">11. Updates to Terms</h3>
+                    <p class="terms-text">
+                        These terms and conditions may be updated periodically. You will be notified of significant changes through the portal or other communication channels. Continued use of the portal after changes constitutes acceptance of the updated terms.
+                    </p>
+                </div>
+
+                <div class="terms-section">
+                    <h3 class="terms-section-title">12. Contact and Support</h3>
+                    <p class="terms-text">
+                        For questions, concerns, or to report issues related to your account or the portal, contact the Barangay 176B office at ikonek176b@dev.ph or +639193076338. For technical support or assistance with using the portal, please visit the Help Center section.
+                    </p>
+                </div>
+            </div>
+            <div class="terms-modal-footer">
+                <button @click="closeTermsModal" class="terms-modal-btn">
+                    I UNDERSTAND
+                </button>
+            </div>
+        </div>
+    </div>
 </template>
 
 <script setup>
@@ -740,7 +871,6 @@ import { Link } from '@inertiajs/vue3'
 import { Head, usePage } from '@inertiajs/vue3'
 import { ref, computed, onMounted, onUnmounted, watchEffect } from 'vue'
 import { router } from '@inertiajs/vue3'
-import TermsModal from '@/Components/TermsModal.vue'
 
 // --- Inertia-shared auth user ---
 const page = usePage()
@@ -815,7 +945,7 @@ const paymentsMap = computed(() => {
         transaction_ref: p.transaction_ref ?? p.reference_id ?? p.reference_ticket ?? null,
         receipt_path: p.receipt_path ?? p.receipt_url ?? null,
         receipt_image: p.receipt_image ?? p.receipt_path ?? p.receipt_url ?? null,
-        paid_at: p.paid_at ?? p.created_at ?? p.payment_date ?? null,
+        paid_at: p.paid_at ?? null, // Only use paid_at if actually set (not created_at fallback)
         raw: p,
       }
     }
@@ -1278,14 +1408,16 @@ const clearEvidence = () => {
  * - sends FormData to backend payments.upload_evidence route (adjust route name as needed)
  */
 const submitEvidence = async () => {
+  paymentError.value = ''
+  
   if (!selectedRequest.value) {
-    alert('No selected request.');
+    paymentError.value = 'No selected request. Please refresh the page and try again.'
     return;
   }
 
   // require either a file or a reference ID
   if (!uploadedFile.value && (!referenceId.value || referenceId.value.trim() === '')) {
-    alert('Please upload a screenshot or enter a transaction reference ID before submitting.');
+    paymentError.value = 'Please upload a screenshot or enter a transaction reference ID before submitting.'
     return;
   }
 
@@ -1352,16 +1484,27 @@ const submitEvidence = async () => {
       }
     } catch (axiosError) {
       console.error('Upload errors:', axiosError);
-      if (axiosError.response && axiosError.response.data) {
-        paymentError.value = JSON.stringify(axiosError.response.data);
-        alert('Failed to submit payment evidence: ' + (axiosError.response.data.message || 'Please try again.'));
+      if (axiosError.response) {
+        if (axiosError.response.status === 422) {
+          const errors = axiosError.response.data.errors || {}
+          const firstError = Object.values(errors).flat()[0]
+          paymentError.value = firstError || 'Validation error. Please check your payment information and try again.'
+        } else if (axiosError.response.status === 403) {
+          paymentError.value = 'You do not have permission to submit this payment.'
+        } else if (axiosError.response.status === 404) {
+          paymentError.value = 'Request not found. Please refresh the page and try again.'
+        } else {
+          paymentError.value = axiosError.response.data?.message || 'Failed to submit payment evidence. Please try again.'
+        }
+      } else if (axiosError.request) {
+        paymentError.value = 'Network error. Please check your internet connection and try again.'
       } else {
-        alert('Failed to submit payment evidence. Please try again.');
+        paymentError.value = axiosError.message || 'An unexpected error occurred. Please try again.'
       }
     }
   } catch (err) {
     console.error('Unexpected error in submitEvidence:', err);
-    alert('An unexpected error occurred while submitting evidence.');
+    paymentError.value = err.message || 'An unexpected error occurred while submitting evidence. Please try again.'
   } finally {
     uploading.value = false;
   }
@@ -1377,13 +1520,18 @@ const closeSettings = () => {
 }
 
 // Terms & Conditions modal
-const showTerms = ref(false)
-const openTerms = () => {
+const showTermsModal = ref(false)
+const openTermsModal = (e) => {
+    if (e) {
+        e.preventDefault()
+        e.stopPropagation()
+    }
     showSettings.value = false
-    showTerms.value = true
+    showTermsModal.value = true
 }
-const closeTerms = () => {
-    showTerms.value = false
+const closeTermsModal = () => {
+    showTermsModal.value = false
+    showSettings.value = false
 }
 
 const toggleModeDropdown = () => {
@@ -1581,13 +1729,18 @@ const simulateScan = async (createReceipt = false) => {
       onError: (errors) => {
         scanning.value = false;
         console.error('Payment create errors:', errors);
-        alert('Failed to create payment: ' + JSON.stringify(errors));
+        if (typeof errors === 'object' && errors !== null) {
+          const firstError = Object.values(errors).flat()[0]
+          paymentError.value = firstError || 'Failed to create payment. Please try again.'
+        } else {
+          paymentError.value = 'Failed to create payment. Please try again.'
+        }
       },
     });
   } catch (err) {
     scanning.value = false;
     console.error(err);
-    alert('An unexpected error occurred while simulating the scan.');
+    paymentError.value = err.message || 'An unexpected error occurred while simulating the scan. Please try again.'
   }
 };
 
@@ -1602,8 +1755,10 @@ const processPayment = (gateway) => {
 }
 
 const acknowledgeOnsite = async () => {
+  paymentError.value = ''
+  
   if (!selectedRequest.value) {
-    alert('No request selected.')
+    paymentError.value = 'No request selected. Please refresh the page and try again.'
     return
   }
 
@@ -1636,10 +1791,22 @@ const acknowledgeOnsite = async () => {
     }
   } catch (axiosError) {
     console.error('Failed to create onsite payment:', axiosError)
-    if (axiosError.response && axiosError.response.data) {
-      alert('Failed to create onsite payment: ' + (axiosError.response.data.message || 'Please try again.'))
+    if (axiosError.response) {
+      if (axiosError.response.status === 422) {
+        const errors = axiosError.response.data.errors || {}
+        const firstError = Object.values(errors).flat()[0]
+        paymentError.value = firstError || 'Validation error. Please check your payment information and try again.'
+      } else if (axiosError.response.status === 403) {
+        paymentError.value = 'You do not have permission to submit this payment.'
+      } else if (axiosError.response.status === 404) {
+        paymentError.value = 'Request not found. Please refresh the page and try again.'
+      } else {
+        paymentError.value = axiosError.response.data?.message || 'Failed to create onsite payment. Please try again.'
+      }
+    } else if (axiosError.request) {
+      paymentError.value = 'Network error. Please check your internet connection and try again.'
     } else {
-      alert('Failed to create onsite payment. Please try again.')
+      paymentError.value = axiosError.message || 'An unexpected error occurred. Please try again.'
     }
   }
 }
@@ -1667,11 +1834,47 @@ const parseDate = (val) => {
 };
 
 const getPickupSchedule = (request = null) => {
-  const startRaw = request?.pickup_start ?? request?.raw?.pickup_start ?? null;
-  const endRaw = request?.pickup_end ?? request?.raw?.pickup_end ?? null;
+  // For event assistance requests, prioritize event_date + event_start
+  // For document requests, use pickup_start
+  let startRaw = null;
+  
+  // Check if this is an event assistance request
+  if (request?.event_assist_request_id || request?.event_type) {
+    // Event assistance: try pickup_start first (set by backend), then event_date + event_start
+    startRaw = request?.pickup_start ?? request?.raw?.pickup_start ?? null;
+    
+    // If pickup_start is not available, try to combine event_date + event_start
+    if (!startRaw && request?.event_date && request?.event_start) {
+      try {
+        const eventDate = parseDate(request.event_date);
+        const eventStart = request.event_start;
+        
+        // event_start might be a time string (H:i:s) or a datetime
+        if (eventDate) {
+          const dateStr = eventDate.toISOString().split('T')[0]; // YYYY-MM-DD
+          const timeStr = typeof eventStart === 'string' ? eventStart : (eventStart instanceof Date ? eventStart.toTimeString().split(' ')[0] : null);
+          
+          if (timeStr && timeStr.match(/^\d{2}:\d{2}:\d{2}$/)) {
+            // It's a time string, combine with date
+            startRaw = `${dateStr}T${timeStr}`;
+          } else {
+            // It's already a datetime
+            startRaw = request.event_start;
+          }
+        }
+      } catch (e) {
+        // Fallback to event_start as-is
+        startRaw = request.event_start;
+      }
+    } else if (!startRaw && request?.event_start) {
+      startRaw = request.event_start;
+    }
+  } else {
+    // Document request: use pickup_start
+    startRaw = request?.pickup_start ?? request?.raw?.pickup_start ?? null;
+  }
 
   const startDate = parseDate(startRaw);
-  const endDate = parseDate(endRaw);
 
   const dateOptions = { month: 'short', day: '2-digit', year: 'numeric' };
   const timeOptions = { hour: 'numeric', minute: '2-digit' };
@@ -1680,30 +1883,16 @@ const getPickupSchedule = (request = null) => {
     const dateStr = startDate.toLocaleDateString('en-US', dateOptions).toUpperCase();
     const startTimeStr = startDate.toLocaleTimeString('en-US', timeOptions);
 
-    if (endDate) {
-      const sameDay = startDate.toDateString() === endDate.toDateString();
-      const endTimeStr = endDate.toLocaleTimeString('en-US', timeOptions);
-      if (sameDay) {
-        return `${dateStr}, ${startTimeStr} - ${endTimeStr}`;
-      } else {
-        const endDateStr = endDate.toLocaleDateString('en-US', dateOptions).toUpperCase();
-        return `${dateStr}, ${startTimeStr} - ${endDateStr}, ${endTimeStr}`;
-      }
-    } else {
-      const hasTime = !(startTimeStr === '12:00 AM' && startDate.getHours() === 0 && startDate.getMinutes() === 0);
-      if (hasTime) {
-        return `${dateStr}, ${startTimeStr}`;
-      }
-      return `${dateStr}, 9:00 AM - 3:00 PM`;
+    // Only show start time, not end time
+    const hasTime = !(startTimeStr === '12:00 AM' && startDate.getHours() === 0 && startDate.getMinutes() === 0);
+    if (hasTime) {
+      return `${dateStr}, ${startTimeStr}`;
     }
+    return `${dateStr}, 9:00 AM`;
   }
 
-  const today = new Date();
-  const pickupDate = new Date(today);
-  pickupDate.setDate(today.getDate() + 3);
-
-  const defaultDateStr = pickupDate.toLocaleDateString('en-US', dateOptions).toUpperCase();
-  return `${defaultDateStr}, 9:00 AM - 3:00 PM`;
+  // If no date available, return a message instead of a default date
+  return 'Date not specified';
 };
 
 const handleClickOutside = (event) => {
@@ -2433,7 +2622,7 @@ const downloadReceipt = async () => {
     background: white;
     border-radius: 12px;
     box-shadow: 0 8px 25px rgba(0,0,0,0.15);
-    min-width: 200px;
+    min-width: 220px;
     z-index: 1000;
     margin-top: 10px;
     overflow: hidden;
@@ -2447,6 +2636,7 @@ const downloadReceipt = async () => {
     border-bottom: 1px solid #f0f0f0;
     cursor: pointer;
     font-weight: 500;
+    white-space: nowrap;
 }
 
 .settings-item:hover {
@@ -2491,7 +2681,7 @@ const downloadReceipt = async () => {
 
 .profile-name {
     font-weight: 700;
-    font-size: 17px;
+    font-size: 15px;
     text-shadow: 0 1px 3px rgba(0,0,0,0.2);
 }
 
@@ -3801,5 +3991,125 @@ padding: 10px;
 .details-modal,
 .payment-modal {
     padding: 30px 20px;
-}}
+}
+
+/* Terms Modal Styles */
+.terms-modal {
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    max-width: 800px;
+    width: 90%;
+    max-height: 90vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    animation: slideUp 0.3s ease;
+    position: relative;
+    z-index: 10001;
+}
+
+.terms-modal-header {
+    background: white;
+    padding: 25px 30px;
+    border-bottom: 1px solid #e0e0e0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.terms-modal-title {
+    margin: 0;
+    font-size: 28px;
+    font-weight: 700;
+    color: #333;
+}
+
+.terms-modal-close {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 8px;
+    color: #666;
+    transition: all 0.2s ease;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.terms-modal-close:hover {
+    background: #f0f0f0;
+    color: #333;
+}
+
+.terms-modal-body {
+    padding: 30px;
+    overflow-y: auto;
+    flex: 1;
+}
+
+.terms-section {
+    margin-bottom: 25px;
+}
+
+.terms-section:last-child {
+    margin-bottom: 0;
+}
+
+.terms-section-title {
+    margin: 0 0 12px 0;
+    font-size: 18px;
+    font-weight: 700;
+    color: #ff8c42;
+}
+
+.terms-text {
+    margin: 0;
+    font-size: 15px;
+    line-height: 1.7;
+    color: #555;
+    text-align: justify;
+}
+
+.terms-list {
+    margin: 10px 0 0 20px;
+    padding: 0;
+}
+
+.terms-list li {
+    margin-bottom: 8px;
+    font-size: 15px;
+    line-height: 1.6;
+    color: #555;
+}
+
+.terms-modal-footer {
+    padding: 20px 30px;
+    border-top: 1px solid #e0e0e0;
+    display: flex;
+    justify-content: center;
+    background: #f8f9fa;
+    flex-shrink: 0;
+}
+
+.terms-modal-btn {
+    padding: 12px 50px;
+    background: #ff8c42;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(255, 140, 66, 0.3);
+}
+
+.terms-modal-btn:hover {
+    background: #ff7a28;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(255, 140, 66, 0.4);
+}
 </style>

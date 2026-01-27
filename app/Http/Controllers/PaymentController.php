@@ -97,6 +97,11 @@ class PaymentController extends Controller
         try {
             $result = DB::transaction(function () use ($docReq, $amount, $payMethodId, $transactionRef, $data, $isOnsite, $request) {
 
+                // Check if there's an existing PENDING payment for this document request
+                $existingPayment = Payment::where('fk_doc_request_id', $docReq->doc_request_id)
+                    ->where('status', 'PENDING')
+                    ->first();
+
                 $receiptContent = null;
                 if ($request->hasFile('evidence') && $request->file('evidence')->isValid()) {
                     $file = $request->file('evidence');
@@ -105,6 +110,40 @@ class PaymentController extends Controller
                     $receiptContent = Storage::url($path);
                 }
 
+                // If existing payment found, update it instead of creating a new one
+                if ($existingPayment) {
+                    // Delete old receipt file if it exists and we're uploading a new one
+                    if ($receiptContent && $existingPayment->receipt_content) {
+                        $oldPath = str_replace(Storage::url(''), '', $existingPayment->receipt_content);
+                        if ($oldPath && Storage::disk('public')->exists($oldPath)) {
+                            Storage::disk('public')->delete($oldPath);
+                        }
+                    }
+
+                    // Update existing payment with new payment method and evidence
+                    $existingPayment->fk_pay_method_id = $payMethodId;
+                    $existingPayment->paid_amount = $amount;
+                    $existingPayment->updated_at = now();
+                    
+                    // Handle transaction_ref: if onsite, set to null; if online, use provided or generate one
+                    if ($isOnsite) {
+                        $existingPayment->transaction_ref = null;
+                    } else {
+                        // For online payments, use provided transaction_ref or generate one if not provided
+                        $existingPayment->transaction_ref = $transactionRef;
+                    }
+                    
+                    // Update receipt_content if new evidence is uploaded
+                    if ($receiptContent) {
+                        $existingPayment->receipt_content = $receiptContent;
+                    }
+                    
+                    $existingPayment->save();
+
+                    return ['payment' => $existingPayment, 'updated' => true];
+                }
+
+                // Create new payment if no existing PENDING payment found
                 $payment = Payment::create([
                     'fk_doc_request_id' => $docReq->doc_request_id,
                     'fk_user_id' => Auth::id() ?? ($data['fk_user_id'] ?? null),
@@ -118,21 +157,26 @@ class PaymentController extends Controller
                     'fk_treasurer_id' => null,
                     'paid_at' => null,
                     'handled_at' => null,
+                    'updated_at' => now(),
                 ]);
 
-                return ['payment' => $payment];
+                return ['payment' => $payment, 'updated' => false];
             });
 
             $paymentMethods = PaymentMethod::all(['pay_method_id', 'pay_method_name']);
 
+            $message = $result['updated'] 
+                ? 'Payment record updated successfully' 
+                : 'Payment record created';
+
             return response()->json([
-                'message' => 'Payment record created',
+                'message' => $message,
                 'payment' => $result['payment'],
                 'payment_methods' => $paymentMethods,
             ], 201);
         } catch (\Throwable $e) {
-            \Log::error('Payment creation failed: ' . $e->getMessage());
-            return response()->json(['message' => 'Failed to create payment', 'error' => $e->getMessage()], 500);
+            \Log::error('Payment creation/update failed: ' . $e->getMessage());
+            return response()->json(['message' => 'Failed to create/update payment', 'error' => $e->getMessage()], 500);
         }
     }
 

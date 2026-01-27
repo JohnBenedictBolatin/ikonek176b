@@ -36,6 +36,48 @@ class DiscussionController extends Controller
                 ->where('section', 'Discussion')
                 ->orderBy('created_at', 'desc')
                 ->get();
+            
+            // Try to load poll data separately to avoid breaking if poll tables don't exist
+            try {
+                // Load polls for posts that have is_poll = 1
+                $pollPostIds = $posts->where('is_poll', 1)->pluck('post_id')->toArray();
+                Log::info('Poll post IDs found:', ['post_ids' => $pollPostIds, 'count' => count($pollPostIds)]);
+                
+                if (!empty($pollPostIds)) {
+                    $polls = \App\Models\PostPoll::with(['options', 'votes'])
+                        ->whereIn('post_id', $pollPostIds)
+                        ->get()
+                        ->keyBy('post_id');
+                    
+                    Log::info('Polls loaded from database:', [
+                        'polls_count' => $polls->count(),
+                        'poll_ids' => $polls->pluck('id')->toArray(),
+                        'polls_with_options' => $polls->map(function($p) {
+                            return [
+                                'poll_id' => $p->id,
+                                'post_id' => $p->post_id,
+                                'options_count' => $p->options ? $p->options->count() : 0
+                            ];
+                        })->toArray()
+                    ]);
+                    
+                    // Attach polls to posts
+                    foreach ($posts as $post) {
+                        if ($post->is_poll && isset($polls[$post->post_id])) {
+                            $post->setRelation('poll', $polls[$post->post_id]);
+                            Log::info('Poll attached to post', [
+                                'post_id' => $post->post_id,
+                                'poll_id' => $polls[$post->post_id]->id,
+                                'options_count' => $polls[$post->post_id]->options ? $polls[$post->post_id]->options->count() : 0
+                            ]);
+                        }
+                    }
+                }
+            } catch (\Exception $e) {
+                Log::error('Could not load poll relationships: ' . $e->getMessage());
+                Log::error('Poll loading error trace: ' . $e->getTraceAsString());
+                // Continue without poll data - posts will still display
+            }
 
             Log::info('Posts fetched:', ['count' => $posts->count()]);
 
@@ -130,9 +172,104 @@ class DiscussionController extends Controller
                         }
                     }
 
+                    // Get poll data if this is a poll post (safely handle errors)
+                    $pollData = null;
+                    try {
+                        if ($post->is_poll) {
+                            // Reload poll with options if not already loaded
+                            if (!$post->poll || !$post->poll->relationLoaded('options')) {
+                                $poll = \App\Models\PostPoll::with(['options', 'votes'])
+                                    ->where('post_id', $post->post_id)
+                                    ->first();
+                            } else {
+                                $poll = $post->poll;
+                            }
+                            
+                            if ($poll) {
+                                // Use the loaded votes relationship if available, otherwise query
+                                $totalVotes = $poll->votes && $poll->votes->count() > 0 
+                                    ? $poll->votes->count() 
+                                    : ($poll->votes()->count() ?? 0);
+                                
+                                $userId = $authUser ? ($authUser->user_id ?? $authUser->id) : null;
+                                $userVote = null;
+                                if ($userId) {
+                                    $userVote = \App\Models\PollVote::where('poll_id', $poll->id)
+                                        ->where('user_id', $userId)
+                                        ->first();
+                                }
+
+                                // Safely get options - ensure we have options
+                                // Recalculate vote counts from actual votes for accuracy
+                                $voteCounts = \App\Models\PollVote::where('poll_id', $poll->id)
+                                    ->selectRaw('option_id, COUNT(*) as count')
+                                    ->groupBy('option_id')
+                                    ->pluck('count', 'option_id')
+                                    ->toArray();
+                                
+                                $options = [];
+                                if ($poll->options) {
+                                    $options = $poll->options->map(function($option) use ($totalVotes, $voteCounts) {
+                                        $actualCount = $voteCounts[$option->id] ?? 0;
+                                        return [
+                                            'id' => $option->id,
+                                            'option_text' => $option->option_text ?? '',
+                                            'vote_count' => max(0, $actualCount), // Use actual count, ensure non-negative
+                                            'percentage' => $totalVotes > 0 ? round((max(0, $actualCount) / $totalVotes) * 100, 1) : 0,
+                                        ];
+                                    })->toArray();
+                                } else {
+                                    // If options aren't loaded, query them directly
+                                    $pollOptions = \App\Models\PollOption::where('poll_id', $poll->id)
+                                        ->orderBy('id', 'asc')
+                                        ->get();
+                                    $options = $pollOptions->map(function($option) use ($totalVotes, $voteCounts) {
+                                        $actualCount = $voteCounts[$option->id] ?? 0;
+                                        return [
+                                            'id' => $option->id,
+                                            'option_text' => $option->option_text ?? '',
+                                            'vote_count' => max(0, $actualCount), // Use actual count, ensure non-negative
+                                            'percentage' => $totalVotes > 0 ? round((max(0, $actualCount) / $totalVotes) * 100, 1) : 0,
+                                        ];
+                                    })->toArray();
+                                }
+
+                                // Always set poll data if poll exists, even if options are empty (for debugging)
+                                $pollData = [
+                                    'id' => $poll->id,
+                                    'total_votes' => $totalVotes,
+                                    'user_voted_option_id' => $userVote ? $userVote->option_id : null,
+                                    'options' => $options,
+                                ];
+                                
+                                if (!empty($options)) {
+                                    Log::info('✅ Poll data loaded for post ' . $post->post_id, [
+                                        'poll_id' => $poll->id,
+                                        'options_count' => count($options),
+                                        'total_votes' => $totalVotes,
+                                        'options' => array_map(function($opt) {
+                                            return $opt['option_text'];
+                                        }, $options)
+                                    ]);
+                                } else {
+                                    Log::warning('⚠️ Poll has no options for post ' . $post->post_id, [
+                                        'poll_id' => $poll->id,
+                                        'post_id' => $post->post_id
+                                    ]);
+                                }
+                            }
+                        }
+                    } catch (\Exception $pollError) {
+                        Log::error('Error loading poll data for post ' . $post->post_id . ': ' . $pollError->getMessage());
+                        Log::error('Poll error trace: ' . $pollError->getTraceAsString());
+                        // Continue without poll data - don't break the post
+                        $pollData = null;
+                    }
+
                     return [
                         'id' => $post->post_id,
                         'author' => $authorName,
+                        'author_id' => $post->fk_post_author_id ?? $post->author?->user_id ?? null,
                         'avatar' => $authorAvatar,
                         'role' => $authorRole,
                         'tags' => $post->tags->pluck('tag_name')->toArray(),
@@ -143,6 +280,8 @@ class DiscussionController extends Controller
                         'content' => $post->content,
                         'images' => $images,
                         'video_content' => $post->video_content,
+                        'is_poll' => (bool) $post->is_poll,
+                        'poll' => $pollData,
                         'likes' => $likes,
                         'dislikes' => $dislikes,
                         'comments' => $comments,
@@ -160,10 +299,25 @@ class DiscussionController extends Controller
             $userRoleId = $authUser->fk_role_id ?? 1;
             $isEmployee = in_array($userRoleId, [2, 3, 4, 5, 6, 7, 9]);
             
+            // Get user restrictions
+            $restrictions = null;
+            if ($authUser) {
+                $restriction = \App\Models\UserRestriction::where('user_id', $authUser->user_id)->first();
+                if ($restriction) {
+                    $restrictions = [
+                        'restrict_posting' => $restriction->restrict_posting ?? false,
+                        'restrict_commenting' => $restriction->restrict_commenting ?? false,
+                        'restrict_document_request' => $restriction->restrict_document_request ?? false,
+                        'restrict_event_assistance_request' => $restriction->restrict_event_assistance_request ?? false,
+                    ];
+                }
+            }
+
             $viewName = $isEmployee ? 'User/Employee/E_Discussion' : 'User/Resident/R_Discussion';
             
             return Inertia::render($viewName, [
                 'posts' => $formattedPosts->values()->toArray(),
+                'restrictions' => $restrictions,
                 'auth' => [
                     'user' => $authUser ? [
                         'user_id' => $authUser->user_id,
@@ -247,19 +401,38 @@ class DiscussionController extends Controller
     {
         Log::info('🔵 DiscussionController@store called', $request->all());
 
-        $validated = $request->validate([
+        // Base validation rules
+        $rules = [
             'header' => ['nullable', 'string', 'max:255'],
             'content' => ['required', 'string', 'max:1000'],
             'tag_ids' => ['required', 'array', 'min:1'],
             'tag_ids.*' => ['integer', 'exists:tags,tag_id'],
             'image' => ['nullable', 'file', 'image', 'max:5120'],
             'video_content' => ['nullable', 'string'],
-        ]);
+            'is_poll' => ['nullable', 'boolean'],
+        ];
+
+        // Only require poll_options if is_poll is true
+        if ($request->boolean('is_poll')) {
+            $rules['poll_options'] = ['required', 'array', 'min:2', 'max:10'];
+            $rules['poll_options.*'] = ['required', 'string', 'max:255'];
+        } else {
+            $rules['poll_options'] = ['nullable', 'array'];
+            $rules['poll_options.*'] = ['nullable', 'string', 'max:255'];
+        }
+
+        $validated = $request->validate($rules);
 
         try {
             $userId = Auth::id();
             if (!$userId) {
                 return redirect()->back()->with('error', 'You must be logged in to post.');
+            }
+
+            // Check if user is restricted from posting
+            $restriction = \App\Models\UserRestriction::where('user_id', $userId)->first();
+            if ($restriction && $restriction->restrict_posting) {
+                return redirect()->back()->with('error', 'You are restricted from creating posts. Please check your notifications for more information.');
             }
 
             $post = new Post();
@@ -281,10 +454,49 @@ class DiscussionController extends Controller
             }
 
             $post->video_content = $request->input('video_content', null);
-            $post->is_poll = $request->boolean('is_poll') ? 1 : 0;
+            $isPoll = $request->boolean('is_poll');
+            $post->is_poll = $isPoll ? 1 : 0;
             $post->is_reported = 0;
 
             $post->save();
+
+            // Create poll if this is a poll post
+            if ($isPoll && $request->has('poll_options') && is_array($request->poll_options)) {
+                $pollOptions = array_filter($request->poll_options, function($option) {
+                    return !empty(trim($option));
+                });
+
+                if (count($pollOptions) >= 2) {
+                    try {
+                        $poll = \App\Models\PostPoll::create([
+                            'post_id' => $post->post_id,
+                        ]);
+
+                        foreach ($pollOptions as $optionText) {
+                            \App\Models\PollOption::create([
+                                'poll_id' => $poll->id,
+                                'option_text' => trim($optionText),
+                                'vote_count' => 0,
+                            ]);
+                        }
+
+                        Log::info('✅ Poll created with post', [
+                            'post_id' => $post->post_id,
+                            'poll_id' => $poll->id,
+                            'options_count' => count($pollOptions)
+                        ]);
+                    } catch (\Exception $pollError) {
+                        Log::error('❌ Error creating poll for post ' . $post->post_id . ': ' . $pollError->getMessage());
+                        // Don't fail the entire post creation if poll creation fails
+                        // Just log the error
+                    }
+                } else {
+                    Log::warning('Poll post created but not enough valid options', [
+                        'post_id' => $post->post_id,
+                        'options_count' => count($pollOptions)
+                    ]);
+                }
+            }
 
             // Attach tags
             if (!empty($validated['tag_ids'])) {
@@ -296,15 +508,30 @@ class DiscussionController extends Controller
                 ]);
             }
 
-            // Redirect based on user role
-            $userRoleId = Auth::user()->fk_role_id ?? 1;
-            $isEmployee = in_array($userRoleId, [2, 3, 4, 5, 6, 7, 9]);
-            
-            return redirect()->route('discussion_resident')
-                ->with('success', 'Post published successfully!');
+            Log::info('✅ Post created successfully in DiscussionController', [
+                'post_id' => $post->post_id,
+                'author_id' => $post->fk_post_author_id,
+                'section' => $post->section,
+                'content_length' => strlen($post->content),
+                'has_header' => !empty($post->header),
+                'has_image' => !empty($post->image_content),
+                'is_poll' => $post->is_poll
+            ]);
 
+            // Return success response - frontend will handle redirect after showing modal
+            // Using Inertia's back() to stay on the same page so modal can display
+            return back()->with('success', 'Post published successfully!');
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            // Re-throw validation exceptions so Inertia can handle them properly
+            Log::warning('Validation failed in DiscussionController@store', [
+                'errors' => $e->errors(),
+                'request_data' => $request->all()
+            ]);
+            throw $e;
         } catch (\Exception $e) {
             Log::error('❌ Exception in store: ' . $e->getMessage());
+            Log::error('Exception trace: ' . $e->getTraceAsString());
             return redirect()->back()
                 ->with('error', 'Error: ' . $e->getMessage())
                 ->withInput();
@@ -399,8 +626,23 @@ class DiscussionController extends Controller
                 ];
             });
 
+            // Get user restrictions
+            $restrictions = null;
+            if ($authUser) {
+                $restriction = \App\Models\UserRestriction::where('user_id', $authUser->user_id)->first();
+                if ($restriction) {
+                    $restrictions = [
+                        'restrict_posting' => $restriction->restrict_posting ?? false,
+                        'restrict_commenting' => $restriction->restrict_commenting ?? false,
+                        'restrict_document_request' => $restriction->restrict_document_request ?? false,
+                        'restrict_event_assistance_request' => $restriction->restrict_event_assistance_request ?? false,
+                    ];
+                }
+            }
+
             return Inertia::render('User/Resident/R_Announcement', [
                 'posts' => $formattedPosts->values()->toArray(),
+                'restrictions' => $restrictions,
                 'auth' => [
                     'user' => $authUser ? [
                         'user_id' => $authUser->user_id,
@@ -478,16 +720,29 @@ class DiscussionController extends Controller
 
     public function AnnounceStore(Request $request)
     {
-        Log::info('🔵 DiscussionController@store called', $request->all());
+        Log::info('🔵 DiscussionController@AnnounceStore called', $request->all());
 
-        $validated = $request->validate([
+        // Base validation rules
+        $rules = [
             'header' => ['nullable', 'string', 'max:255'],
             'content' => ['required', 'string', 'max:1000'],
             'tag_ids' => ['required', 'array', 'min:1'],
             'tag_ids.*' => ['integer', 'exists:tags,tag_id'],
             'image' => ['nullable', 'file', 'image', 'max:5120'],
             'video_content' => ['nullable', 'string'],
-        ]);
+            'is_poll' => ['nullable', 'boolean'],
+        ];
+
+        // Only require poll_options if is_poll is true
+        if ($request->boolean('is_poll')) {
+            $rules['poll_options'] = ['required', 'array', 'min:2', 'max:10'];
+            $rules['poll_options.*'] = ['required', 'string', 'max:255'];
+        } else {
+            $rules['poll_options'] = ['nullable', 'array'];
+            $rules['poll_options.*'] = ['nullable', 'string', 'max:255'];
+        }
+
+        $validated = $request->validate($rules);
 
         try {
             $userId = Auth::id();
@@ -514,10 +769,38 @@ class DiscussionController extends Controller
             }
 
             $post->video_content = $request->input('video_content', null);
-            $post->is_poll = $request->boolean('is_poll') ? 1 : 0;
+            $isPoll = $request->boolean('is_poll');
+            $post->is_poll = $isPoll ? 1 : 0;
             $post->is_reported = 0;
 
             $post->save();
+
+            // Create poll if this is a poll post
+            if ($isPoll && $request->has('poll_options') && is_array($request->poll_options)) {
+                $pollOptions = array_filter($request->poll_options, function($option) {
+                    return !empty(trim($option));
+                });
+
+                if (count($pollOptions) >= 2) {
+                    $poll = \App\Models\PostPoll::create([
+                        'post_id' => $post->post_id,
+                    ]);
+
+                    foreach ($pollOptions as $optionText) {
+                        \App\Models\PollOption::create([
+                            'poll_id' => $poll->id,
+                            'option_text' => trim($optionText),
+                            'vote_count' => 0,
+                        ]);
+                    }
+
+                    Log::info('✅ Poll created with announcement', [
+                        'post_id' => $post->post_id,
+                        'poll_id' => $poll->id,
+                        'options_count' => count($pollOptions)
+                    ]);
+                }
+            }
 
             // Attach tags
             if (!empty($validated['tag_ids'])) {

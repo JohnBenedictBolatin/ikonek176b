@@ -13,9 +13,8 @@
                 <div class="header-actions">
                     <img src="/assets/SETTINGS.png" alt="Settings" class="settings-btn-img" @click="toggleSettings" />
                     <div v-if="showSettings" class="settings-dropdown">
-                        <Link href="#" class="settings-item" @click="closeSettings">Help Center</Link>
-                        <button type="button" class="settings-item" @click="openTerms">Terms & Conditions</button>
-                        <Link href="#" class="settings-item" @click="logout">Sign Out</Link>
+                        <button type="button" class="settings-item" @click="openTerms">TERMS & CONDITIONS</button>
+                        <Link href="#" class="settings-item" @click="logout">SIGN OUT</Link>
                     </div>
                 </div>
             </div>
@@ -77,7 +76,7 @@
                 </div>
 
                 <button class="faq-btn" @click="openFAQ">
-                    ❓ FAQs & Help Center
+                    ❓ FAQS & HELP CENTER
                 </button>
             </div>
 
@@ -320,6 +319,10 @@ const fileInput = ref(null)
 
 const drafts = ref([])
 
+// Error handling state
+const formErrors = ref({})
+const submitError = ref('')
+
 // computed to map selected IDs to tag objects
 const selectedTagsData = computed(() => {
     if (!props.availableTags || !Array.isArray(props.availableTags)) return []
@@ -454,8 +457,12 @@ const handleFileUpload = (event) => {
 const removeFile = (index) => uploadedFiles.value.splice(index, 1)
 
 const publishPost = () => {
+    // Clear previous errors
+    formErrors.value = {}
+    submitError.value = ''
+    
     if (!postContent.value.trim()) {
-        alert('Please write something before publishing')
+        submitError.value = 'Please write something before publishing.'
         return
     }
     if (selectedTagIds.value.length === 0) {
@@ -488,13 +495,29 @@ const publishPost = () => {
             selectedTagIds.value = []
             uploadedFiles.value = []
             form.reset()
+            formErrors.value = {}
+            submitError.value = ''
             // redirect to discussion index
             router.visit(route('discussion_resident'))
         },
         onError: (errors) => {
             console.error('Server validation errors', errors)
-            if (errors.content) alert(errors.content[0])
-            if (errors.tag_ids) alert(errors.tag_ids[0])
+            // Handle validation errors
+            if (errors && typeof errors === 'object') {
+                formErrors.value = errors
+                const firstError = Object.values(errors).flat()[0]
+                submitError.value = firstError || 'Failed to publish post. Please check the form and try again.'
+                
+                // Scroll to error
+                setTimeout(() => {
+                    const errorContainer = document.querySelector('.error-message-container')
+                    if (errorContainer) {
+                        errorContainer.scrollIntoView({ behavior: 'smooth', block: 'center' })
+                    }
+                }, 100)
+            } else {
+                submitError.value = 'An error occurred while publishing your post. Please try again.'
+            }
         }
     })
 }
@@ -629,6 +652,7 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside))
     transition: all 0.2s;
     cursor: pointer;
     font-weight: 500;
+    white-space: nowrap;
 }
 
 .settings-item:hover {
@@ -680,7 +704,7 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside))
 
 .profile-name {
     font-weight: 700;
-    font-size: 17px;
+    font-size: 15px;
     text-shadow: 0 1px 3px rgba(0,0,0,0.2);
 }
 

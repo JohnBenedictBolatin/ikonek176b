@@ -13,9 +13,8 @@
                 <div class="header-actions">
                     <img src="/assets/SETTINGS.png" alt="Settings" class="settings-btn-img" @click="toggleSettings" />
                     <div v-if="showSettings" class="settings-dropdown">
-                        <Link href="#" class="settings-item" @click="closeSettings">Help Center</Link>
-                        <button type="button" class="settings-item" @click="openTerms">Terms & Conditions</button>
-                        <Link href="#" class="settings-item" @click="logout">Sign Out</Link>
+                        <a href="#" class="settings-item" @click.prevent.stop="openTermsModal">TERMS & CONDITIONS</a>
+                        <Link href="#" class="settings-item" @click="logout">SIGN OUT</Link>
                     </div>
                 </div>
             </div>
@@ -77,6 +76,7 @@
                             <path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0" />
                         </svg>
                         Notifications
+                        <span v-if="unreadCount > 0" class="unread-badge-nav">{{ unreadCount }}</span>
                     </Link>
                     <Link 
                         href="#" 
@@ -95,7 +95,7 @@
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="nav-icon">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 5.25h.008v.008H12v-.008Z" />
                     </svg>
-                    FAQs & Help Center
+                    FAQS & HELP CENTER
                 </button>
             </div>
 
@@ -161,8 +161,12 @@
                                 <!-- Send Message -->
                                 <div class="message-section">
                                     <h3 class="section-title">Send us a message</h3>
+                                    <div v-if="submitError" class="error-message" style="color: #dc3545; font-size: 14px; margin-bottom: 12px; padding: 10px; background-color: #f8d7da; border-radius: 4px; border: 1px solid #f5c6cb;">
+                                        {{ submitError }}
+                                    </div>
                                     <textarea
                                         v-model="message"
+                                        @input="submitError = ''"
                                         placeholder="Add your message here..."
                                         class="message-input"
                                         rows="4"
@@ -180,7 +184,133 @@
     </div>
 
     <!-- Terms & Conditions Modal -->
-    <TermsModal :open="showTerms" @close="closeTerms" />
+    <!-- Terms and Conditions Modal -->
+    <div v-if="showTermsModal" class="modal-overlay" @click.self="closeTermsModal">
+        <div class="terms-modal" @click.stop>
+            <div class="terms-modal-header">
+                <h2 class="terms-modal-title">Terms and Conditions</h2>
+                <button @click="closeTermsModal" class="terms-modal-close">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width: 24px; height: 24px;">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+            <div class="terms-modal-body">
+                <div class="terms-section">
+                    <h3 class="terms-section-title">1. Account Registration and Access</h3>
+                    <p class="terms-text">
+                        By creating an account and using the iKonek176B portal, you agree to provide accurate, current, and complete information during registration. You are responsible for maintaining the confidentiality of your account credentials and for all activities that occur under your account. You must immediately notify Barangay 176B of any unauthorized use of your account or any other breach of security.
+                    </p>
+                </div>
+
+                <div class="terms-section">
+                    <h3 class="terms-section-title">2. Use of Services</h3>
+                    <p class="terms-text">
+                        The iKonek176B portal is provided for legitimate barangay-related purposes only. You may use the portal to:
+                        <ul class="terms-list">
+                            <li>Submit document requests (e.g., Barangay Certificate, Barangay ID, Business Permit)</li>
+                            <li>Request event assistance for community activities</li>
+                            <li>View announcements and community updates</li>
+                            <li>Participate in community discussions and forums</li>
+                            <li>Access your request history and status</li>
+                        </ul>
+                    </p>
+                </div>
+
+                <div class="terms-section">
+                    <h3 class="terms-section-title">3. Accurate Information</h3>
+                    <p class="terms-text">
+                        You are responsible for ensuring that all information you submit through the portal is accurate, truthful, and complete. Providing false, misleading, or incomplete information may result in rejection of your requests, suspension of your account, and possible legal action. You must update your account information promptly if any changes occur.
+                    </p>
+                </div>
+
+                <div class="terms-section">
+                    <h3 class="terms-section-title">4. Document Requests</h3>
+                    <p class="terms-text">
+                        When submitting document requests, you must:
+                        <ul class="terms-list">
+                            <li>Provide all required documents and information</li>
+                            <li>Ensure documents are authentic and valid</li>
+                            <li>Pay applicable processing fees as required</li>
+                            <li>Follow pickup instructions and deadlines</li>
+                            <li>Use documents only for their intended legal purposes</li>
+                        </ul>
+                        The barangay reserves the right to verify all submitted information and documents. Approval of requests is subject to verification and compliance with barangay policies and regulations.
+                    </p>
+                </div>
+
+                <div class="terms-section">
+                    <h3 class="terms-section-title">5. Event Assistance Requests</h3>
+                    <p class="terms-text">
+                        When requesting event assistance, you must provide accurate event details, including date, time, location, and purpose. Event assistance is subject to availability and approval by barangay officials. You are responsible for ensuring your event complies with all applicable laws, regulations, and barangay policies. The barangay reserves the right to deny or cancel event assistance for any reason.
+                    </p>
+                </div>
+
+                <div class="terms-section">
+                    <h3 class="terms-section-title">6. Payment and Fees</h3>
+                    <p class="terms-text">
+                        Some services may require payment of processing fees. All fees must be paid according to the payment methods provided. Payments are non-refundable unless otherwise stated. The barangay is not responsible for delays or issues caused by payment processing errors or failures. You are responsible for ensuring payments are made correctly and on time.
+                    </p>
+                </div>
+
+                <div class="terms-section">
+                    <h3 class="terms-section-title">7. Data Privacy</h3>
+                    <p class="terms-text">
+                        Your personal information is collected and processed in accordance with the Data Privacy Act of 2012 (Republic Act No. 10173). The barangay will use your information only for legitimate purposes related to service delivery, record-keeping, and compliance with legal requirements. Your information will not be shared with unauthorized third parties except as required by law.
+                    </p>
+                </div>
+
+                <div class="terms-section">
+                    <h3 class="terms-section-title">8. Prohibited Activities</h3>
+                    <p class="terms-text">
+                        You are strictly prohibited from:
+                        <ul class="terms-list">
+                            <li>Using the portal for any illegal or unauthorized purpose</li>
+                            <li>Submitting false, fraudulent, or misleading information</li>
+                            <li>Attempting to gain unauthorized access to the system or other users' accounts</li>
+                            <li>Interfering with or disrupting the portal's operation</li>
+                            <li>Harassing, threatening, or abusing other users or barangay officials</li>
+                            <li>Posting inappropriate, offensive, or defamatory content</li>
+                            <li>Violating any applicable laws or regulations</li>
+                        </ul>
+                    </p>
+                </div>
+
+                <div class="terms-section">
+                    <h3 class="terms-section-title">9. Account Suspension and Termination</h3>
+                    <p class="terms-text">
+                        The barangay reserves the right to suspend or terminate your account at any time, with or without notice, if you violate these terms and conditions, engage in prohibited activities, or for any other reason deemed necessary by barangay officials. Upon termination, your right to use the portal will immediately cease.
+                    </p>
+                </div>
+
+                <div class="terms-section">
+                    <h3 class="terms-section-title">10. Limitation of Liability</h3>
+                    <p class="terms-text">
+                        The barangay is not liable for any delays, errors, or failures in service delivery caused by technical issues, system maintenance, incorrect information provided by users, or circumstances beyond the barangay's reasonable control. The barangay does not guarantee uninterrupted or error-free access to the portal.
+                    </p>
+                </div>
+
+                <div class="terms-section">
+                    <h3 class="terms-section-title">11. Updates to Terms</h3>
+                    <p class="terms-text">
+                        These terms and conditions may be updated periodically. You will be notified of significant changes through the portal or other communication channels. Continued use of the portal after changes constitutes acceptance of the updated terms.
+                    </p>
+                </div>
+
+                <div class="terms-section">
+                    <h3 class="terms-section-title">12. Contact and Support</h3>
+                    <p class="terms-text">
+                        For questions, concerns, or to report issues related to your account or the portal, contact the Barangay 176B office at ikonek176b@dev.ph or +639193076338. For technical support or assistance with using the portal, please visit the Help Center section.
+                    </p>
+                </div>
+            </div>
+            <div class="terms-modal-footer">
+                <button @click="closeTermsModal" class="terms-modal-btn">
+                    I UNDERSTAND
+                </button>
+            </div>
+        </div>
+    </div>
 </template>
 
 <script setup>
@@ -188,7 +318,7 @@ import { Link, usePage } from '@inertiajs/vue3'
 import { Head } from '@inertiajs/vue3'
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { router } from '@inertiajs/vue3'
-import TermsModal from '@/Components/TermsModal.vue'
+import axios from 'axios'
 
 const page = usePage()
 
@@ -240,7 +370,9 @@ const profilePictureUrl = computed(() => {
 
 const showSettings = ref(false)
 const activeTab = ref('help')
+const unreadCount = ref(0)
 const message = ref('')
+const submitError = ref('')
 
 const faqs = ref([
     {
@@ -284,13 +416,17 @@ const closeSettings = () => {
 }
 
 // Terms & Conditions modal
-const showTerms = ref(false)
-const openTerms = () => {
+const showTermsModal = ref(false)
+const openTermsModal = (e) => {
+    if (e) {
+        e.preventDefault()
+        e.stopPropagation()
+    }
     showSettings.value = false
-    showTerms.value = true
+    showTermsModal.value = true
 }
-const closeTerms = () => {
-    showTerms.value = false
+const closeTermsModal = () => {
+    showTermsModal.value = false
 }
 
 const logout = () => {
@@ -346,6 +482,20 @@ const navigateToEvents = () => {
 
 const navigateToNotifications = () => { activeTab.value = 'notifications'; router.visit(route('notification_request_employee')) }
 
+// Fetch unread notification count
+const fetchUnreadCount = async () => {
+    try {
+        const response = await axios.get('/api/notifications')
+        if (response.data.success) {
+            const notifications = response.data.notifications || []
+            unreadCount.value = notifications.filter(n => !n.is_read).length
+        }
+    } catch (error) {
+        console.error('Error fetching unread count:', error)
+        unreadCount.value = 0
+    }
+}
+
 const navigateToProfile = () => {
     activeTab.value = 'profile'
     router.visit(route('profile_employee'))
@@ -356,13 +506,15 @@ const toggleFAQ = (index) => {
 }
 
 const submitMessage = () => {
+    submitError.value = ''
+    
     if (!message.value.trim()) {
-        alert('Please enter a message before submitting.')
+        submitError.value = 'Please enter a message before submitting.'
         return
     }
 
     if (message.value.trim().length < 10) {
-        alert('Please enter a message with at least 10 characters.')
+        submitError.value = 'Please enter a message with at least 10 characters.'
         return
     }
 
@@ -371,14 +523,20 @@ const submitMessage = () => {
     }, {
         preserveScroll: true,
         onSuccess: () => {
+            submitError.value = ''
             alert('Thank you for your message! We will get back to you as soon as possible.')
             message.value = ''
         },
         onError: (errors) => {
-            if (errors.message) {
-                alert('Error: ' + errors.message)
+            if (errors && typeof errors === 'object') {
+                if (errors.message) {
+                    submitError.value = errors.message
+                } else {
+                    const firstError = Object.values(errors).flat()[0]
+                    submitError.value = firstError || 'An error occurred while submitting your message. Please try again.'
+                }
             } else {
-                alert('An error occurred while submitting your message. Please try again.')
+                submitError.value = 'An error occurred while submitting your message. Please try again.'
             }
         }
     })
@@ -392,10 +550,27 @@ const handleClickOutside = (event) => {
 
 onMounted(() => {
     document.addEventListener('click', handleClickOutside)
+    
+    // Fetch unread count on mount
+    fetchUnreadCount()
+    
+    // Set up polling to update unread count every 30 seconds
+    const unreadCountInterval = setInterval(() => {
+        fetchUnreadCount()
+    }, 30000)
+    
+    // Store interval ID for cleanup
+    window.unreadCountInterval = unreadCountInterval
 })
 
 onUnmounted(() => {
     document.removeEventListener('click', handleClickOutside)
+    
+    // Clear unread count polling interval
+    if (window.unreadCountInterval) {
+        clearInterval(window.unreadCountInterval)
+        window.unreadCountInterval = null
+    }
 })
 </script>
 
@@ -472,6 +647,7 @@ onUnmounted(() => {
     border-bottom: 1px solid #f0f0f0;
     cursor: pointer;
     font-weight: 500;
+    white-space: nowrap;
 }
 
 .settings-item:hover {
@@ -516,7 +692,7 @@ onUnmounted(() => {
 
 .profile-name {
     font-weight: 700;
-    font-size: 17px;
+    font-size: 15px;
     text-shadow: 0 1px 3px rgba(0,0,0,0.2);
 }
 
@@ -562,6 +738,19 @@ onUnmounted(() => {
 
 .nav-item:last-child {
     border-bottom: none;
+}
+
+.unread-badge-nav {
+    background: linear-gradient(135deg, #ff8c42, #ff7a28);
+    color: white;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 4px 8px;
+    border-radius: 12px;
+    min-width: 20px;
+    text-align: center;
+    margin-left: auto;
+    box-shadow: 0 2px 6px rgba(255, 140, 66, 0.4);
 }
 
 .nav-item:hover {
@@ -833,5 +1022,140 @@ onUnmounted(() => {
     .help-grid {
         gap: 20px;
     }
+}
+
+/* Terms and Conditions Modal Styles */
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.modal-overlay:has(.terms-modal) {
+    z-index: 10000 !important;
+}
+
+.terms-modal {
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    max-width: 800px;
+    width: 90%;
+    max-height: 90vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    animation: slideUp 0.3s ease;
+    position: relative;
+    z-index: 10001;
+}
+
+.terms-modal-header {
+    background: white;
+    padding: 25px 30px;
+    border-bottom: 1px solid #e0e0e0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.terms-modal-title {
+    margin: 0;
+    font-size: 28px;
+    font-weight: 700;
+    color: #333;
+}
+
+.terms-modal-close {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 8px;
+    color: #666;
+    transition: all 0.2s ease;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.terms-modal-close:hover {
+    background: #f0f0f0;
+    color: #333;
+}
+
+.terms-modal-body {
+    padding: 30px;
+    overflow-y: auto;
+    flex: 1;
+}
+
+.terms-section {
+    margin-bottom: 25px;
+}
+
+.terms-section:last-child {
+    margin-bottom: 0;
+}
+
+.terms-section-title {
+    margin: 0 0 12px 0;
+    font-size: 18px;
+    font-weight: 700;
+    color: #ff8c42;
+}
+
+.terms-text {
+    margin: 0;
+    font-size: 15px;
+    line-height: 1.7;
+    color: #555;
+    text-align: justify;
+}
+
+.terms-list {
+    margin: 10px 0 0 20px;
+    padding: 0;
+}
+
+.terms-list li {
+    margin-bottom: 8px;
+    font-size: 15px;
+    line-height: 1.6;
+    color: #555;
+}
+
+.terms-modal-footer {
+    padding: 20px 30px;
+    border-top: 1px solid #e0e0e0;
+    display: flex;
+    justify-content: center;
+    background: #f8f9fa;
+    flex-shrink: 0;
+}
+
+.terms-modal-btn {
+    padding: 12px 50px;
+    background: #ff8c42;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(255, 140, 66, 0.3);
+}
+
+.terms-modal-btn:hover {
+    background: #ff7a28;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(255, 140, 66, 0.4);
 }
 </style>  

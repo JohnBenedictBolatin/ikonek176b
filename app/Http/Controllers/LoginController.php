@@ -52,15 +52,27 @@ class LoginController extends Controller
         // normalize phone (digits only) for user credential lookup
         $phoneOnly = preg_replace('/\D/', '', $rawLogin);
 
-        // Helper closure for returning a generic error (keeps messages consistent)
+        // Helper closures for returning specific error messages
+        $invalidContactNumberResponse = function () use ($request) {
+            return back()->withErrors(['phone' => 'Incorrect contact number. Please try again.'])->withInput();
+        };
+        
+        $invalidPasswordResponse = function () use ($request) {
+            return back()->withErrors(['password' => 'Wrong password. Please try again.'])->withInput();
+        };
+        
+        // Generic error for fallback cases
         $invalidCredentialsResponse = function ($field = 'phone') use ($request) {
-            return back()->withErrors([$field => 'Invalid contact number, username, or credentials'])->withInput();
+            if ($field === 'password') {
+                return back()->withErrors(['password' => 'Wrong password. Please try again.'])->withInput();
+            }
+            return back()->withErrors(['phone' => 'Incorrect contact number. Please try again.'])->withInput();
         };
 
         // -------------------------
         // USER-CREDENTIALS PATH
         // -------------------------
-        $attemptUserCredentials = function () use ($phoneOnly, $providedPassword, $invalidCredentialsResponse) {
+        $attemptUserCredentials = function () use ($phoneOnly, $providedPassword, $invalidContactNumberResponse, $invalidPasswordResponse) {
             if (empty($phoneOnly)) {
                 return null; // cannot try user credentials without numeric phone
             }
@@ -74,19 +86,26 @@ class LoginController extends Controller
                 return null;
             }
 
+            // Check if user exists (user might have been deleted)
+            $user = $credential->user ?? $credential->users ?? null;
+            if (! $user) {
+                // User was deleted but credential still exists - clean it up
+                $credential->delete();
+                \Log::info('Deleted orphaned user credential during login attempt', [
+                    'phone_number' => $phoneOnly,
+                    'user_cred_id' => $credential->user_cred_id
+                ]);
+                return back()->withErrors(['phone' => 'Account not found. The account may have been deleted. Please register again.'])->withInput();
+            }
+
             // verify password (assuming hashed in DB)
             if (! Hash::check($providedPassword, $credential->password)) {
-                return $invalidCredentialsResponse('password');
+                return $invalidPasswordResponse();
             }
 
             // optional approval check
             if (isset($credential->is_approved) && ! $credential->is_approved) {
                 return back()->withErrors(['phone' => 'Your registration is pending admin approval.'])->withInput();
-            }
-
-            $user = $credential->user ?? $credential->users ?? null;
-            if (! $user) {
-                return back()->withErrors(['phone' => 'Associated user record missing. Contact administrator.']);
             }
 
             Auth::login($user);
@@ -107,7 +126,7 @@ class LoginController extends Controller
         // -------------------------
         // ADMIN-CREDENTIALS PATH
         // -------------------------
-        $attemptAdminCredentials = function () use ($rawLogin, $providedPassword, $invalidCredentialsResponse) {
+        $attemptAdminCredentials = function () use ($rawLogin, $providedPassword, $invalidContactNumberResponse, $invalidPasswordResponse) {
             $adminCred = AdminCredential::with('user')
                 ->where('username', $rawLogin)
                 ->first();
@@ -164,7 +183,7 @@ class LoginController extends Controller
             }
 
             if (! $passwordVerified) {
-                return $invalidCredentialsResponse('password');
+                return $invalidPasswordResponse();
             }
 
             if (isset($adminCred->is_approved) && ! $adminCred->is_approved) {
@@ -173,7 +192,13 @@ class LoginController extends Controller
 
             $user = $adminCred->user ?? $adminCred->users ?? null;
             if (! $user) {
-                return back()->withErrors(['phone' => 'Associated user record missing for admin. Contact administrator.']);
+                // User was deleted but admin credential still exists - clean it up
+                $adminCred->delete();
+                \Log::info('Deleted orphaned admin credential during login attempt', [
+                    'username' => $rawLogin,
+                    'admin_cred_id' => $adminCred->admin_cred_id
+                ]);
+                return back()->withErrors(['phone' => 'Account not found. The account may have been deleted. Please contact administrator.'])->withInput();
             }
 
             Auth::login($user);
@@ -197,13 +222,13 @@ class LoginController extends Controller
         if ($mode === 'user_only') {
             $result = $attemptUserCredentials();
             // attemptUserCredentials returns redirect Response when successful or a RedirectResponse on errors,
-            // or null if not found. If null -> return invalid credentials.
-            return $result ?? $invalidCredentialsResponse('phone');
+            // or null if not found. If null -> return invalid contact number error.
+            return $result ?? $invalidContactNumberResponse();
         }
 
         if ($mode === 'admin_only') {
             $result = $attemptAdminCredentials();
-            return $result ?? $invalidCredentialsResponse('phone');
+            return $result ?? $invalidContactNumberResponse();
         }
 
         // fallback: try user credentials first, then admin credentials
@@ -217,8 +242,8 @@ class LoginController extends Controller
             return $result;
         }
 
-        // nothing matched
-        return $invalidCredentialsResponse('phone');
+        // nothing matched - contact number not found
+        return $invalidContactNumberResponse();
     }
 
     /**

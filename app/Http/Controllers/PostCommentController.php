@@ -34,6 +34,14 @@ class PostCommentController extends Controller
         return [$hasName, $hasFirst, $hasLast, $hasAvatar, $hasProfilePic];
     }
 
+    private function resolveCommentReactionsColumns(): array
+    {
+        $commentCol = Schema::hasColumn('comment_reactions', 'fk_comment_id') ? 'fk_comment_id' : 'comment_id';
+        $userCol = Schema::hasColumn('comment_reactions', 'fk_user_id') ? 'fk_user_id' : 'user_id';
+        
+        return [$commentCol, $userCol];
+    }
+
     /**
      * Store a new comment or reply.
      *
@@ -50,6 +58,16 @@ class PostCommentController extends Controller
                     'success' => false,
                     'message' => 'Unauthenticated.',
                 ], 401);
+            }
+
+            // Check if user is restricted from commenting
+            $userId = $user->user_id ?? $user->id;
+            $restriction = \App\Models\UserRestriction::where('user_id', $userId)->first();
+            if ($restriction && $restriction->restrict_commenting) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'You are restricted from commenting. Please check your notifications for more information.',
+                ], 403);
             }
 
             $validated = $request->validate([
@@ -150,6 +168,7 @@ class PostCommentController extends Controller
             // Select PK + parent + content + created + user identity fields.
             $select = [
                 "post_comments.$pkCol as id",
+                "post_comments.$userCol as author_id",
                 'post_comments.comment_text',
                 'post_comments.created_at',
             ];
@@ -195,9 +214,13 @@ class PostCommentController extends Controller
                         : '/storage/' . $profilePic)
                     : ($avatarField ?? '/assets/DEFAULT.jpg');
 
+                // Normalize ID to int for consistent lookups
+                $commentId = (int)$row->id;
+                
                 $comment = [
-                    'id' => $row->id,
+                    'id' => $commentId,
                     'author' => (!empty(trim($row->author_name ?? '')) ? $row->author_name : 'Unknown'),
+                    'author_id' => $row->author_id ?? null,
                     'avatar' => $avatar,
                     'date' => $createdAt->toISOString(),
                     'text' => $row->comment_text ?? '',
@@ -208,20 +231,118 @@ class PostCommentController extends Controller
                     'replies' => [],
                 ];
 
-                $commentsById[$row->id] = $comment;
+                $commentsById[$commentId] = $comment;
             }
 
-            // Attach replies
+            // Attach replies (use references so reaction updates propagate)
             foreach ($rows as $row) {
-                $parentId = $row->parent_id ?? null;
+                $parentId = $row->parent_id ? (int)$row->parent_id : null;
+                $commentId = (int)$row->id;
+                
                 if ($parentId) {
-                    if (isset($commentsById[$parentId]) && isset($commentsById[$row->id])) {
-                        $commentsById[$parentId]['replies'][] = $commentsById[$row->id];
+                    if (isset($commentsById[$parentId]) && isset($commentsById[$commentId])) {
+                        $commentsById[$parentId]['replies'][] = &$commentsById[$commentId];
                     }
                 } else {
-                    if (isset($commentsById[$row->id])) {
-                        $rootComments[] = $commentsById[$row->id];
+                    if (isset($commentsById[$commentId])) {
+                        $rootComments[] = &$commentsById[$commentId];
                     }
+                }
+            }
+
+            // Load reaction counts for all comments (including replies)
+            $authUser = Auth::user();
+            $userId = $authUser ? ($authUser->user_id ?? $authUser->id) : null;
+            
+            $allCommentIds = array_keys($commentsById);
+            if (!empty($allCommentIds) && Schema::hasTable('comment_reactions')) {
+                try {
+                    [$commentCol, $userCol] = $this->resolveCommentReactionsColumns();
+                    
+                    // Get all reaction counts
+                    $reactionCountsRaw = DB::table('comment_reactions')
+                        ->whereIn($commentCol, $allCommentIds)
+                        ->select($commentCol . ' as comment_id', 'reaction_type', DB::raw('count(*) as count'))
+                        ->groupBy($commentCol, 'reaction_type')
+                        ->get();
+                    
+                    // Group by comment_id, ensuring consistent key types
+                    $reactionCounts = [];
+                    foreach ($reactionCountsRaw as $reaction) {
+                        $id = (int)$reaction->comment_id; // Normalize to int
+                        if (!isset($reactionCounts[$id])) {
+                            $reactionCounts[$id] = collect();
+                        }
+                        $reactionCounts[$id]->push($reaction);
+                    }
+
+                    // Get user reactions
+                    $userReactions = [];
+                    if ($userId) {
+                        $userReactionsRaw = DB::table('comment_reactions')
+                            ->whereIn($commentCol, $allCommentIds)
+                            ->where($userCol, $userId)
+                            ->select($commentCol, 'reaction_type')
+                            ->get();
+                        
+                        foreach ($userReactionsRaw as $reaction) {
+                            $id = (int)$reaction->{$commentCol}; // Normalize to int
+                            $userReactions[$id] = $reaction->reaction_type;
+                        }
+                    }
+
+                    // Apply reaction counts to all comments and replies
+                    foreach ($commentsById as $commentId => &$comment) {
+                        // Normalize commentId to int for consistent lookup
+                        $normalizedId = (int)$commentId;
+                        
+                        // Get reaction counts for this comment
+                        $counts = $reactionCounts[$normalizedId] ?? collect();
+                        
+                        $likeCount = $counts->where('reaction_type', 'Like')->sum('count');
+                        $dislikeCount = $counts->where('reaction_type', 'Dislike')->sum('count');
+                        
+                        $comment['likes'] = is_numeric($likeCount) ? (int)$likeCount : 0;
+                        $comment['dislikes'] = is_numeric($dislikeCount) ? (int)$dislikeCount : 0;
+                        
+                        // Get user reaction for this comment
+                        $userReaction = $userReactions[$normalizedId] ?? null;
+                        $comment['userLiked'] = $userReaction === 'Like';
+                        $comment['userDisliked'] = $userReaction === 'Dislike';
+                    }
+                    unset($comment);
+                    
+                    // Explicitly update root comments and nested replies to ensure data is synced
+                    // (References might not work properly when serialized to JSON)
+                    foreach ($rootComments as &$rootComment) {
+                        $rootCommentId = isset($rootComment['id']) ? (int)$rootComment['id'] : null;
+                        if ($rootCommentId && isset($commentsById[$rootCommentId])) {
+                            // Update root comment reaction data
+                            $rootComment['likes'] = $commentsById[$rootCommentId]['likes'];
+                            $rootComment['dislikes'] = $commentsById[$rootCommentId]['dislikes'];
+                            $rootComment['userLiked'] = $commentsById[$rootCommentId]['userLiked'];
+                            $rootComment['userDisliked'] = $commentsById[$rootCommentId]['userDisliked'];
+                            
+                            // Update nested replies
+                            if (isset($rootComment['replies']) && is_array($rootComment['replies'])) {
+                                foreach ($rootComment['replies'] as &$reply) {
+                                    $replyId = isset($reply['id']) ? (int)$reply['id'] : null;
+                                    if ($replyId && isset($commentsById[$replyId])) {
+                                        $reply['likes'] = $commentsById[$replyId]['likes'];
+                                        $reply['dislikes'] = $commentsById[$replyId]['dislikes'];
+                                        $reply['userLiked'] = $commentsById[$replyId]['userLiked'];
+                                        $reply['userDisliked'] = $commentsById[$replyId]['userDisliked'];
+                                    }
+                                }
+                                unset($reply);
+                            }
+                        }
+                    }
+                    unset($rootComment);
+                } catch (\Exception $e) {
+                    Log::error('Error loading comment reactions: ' . $e->getMessage(), [
+                        'trace' => $e->getTraceAsString()
+                    ]);
                 }
             }
 
@@ -324,6 +445,72 @@ class PostCommentController extends Controller
                 'comment_id' => $commentId,
                 'post_author_id' => $postAuthorId ?? 'null'
             ]);
+        }
+    }
+
+    /**
+     * Delete a comment (only by the author)
+     */
+    public function destroy($commentId)
+    {
+        try {
+            $user = Auth::user();
+            if (!$user) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthenticated.',
+                ], 401);
+            }
+
+            [$postCol, $userCol, $parentCol, $pkCol] = $this->resolvePostCommentsColumns();
+            $userId = $user->user_id ?? $user->id;
+
+            // Get the comment
+            $comment = DB::table('post_comments')
+                ->where($pkCol, $commentId)
+                ->first();
+
+            if (!$comment) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Comment not found.',
+                ], 404);
+            }
+
+            $commentAuthorId = $comment->$userCol ?? null;
+
+            // Check if user is the author
+            if ($userId != $commentAuthorId) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'You can only delete your own comments.',
+                ], 403);
+            }
+
+            // Delete the comment (cascade should handle replies if configured)
+            DB::table('post_comments')
+                ->where($pkCol, $commentId)
+                ->delete();
+
+            Log::info('Comment deleted by author', [
+                'comment_id' => $commentId,
+                'user_id' => $userId
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Comment deleted successfully.',
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('Error deleting comment: ' . $e->getMessage(), [
+                'comment_id' => $commentId,
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to delete comment.',
+                'error' => config('app.debug') ? $e->getMessage() : null,
+            ], 500);
         }
     }
 }

@@ -28,7 +28,7 @@
 
         <!-- Navigation Bar -->
         <div class="navbar">
-            <Link href="/employee/announcement">📱Post</Link>
+                <Link href="/employee/announcement">📱Post</Link>
             <Link :href="typeof route !== 'undefined' ? route('document_request_select_employee') : '/e_document_request_select'">Document</Link>
             <Link :href="typeof route !== 'undefined' ? route('notification_activities_employee') : '/e_notification_activities'">Notification</Link>
             <Link :href="typeof route !== 'undefined' ? route('profile_employee') : '/e_profile'">Profile</Link>

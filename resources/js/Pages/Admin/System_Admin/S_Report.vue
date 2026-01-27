@@ -1,6 +1,6 @@
 <template>
     <Head>
-        <title>Report</title>
+        <title>Reports & Messages</title>
     </Head>
 
     <!-- Full Screen Layout -->
@@ -15,9 +15,8 @@
                     <img src="/assets/SETTINGS.png" alt="Settings" class="settings-btn-img" @click="toggleSettings" />
                     <!-- Settings Dropdown -->
                     <div v-if="showSettings" class="settings-dropdown">
-                        <Link href="#" class="settings-item" @click="closeSettings">Help Center</Link>
-                        <Link href="#" class="settings-item" @click="closeSettings">Terms & Conditions</Link>
-                        <Link href="#" class="settings-item" @click="logout">Sign Out</Link>
+                        <a href="#" class="settings-item" @click.prevent.stop="openTermsModal">TERMS & CONDITIONS</a>
+                        <Link href="#" class="settings-item" @click="logout">SIGN OUT</Link>
                     </div>
                 </div>
             </div>
@@ -47,6 +46,25 @@
                         Dashboard
                     </Link>
                     <Link 
+                        :href="route('registration_employee')" 
+                        class="nav-item"
+                    >
+                        <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                        </svg>
+                        Register Official
+                    </Link>
+                    <Link 
+                        href="#" 
+                        class="nav-item"
+                        @click="navigateToRegisterRequest"
+                    >
+                        <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                        </svg>
+                        Register Requests
+                    </Link>
+                    <Link 
                         href="#" 
                         class="nav-item"
                         @click="navigateToHistory"
@@ -58,31 +76,12 @@
                     </Link>
                     <Link 
                         href="#" 
-                        class="nav-item"
-                        @click="navigateToRegisterRequest"
-                    >
-                        <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                        </svg>
-                        Register Request
-                    </Link>
-                    <Link 
-                        :href="route('registration_employee')" 
-                        class="nav-item"
-                    >
-                        <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                        </svg>
-                        Register Official
-                    </Link>
-                    <Link 
-                        href="#" 
                         class="nav-item active"
                     >
                         <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                         </svg>
-                        Report
+                        Reports & Messages
                     </Link>
                 </div>
             </div>
@@ -105,6 +104,19 @@
                     <div class="filter-section">
                         <div class="filter-left">
                             <span class="filter-label">Filter by</span>
+                            <div class="filter-dropdown-wrapper">
+                                <button class="filter-dropdown-btn" @click="toggleTypeDropdown">
+                                    {{ typeFilter === 'all' ? 'ALL' : typeFilter === 'report' ? 'REPORTS' : 'MESSAGES' }}
+                                    <svg class="filter-arrow" :class="{ rotated: showTypeDropdown }" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width: 12px; height: 12px;">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+                                    </svg>
+                                </button>
+                                <div v-if="showTypeDropdown" class="filter-dropdown-menu">
+                                    <button @click="selectType('all')" :class="{ active: typeFilter === 'all' }">ALL</button>
+                                    <button @click="selectType('report')" :class="{ active: typeFilter === 'report' }">REPORTS</button>
+                                    <button @click="selectType('contact')" :class="{ active: typeFilter === 'contact' }">MESSAGES</button>
+                                </div>
+                            </div>
                             <div class="filter-dropdown-wrapper">
                                 <button class="filter-dropdown-btn" @click="toggleSortDropdown">
                                     {{ sortOption.toUpperCase() }}
@@ -157,14 +169,26 @@
                             v-for="report in filteredReports" 
                             :key="report.id"
                             class="report-card"
+                            :class="report.type === 'contact' ? 'contact-card' : 'post-report-card'"
                         >
                             <!-- Contact Message Section -->
                             <div v-if="report.type === 'contact'" class="contact-message-section">
-                                <div class="section-label">
-                                    <svg class="message-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                                    </svg>
-                                    <span>Contact Message</span>
+                                <div class="contact-message-header">
+                                    <div class="type-badge contact-badge">
+                                        <svg class="message-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                                        </svg>
+                                        <span>Contact Message</span>
+                                    </div>
+                                    <!-- Action Buttons for Contact Messages -->
+                                    <div class="action-buttons-top">
+                                        <button @click="markContactAsRead(report)" class="read-btn">
+                                            MARK AS READ
+                                        </button>
+                                        <button @click="markContactAsReplied(report)" class="replied-btn">
+                                            MARK AS REPLIED
+                                        </button>
+                                    </div>
                                 </div>
                                 <div class="contact-message-preview">
                                     <div class="contact-sender-info">
@@ -195,26 +219,42 @@
                                         <p class="message-text">{{ report.message }}</p>
                                     </div>
                                 </div>
-                                <!-- Action Buttons for Contact Messages -->
-                                <div class="action-buttons">
-                                    <button @click="markContactAsRead(report)" class="read-btn">
-                                        Mark as Read
-                                    </button>
-                                    <button @click="markContactAsReplied(report)" class="replied-btn">
-                                        Mark as Replied
-                                    </button>
-                                </div>
                             </div>
 
                             <!-- Post Report Section (existing) -->
                             <template v-else>
                                 <!-- Reported Post Section -->
                                 <div class="reported-post-section">
-                                    <div class="section-label">
-                                        <svg class="flag-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                                        </svg>
-                                        <span>Reported Post</span>
+                                    <div class="reported-post-header">
+                                        <div class="type-badge report-badge">
+                                            <svg class="flag-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                            </svg>
+                                            <span>Reported Post</span>
+                                        </div>
+                                        <!-- Action Buttons -->
+                                        <div class="action-buttons-top">
+                                            <button 
+                                                v-if="!report.postAuthorIsRestricted"
+                                                @click="openRestrictModal(report)" 
+                                                class="restrict-btn"
+                                            >
+                                                RESTRICT USER
+                                            </button>
+                                            <button 
+                                                v-else
+                                                @click="openRestrictModal(report)" 
+                                                class="unrestrict-btn"
+                                            >
+                                                UPDATE RESTRICTIONS
+                                            </button>
+                                            <button @click="openModal(report, 'keep')" class="keep-btn">
+                                                KEEP POST
+                                            </button>
+                                            <button @click="openModal(report, 'delete')" class="delete-btn">
+                                                REMOVE POST
+                                            </button>
+                                        </div>
                                     </div>
                                     <div class="post-preview">
                                         <div class="post-author-info">
@@ -230,6 +270,9 @@
                                         <div class="post-content-preview">
                                             <h4 class="post-title">{{ report.postTitle }}</h4>
                                             <p class="post-text">{{ report.postContent }}</p>
+                                            <div v-if="report.postImage" class="post-image-container">
+                                                <img :src="report.postImage" :alt="report.postTitle" class="post-image" @error="$event.target.style.display='none'" />
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -242,39 +285,31 @@
                                         </svg>
                                         <span>Reported By</span>
                                     </div>
-                                    <div class="reporter-info">
-                                        <img :src="report.reportedByAvatar" :alt="report.reportedBy" class="reporter-avatar" @error="$event.target.src='/assets/DEFAULT.jpg'" />
-                                        <div class="reporter-details">
-                                            <h4 class="reporter-name">{{ report.reportedBy }}</h4>
-                                            <span class="role-badge" :class="getRoleClass(report.reporterRole)">
-                                                {{ report.reporterRole.toUpperCase() }}
-                                            </span>
-                                            <p class="report-date">Reported: {{ report.reportDate }}</p>
+                                    <div class="reporter-content-wrapper">
+                                        <div class="reporter-info">
+                                            <img :src="report.reportedByAvatar" :alt="report.reportedBy" class="reporter-avatar" @error="$event.target.src='/assets/DEFAULT.jpg'" />
+                                            <div class="reporter-details">
+                                                <h4 class="reporter-name">{{ report.reportedBy }}</h4>
+                                                <span class="role-badge" :class="getRoleClass(report.reporterRole)">
+                                                    {{ report.reporterRole.toUpperCase() }}
+                                                </span>
+                                                <p class="report-date">Reported: {{ report.reportDate }}</p>
+                                            </div>
+                                        </div>
+                                        <div class="report-reason-box">
+                                            <div class="reason-label">Reason{{ report.reportReasons && report.reportReasons.length > 1 ? 's' : '' }}:</div>
+                                            <div class="reasons-list">
+                                                <span 
+                                                    v-for="(reason, index) in (report.reportReasons || [report.reportReason])" 
+                                                    :key="index"
+                                                    class="reason-badge"
+                                                >
+                                                    {{ reason }}
+                                                </span>
+                                            </div>
+                                            <div v-if="report.reportDetails" class="reason-details">{{ report.reportDetails }}</div>
                                         </div>
                                     </div>
-                                    <div class="report-reason-box">
-                                        <div class="reason-label">Reason{{ report.reportReasons && report.reportReasons.length > 1 ? 's' : '' }}:</div>
-                                        <div class="reasons-list">
-                                            <span 
-                                                v-for="(reason, index) in (report.reportReasons || [report.reportReason])" 
-                                                :key="index"
-                                                class="reason-badge"
-                                            >
-                                                {{ reason }}
-                                            </span>
-                                        </div>
-                                        <div v-if="report.reportDetails" class="reason-details">{{ report.reportDetails }}</div>
-                                    </div>
-                                </div>
-
-                                <!-- Action Buttons -->
-                                <div class="action-buttons">
-                                    <button @click="openModal(report, 'keep')" class="keep-btn">
-                                        Keep Post
-                                    </button>
-                                    <button @click="openModal(report, 'delete')" class="delete-btn">
-                                        Remove Post
-                                    </button>
                                 </div>
                             </template>
                         </div>
@@ -326,7 +361,9 @@
                         <span>This action will permanently remove the post from the discussion board and notify the author.</span>
                     </div>
                     <div class="modal-info" v-if="modalAction === 'keep'">
-                        <span class="info-icon">ℹ️</span>
+                        <svg class="info-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
                         <span>This will dismiss the report and keep the post visible on the discussion board.</span>
                     </div>
                     <button
@@ -339,13 +376,280 @@
                 </div>
             </div>
         </div>
+
+        <!-- Restrict User Modal -->
+        <div v-if="showRestrictModal" class="modal-overlay" @click="closeRestrictModal">
+            <div class="modal-container" @click.stop>
+                <!-- Close Button -->
+                <button @click="closeRestrictModal" class="modal-close">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width: 20px; height: 20px;">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+
+                <div class="modal-content">
+                    <h2 class="modal-title" style="display: flex; align-items: center; gap: 8px;">
+                        <svg v-if="selectedUserToRestrict?.postAuthorIsRestricted" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width: 20px; height: 20px;">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z" />
+                        </svg>
+                        <svg v-else xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width: 20px; height: 20px;">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                        </svg>
+                        {{ selectedUserToRestrict?.postAuthorIsRestricted ? 'Update Restrictions' : 'Restrict User' }}
+                    </h2>
+                    <div class="user-info-box">
+                        <img :src="selectedUserToRestrict?.postAuthorAvatar || '/assets/DEFAULT.jpg'" :alt="selectedUserToRestrict?.postAuthor" class="modal-user-avatar" @error="$event.target.src='/assets/DEFAULT.jpg'" />
+                        <div class="modal-user-details">
+                            <h4>{{ selectedUserToRestrict?.postAuthor || 'Unknown User' }}</h4>
+                            <p>{{ selectedUserToRestrict?.postAuthorRole || 'Unknown Role' }}</p>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">{{ selectedUserToRestrict?.postAuthorIsRestricted ? 'Update Restrictions' : 'Select Restrictions *' }}</label>
+                        <div class="checkbox-group">
+                            <label class="checkbox-label">
+                                <input
+                                    type="checkbox"
+                                    v-model="restrictions.posting"
+                                    class="checkbox-input"
+                                />
+                                <span class="checkbox-text">
+                                    <strong>Restrict Posting</strong>
+                                </span>
+                            </label>
+                            
+                            <label class="checkbox-label">
+                                <input
+                                    type="checkbox"
+                                    v-model="restrictions.commenting"
+                                    class="checkbox-input"
+                                />
+                                <span class="checkbox-text">
+                                    <strong>Restrict Commenting</strong>
+                                </span>
+                            </label>
+                            
+                            <label class="checkbox-label">
+                                <input
+                                    type="checkbox"
+                                    v-model="restrictions.documentRequest"
+                                    class="checkbox-input"
+                                />
+                                <span class="checkbox-text">
+                                    <strong>Restrict Document Request</strong>
+                                </span>
+                            </label>
+                            
+                            <label class="checkbox-label">
+                                <input
+                                    type="checkbox"
+                                    v-model="restrictions.eventAssistanceRequest"
+                                    class="checkbox-input"
+                                />
+                                <span class="checkbox-text">
+                                    <strong>Restrict Event Assistance Request</strong>
+                                </span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div v-if="!selectedUserToRestrict?.postAuthorIsRestricted" class="modal-warning">
+                        <svg class="warning-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                        </svg>
+                        <span>The user will be notified of these restrictions and the reasons through their notification system.</span>
+                    </div>
+
+                    <div v-else class="modal-info">
+                        <svg class="info-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <span>Uncheck the restrictions you want to remove. The user will be notified of any changes.</span>
+                    </div>
+
+                    <div style="display: flex; justify-content: center; margin-top: 20px;">
+                        <button
+                            @click="applyRestrictions"
+                            class="confirm-btn"
+                            :class="selectedUserToRestrict?.postAuthorIsRestricted ? 'keep-confirm' : 'delete-confirm'"
+                            style="width: auto; min-width: 200px;"
+                        >
+                            {{ selectedUserToRestrict?.postAuthorIsRestricted ? 'UPDATE RESTRICTIONS' : 'RESTRICT USER' }}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mark as Read Success Modal -->
+        <div v-if="showMarkAsReadSuccessModal" class="modal-overlay" @click="closeMarkAsReadSuccessModal">
+            <div class="success-modal" @click.stop>
+                <div class="success-modal-header">
+                    <div class="success-icon-wrapper">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" class="success-icon">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    </div>
+                    <h3 class="success-modal-title">Message Marked as Read!</h3>
+                </div>
+                <div class="success-modal-body">
+                    <p class="success-message">The contact message has been successfully marked as read.</p>
+                </div>
+                <div class="success-modal-footer">
+                    <button @click="closeMarkAsReadSuccessModal" class="success-modal-btn">
+                        OK
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mark as Replied Success Modal -->
+        <div v-if="showMarkAsRepliedSuccessModal" class="modal-overlay" @click="closeMarkAsRepliedSuccessModal">
+            <div class="success-modal" @click.stop>
+                <div class="success-modal-header">
+                    <div class="success-icon-wrapper">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" class="success-icon">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    </div>
+                    <h3 class="success-modal-title">Message Marked as Replied!</h3>
+                </div>
+                <div class="success-modal-body">
+                    <p class="success-message">The contact message has been successfully marked as replied.</p>
+                </div>
+                <div class="success-modal-footer">
+                    <button @click="closeMarkAsRepliedSuccessModal" class="success-modal-btn">
+                        OK
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Terms and Conditions Modal -->
+        <div v-if="showTermsModal" class="modal-overlay" @click.self="closeTermsModal">
+            <div class="terms-modal" @click.stop>
+                <div class="terms-modal-header">
+                    <h2 class="terms-modal-title">Terms and Conditions</h2>
+                    <button @click="closeTermsModal" class="terms-modal-close">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width: 24px; height: 24px;">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+                <div class="terms-modal-body">
+                    <div class="terms-section">
+                        <h3 class="terms-section-title">1. Role and Responsibilities</h3>
+                        <p class="terms-text">
+                            As a System Administrator, you are responsible for managing user accounts, processing registration requests, reviewing reports and messages, and maintaining the integrity of the iKonek176B system. You must exercise your administrative privileges with care and in accordance with barangay policies and regulations.
+                        </p>
+                    </div>
+
+                    <div class="terms-section">
+                        <h3 class="terms-section-title">2. Access and Security</h3>
+                        <p class="terms-text">
+                            You have been granted elevated access to the system. You must maintain the confidentiality of your login credentials and immediately report any suspected security breaches. Sharing your account credentials with unauthorized persons is strictly prohibited and may result in immediate account termination.
+                        </p>
+                    </div>
+
+                    <div class="terms-section">
+                        <h3 class="terms-section-title">3. Data Privacy and Confidentiality</h3>
+                        <p class="terms-text">
+                            You have access to sensitive personal information of residents and officials. You must handle all data in accordance with the Data Privacy Act of 2012. Personal information must only be accessed for legitimate administrative purposes and must never be disclosed to unauthorized parties or used for personal gain.
+                        </p>
+                    </div>
+
+                    <div class="terms-section">
+                        <h3 class="terms-section-title">4. User Account Management</h3>
+                        <p class="terms-text">
+                            When creating, modifying, or restricting user accounts, you must ensure that all actions are justified, documented, and in compliance with barangay policies. Unauthorized account creation, modification, or deletion is prohibited. All administrative actions are logged and may be subject to audit.
+                        </p>
+                    </div>
+
+                    <div class="terms-section">
+                        <h3 class="terms-section-title">5. Registration Requests</h3>
+                        <p class="terms-text">
+                            You are responsible for reviewing and processing registration requests in a timely and fair manner. Approval or rejection decisions must be based on valid criteria and documented requirements. Discrimination or bias in processing requests is strictly prohibited.
+                        </p>
+                    </div>
+
+                    <div class="terms-section">
+                        <h3 class="terms-section-title">6. Reports and Messages</h3>
+                        <p class="terms-text">
+                            You must review reports and contact messages promptly and take appropriate action when necessary. Actions taken on reported content must be justified and in accordance with community guidelines. Abuse of moderation powers is prohibited.
+                        </p>
+                    </div>
+
+                    <div class="terms-section">
+                        <h3 class="terms-section-title">7. Limitations and Restrictions</h3>
+                        <p class="terms-text">
+                            Your administrative privileges do not grant you the right to:
+                            <ul class="terms-list">
+                                <li>Access or modify system code or database structure without authorization</li>
+                                <li>Bypass system security measures or attempt to exploit system vulnerabilities</li>
+                                <li>Use administrative functions for personal purposes or to gain unfair advantage</li>
+                                <li>Delete or modify system logs or audit trails</li>
+                                <li>Grant administrative privileges to other users without proper authorization</li>
+                            </ul>
+                        </p>
+                    </div>
+
+                    <div class="terms-section">
+                        <h3 class="terms-section-title">8. Prohibited Activities</h3>
+                        <p class="terms-text">
+                            The following activities are strictly prohibited:
+                            <ul class="terms-list">
+                                <li>Unauthorized access to user accounts or data</li>
+                                <li>Tampering with system records or documentation</li>
+                                <li>Using administrative access to harass, intimidate, or discriminate against users</li>
+                                <li>Sharing confidential information outside of official channels</li>
+                                <li>Engaging in any activity that compromises system security or integrity</li>
+                            </ul>
+                        </p>
+                    </div>
+
+                    <div class="terms-section">
+                        <h3 class="terms-section-title">9. Accountability and Auditing</h3>
+                        <p class="terms-text">
+                            All administrative actions are logged and monitored. You are accountable for all actions performed using your account. Regular audits may be conducted to ensure compliance with these terms. Failure to comply may result in disciplinary action, including but not limited to account suspension or termination.
+                        </p>
+                    </div>
+
+                    <div class="terms-section">
+                        <h3 class="terms-section-title">10. Violations and Consequences</h3>
+                        <p class="terms-text">
+                            Violation of these terms and conditions may result in immediate suspension or termination of your administrative account, legal action if applicable, and reporting to appropriate barangay authorities. The severity of consequences will depend on the nature and extent of the violation.
+                        </p>
+                    </div>
+
+                    <div class="terms-section">
+                        <h3 class="terms-section-title">11. Updates to Terms</h3>
+                        <p class="terms-text">
+                            These terms and conditions may be updated periodically. You will be notified of significant changes. Continued use of administrative privileges after changes constitutes acceptance of the updated terms.
+                        </p>
+                    </div>
+
+                    <div class="terms-section">
+                        <h3 class="terms-section-title">12. Contact and Support</h3>
+                        <p class="terms-text">
+                            For questions, concerns, or to report issues related to your administrative role, contact the Barangay 176B office at ikonek176b@dev.ph or +639193076338.
+                        </p>
+                    </div>
+                </div>
+                <div class="terms-modal-footer">
+                    <button @click="closeTermsModal" class="terms-modal-btn">
+                        I Understand
+                    </button>
+                </div>
+            </div>
+        </div>
     </div>
 </template>
 
 <script setup>
 import { Link } from '@inertiajs/vue3'
 import { Head, usePage } from '@inertiajs/vue3'
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import { router } from '@inertiajs/vue3'
 
 // Define props - receive reports from backend
@@ -380,10 +684,15 @@ const displayRole = computed(() => {
 
 // Reactive data
 const showSettings = ref(false)
+const showTermsModal = ref(false)
 const showSortDropdown = ref(false)
 const showFilterDropdown = ref(false)
+const showTypeDropdown = ref(false)
+const showMarkAsReadSuccessModal = ref(false)
+const showMarkAsRepliedSuccessModal = ref(false)
 const sortOption = ref('newest')
 const filterOption = ref('all')
+const typeFilter = ref('all') // 'all', 'report', 'contact'
 const searchQuery = ref('')
 const isModalOpen = ref(false)
 const selectedReport = ref(null)
@@ -391,6 +700,16 @@ const selectedReportId = ref(null)
 const selectedPostId = ref(null)
 const modalAction = ref('')
 const isLoading = ref(false)
+
+// Restrict User Modal
+const showRestrictModal = ref(false)
+const selectedUserToRestrict = ref(null)
+const restrictions = ref({
+    posting: false,
+    commenting: false,
+    documentRequest: false,
+    eventAssistanceRequest: false
+})
 
 // Convert props.reports to reactive ref and process dates
 const reportsData = (props.reports || []).map((report, index) => {
@@ -411,6 +730,18 @@ const reports = ref(reportsData)
 // Computed filtered reports
 const filteredReports = computed(() => {
     let filtered = [...reports.value]
+
+    // Type filter (Reports vs Contact Messages)
+    if (typeFilter.value !== 'all') {
+        filtered = filtered.filter(item => {
+            if (typeFilter.value === 'report') {
+                return item.type !== 'contact'
+            } else if (typeFilter.value === 'contact') {
+                return item.type === 'contact'
+            }
+            return true
+        })
+    }
 
     // Search filter
     if (searchQuery.value.trim()) {
@@ -486,6 +817,21 @@ const closeSettings = () => {
     showSettings.value = false
 }
 
+const openTermsModal = (e) => {
+    if (e) {
+        e.preventDefault()
+        e.stopPropagation()
+    }
+    showSettings.value = false
+    nextTick(() => {
+        showTermsModal.value = true
+    })
+}
+
+const closeTermsModal = () => {
+    showTermsModal.value = false
+}
+
 const toggleSortDropdown = () => {
     showSortDropdown.value = !showSortDropdown.value
     showFilterDropdown.value = false
@@ -494,6 +840,13 @@ const toggleSortDropdown = () => {
 const toggleFilterDropdown = () => {
     showFilterDropdown.value = !showFilterDropdown.value
     showSortDropdown.value = false
+    showTypeDropdown.value = false
+}
+
+const toggleTypeDropdown = () => {
+    showTypeDropdown.value = !showTypeDropdown.value
+    showSortDropdown.value = false
+    showFilterDropdown.value = false
 }
 
 const selectSort = (option) => {
@@ -504,6 +857,11 @@ const selectSort = (option) => {
 const selectFilter = (option) => {
     filterOption.value = option
     showFilterDropdown.value = false
+}
+
+const selectType = (option) => {
+    typeFilter.value = option
+    showTypeDropdown.value = false
 }
 
 const logout = () => {
@@ -745,7 +1103,7 @@ const markContactAsRead = async (contact) => {
         
         if (response.data && response.data.success) {
             reports.value = reports.value.filter(r => r.id !== contact.id)
-            alert('✅ Contact message marked as read!')
+            showMarkAsReadSuccessModal.value = true
         } else {
             alert('Error updating contact message.')
         }
@@ -765,7 +1123,7 @@ const markContactAsReplied = async (contact) => {
         
         if (response.data && response.data.success) {
             reports.value = reports.value.filter(r => r.id !== contact.id)
-            alert('✅ Contact message marked as replied!')
+            showMarkAsRepliedSuccessModal.value = true
         } else {
             alert('Error updating contact message.')
         }
@@ -773,6 +1131,14 @@ const markContactAsReplied = async (contact) => {
         console.error('Error marking contact as replied:', error)
         alert('Error updating contact message. Please try again.')
     }
+}
+
+const closeMarkAsReadSuccessModal = () => {
+    showMarkAsReadSuccessModal.value = false
+}
+
+const closeMarkAsRepliedSuccessModal = () => {
+    showMarkAsRepliedSuccessModal.value = false
 }
 
 // Get role class for styling
@@ -789,12 +1155,95 @@ const getRoleClass = (role) => {
 
 // Close dropdowns when clicking outside
 const handleClickOutside = (event) => {
+    // Don't close anything if clicking on the terms modal
+    if (event.target.closest('.terms-modal') || event.target.closest('.modal-overlay')) {
+        return
+    }
     if (!event.target.closest('.header-actions')) {
         showSettings.value = false
     }
     if (!event.target.closest('.filter-dropdown-wrapper')) {
         showSortDropdown.value = false
         showFilterDropdown.value = false
+        showTypeDropdown.value = false
+    }
+}
+
+// Restrict User Modal handlers
+const openRestrictModal = (report) => {
+    if (!report.postAuthorId) {
+        alert('Unable to restrict user: User ID not available.')
+        return
+    }
+    selectedUserToRestrict.value = report
+    showRestrictModal.value = true
+    // If user is already restricted, load their current restrictions
+    if (report.postAuthorIsRestricted && report.postAuthorRestrictions) {
+        restrictions.value = {
+            posting: report.postAuthorRestrictions.posting || false,
+            commenting: report.postAuthorRestrictions.commenting || false,
+            documentRequest: report.postAuthorRestrictions.documentRequest || false,
+            eventAssistanceRequest: report.postAuthorRestrictions.eventAssistanceRequest || false
+        }
+    } else {
+        restrictions.value = {
+            posting: false,
+            commenting: false,
+            documentRequest: false,
+            eventAssistanceRequest: false
+        }
+    }
+}
+
+const closeRestrictModal = () => {
+    showRestrictModal.value = false
+    selectedUserToRestrict.value = null
+    restrictions.value = {
+        posting: false,
+        commenting: false,
+        documentRequest: false,
+        eventAssistanceRequest: false
+    }
+}
+
+const applyRestrictions = async () => {
+    if (!selectedUserToRestrict.value || !selectedUserToRestrict.value.postAuthorId) {
+        alert('Error: No user selected for restriction.')
+        return
+    }
+
+    const selectedRestrictions = Object.keys(restrictions.value).filter(key => restrictions.value[key])
+    
+    // If user is restricted and all are unchecked, that means removing all restrictions
+    if (selectedUserToRestrict.value.postAuthorIsRestricted && selectedRestrictions.length === 0) {
+        // This is fine - it means removing all restrictions
+    } else if (!selectedUserToRestrict.value.postAuthorIsRestricted && selectedRestrictions.length === 0) {
+        alert('Please select at least one restriction.')
+        return
+    }
+
+    try {
+        const response = await window.axios.post(route('admin.users.restrict', selectedUserToRestrict.value.postAuthorId), {
+            restrictions: restrictions.value
+        })
+
+        if (response.data.success) {
+            if (selectedUserToRestrict.value.postAuthorIsRestricted) {
+                if (selectedRestrictions.length === 0) {
+                    alert(`All restrictions have been removed from ${selectedUserToRestrict.value.postAuthor}!`)
+                } else {
+                    alert(`Restrictions updated successfully for ${selectedUserToRestrict.value.postAuthor}!`)
+                }
+            } else {
+                alert(`User restrictions applied successfully to ${selectedUserToRestrict.value.postAuthor}!`)
+            }
+            closeRestrictModal()
+            router.reload()
+        }
+    } catch (error) {
+        console.error('Error updating restrictions:', error)
+        const message = error.response?.data?.message || 'Failed to update restrictions. Please try again.'
+        alert(message)
     }
 }
 
@@ -908,6 +1357,7 @@ onUnmounted(() => {
     transition: all 0.2s;
     cursor: pointer;
     font-weight: 500;
+    white-space: nowrap;
 }
 
 .settings-item:hover {
@@ -1062,8 +1512,8 @@ onUnmounted(() => {
 /* Filter Section */
 .filter-section {
     padding: 20px 25px;
-    background: linear-gradient(135deg, #f8f9fa, #e9ecef);
-    border-bottom: 1px solid #e0e0e0;
+    background: #f9fafb;
+    border-bottom: 1px solid #e5e7eb;
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -1079,8 +1529,10 @@ onUnmounted(() => {
 
 .filter-label {
     font-weight: 600;
-    color: #666;
-    font-size: 14px;
+    color: #374151;
+    font-size: 15px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
 .filter-dropdown-wrapper {
@@ -1089,9 +1541,9 @@ onUnmounted(() => {
 
 .filter-dropdown-btn {
     padding: 8px 15px;
-    border: 1px solid #ddd;
+    border: 1px solid #d1d5db;
     border-radius: 8px;
-    font-size: 12px;
+    font-size: 14px;
     font-weight: 600;
     cursor: pointer;
     background: white;
@@ -1101,10 +1553,12 @@ onUnmounted(() => {
     gap: 8px;
     min-width: 120px;
     justify-content: space-between;
+    color: #333;
 }
 
 .filter-dropdown-btn:hover {
     border-color: #239640;
+    box-shadow: 0 2px 8px rgba(35, 150, 64, 0.2);
 }
 
 .filter-arrow {
@@ -1121,31 +1575,31 @@ onUnmounted(() => {
     top: 100%;
     left: 0;
     background: white;
-    border-radius: 10px;
-    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
-    min-width: 180px;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    min-width: 150px;
     z-index: 1000;
-    margin-top: 5px;
+    margin-top: 4px;
     overflow: hidden;
-    border: 1px solid rgba(0,0,0,0.1);
+    border: 1px solid #e5e7eb;
 }
 
 .filter-dropdown-menu button {
     display: block;
     width: 100%;
-    padding: 10px 15px;
+    padding: 10px 14px;
     background: none;
     border: none;
     text-align: left;
-    color: #333;
+    color: #374151;
     cursor: pointer;
-    transition: background 0.2s;
+    transition: background 0.15s;
     font-weight: 500;
-    font-size: 12px;
+    font-size: 14px;
 }
 
 .filter-dropdown-menu button:hover {
-    background: #e8f8ed;
+    background: #f9fafb;
 }
 
 .filter-dropdown-menu button.active {
@@ -1162,20 +1616,31 @@ onUnmounted(() => {
 
 .search-container {
     display: flex;
-    gap: 5px;
+    gap: 0;
     background: white;
     border-radius: 8px;
-    padding: 2px;
-    border: 1px solid #ddd;
+    overflow: hidden;
+    border: 1px solid #d1d5db;
+    transition: all 0.2s;
+}
+
+.search-container:focus-within {
+    border-color: #239640;
+    box-shadow: 0 0 0 3px rgba(35, 150, 64, 0.1);
 }
 
 .search-input {
-    padding: 8px 15px;
+    padding: 8px 14px;
     border: none;
-    border-radius: 6px;
-    width: 220px;
-    font-size: 12px;
+    width: 250px;
+    font-size: 15px;
+    background: transparent;
     outline: none;
+    color: #111827;
+}
+
+.search-input::placeholder {
+    color: #9ca3af;
 }
 
 .search-btn {
@@ -1191,7 +1656,7 @@ onUnmounted(() => {
 }
 
 .search-btn:hover {
-    color: #ff8c42;
+    color: #239640;
 }
 
 .search-btn svg {
@@ -1208,25 +1673,86 @@ onUnmounted(() => {
 
 .report-card {
     background: white;
-    border: 1px solid #e0e0e0;
+    border: 1px solid #e5e7eb;
     border-radius: 12px;
     padding: 0;
     margin-bottom: 20px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
     transition: all 0.3s ease;
     overflow: hidden;
+    position: relative;
 }
 
 .report-card:hover {
-    box-shadow: 0 8px 20px rgba(0,0,0,0.12);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.12);
     transform: translateY(-2px);
+}
+
+/* Post Report Card Styling */
+.post-report-card {
+    border-left: 4px solid #dc2626;
+}
+
+.post-report-card:hover {
+    border-left-color: #b91c1c;
+    box-shadow: 0 4px 16px rgba(220, 38, 38, 0.15);
+}
+
+/* Contact Message Card Styling */
+.contact-card {
+    border-left: 4px solid #2563eb;
+}
+
+.contact-card:hover {
+    border-left-color: #1d4ed8;
+    box-shadow: 0 4px 16px rgba(37, 99, 235, 0.15);
+}
+
+/* Type Badge */
+.type-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-weight: 700;
+    font-size: 14px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 15px;
+}
+
+.report-badge {
+    background: linear-gradient(135deg, #fee2e2, #fecaca);
+    color: #dc2626;
+    border: 1px solid #fca5a5;
+}
+
+.contact-badge {
+    background: linear-gradient(135deg, #dbeafe, #bfdbfe);
+    color: #2563eb;
+    border: 1px solid #93c5fd;
+}
+
+.type-badge svg {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
 }
 
 /* Reported Post Section */
 .reported-post-section {
-    background: linear-gradient(135deg, #fff5f5, #ffe5e5);
+    background: white;
     padding: 20px;
-    border-bottom: 2px solid #fecaca;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.reported-post-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    gap: 15px;
 }
 
 .section-label {
@@ -1234,7 +1760,7 @@ onUnmounted(() => {
     align-items: center;
     gap: 8px;
     font-weight: 700;
-    font-size: 13px;
+    font-size: 15px;
     color: #dc2626;
     margin-bottom: 15px;
     text-transform: uppercase;
@@ -1279,7 +1805,7 @@ onUnmounted(() => {
 }
 
 .author-name {
-    font-size: 16px;
+    font-size: 18px;
     font-weight: 700;
     color: #333;
     margin: 0 0 5px 0;
@@ -1287,8 +1813,8 @@ onUnmounted(() => {
 
 .role-badge {
     display: inline-block;
-    font-size: 10px;
-    padding: 3px 10px;
+    font-size: 12px;
+    padding: 4px 12px;
     border-radius: 8px;
     font-weight: 700;
     color: white;
@@ -1304,7 +1830,7 @@ onUnmounted(() => {
 }
 
 .post-date {
-    font-size: 11px;
+    font-size: 13px;
     color: #999;
     margin: 0;
 }
@@ -1316,7 +1842,7 @@ onUnmounted(() => {
 }
 
 .post-title {
-    font-size: 15px;
+    font-size: 17px;
     font-weight: 600;
     color: #333;
     margin: 0 0 8px 0;
@@ -1324,10 +1850,27 @@ onUnmounted(() => {
 }
 
 .post-text {
-    font-size: 13px;
+    font-size: 15px;
     line-height: 1.6;
     color: #666;
-    margin: 0;
+    margin: 0 0 15px 0;
+}
+
+.post-image-container {
+    margin-top: 15px;
+    border-radius: 8px;
+    overflow: hidden;
+    max-width: 100%;
+}
+
+.post-image {
+    width: 100%;
+    max-width: 500px;
+    height: auto;
+    border-radius: 8px;
+    object-fit: cover;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    display: block;
 }
 
 .post-engagement {
@@ -1336,16 +1879,22 @@ onUnmounted(() => {
 }
 
 .engagement-stat {
-    font-size: 13px;
+    font-size: 15px;
     color: #666;
     font-weight: 600;
 }
 
 /* Reporter Section */
 .reporter-section {
-    background: linear-gradient(135deg, #f0f9ff, #e0f2fe);
+    background: white;
     padding: 20px;
-    border-bottom: 2px solid #bae6fd;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.reporter-content-wrapper {
+    display: flex;
+    gap: 15px;
+    align-items: flex-start;
 }
 
 .reporter-info {
@@ -1355,8 +1904,9 @@ onUnmounted(() => {
     background: white;
     border-radius: 10px;
     padding: 12px;
-    margin-bottom: 15px;
     box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    flex: 0 0 auto;
+    min-width: 250px;
 }
 
 .reporter-avatar {
@@ -1372,7 +1922,7 @@ onUnmounted(() => {
 }
 
 .reporter-name {
-    font-size: 14px;
+    font-size: 16px;
     font-weight: 700;
     color: #333;
     margin: 0 0 4px 0;
@@ -1380,8 +1930,8 @@ onUnmounted(() => {
 
 .reporter-details .role-badge {
     display: inline-block;
-    font-size: 10px;
-    padding: 3px 10px;
+    font-size: 12px;
+    padding: 4px 12px;
     border-radius: 8px;
     font-weight: 700;
     color: white;
@@ -1390,7 +1940,7 @@ onUnmounted(() => {
 }
 
 .report-date {
-    font-size: 11px;
+    font-size: 13px;
     color: #999;
     margin: 0;
 }
@@ -1400,10 +1950,12 @@ onUnmounted(() => {
     border-radius: 10px;
     padding: 15px;
     box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    flex: 1;
+    min-width: 0;
 }
 
 .reason-label {
-    font-size: 11px;
+    font-size: 13px;
     font-weight: 700;
     color: #666;
     text-transform: uppercase;
@@ -1421,14 +1973,14 @@ onUnmounted(() => {
     display: inline-block;
     background: linear-gradient(135deg, #dc2626, #b91c1c);
     color: white;
-    font-size: 12px;
+    font-size: 14px;
     font-weight: 700;
     padding: 6px 12px;
     border-radius: 8px;
 }
 
 .reason-details {
-    font-size: 13px;
+    font-size: 15px;
     line-height: 1.6;
     color: #555;
     font-style: italic;
@@ -1439,11 +1991,38 @@ onUnmounted(() => {
     display: flex;
     gap: 10px;
     padding: 20px;
-    background: #f8f9fa;
+    background: #f9fafb;
+    border-top: 1px solid #e5e7eb;
+}
+
+.action-buttons-top {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.restrict-btn {
+    background: linear-gradient(135deg, #f3f4f6, #e5e7eb);
+    color: #374151;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 700;
+    font-size: 15px;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    white-space: nowrap;
+}
+
+.restrict-btn:hover {
+    background: linear-gradient(135deg, #e5e7eb, #d1d5db);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
 }
 
 .keep-btn {
-    flex: 1;
     background: linear-gradient(135deg, #10b981, #059669);
     color: white;
     border: none;
@@ -1451,9 +2030,10 @@ onUnmounted(() => {
     border-radius: 8px;
     cursor: pointer;
     font-weight: 700;
-    font-size: 13px;
+    font-size: 15px;
     transition: all 0.3s ease;
     box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+    white-space: nowrap;
 }
 
 .keep-btn:hover {
@@ -1463,7 +2043,6 @@ onUnmounted(() => {
 }
 
 .delete-btn {
-    flex: 1;
     background: linear-gradient(135deg, #ef4444, #dc2626);
     color: white;
     border: none;
@@ -1471,9 +2050,10 @@ onUnmounted(() => {
     border-radius: 8px;
     cursor: pointer;
     font-weight: 700;
-    font-size: 13px;
+    font-size: 15px;
     transition: all 0.3s ease;
     box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
+    white-space: nowrap;
 }
 
 .delete-btn:hover {
@@ -1638,19 +2218,24 @@ onUnmounted(() => {
     border-radius: 8px;
     margin-bottom: 20px;
     display: flex;
-    align-items: start;
-    gap: 10px;
+    align-items: flex-start;
+    gap: 8px;
 }
 
 .modal-info .info-icon {
-    font-size: 20px;
+    width: 18px;
+    height: 18px;
     flex-shrink: 0;
+    color: #059669;
+    margin-top: 2px;
 }
 
-.modal-info span:last-child {
+.modal-info span {
     font-size: 13px;
-    color: #065f46;
-    line-height: 1.5;
+    color: #047857;
+    line-height: 1.6;
+    flex: 1;
+    word-wrap: break-word;
 }
 
 .confirm-btn {
@@ -1687,11 +2272,50 @@ onUnmounted(() => {
     box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
 }
 
+.success-confirm {
+    background: linear-gradient(135deg, #10b981, #059669);
+    box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+}
+
+.success-confirm:hover {
+    background: linear-gradient(135deg, #059669, #047857);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+}
+
+.unrestrict-btn {
+    background: linear-gradient(135deg, #f3f4f6, #e5e7eb);
+    color: #374151;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 700;
+    font-size: 15px;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    white-space: nowrap;
+}
+
+.unrestrict-btn:hover {
+    background: linear-gradient(135deg, #e5e7eb, #d1d5db);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
 /* Contact Message Section */
 .contact-message-section {
-    background: linear-gradient(135deg, #f0f9ff, #e0f2fe);
+    background: white;
     padding: 20px;
-    border-bottom: 2px solid #bae6fd;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.contact-message-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    gap: 15px;
 }
 
 .message-icon {
@@ -1719,27 +2343,28 @@ onUnmounted(() => {
 }
 
 .sender-name {
-    font-size: 16px;
+    font-size: 18px;
     font-weight: 700;
     color: #333;
     margin: 0 0 5px 0;
 }
 
 .contact-date {
-    font-size: 11px;
+    font-size: 13px;
     color: #999;
     margin: 0;
 }
 
 .contact-info-box {
-    background: #f8f9fa;
-    border-radius: 8px;
-    padding: 12px;
+    background: white;
+    border-radius: 10px;
+    padding: 15px;
     margin-bottom: 15px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
 }
 
 .contact-info-item {
-    font-size: 13px;
+    font-size: 15px;
     color: #555;
     margin-bottom: 5px;
 }
@@ -1749,12 +2374,14 @@ onUnmounted(() => {
 }
 
 .message-content-box {
-    padding: 15px 0;
-    border-top: 1px solid #f0f0f0;
+    background: white;
+    border-radius: 10px;
+    padding: 15px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
 }
 
 .message-label {
-    font-size: 11px;
+    font-size: 13px;
     font-weight: 700;
     color: #666;
     text-transform: uppercase;
@@ -1762,7 +2389,7 @@ onUnmounted(() => {
 }
 
 .message-text {
-    font-size: 13px;
+    font-size: 15px;
     line-height: 1.6;
     color: #555;
     margin: 0;
@@ -1770,7 +2397,7 @@ onUnmounted(() => {
 }
 
 .read-btn {
-    flex: 1;
+    flex: 0 0 auto;
     background: linear-gradient(135deg, #3b82f6, #2563eb);
     color: white;
     border: none;
@@ -1778,7 +2405,7 @@ onUnmounted(() => {
     border-radius: 8px;
     cursor: pointer;
     font-weight: 700;
-    font-size: 13px;
+    font-size: 15px;
     transition: all 0.3s ease;
     box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
 }
@@ -1798,7 +2425,7 @@ onUnmounted(() => {
     border-radius: 8px;
     cursor: pointer;
     font-weight: 700;
-    font-size: 13px;
+    font-size: 15px;
     transition: all 0.3s ease;
     box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
 }
@@ -1828,6 +2455,187 @@ onUnmounted(() => {
     background: #666;
 }
 
+/* Restrict User Modal Styles */
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 25px;
+    border-bottom: 1px solid #e0e0e0;
+    background: #f8f9fa;
+    border-radius: 12px 12px 0 0;
+}
+
+.modal-header h3 {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 700;
+    color: #333;
+}
+
+.modal-body {
+    padding: 25px;
+}
+
+.user-info-box {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    margin-bottom: 20px;
+}
+
+.modal-user-avatar {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid #ddd;
+}
+
+.modal-user-details h4 {
+    margin: 0 0 5px 0;
+    font-size: 18px;
+    font-weight: 700;
+    color: #333;
+}
+
+.modal-user-details p {
+    margin: 0;
+    font-size: 14px;
+    color: #666;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    font-size: 14px;
+    color: #333;
+}
+
+.form-textarea {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 14px;
+    font-family: inherit;
+    transition: border-color 0.2s;
+    resize: vertical;
+    min-height: 100px;
+}
+
+.form-textarea:focus {
+    outline: none;
+    border-color: #239640;
+    box-shadow: 0 0 0 3px rgba(35, 150, 64, 0.1);
+}
+
+.checkbox-group {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.checkbox-label {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    cursor: pointer;
+    padding: 12px;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    transition: all 0.2s;
+}
+
+.checkbox-label:hover {
+    background: #f8f9fa;
+    border-color: #239640;
+}
+
+.checkbox-input {
+    margin-top: 2px;
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+    accent-color: #239640;
+}
+
+.checkbox-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.checkbox-text strong {
+    font-size: 14px;
+    color: #333;
+}
+
+.checkbox-text small {
+    font-size: 12px;
+    color: #666;
+}
+
+.restriction-message {
+    display: block;
+    margin-top: 6px;
+    padding: 8px;
+    background: #f0f9ff;
+    border-left: 3px solid #3b82f6;
+    border-radius: 4px;
+    font-size: 11px;
+    color: #1e40af;
+    font-style: italic;
+}
+
+.modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    padding: 20px 25px;
+    border-top: 1px solid #e0e0e0;
+    background: #f8f9fa;
+    border-radius: 0 0 12px 12px;
+}
+
+.btn-cancel,
+.btn-apply {
+    padding: 10px 20px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-cancel {
+    background: white;
+    color: #4a4a4a;
+    border: 1px solid #e0e0e0;
+}
+
+.btn-cancel:hover {
+    background: #f8f9fa;
+    border-color: #d0d0d0;
+}
+
+.btn-apply {
+    background: #239640;
+    color: white;
+}
+
+.btn-apply:hover {
+    background: #1e7e34;
+}
+
 /* Responsive */
 @media (max-width: 1024px) {
     .main-layout {
@@ -1852,6 +2660,26 @@ onUnmounted(() => {
     .filter-section {
         flex-direction: column;
         align-items: stretch;
+    }
+    
+    .reported-post-header,
+    .contact-message-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+    
+    .action-buttons-top {
+        width: 100%;
+        flex-wrap: wrap;
+    }
+    
+    .reporter-content-wrapper {
+        flex-direction: column;
+    }
+    
+    .reporter-info {
+        min-width: 100%;
     }
     
     .search-input {
@@ -1890,5 +2718,235 @@ onUnmounted(() => {
     .modal-container {
         padding: 25px 20px;
     }
+}
+/* Terms and Conditions Modal Styles */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+    animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+.terms-modal {
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    max-width: 800px;
+    width: 90%;
+    max-height: 90vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+    from {
+        transform: translateY(20px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.terms-modal-header {
+    background: white;
+    padding: 25px 30px;
+    border-bottom: 1px solid #e0e0e0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.terms-modal-title {
+    margin: 0;
+    font-size: 28px;
+    font-weight: 700;
+    color: #333;
+}
+
+.terms-modal-close {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 8px;
+    color: #666;
+    transition: all 0.2s ease;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.terms-modal-close:hover {
+    background: #f0f0f0;
+    color: #333;
+}
+
+.terms-modal-body {
+    padding: 30px;
+    overflow-y: auto;
+    flex: 1;
+}
+
+.terms-section {
+    margin-bottom: 25px;
+}
+
+.terms-section:last-child {
+    margin-bottom: 0;
+}
+
+.terms-section-title {
+    margin: 0 0 12px 0;
+    font-size: 18px;
+    font-weight: 700;
+    color: #239640;
+}
+
+.terms-text {
+    margin: 0;
+    font-size: 15px;
+    line-height: 1.7;
+    color: #555;
+    text-align: justify;
+}
+
+.terms-list {
+    margin: 10px 0 0 20px;
+    padding: 0;
+}
+
+.terms-list li {
+    margin-bottom: 8px;
+    font-size: 15px;
+    line-height: 1.6;
+    color: #555;
+}
+
+.terms-modal-footer {
+    padding: 20px 30px;
+    border-top: 1px solid #e0e0e0;
+    display: flex;
+    justify-content: center;
+    background: #f8f9fa;
+    flex-shrink: 0;
+}
+
+.terms-modal-btn {
+    padding: 12px 50px;
+    background: #ff8c42;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(255, 140, 66, 0.3);
+}
+
+.terms-modal-btn:hover {
+    background: #ff7a28;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(255, 140, 66, 0.4);
+}
+
+/* Success Modal Styles */
+.success-modal {
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    max-width: 500px;
+    width: 90%;
+    overflow: hidden;
+    animation: slideUp 0.3s ease;
+}
+
+.success-modal-header {
+    background: white;
+    padding: 30px 25px;
+    text-align: center;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.success-icon-wrapper {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 15px;
+}
+
+.success-icon {
+    width: 120px;
+    height: 120px;
+    color: #239640;
+    background: transparent;
+    border-radius: 50%;
+    padding: 0;
+}
+
+.success-modal-title {
+    margin: 0;
+    font-size: 24px;
+    font-weight: 700;
+    color: #239640;
+}
+
+.success-modal-body {
+    padding: 30px 25px;
+    text-align: center;
+}
+
+.success-message {
+    margin: 0;
+    font-size: 16px;
+    line-height: 1.6;
+    color: #333;
+}
+
+.success-modal-footer {
+    padding: 20px 25px;
+    border-top: 1px solid #e0e0e0;
+    display: flex;
+    justify-content: center;
+    background: #f8f9fa;
+}
+
+.success-modal-btn {
+    padding: 12px 40px;
+    background: #ff8c42;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(255, 140, 66, 0.3);
+}
+
+.success-modal-btn:hover {
+    background: #ff7a28;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(255, 140, 66, 0.4);
 }
 </style>

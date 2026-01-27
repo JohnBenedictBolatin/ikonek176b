@@ -13,9 +13,8 @@
                 <div class="header-actions">
                     <img src="/assets/SETTINGS.png" alt="Settings" class="settings-btn-img" @click="toggleSettings" />
                     <div v-if="showSettings" class="settings-dropdown">
-                        <Link href="#" class="settings-item" @click="closeSettings">Help Center</Link>
-                        <button type="button" class="settings-item" @click="openTerms">Terms & Conditions</button>
-                        <Link href="#" class="settings-item" @click="logout">Sign Out</Link>
+                        <a href="#" class="settings-item" @click.prevent.stop="openTerms">TERMS & CONDITIONS</a>
+                        <Link href="#" class="settings-item" @click="logout">SIGN OUT</Link>
                     </div>
                 </div>
             </div>
@@ -77,6 +76,7 @@
                             <path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0" />
                         </svg>
                         Notifications
+                        <span v-if="unreadCount > 0" class="unread-badge-nav">{{ unreadCount }}</span>
                     </Link>
                     <Link 
                         href="#" 
@@ -95,7 +95,7 @@
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="nav-icon">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 5.25h.008v.008H12v-.008Z" />
                     </svg>
-                    FAQs & Help Center
+                    FAQS & HELP CENTER
                 </button>
             </div>
 
@@ -105,7 +105,9 @@
                     <!-- Header -->
                     <div class="notification-header">
                         <div class="header-title">
-                            <h2>Notifications</h2>
+                            <h2>Notifications
+                                <span v-if="unreadCount > 0" class="unread-badge-header">{{ unreadCount }}</span>
+                            </h2>
                         </div>
                         <div class="header-icon">
                             <img src="/assets/ICON.png" alt="iKONEK" class="small-logo" />
@@ -126,6 +128,19 @@
                                 <div v-if="showSortDropdown" class="filter-dropdown-menu">
                                     <button @click="selectSort('newest')" :class="{ active: sortOption === 'newest' }">NEWEST</button>
                                     <button @click="selectSort('oldest')" :class="{ active: sortOption === 'oldest' }">OLDEST</button>
+                                </div>
+                            </div>
+                            <div class="filter-dropdown-wrapper">
+                                <button class="filter-dropdown-btn" @click="toggleReadFilterDropdown">
+                                    {{ readFilterOption.toUpperCase() }}
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="filter-arrow" :class="{ rotated: showReadFilterDropdown }">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+                                    </svg>
+                                </button>
+                                <div v-if="showReadFilterDropdown" class="filter-dropdown-menu">
+                                    <button @click="selectReadFilter('all')" :class="{ active: readFilterOption === 'all' }">ALL</button>
+                                    <button @click="selectReadFilter('unread')" :class="{ active: readFilterOption === 'unread' }">UNREAD</button>
+                                    <button @click="selectReadFilter('read')" :class="{ active: readFilterOption === 'read' }">READ</button>
                                 </div>
                             </div>
                         </div>
@@ -158,13 +173,23 @@
                                     :class="{ 'unread': !activity.is_read }"
                                     @click="handleNotificationClick(activity)"
                                 >
-                                    <img :src="activity.avatar" alt="User" class="notif-avatar" />
+                                    <img 
+                                        :src="activity.avatar" 
+                                        alt="User" 
+                                        class="notif-avatar"
+                                        @error="activity.avatar = '/assets/DEFAULT.jpg'"
+                                    />
                                     <div class="notif-content">
-                                        <p class="notif-text">
-                                            <strong>{{ activity.user }}</strong>
-                                            <span v-if="activity.others"> and {{ activity.others }} others</span>
-                                            {{ activity.action }}
-                                        </p>
+                                        <div class="notif-header">
+                                            <p class="notif-text">
+                                                <strong>{{ activity.user }}</strong>
+                                                <span v-if="activity.others"> and {{ activity.others }} others</span>
+                                                {{ activity.action }}
+                                            </p>
+                                            <div v-if="activity.post_category" class="notif-category-badge">
+                                                {{ activity.post_category }}
+                                            </div>
+                                        </div>
                                         <span class="notif-time">{{ activity.time }}</span>
                                     </div>
                                     <div v-if="!activity.is_read" class="unread-indicator"></div>
@@ -189,8 +214,133 @@
 
     </div>
 
-    <!-- Terms & Conditions Modal -->
-    <TermsModal :open="showTerms" @close="closeTerms" />
+    <!-- Terms and Conditions Modal -->
+    <div v-if="showTermsModal" class="modal-overlay" @click.self="closeTermsModal">
+        <div class="terms-modal" @click.stop>
+            <div class="terms-modal-header">
+                <h2 class="terms-modal-title">Terms and Conditions</h2>
+                <button @click="closeTermsModal" class="terms-modal-close">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width: 24px; height: 24px;">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+            <div class="terms-modal-body">
+                <div class="terms-section">
+                    <h3 class="terms-section-title">1. Account Registration and Access</h3>
+                    <p class="terms-text">
+                        By creating an account and using the iKonek176B portal, you agree to provide accurate, current, and complete information during registration. You are responsible for maintaining the confidentiality of your account credentials and for all activities that occur under your account. You must immediately notify Barangay 176B of any unauthorized use of your account or any other breach of security.
+                    </p>
+                </div>
+
+                <div class="terms-section">
+                    <h3 class="terms-section-title">2. Use of Services</h3>
+                    <p class="terms-text">
+                        The iKonek176B portal is provided for legitimate barangay-related purposes only. You may use the portal to:
+                        <ul class="terms-list">
+                            <li>Submit document requests (e.g., Barangay Certificate, Barangay ID, Business Permit)</li>
+                            <li>Request event assistance for community activities</li>
+                            <li>View announcements and community updates</li>
+                            <li>Participate in community discussions and forums</li>
+                            <li>Access your request history and status</li>
+                        </ul>
+                    </p>
+                </div>
+
+                <div class="terms-section">
+                    <h3 class="terms-section-title">3. Accurate Information</h3>
+                    <p class="terms-text">
+                        You are responsible for ensuring that all information you submit through the portal is accurate, truthful, and complete. Providing false, misleading, or incomplete information may result in rejection of your requests, suspension of your account, and possible legal action. You must update your account information promptly if any changes occur.
+                    </p>
+                </div>
+
+                <div class="terms-section">
+                    <h3 class="terms-section-title">4. Document Requests</h3>
+                    <p class="terms-text">
+                        When submitting document requests, you must:
+                        <ul class="terms-list">
+                            <li>Provide all required documents and information</li>
+                            <li>Ensure documents are authentic and valid</li>
+                            <li>Pay applicable processing fees as required</li>
+                            <li>Follow pickup instructions and deadlines</li>
+                            <li>Use documents only for their intended legal purposes</li>
+                        </ul>
+                        The barangay reserves the right to verify all submitted information and documents. Approval of requests is subject to verification and compliance with barangay policies and regulations.
+                    </p>
+                </div>
+
+                <div class="terms-section">
+                    <h3 class="terms-section-title">5. Event Assistance Requests</h3>
+                    <p class="terms-text">
+                        When requesting event assistance, you must provide accurate event details, including date, time, location, and purpose. Event assistance is subject to availability and approval by barangay officials. You are responsible for ensuring your event complies with all applicable laws, regulations, and barangay policies. The barangay reserves the right to deny or cancel event assistance for any reason.
+                    </p>
+                </div>
+
+                <div class="terms-section">
+                    <h3 class="terms-section-title">6. Payment and Fees</h3>
+                    <p class="terms-text">
+                        Some services may require payment of processing fees. All fees must be paid according to the payment methods provided. Payments are non-refundable unless otherwise stated. The barangay is not responsible for delays or issues caused by payment processing errors or failures. You are responsible for ensuring payments are made correctly and on time.
+                    </p>
+                </div>
+
+                <div class="terms-section">
+                    <h3 class="terms-section-title">7. Data Privacy</h3>
+                    <p class="terms-text">
+                        Your personal information is collected and processed in accordance with the Data Privacy Act of 2012 (Republic Act No. 10173). The barangay will use your information only for legitimate purposes related to service delivery, record-keeping, and compliance with legal requirements. Your information will not be shared with unauthorized third parties except as required by law.
+                    </p>
+                </div>
+
+                <div class="terms-section">
+                    <h3 class="terms-section-title">8. Prohibited Activities</h3>
+                    <p class="terms-text">
+                        You are strictly prohibited from:
+                        <ul class="terms-list">
+                            <li>Using the portal for any illegal or unauthorized purpose</li>
+                            <li>Submitting false, fraudulent, or misleading information</li>
+                            <li>Attempting to gain unauthorized access to the system or other users' accounts</li>
+                            <li>Interfering with or disrupting the portal's operation</li>
+                            <li>Harassing, threatening, or abusing other users or barangay officials</li>
+                            <li>Posting inappropriate, offensive, or defamatory content</li>
+                            <li>Violating any applicable laws or regulations</li>
+                        </ul>
+                    </p>
+                </div>
+
+                <div class="terms-section">
+                    <h3 class="terms-section-title">9. Account Suspension and Termination</h3>
+                    <p class="terms-text">
+                        The barangay reserves the right to suspend or terminate your account at any time, with or without notice, if you violate these terms and conditions, engage in prohibited activities, or for any other reason deemed necessary by barangay officials. Upon termination, your right to use the portal will immediately cease.
+                    </p>
+                </div>
+
+                <div class="terms-section">
+                    <h3 class="terms-section-title">10. Limitation of Liability</h3>
+                    <p class="terms-text">
+                        The barangay is not liable for any delays, errors, or failures in service delivery caused by technical issues, system maintenance, incorrect information provided by users, or circumstances beyond the barangay's reasonable control. The barangay does not guarantee uninterrupted or error-free access to the portal.
+                    </p>
+                </div>
+
+                <div class="terms-section">
+                    <h3 class="terms-section-title">11. Updates to Terms</h3>
+                    <p class="terms-text">
+                        These terms and conditions may be updated periodically. You will be notified of significant changes through the portal or other communication channels. Continued use of the portal after changes constitutes acceptance of the updated terms.
+                    </p>
+                </div>
+
+                <div class="terms-section">
+                    <h3 class="terms-section-title">12. Contact and Support</h3>
+                    <p class="terms-text">
+                        For questions, concerns, or to report issues related to your account or the portal, contact the Barangay 176B office at ikonek176b@dev.ph or +639193076338. For technical support or assistance with using the portal, please visit the Help Center section.
+                    </p>
+                </div>
+            </div>
+            <div class="terms-modal-footer">
+                <button @click="closeTermsModal" class="terms-modal-btn">
+                    I UNDERSTAND
+                </button>
+            </div>
+        </div>
+    </div>
 </template>
 
 <script setup>
@@ -199,7 +349,6 @@ import { Head } from '@inertiajs/vue3'
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { router } from '@inertiajs/vue3'
 import axios from 'axios'
-import TermsModal from '@/Components/TermsModal.vue'
 
 // --- Inertia-shared auth user ---
 const page = usePage()
@@ -239,10 +388,28 @@ const profilePictureUrl = computed(() => {
 const showSettings = ref(false)
 const activeTab = ref('notifications')
 const sortOption = ref('newest')
+const readFilterOption = ref('all')
 const searchQuery = ref('')
 const activities = ref([])
 const isLoading = ref(false)
 const showSortDropdown = ref(false)
+const showReadFilterDropdown = ref(false)
+
+// Helper function to format avatar URL
+const formatAvatarUrl = (avatar) => {
+    if (!avatar) {
+        return '/assets/DEFAULT.jpg'
+    }
+    
+    // If it's already a full URL or starts with /storage/ or /assets/, use as is
+    if (avatar.startsWith('http://') || avatar.startsWith('https://') || 
+        avatar.startsWith('/storage/') || avatar.startsWith('/assets/')) {
+        return avatar
+    }
+    
+    // If it doesn't start with /, prepend /storage/
+    return '/storage/' + avatar.replace(/^\/+/, '')
+}
 
 // Fetch notifications from API
 const fetchNotifications = async () => {
@@ -255,13 +422,14 @@ const fetchNotifications = async () => {
                 user: notification.user,
                 others: notification.others || null,
                 action: notification.action,
-                avatar: notification.avatar,
+                avatar: formatAvatarUrl(notification.avatar),
                 time: notification.time,
                 timestamp: new Date(notification.timestamp),
                 is_read: notification.is_read,
                 type: notification.type,
                 post_id: notification.post_id || null,
-                post_category: notification.post_category || null // 'Announcement' or 'Discussion'
+                post_category: notification.post_category || null, // 'Announcement' or 'Discussion'
+                reference_id: notification.reference_id || null // For DocumentRequest and EventAssistance
             }))
         } else {
             activities.value = []
@@ -278,6 +446,30 @@ const fetchNotifications = async () => {
 const handleNotificationClick = async (activity) => {
     if (!activity.is_read) {
         await markAsRead(activity.id)
+    }
+    
+    // Handle DocumentRequest notifications - navigate to document request page
+    if (activity.type === 'DocumentRequest') {
+        activeTab.value = 'documents'
+        const url = activity.reference_id 
+            ? route('document_request_select_resident') + `?request=${activity.reference_id}`
+            : route('document_request_select_resident')
+        router.visit(url, {
+            preserveScroll: false
+        })
+        return
+    }
+    
+    // Handle EventAssistance notifications - navigate to event assistance page
+    if (activity.type === 'EventAssistance') {
+        activeTab.value = 'events'
+        const url = activity.reference_id 
+            ? route('event_assistance_resident') + `?request=${activity.reference_id}`
+            : route('event_assistance_resident')
+        router.visit(url, {
+            preserveScroll: false
+        })
+        return
     }
     
     // Navigate to post if post_id is available
@@ -323,9 +515,21 @@ const markAllAsRead = async () => {
     }
 }
 
+// Unread count
+const unreadCount = computed(() => {
+    return activities.value.filter(activity => !activity.is_read).length
+})
+
 // Filtered Activities
 const filteredActivities = computed(() => {
     let filtered = [...activities.value]
+
+    // Read/Unread filter
+    if (readFilterOption.value === 'unread') {
+        filtered = filtered.filter(activity => !activity.is_read)
+    } else if (readFilterOption.value === 'read') {
+        filtered = filtered.filter(activity => activity.is_read)
+    }
 
     if (searchQuery.value.trim()) {
         const query = searchQuery.value.toLowerCase()
@@ -354,13 +558,17 @@ const closeSettings = () => {
 }
 
 // Terms & Conditions modal
-const showTerms = ref(false)
-const openTerms = () => {
+const showTermsModal = ref(false)
+const openTerms = (e) => {
+    if (e) {
+        e.preventDefault()
+        e.stopPropagation()
+    }
     showSettings.value = false
-    showTerms.value = true
+    showTermsModal.value = true
 }
-const closeTerms = () => {
-    showTerms.value = false
+const closeTermsModal = () => {
+    showTermsModal.value = false
 }
 
 const logout = () => {
@@ -430,11 +638,22 @@ const navigateToProfile = () => {
 
 const toggleSortDropdown = () => {
     showSortDropdown.value = !showSortDropdown.value
+    showReadFilterDropdown.value = false
 }
 
 const selectSort = (option) => {
     sortOption.value = option
     showSortDropdown.value = false
+}
+
+const toggleReadFilterDropdown = () => {
+    showReadFilterDropdown.value = !showReadFilterDropdown.value
+    showSortDropdown.value = false
+}
+
+const selectReadFilter = (option) => {
+    readFilterOption.value = option
+    showReadFilterDropdown.value = false
 }
 
 const openFAQ = () => {
@@ -447,6 +666,7 @@ const handleClickOutside = (event) => {
     }
     if (!event.target.closest('.filter-dropdown-wrapper')) {
         showSortDropdown.value = false
+        showReadFilterDropdown.value = false
     }
 }
 
@@ -541,6 +761,7 @@ onUnmounted(() => {
     border-bottom: 1px solid #f0f0f0;
     cursor: pointer;
     font-weight: 500;
+    white-space: nowrap;
 }
 
 .settings-item:hover {
@@ -585,7 +806,7 @@ onUnmounted(() => {
 
 .profile-name {
     font-weight: 700;
-    font-size: 17px;
+    font-size: 15px;
     text-shadow: 0 1px 3px rgba(0,0,0,0.2);
 }
 
@@ -645,6 +866,19 @@ onUnmounted(() => {
     border-left: 4px solid #ff8c42;
 }
 
+.unread-badge-nav {
+    background: linear-gradient(135deg, #ff8c42, #ff7a28);
+    color: white;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 4px 8px;
+    border-radius: 12px;
+    min-width: 20px;
+    text-align: center;
+    margin-left: auto;
+    box-shadow: 0 2px 6px rgba(255, 140, 66, 0.4);
+}
+
 .faq-btn {
     width: 100%;
     background: #ff8c42;
@@ -678,6 +912,10 @@ onUnmounted(() => {
     border-radius: 15px;
     overflow: hidden;
     box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+    display: flex;
+    flex-direction: column;
+    height: calc(100vh - 100px);
+    max-height: calc(100vh - 100px);
 }
 
 .notification-header {
@@ -699,6 +937,21 @@ onUnmounted(() => {
     font-size: 22px;
     font-weight: 700;
     margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.unread-badge-header {
+    background: linear-gradient(135deg, #ff8c42, #ff7a28);
+    color: white;
+    font-size: 12px;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 14px;
+    min-width: 24px;
+    text-align: center;
+    box-shadow: 0 2px 8px rgba(255, 140, 66, 0.5);
 }
 
 .header-icon {
@@ -823,8 +1076,11 @@ onUnmounted(() => {
 
 .notifications-container {
     padding: 0;
-    max-height: calc(100vh - 300px);
+    flex: 1;
     overflow-y: auto;
+    background: white;
+    display: flex;
+    flex-direction: column;
 }
 
 .activities-list {
@@ -833,113 +1089,196 @@ onUnmounted(() => {
 }
 
 .notification-card {
-    padding: 20px 25px;
+    padding: 15px 20px;
     border-bottom: 1px solid #f0f0f0;
-    transition: background 0.2s;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    position: relative;
+    min-height: 70px;
+    display: flex;
+    align-items: center;
+}
+
+.notification-card:first-child {
+    border-radius: 0;
+}
+
+.notification-card:last-child {
+    border-bottom: none;
+    border-radius: 0 0 15px 15px;
 }
 
 .notification-card:hover {
-    background: #fafbfc;
+    background: linear-gradient(135deg, #fafbfc, #f8f9fa);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.05);
 }
 
 .activity-card {
     display: flex;
     gap: 15px;
-    align-items: start;
+    align-items: center;
     cursor: pointer;
     position: relative;
+    width: 100%;
 }
 
 .notif-avatar {
     width: 50px;
     height: 50px;
-    border-radius: 50%;
+    border-radius: 10px;
     object-fit: cover;
     box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    flex-shrink: 0;
+    border: 2px solid rgba(255,255,255,0.8);
 }
 
 .notif-content {
     flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+    padding-right: 20px;
+}
+
+.notif-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 20px;
+    flex-wrap: wrap;
+    width: 100%;
 }
 
 .notif-text {
-    font-size: 14px;
+    font-size: 16px;
     color: #333;
-    margin-bottom: 5px;
-    line-height: 1.5;
+    line-height: 1.6;
+    margin: 0;
+    word-wrap: break-word;
+    flex: 1;
+    min-width: 200px;
 }
 
 .notif-text strong {
     font-weight: 700;
+    color: #2e2e2e;
+    font-size: 17px;
+}
+
+.notif-category-badge {
+    background: linear-gradient(135deg, #239640, #2bb24a);
+    color: white;
+    padding: 8px 18px;
+    border-radius: 22px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+    box-shadow: 0 3px 10px rgba(35, 150, 64, 0.25);
+    flex-shrink: 0;
 }
 
 .notif-time {
-    font-size: 12px;
+    font-size: 14px;
     color: #999;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 2px;
 }
 
 
 .no-notifications {
-    padding: 60px 40px;
+    padding: 80px 40px;
     text-align: center;
     color: #999;
+    background: linear-gradient(135deg, #fafbfc, #f8f9fa);
 }
 
 .no-notifications p {
     font-size: 16px;
+    font-weight: 500;
+    color: #666;
 }
 
 
     /* Notification Styles */
     .loading-state {
         text-align: center;
-        padding: 40px 20px;
+        padding: 60px 20px;
         color: #999;
         font-size: 16px;
+        font-weight: 500;
+        background: linear-gradient(135deg, #fafbfc, #f8f9fa);
     }
 
     .activity-card.unread {
-        background: linear-gradient(135deg, rgba(255, 140, 66, 0.05), rgba(255, 140, 66, 0.02));
-        border-left: 3px solid #ff8c42;
+        background: linear-gradient(135deg, rgba(255, 140, 66, 0.12), rgba(255, 140, 66, 0.05));
+        border-left: 6px solid #ff8c42;
     }
 
     .activity-card.unread:hover {
-        background: linear-gradient(135deg, rgba(255, 140, 66, 0.08), rgba(255, 140, 66, 0.04));
+        background: linear-gradient(135deg, rgba(255, 140, 66, 0.18), rgba(255, 140, 66, 0.1));
+        transform: translateY(-2px);
+        box-shadow: 0 6px 25px rgba(255, 140, 66, 0.2);
     }
 
     .unread-indicator {
         position: absolute;
         top: 20px;
-        right: 20px;
-        width: 8px;
-        height: 8px;
-        background: #ff8c42;
+        right: 25px;
+        width: 10px;
+        height: 10px;
+        background: linear-gradient(135deg, #ff8c42, #ff7a28);
         border-radius: 50%;
-        box-shadow: 0 0 0 2px white;
+        box-shadow: 0 0 0 3px white, 0 2px 8px rgba(255, 140, 66, 0.6);
+        animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+        0%, 100% {
+            opacity: 1;
+            transform: scale(1);
+        }
+        50% {
+            opacity: 0.7;
+            transform: scale(1.1);
+        }
     }
 
     .mark-all-read {
         text-align: center;
-        padding: 20px;
+        padding: 25px;
         border-top: 1px solid #f0f0f0;
+        background: linear-gradient(135deg, #fafbfc, #f8f9fa);
     }
 
     .mark-read-btn {
         background: linear-gradient(135deg, #ff8c42, #ff7a28);
         color: white;
         border: none;
-        padding: 10px 20px;
-        border-radius: 8px;
+        padding: 12px 24px;
+        border-radius: 10px;
         font-size: 14px;
         font-weight: 600;
         cursor: pointer;
-        transition: all 0.3s;
-        box-shadow: 0 2px 8px rgba(255, 140, 66, 0.3);
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 12px rgba(255, 140, 66, 0.3);
+        letter-spacing: 0.5px;
     }
 
     .mark-read-btn:hover {
         transform: translateY(-2px);
-        box-shadow: 0 4px 15px rgba(255, 140, 66, 0.4);
+        box-shadow: 0 6px 20px rgba(255, 140, 66, 0.4);
+        background: linear-gradient(135deg, #ff7a28, #ff6a18);
+    }
+
+    .mark-read-btn:active {
+        transform: translateY(0);
     }
 
 /* Scrollbar Styles */
@@ -1004,6 +1343,203 @@ onUnmounted(() => {
 
     .notification-card {
         padding: 15px 20px;
+        min-height: 70px;
     }
+
+    .activity-card {
+        gap: 15px;
+    }
+
+    .notif-avatar {
+        width: 50px;
+        height: 50px;
+    }
+
+    .notif-text {
+        font-size: 16px;
+    }
+
+    .notif-text strong {
+        font-size: 18px;
+    }
+
+    .notif-content {
+        gap: 12px;
+    }
+
+    .notif-header {
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .notif-text {
+        min-width: 100%;
+    }
+
+    .notif-category-badge {
+        align-self: flex-start;
+        font-size: 11px;
+        padding: 6px 14px;
+    }
+
+    .notif-time {
+        font-size: 13px;
+    }
+
+    .unread-indicator {
+        top: 30px;
+        right: 25px;
+        width: 12px;
+        height: 12px;
+    }
+}
+
+/* Terms and Conditions Modal Styles */
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.6);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 10000;
+    padding: 20px;
+}
+
+.modal-overlay:has(.terms-modal) {
+    z-index: 10000 !important;
+}
+
+.terms-modal {
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    max-width: 800px;
+    width: 90%;
+    max-height: 90vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    animation: slideUp 0.3s ease;
+    position: relative;
+    z-index: 10001;
+}
+
+.terms-modal-header {
+    background: white;
+    padding: 25px 30px;
+    border-bottom: 1px solid #e0e0e0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.terms-modal-title {
+    margin: 0;
+    font-size: 28px;
+    font-weight: 700;
+    color: #333;
+}
+
+.terms-modal-close {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 8px;
+    color: #666;
+    transition: all 0.2s ease;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.terms-modal-close:hover {
+    background: #f0f0f0;
+    color: #333;
+}
+
+.terms-modal-body {
+    padding: 30px;
+    overflow-y: auto;
+    flex: 1;
+}
+
+.terms-section {
+    margin-bottom: 25px;
+}
+
+.terms-section:last-child {
+    margin-bottom: 0;
+}
+
+.terms-section-title {
+    margin: 0 0 12px 0;
+    font-size: 18px;
+    font-weight: 700;
+    color: #ff8c42;
+}
+
+.terms-text {
+    margin: 0;
+    font-size: 15px;
+    line-height: 1.7;
+    color: #555;
+    text-align: justify;
+}
+
+.terms-list {
+    margin: 10px 0 0 20px;
+    padding: 0;
+}
+
+.terms-list li {
+    margin-bottom: 8px;
+    font-size: 15px;
+    line-height: 1.6;
+    color: #555;
+}
+
+.terms-modal-footer {
+    padding: 20px 30px;
+    border-top: 1px solid #e0e0e0;
+    display: flex;
+    justify-content: center;
+    background: #f8f9fa;
+    flex-shrink: 0;
+}
+
+.terms-modal-btn {
+    padding: 12px 50px;
+    background: #ff8c42;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(255, 140, 66, 0.3);
+}
+
+.terms-modal-btn:hover {
+    background: #ff7a28;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(255, 140, 66, 0.4);
 }
 </style>

@@ -70,10 +70,11 @@ function toggleSelectAll(e) {
             <!-- Navigation Buttons -->
             <nav class="flex-grow flex flex-col justify-center space-y-2 px-6">
                 <Link :href="route('dashboard_admin')" class="nav-button">Dashboard</Link>
-                <Link :href="route('users_admin')" class="nav-button">Users</Link>
+                <Link :href="route('registration_employee')" class="nav-button">Register Official</Link>
+                <Link :href="route('register_request_admin')" class="nav-button">Register Requests</Link>
                 <Link :href="route('history_admin')" class="nav-button">History</Link>
-                <Link :href="route('register_request_admin')" class="active">Register Request</Link>
-                <Link :href="route('report_admin')" class="nav-button">Report</Link>
+                <Link :href="route('report_admin')" class="nav-button">Reports & Messages</Link>
+                <Link :href="route('users_admin')" class="nav-button">Users</Link>
             </nav>
         </template>
 
@@ -167,7 +168,8 @@ function toggleSelectAll(e) {
 .hint { margin-top:10px; color:#6b7280 }
 
 .actions { display:flex; justify-content:space-between; align-items:center; margin-top:18px }
-.cancel { color:#6b7280; text-decoration:none; font-weight:700 }
+.cancel { color:#4a4a4a; text-decoration:none; font-weight:500; padding:10px 18px; border:1px solid #e0e0e0; border-radius:8px; background:white; display:inline-block; transition:all 0.2s }
+.cancel:hover { background:#f8f9fa; border-color:#d0d0d0 }
 .next { background:#ff8a00; color:#fff; border:none; padding:10px 18px; border-radius:8px; font-weight:800; cursor:pointer }
 
 @media (max-width: 800px) {

@@ -44,6 +44,26 @@ class ReportController extends Controller
         }
 
         try {
+            // Get the post to check ownership
+            $post = Post::find($validated['post_id']);
+            if (!$post) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Post not found.',
+                ], 404);
+            }
+
+            // Check if user is trying to report their own post
+            $userId = Auth::id();
+            $postAuthorId = $post->fk_post_author_id ?? $post->user_id ?? null;
+            
+            if ($userId == $postAuthorId) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'You cannot report your own post.',
+                ], 403);
+            }
+
             // Check if user already reported this post
             // Check both 'Pending' and 'pending' to be safe
             $existingReport = PostReport::where('fk_post_id', $validated['post_id'])
@@ -75,8 +95,7 @@ class ReportController extends Controller
                 $reportReason->save();
             }
 
-            // Mark post as reported
-            $post = Post::find($validated['post_id']);
+            // Mark post as reported (post is already loaded above)
             if ($post) {
                 $post->is_reported = true;
                 $post->save();
@@ -189,16 +208,28 @@ class ReportController extends Controller
                     // Get report ID - use the primary key
                     $reportId = $report->post_report_id ?? $report->getKey();
                     
+                    // Format image path
+                    $postImage = null;
+                    if ($post->image_content) {
+                        $postImage = str_starts_with($post->image_content, 'http') 
+                            ? $post->image_content 
+                            : asset('storage/' . $post->image_content);
+                    }
+                    
                     return [
                         'id' => $reportId,
                         'report_id' => $reportId,
                         'post_report_id' => $reportId,
                         'post_id' => $post->post_id,
                         'postAuthor' => $postAuthor->name ?? 'Unknown',
+                        'postAuthorId' => $postAuthor->user_id ?? null,
                         'postAuthorRole' => $postAuthorRole,
                         'postAuthorAvatar' => $postAuthorAvatar,
+                        'postAuthorIsRestricted' => $postAuthor ? $this->isUserRestricted($postAuthor->user_id) : false,
+                        'postAuthorRestrictions' => $postAuthor ? $this->getUserRestrictions($postAuthor->user_id) : null,
                         'postTitle' => $post->header ?? 'No Title',
                         'postContent' => $post->content ?? '',
+                        'postImage' => $postImage,
                         'postDate' => $post->created_at ? $post->created_at->format('m/d/Y') : 'N/A',
                         'reportedBy' => $reporter->name ?? 'Unknown',
                         'reportedByAvatar' => $reporterAvatar,
@@ -398,6 +429,50 @@ class ReportController extends Controller
                 'message' => 'Error updating contact message: ' . $e->getMessage(),
             ], 500);
         }
+    }
+
+    /**
+     * Check if a user is restricted
+     */
+    private function isUserRestricted($userId)
+    {
+        if (!$userId) {
+            return false;
+        }
+
+        $userRestriction = \App\Models\UserRestriction::where('user_id', $userId)->first();
+        
+        if (!$userRestriction) {
+            return false;
+        }
+
+        return $userRestriction->restrict_posting ||
+               $userRestriction->restrict_commenting ||
+               $userRestriction->restrict_document_request ||
+               $userRestriction->restrict_event_assistance_request;
+    }
+
+    /**
+     * Get user restrictions
+     */
+    private function getUserRestrictions($userId)
+    {
+        if (!$userId) {
+            return null;
+        }
+
+        $userRestriction = \App\Models\UserRestriction::where('user_id', $userId)->first();
+        
+        if (!$userRestriction) {
+            return null;
+        }
+
+        return [
+            'posting' => (bool) $userRestriction->restrict_posting,
+            'commenting' => (bool) $userRestriction->restrict_commenting,
+            'documentRequest' => (bool) $userRestriction->restrict_document_request,
+            'eventAssistanceRequest' => (bool) $userRestriction->restrict_event_assistance_request,
+        ];
     }
 }
 

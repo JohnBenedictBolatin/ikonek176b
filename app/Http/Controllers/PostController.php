@@ -25,12 +25,24 @@ class PostController extends Controller
             'tag_ids' => ['nullable', 'array'],
             'tag_ids.*' => ['integer', 'exists:tags,tag_id'],
             'image' => ['nullable', 'file', 'image', 'max:5120'],
-            'video_content' => ['nullable', 'string'], // renamed to match posts table column
+            'video_content' => ['nullable', 'string'],
+            'is_poll' => ['nullable', 'boolean'],
+            'poll_options' => ['required_if:is_poll,true', 'array', 'min:2', 'max:10'],
+            'poll_options.*' => ['required', 'string', 'max:255'],
         ]);
 
         try {
+            $userId = Auth::id();
+            if ($userId) {
+                // Check if user is restricted from posting
+                $restriction = \App\Models\UserRestriction::where('user_id', $userId)->first();
+                if ($restriction && $restriction->restrict_posting) {
+                    return redirect()->back()->with('error', 'You are restricted from creating posts. Please check your notifications for more information.');
+                }
+            }
+
             $post = new Post();
-            $post->fk_post_author_id = Auth::id();
+            $post->fk_post_author_id = $userId;
             $post->section = 'Discussion';
             $post->content = $validated['content'];
 
@@ -51,10 +63,50 @@ class PostController extends Controller
             // video stored in video_content column (string/url/path)
             $post->video_content = $request->input('video_content', null);
 
-            $post->is_poll = $request->boolean('is_poll') ? 1 : 0;
+            $isPoll = $request->boolean('is_poll');
+            $post->is_poll = $isPoll ? 1 : 0;
             $post->is_reported = 0;
 
             $post->save();
+
+            // Create poll if this is a poll post
+            if ($isPoll && $request->has('poll_options') && is_array($request->poll_options)) {
+                $pollOptions = array_filter($request->poll_options, function($option) {
+                    return !empty(trim($option));
+                });
+
+                if (count($pollOptions) >= 2) {
+                    try {
+                        $poll = \App\Models\PostPoll::create([
+                            'post_id' => $post->post_id,
+                        ]);
+
+                        foreach ($pollOptions as $optionText) {
+                            \App\Models\PollOption::create([
+                                'poll_id' => $poll->id,
+                                'option_text' => trim($optionText),
+                                'vote_count' => 0,
+                            ]);
+                        }
+
+                        Log::info('✅ Poll created with post in PostController', [
+                            'post_id' => $post->post_id,
+                            'poll_id' => $poll->id,
+                            'options_count' => count($pollOptions),
+                            'options' => $pollOptions
+                        ]);
+                    } catch (\Exception $pollError) {
+                        Log::error('❌ Error creating poll for post ' . $post->post_id . ' in PostController: ' . $pollError->getMessage());
+                        Log::error('Poll creation error trace: ' . $pollError->getTraceAsString());
+                        // Don't fail the entire post creation if poll creation fails
+                    }
+                } else {
+                    Log::warning('Poll post created but not enough valid options in PostController', [
+                        'post_id' => $post->post_id,
+                        'options_count' => count($pollOptions)
+                    ]);
+                }
+            }
 
             // Attach tags through pivot table if provided
             if (!empty($validated['tag_ids'])) {
@@ -124,5 +176,105 @@ class PostController extends Controller
         return Inertia::render('R_Discussion', [
             'userPost' => $posts,
         ]);
+    }
+
+    /**
+     * Delete a post (only by the author)
+     */
+    public function destroy($postId)
+    {
+        try {
+            $user = Auth::user();
+            if (!$user) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthenticated.',
+                ], 401);
+            }
+
+            $post = Post::find($postId);
+            if (!$post) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Post not found.',
+                ], 404);
+            }
+
+            $userId = $user->user_id ?? $user->id;
+            $postAuthorId = $post->fk_post_author_id ?? $post->user_id ?? null;
+
+            // Check if user is the author
+            if ($userId != $postAuthorId) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'You can only delete your own posts.',
+                ], 403);
+            }
+
+            // Delete associated image if exists
+            if ($post->image_content) {
+                Storage::disk('public')->delete($post->image_content);
+            }
+
+            // Delete the post (cascade should handle related records)
+            $post->delete();
+
+            Log::info('Post deleted by author', [
+                'post_id' => $postId,
+                'user_id' => $userId
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Post deleted successfully.',
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error deleting post: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to delete post.',
+                'error' => config('app.debug') ? $e->getMessage() : null,
+            ], 500);
+        }
+    }
+
+    /**
+     * Check if posts exist (for polling deleted posts)
+     * Accepts an array of post IDs and returns which ones still exist
+     */
+    public function checkPosts(Request $request)
+    {
+        try {
+            $request->validate([
+                'post_ids' => 'required|array',
+                'post_ids.*' => 'integer',
+            ]);
+
+            $postIds = $request->input('post_ids', []);
+            
+            if (empty($postIds)) {
+                return response()->json([
+                    'success' => true,
+                    'existing_posts' => [],
+                ]);
+            }
+
+            // Get all existing post IDs
+            $existingPostIds = Post::whereIn('post_id', $postIds)
+                ->pluck('post_id')
+                ->toArray();
+
+            return response()->json([
+                'success' => true,
+                'existing_posts' => $existingPostIds,
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error checking posts: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error checking posts.',
+                'error' => config('app.debug') ? $e->getMessage() : null,
+            ], 500);
+        }
     }
 }

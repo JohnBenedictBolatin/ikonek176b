@@ -95,16 +95,49 @@ class SmsGatewayService implements SmsServiceInterface
                 'url' => $this->apiUrl
             ]);
 
+            $httpStartTime = microtime(true);
             try {
-                $response = Http::timeout(30)
+                $response = Http::timeout(10)
                     ->asForm()
                     ->post($this->apiUrl, $requestData);
-                Log::info('SMS Gateway HTTP request completed', ['status' => $response->status()]);
+                $httpTime = microtime(true) - $httpStartTime;
+                Log::info('SMS Gateway HTTP request completed', [
+                    'status' => $response->status(),
+                    'http_request_time_ms' => round($httpTime * 1000, 2)
+                ]);
+            } catch (\Illuminate\Http\Client\ConnectionException $connectionException) {
+                $httpTime = microtime(true) - $httpStartTime;
+                Log::error('SMS Gateway HTTP connection timeout/error', [
+                    'message' => $connectionException->getMessage(),
+                    'phone_number' => $phoneNumber,
+                    'http_request_time_ms' => round($httpTime * 1000, 2)
+                ]);
+                Log::error('SMS Gateway HTTP connection timeout/error', [
+                    'message' => $connectionException->getMessage(),
+                    'phone_number' => $phoneNumber
+                ]);
+                return [
+                    'success' => false,
+                    'message' => 'SMS service is not responding. Please check your connection and try again.',
+                    'message_id' => null
+                ];
             } catch (\Exception $httpException) {
                 Log::error('SMS Gateway HTTP request exception', [
                     'message' => $httpException->getMessage(),
-                    'trace' => $httpException->getTraceAsString()
+                    'trace' => $httpException->getTraceAsString(),
+                    'phone_number' => $phoneNumber
                 ]);
+                
+                // Check if it's a timeout exception
+                if (strpos($httpException->getMessage(), 'timeout') !== false || 
+                    strpos($httpException->getMessage(), 'timed out') !== false) {
+                    return [
+                        'success' => false,
+                        'message' => 'SMS service request timed out. Please try again.',
+                        'message_id' => null
+                    ];
+                }
+                
                 throw $httpException;
             }
 
@@ -249,6 +282,17 @@ class SmsGatewayService implements SmsServiceInterface
                     'message_id' => null
                 ];
             }
+        } catch (\Illuminate\Http\Client\ConnectionException $connectionException) {
+            Log::error('SMS Gateway connection exception', [
+                'message' => $connectionException->getMessage(),
+                'phone_number' => $phoneNumber,
+            ]);
+
+            return [
+                'success' => false,
+                'message' => 'SMS service is not responding. Please check your connection and try again.',
+                'message_id' => null
+            ];
         } catch (\Exception $e) {
             Log::error('SMS Gateway service exception', [
                 'message' => $e->getMessage(),
@@ -256,9 +300,18 @@ class SmsGatewayService implements SmsServiceInterface
                 'phone_number' => $phoneNumber,
             ]);
 
+            // Check if it's a timeout exception
+            $errorMessage = 'An error occurred while sending SMS. Please try again.';
+            if (strpos($e->getMessage(), 'timeout') !== false || 
+                strpos($e->getMessage(), 'timed out') !== false) {
+                $errorMessage = 'SMS service request timed out. Please try again.';
+            } elseif (strpos($e->getMessage(), 'Connection') !== false) {
+                $errorMessage = 'Cannot connect to SMS service. Please check your connection and try again.';
+            }
+
             return [
                 'success' => false,
-                'message' => 'An error occurred while sending SMS: ' . $e->getMessage(),
+                'message' => $errorMessage,
                 'message_id' => null
             ];
         }
@@ -366,20 +419,44 @@ class SmsGatewayService implements SmsServiceInterface
                 'message' => $result['message'],
                 'code' => null
             ];
+        } catch (\Illuminate\Http\Client\ConnectionException $connectionException) {
+            Log::error('SMS Gateway OTP connection exception', [
+                'message' => $connectionException->getMessage(),
+                'phone_number' => $phoneNumber
+            ]);
+
+            return [
+                'success' => false,
+                'message' => 'OTP service is not responding. Please check your connection and try again.',
+                'code' => null
+            ];
         } catch (\Exception $e) {
             Log::error('SMS Gateway OTP service exception', [
                 'message' => $e->getMessage(),
                 'phone_number' => $phoneNumber
             ]);
 
+            // Check if it's a timeout exception
+            $errorMessage = 'An error occurred while sending OTP. Please try again.';
+            if (strpos($e->getMessage(), 'timeout') !== false || 
+                strpos($e->getMessage(), 'timed out') !== false) {
+                $errorMessage = 'OTP service request timed out. Please try again.';
+            } elseif (strpos($e->getMessage(), 'Connection') !== false) {
+                $errorMessage = 'Cannot connect to OTP service. Please check your connection and try again.';
+            }
+
             return [
                 'success' => false,
-                'message' => 'An error occurred while sending OTP: ' . $e->getMessage(),
+                'message' => $errorMessage,
                 'code' => null
             ];
         }
     }
 }
+
+
+
+
 
 
 

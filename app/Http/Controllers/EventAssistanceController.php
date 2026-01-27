@@ -17,9 +17,97 @@ class EventAssistanceController extends Controller
     public function create(Request $request)
     {
         // Items are not used in the current implementation - event types are used instead
+        // Get user restrictions
+        $restrictions = null;
+        $eventTypesList = [];
+        $availableEventTypes = [];
+        $restrictedEventTypes = [];
+        $user = auth()->user();
+        $userData = null;
+        
+        // All available event types
+        $allEventTypes = [
+            'Court Reservation',
+            'Community Hall Reservation',
+            'Manpower Assistance',
+            'Tent and Tables Borrowing',
+            'Sports Equipment Borrowing',
+            'Sound System Borrowing',
+        ];
+        
+        if ($user) {
+            $restriction = \App\Models\UserRestriction::where('user_id', $user->user_id)->first();
+            if ($restriction) {
+                $restrictions = [
+                    'restrict_posting' => $restriction->restrict_posting ?? false,
+                    'restrict_commenting' => $restriction->restrict_commenting ?? false,
+                    'restrict_document_request' => $restriction->restrict_document_request ?? false,
+                    'restrict_event_assistance_request' => $restriction->restrict_event_assistance_request ?? false,
+                ];
+                
+                // Get restricted event types
+                $restrictedEventTypes = $restriction->restricted_event_types ?? [];
+                $allowedEventTypes = $restriction->allowed_event_types ?? [];
+                
+                // Build event types list with restriction status (show all, but mark restricted ones)
+                foreach ($allEventTypes as $eventType) {
+                    $isRestricted = in_array($eventType, $restrictedEventTypes);
+                    $isAllowed = !empty($allowedEventTypes) && in_array($eventType, $allowedEventTypes);
+                    
+                    // Determine if it's actually restricted (restricted but not allowed)
+                    $actuallyRestricted = $isRestricted && !$isAllowed;
+                    
+                    $eventTypesList[] = [
+                        'name' => $eventType,
+                        'restricted' => $actuallyRestricted,
+                        'available' => !$actuallyRestricted,
+                    ];
+                }
+            } else {
+                // No restrictions, all event types available
+                foreach ($allEventTypes as $eventType) {
+                    $eventTypesList[] = [
+                        'name' => $eventType,
+                        'restricted' => false,
+                        'available' => true,
+                    ];
+                }
+            }
+            
+            // Build user data with restrictions
+            $userData = [
+                'user_id' => $user->user_id,
+                'name' => $user->name ?? '',
+                'avatar' => $user->profile_pic ?? '/assets/DEFAULT.jpg',
+                'profile_pic' => $user->profile_pic ?? null,
+                'role' => $user->role ?? 'Resident',
+                'fk_role_id' => $user->fk_role_id ?? 1,
+                'restrictions' => $restrictions,
+            ];
+        } else {
+            // No user, all event types available
+            foreach ($allEventTypes as $eventType) {
+                $eventTypesList[] = [
+                    'name' => $eventType,
+                    'restricted' => false,
+                    'available' => true,
+                ];
+            }
+        }
+        
+        // For backward compatibility, also provide availableEventTypes (only non-restricted)
+        $availableEventTypes = collect($eventTypesList)->where('available', true)->pluck('name')->toArray();
+        
         // Inertia render the Vue page
         return Inertia::render('User/Resident/R_Event_Assist', [
             'items' => [], // Empty array since table doesn't exist and isn't used
+            'restrictions' => $restrictions,
+            'eventTypes' => $eventTypesList, // All event types with restriction status
+            'availableEventTypes' => $availableEventTypes, // Only available ones (for backward compatibility)
+            'restrictedEventTypes' => $restrictedEventTypes,
+            'auth' => [
+                'user' => $userData,
+            ],
         ]);
     }
 
@@ -167,13 +255,84 @@ class EventAssistanceController extends Controller
 
         // Get user data
         $user = auth()->user();
-        $userData = $user ? [
-            'id' => $user->user_id,
-            'name' => $sanitizeString($user->name ?? ''),
-            'email' => $sanitizeString($user->email ?? ''),
-            'fk_role_id' => $user->fk_role_id ?? null,
-            'profile_pic' => $sanitizeString($user->profile_pic ?? ''),
-        ] : null;
+        
+        // All available event types
+        $allEventTypes = [
+            'Court Reservation',
+            'Community Hall Reservation',
+            'Manpower Assistance',
+            'Tent and Tables Borrowing',
+            'Sports Equipment Borrowing',
+            'Sound System Borrowing',
+        ];
+        
+        // Get user restrictions
+        $restrictions = null;
+        $eventTypesList = [];
+        $availableEventTypes = [];
+        $restrictedEventTypes = [];
+        
+        if ($user) {
+            $restriction = \App\Models\UserRestriction::where('user_id', $user->user_id)->first();
+            if ($restriction) {
+                $restrictions = [
+                    'restrict_posting' => $restriction->restrict_posting ?? false,
+                    'restrict_commenting' => $restriction->restrict_commenting ?? false,
+                    'restrict_document_request' => $restriction->restrict_document_request ?? false,
+                    'restrict_event_assistance_request' => $restriction->restrict_event_assistance_request ?? false,
+                ];
+                
+                // Get restricted event types
+                $restrictedEventTypes = $restriction->restricted_event_types ?? [];
+                $allowedEventTypes = $restriction->allowed_event_types ?? [];
+                
+                // Build event types list with restriction status (show all, but mark restricted ones)
+                foreach ($allEventTypes as $eventType) {
+                    $isRestricted = in_array($eventType, $restrictedEventTypes);
+                    $isAllowed = !empty($allowedEventTypes) && in_array($eventType, $allowedEventTypes);
+                    
+                    // Determine if it's actually restricted (restricted but not allowed)
+                    $actuallyRestricted = $isRestricted && !$isAllowed;
+                    
+                    $eventTypesList[] = [
+                        'name' => $eventType,
+                        'restricted' => $actuallyRestricted,
+                        'available' => !$actuallyRestricted,
+                    ];
+                }
+            } else {
+                // No restrictions, all event types available
+                foreach ($allEventTypes as $eventType) {
+                    $eventTypesList[] = [
+                        'name' => $eventType,
+                        'restricted' => false,
+                        'available' => true,
+                    ];
+                }
+            }
+            
+            $userData = [
+                'id' => $user->user_id,
+                'user_id' => $user->user_id,
+                'name' => $sanitizeString($user->name ?? ''),
+                'email' => $sanitizeString($user->email ?? ''),
+                'fk_role_id' => $user->fk_role_id ?? null,
+                'profile_pic' => $sanitizeString($user->profile_pic ?? ''),
+                'restrictions' => $restrictions,
+            ];
+        } else {
+            $userData = null;
+            foreach ($allEventTypes as $eventType) {
+                $eventTypesList[] = [
+                    'name' => $eventType,
+                    'restricted' => false,
+                    'available' => true,
+                ];
+            }
+        }
+        
+        // For backward compatibility, also provide availableEventTypes (only non-restricted)
+        $availableEventTypes = collect($eventTypesList)->where('available', true)->pluck('name')->toArray();
 
         // Items are not used in the current implementation - event types are used instead
         // If needed in the future, create the event_assistance_items table migration first
@@ -182,6 +341,10 @@ class EventAssistanceController extends Controller
             'eventAssistanceRequests' => $eventAssistanceRequestsArray,
             'event_assistance_requests' => $eventAssistanceRequestsArray,
             'items' => [], // Empty array since table doesn't exist and isn't used
+            'restrictions' => $restrictions,
+            'eventTypes' => $eventTypesList, // All event types with restriction status
+            'availableEventTypes' => $availableEventTypes, // Only available ones (for backward compatibility)
+            'restrictedEventTypes' => $restrictedEventTypes,
             'auth' => ['user' => $userData],
         ]);
     }

@@ -15,9 +15,9 @@
                     <img src="/assets/SETTINGS.png" alt="Settings" class="settings-btn-img" @click="toggleSettings" />
                     <!-- Settings Dropdown -->
                     <div v-if="showSettings" class="settings-dropdown">
-                        <Link href="#" class="settings-item" @click="closeSettings">Terms & Conditions</Link>
+                        <a href="#" class="settings-item" @click.prevent.stop="openTermsModal">TERMS & CONDITIONS</a>
                         <Link href="#" class="settings-item" @click.prevent="logout">
-                            Sign Out
+                            SIGN OUT
                         </Link>
                     </div>
                 </div>
@@ -47,24 +47,6 @@
                         Dashboard
                     </Link>
                     <Link 
-                        :href="route('history_admin')" 
-                        class="nav-item"
-                    >
-                        <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        History
-                    </Link>
-                    <Link 
-                        :href="route('register_request_admin')" 
-                        class="nav-item"
-                    >
-                        <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                        </svg>
-                        Register Request
-                    </Link>
-                    <Link 
                         :href="route('registration_employee')" 
                         class="nav-item"
                     >
@@ -74,13 +56,31 @@
                         Register Official
                     </Link>
                     <Link 
+                        :href="route('register_request_admin')" 
+                        class="nav-item"
+                    >
+                        <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                        </svg>
+                        Register Requests
+                    </Link>
+                    <Link 
+                        :href="route('history_admin')" 
+                        class="nav-item"
+                    >
+                        <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        History
+                    </Link>
+                    <Link 
                         :href="route('report_admin')" 
                         class="nav-item"
                     >
                         <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                         </svg>
-                        Report
+                        Reports & Messages
                     </Link>
                 </div>
 
@@ -90,8 +90,30 @@
             <div class="content-area">
                 <!-- Main Content Panel -->
                 <div class="main-content">
-                    <!-- Success Message Alert -->
-                    <div v-if="page.props.flash?.success" class="success-alert" style="margin-bottom: 20px; padding: 15px 20px; background: #d4edda; border: 1px solid #c3e6cb; border-radius: 6px; color: #155724; display: flex; align-items: center; gap: 10px;">
+                    <!-- Success Confirmation Modal -->
+                    <div v-if="page.props.flash?.success && showSuccessModal" class="modal-overlay" @click="closeSuccessModal">
+                        <div class="success-modal" @click.stop>
+                            <div class="success-modal-header">
+                                <div class="success-icon-wrapper">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" class="success-icon">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                </div>
+                                <h3 class="success-modal-title">Registration Successful!</h3>
+                            </div>
+                            <div class="success-modal-body">
+                                <p class="success-message">{{ page.props.flash.success }}</p>
+                            </div>
+                            <div class="success-modal-footer">
+                                <button @click="closeSuccessModal" class="success-modal-btn">
+                                    OK
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Success Message Alert (fallback if modal is dismissed) -->
+                    <div v-if="page.props.flash?.success && !showSuccessModal" class="success-alert" style="margin-bottom: 20px; padding: 15px 20px; background: #d4edda; border: 1px solid #c3e6cb; border-radius: 6px; color: #155724; display: flex; align-items: center; gap: 10px;">
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width: 20px; height: 20px; flex-shrink: 0;">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
@@ -103,8 +125,30 @@
                         </button>
                     </div>
 
-                    <!-- Error Message Alert -->
-                    <div v-if="page.props.flash?.error" class="error-alert" style="margin-bottom: 20px; padding: 15px 20px; background: #f8d7da; border: 1px solid #f5c6cb; border-radius: 6px; color: #721c24; display: flex; align-items: center; gap: 10px;">
+                    <!-- Error Confirmation Modal -->
+                    <div v-if="page.props.flash?.error && showErrorModal" class="modal-overlay" @click="closeErrorModal">
+                        <div class="error-modal" @click.stop>
+                            <div class="error-modal-header">
+                                <div class="error-icon-wrapper">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" class="error-icon">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M9.75 9.75l4.5 4.5m0-4.5l-4.5 4.5M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                </div>
+                                <h3 class="error-modal-title">Registration Unsuccessful!</h3>
+                            </div>
+                            <div class="error-modal-body">
+                                <p class="error-message-text">{{ page.props.flash.error }}</p>
+                            </div>
+                            <div class="error-modal-footer">
+                                <button @click="closeErrorModal" class="error-modal-btn">
+                                    OK
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Error Message Alert (fallback if modal is dismissed) -->
+                    <div v-if="page.props.flash?.error && !showErrorModal" class="error-alert" style="margin-bottom: 20px; padding: 15px 20px; background: #f8d7da; border: 1px solid #f5c6cb; border-radius: 6px; color: #721c24; display: flex; align-items: center; gap: 10px;">
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width: 20px; height: 20px; flex-shrink: 0;">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
@@ -264,7 +308,7 @@
                                         <td>{{ user.address }}</td>
                                         <td>{{ user.contact }}</td>
                                         <td>
-                                            <span :class="['role-badge', user.role === 'Official' ? 'role-official' : 'role-resident']">
+                                            <span class="role-badge" :class="getRoleClass(user.role)">
                                                 {{ user.role.toUpperCase() }}
                                             </span>
                                         </td>
@@ -273,9 +317,25 @@
                                         <td>{{ user.joined }}</td>
                                         <td>
                                             <div class="action-buttons">
-                                                <button class="btn-action btn-restrict" @click="openRestrictModal(user)" title="Restrict User">
+                                                <button 
+                                                    v-if="!user.is_restricted"
+                                                    class="btn-action btn-restrict" 
+                                                    @click="openRestrictModal(user)" 
+                                                    title="Restrict User"
+                                                >
                                                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width: 18px; height: 18px;">
                                                         <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                                                    </svg>
+                                                </button>
+                                                <button 
+                                                    v-else
+                                                    class="btn-action btn-unrestrict" 
+                                                    @click="openRestrictModal(user)" 
+                                                    title="Update Restrictions"
+                                                >
+                                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width: 18px; height: 18px;">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z" />
+                                                        <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V5a4 4 0 118 0v2" />
                                                     </svg>
                                                 </button>
                                                 <button class="btn-action btn-password" @click="openPasswordModal(user)" title="Change Password">
@@ -309,41 +369,33 @@
         <!-- Restrict User Modal -->
         <div v-if="showRestrictModal" class="modal-overlay" @click="closeRestrictModal">
             <div class="modal-container" @click.stop>
-                <div class="modal-header">
-                    <h3 style="display: flex; align-items: center; gap: 8px;">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width: 20px; height: 20px;">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+                <!-- Close Button -->
+                <button @click="closeRestrictModal" class="modal-close">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width: 20px; height: 20px;">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+
+                <div class="modal-content">
+                    <h2 class="modal-title" style="display: flex; align-items: center; gap: 8px;">
+                        <svg v-if="selectedUser?.is_restricted" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width: 20px; height: 20px;">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z" />
                         </svg>
-                        Restrict User
-                    </h3>
-                    <button class="modal-close" @click="closeRestrictModal">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width: 20px; height: 20px;">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                        <svg v-else xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width: 20px; height: 20px;">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                         </svg>
-                    </button>
-                </div>
-                
-                <div class="modal-body">
+                        {{ selectedUser?.is_restricted ? 'Update Restrictions' : 'Restrict User' }}
+                    </h2>
                     <div class="user-info-box">
-                        <img :src="selectedUser?.profile" :alt="selectedUser?.name" class="modal-user-avatar" />
+                        <img :src="selectedUser?.profile || '/assets/DEFAULT.jpg'" :alt="selectedUser?.name" class="modal-user-avatar" @error="$event.target.src='/assets/DEFAULT.jpg'" />
                         <div class="modal-user-details">
-                            <h4>{{ selectedUser?.name }}</h4>
-                            <p>{{ selectedUser?.role }}</p>
+                            <h4>{{ selectedUser?.name || 'Unknown User' }}</h4>
+                            <p>{{ selectedUser?.role || 'Unknown Role' }}</p>
                         </div>
                     </div>
 
                     <div class="form-group">
-                        <label class="form-label">Reason for Restriction *</label>
-                        <textarea
-                            v-model="restrictionReason"
-                            placeholder="Please provide a detailed reason for restricting this user..."
-                            class="form-textarea"
-                            rows="4"
-                        ></textarea>
-                    </div>
-
-                    <div class="form-group">
-                        <label class="form-label">Select Restrictions *</label>
+                        <label class="form-label">{{ selectedUser?.is_restricted ? 'Update Restrictions' : 'Select Restrictions *' }}</label>
                         <div class="checkbox-group">
                             <label class="checkbox-label">
                                 <input
@@ -353,7 +405,6 @@
                                 />
                                 <span class="checkbox-text">
                                     <strong>Restrict Posting</strong>
-                                    <small>User cannot create new posts</small>
                                 </span>
                             </label>
                             
@@ -365,83 +416,82 @@
                                 />
                                 <span class="checkbox-text">
                                     <strong>Restrict Commenting</strong>
-                                    <small>User cannot comment on posts</small>
                                 </span>
                             </label>
                             
                             <label class="checkbox-label">
                                 <input
                                     type="checkbox"
-                                    v-model="restrictions.messaging"
+                                    v-model="restrictions.documentRequest"
                                     class="checkbox-input"
                                 />
                                 <span class="checkbox-text">
-                                    <strong>Restrict Messaging</strong>
-                                    <small>User cannot send direct messages</small>
+                                    <strong>Restrict Document Request</strong>
                                 </span>
                             </label>
                             
                             <label class="checkbox-label">
                                 <input
                                     type="checkbox"
-                                    v-model="restrictions.profileEdit"
+                                    v-model="restrictions.eventAssistanceRequest"
                                     class="checkbox-input"
                                 />
                                 <span class="checkbox-text">
-                                    <strong>Restrict Profile Editing</strong>
-                                    <small>User cannot edit their profile</small>
-                                </span>
-                            </label>
-                            
-                            <label class="checkbox-label">
-                                <input
-                                    type="checkbox"
-                                    v-model="restrictions.fileUpload"
-                                    class="checkbox-input"
-                                />
-                                <span class="checkbox-text">
-                                    <strong>Restrict File Upload</strong>
-                                    <small>User cannot upload files or images</small>
+                                    <strong>Restrict Event Assistance Request</strong>
                                 </span>
                             </label>
                         </div>
                     </div>
-                </div>
 
-                <div class="modal-footer">
-                    <button class="btn-cancel" @click="closeRestrictModal">
-                        Cancel
-                    </button>
-                    <button class="btn-apply" @click="applyRestrictions">
-                        Apply Restrictions
-                    </button>
+                    <div v-if="!selectedUser?.is_restricted" class="modal-warning">
+                        <svg class="warning-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                        </svg>
+                        <span>The user will be notified of these restrictions and the reasons through their notification system.</span>
+                    </div>
+
+                    <div v-else class="modal-info">
+                        <svg class="info-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <span>Uncheck the restrictions you want to remove. The user will be notified of any changes.</span>
+                    </div>
+
+                    <div style="display: flex; justify-content: center; margin-top: 20px;">
+                        <button
+                            @click="applyRestrictions"
+                            class="restrict-btn"
+                            :class="selectedUser?.is_restricted ? 'unrestrict-btn' : 'restrict-btn-red'"
+                        >
+                            {{ selectedUser?.is_restricted ? 'UPDATE RESTRICTIONS' : 'RESTRICT USER' }}
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
 
         <!-- Change Password Modal -->
         <div v-if="showPasswordModal" class="modal-overlay" @click="closePasswordModal">
-            <div class="modal-container password-modal" @click.stop>
-                <div class="modal-header">
-                    <h3 style="display: flex; align-items: center; gap: 8px;">
+            <div class="modal-container" @click.stop>
+                <!-- Close Button -->
+                <button @click="closePasswordModal" class="modal-close">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width: 20px; height: 20px;">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+
+                <div class="modal-content">
+                    <h2 class="modal-title" style="display: flex; align-items: center; gap: 8px;">
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width: 20px; height: 20px;">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
                         </svg>
                         Change Password
-                    </h3>
-                    <button class="modal-close" @click="closePasswordModal">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width: 20px; height: 20px;">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                    </button>
-                </div>
-                
-                <div class="modal-body">
+                    </h2>
                     <div class="user-info-box">
-                        <img :src="selectedUser?.profile" :alt="selectedUser?.name" class="modal-user-avatar" />
+                        <img :src="selectedUser?.profile || '/assets/DEFAULT.jpg'" :alt="selectedUser?.name" class="modal-user-avatar" @error="$event.target.src='/assets/DEFAULT.jpg'" />
                         <div class="modal-user-details">
-                            <h4>{{ selectedUser?.name }}</h4>
-                            <p>{{ selectedUser?.role }}</p>
+                            <h4>{{ selectedUser?.name || 'Unknown User' }}</h4>
+                            <p>{{ selectedUser?.role || 'Unknown Role' }}</p>
                         </div>
                     </div>
 
@@ -499,14 +549,102 @@
                     <div v-if="passwordError" class="error-message">
                         {{ passwordError }}
                     </div>
-                </div>
 
-                <div class="modal-footer">
-                    <button class="btn-cancel" @click="closePasswordModal">
-                        Cancel
+                    <div style="display: flex; justify-content: center; margin-top: 20px;">
+                        <button
+                            @click="changePassword"
+                            class="restrict-btn unrestrict-btn"
+                        >
+                            CHANGE PASSWORD
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Password Change Success Modal -->
+        <div v-if="showPasswordSuccessModal" class="modal-overlay" @click="closePasswordSuccessModal">
+            <div class="success-modal" @click.stop>
+                <div class="success-modal-header">
+                    <div class="success-icon-wrapper">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" class="success-icon">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    </div>
+                    <h3 class="success-modal-title">Password Changed Successfully!</h3>
+                </div>
+                <div class="success-modal-body">
+                    <p class="success-message">The password has been updated successfully for {{ selectedUser?.name || 'the user' }}.</p>
+                </div>
+                <div class="success-modal-footer">
+                    <button @click="closePasswordSuccessModal" class="success-modal-btn">
+                        OK
                     </button>
-                    <button class="btn-apply" @click="changePassword">
-                        Change Password
+                </div>
+            </div>
+        </div>
+
+        <!-- Password Change Error Modal -->
+        <div v-if="showPasswordErrorModal" class="modal-overlay" @click="closePasswordErrorModal">
+            <div class="error-modal" @click.stop>
+                <div class="error-modal-header">
+                    <div class="error-icon-wrapper">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" class="error-icon">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9.75 9.75l4.5 4.5m0-4.5l-4.5 4.5M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    </div>
+                    <h3 class="error-modal-title">Password Change Unsuccessful!</h3>
+                </div>
+                <div class="error-modal-body">
+                    <p class="error-message-text">{{ passwordChangeErrorMessage || 'Failed to change password. Please try again.' }}</p>
+                </div>
+                <div class="error-modal-footer">
+                    <button @click="closePasswordErrorModal" class="error-modal-btn">
+                        OK
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Delete User Success Modal -->
+        <div v-if="showDeleteSuccessModal" class="modal-overlay" @click="closeDeleteSuccessModal">
+            <div class="success-modal" @click.stop>
+                <div class="success-modal-header">
+                    <div class="success-icon-wrapper">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" class="success-icon">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    </div>
+                    <h3 class="success-modal-title">User Deleted Successfully!</h3>
+                </div>
+                <div class="success-modal-body">
+                    <p class="success-message">{{ deletedUserName || 'The user' }} has been successfully deleted from the system.</p>
+                </div>
+                <div class="success-modal-footer">
+                    <button @click="closeDeleteSuccessModal" class="success-modal-btn">
+                        OK
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Delete User Error Modal -->
+        <div v-if="showDeleteErrorModal" class="modal-overlay" @click="closeDeleteErrorModal">
+            <div class="error-modal" @click.stop>
+                <div class="error-modal-header">
+                    <div class="error-icon-wrapper">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" class="error-icon">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9.75 9.75l4.5 4.5m0-4.5l-4.5 4.5M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    </div>
+                    <h3 class="error-modal-title">User Deletion Unsuccessful!</h3>
+                </div>
+                <div class="error-modal-body">
+                    <p class="error-message-text">{{ deleteErrorMessage || 'Failed to delete user. Please try again.' }}</p>
+                </div>
+                <div class="error-modal-footer">
+                    <button @click="closeDeleteErrorModal" class="error-modal-btn">
+                        OK
                     </button>
                 </div>
             </div>
@@ -514,50 +652,161 @@
 
         <!-- Delete User Modal -->
         <div v-if="showDeleteModal" class="modal-overlay" @click="closeDeleteModal">
-            <div class="modal-container delete-modal" @click.stop>
-                <div class="modal-header">
-                    <h3 style="display: flex; align-items: center; gap: 8px;">
+            <div class="modal-container" @click.stop>
+                <!-- Close Button -->
+                <button @click="closeDeleteModal" class="modal-close">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width: 20px; height: 20px;">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+
+                <div class="modal-content">
+                    <h2 class="modal-title" style="display: flex; align-items: center; gap: 8px;">
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width: 20px; height: 20px;">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                         </svg>
                         Delete User
-                    </h3>
-                    <button class="modal-close" @click="closeDeleteModal">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width: 20px; height: 20px;">
+                    </h2>
+                    <div class="user-info-box">
+                        <img :src="selectedUser?.profile || '/assets/DEFAULT.jpg'" :alt="selectedUser?.name" class="modal-user-avatar" @error="$event.target.src='/assets/DEFAULT.jpg'" />
+                        <div class="modal-user-details">
+                            <h4>{{ selectedUser?.name || 'Unknown User' }}</h4>
+                            <p>{{ selectedUser?.role || 'Unknown Role' }}</p>
+                        </div>
+                    </div>
+
+                    <div class="modal-warning">
+                        <svg class="warning-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                        </svg>
+                        <span><strong>This action cannot be undone.</strong> All user data, posts, comments, and related information will be permanently deleted.</span>
+                    </div>
+
+                    <div style="display: flex; justify-content: center; margin-top: 20px;">
+                        <button
+                            @click="confirmDeleteUser"
+                            class="restrict-btn restrict-btn-red"
+                        >
+                            DELETE USER
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Terms and Conditions Modal -->
+        <div v-if="showTermsModal" class="modal-overlay" @click.self="closeTermsModal">
+            <div class="terms-modal" @click.stop>
+                <div class="terms-modal-header">
+                    <h2 class="terms-modal-title">Terms and Conditions</h2>
+                    <button @click="closeTermsModal" class="terms-modal-close">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width: 24px; height: 24px;">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
                         </svg>
                     </button>
                 </div>
-                
-                <div class="modal-body">
-                    <div class="delete-warning">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width: 24px; height: 24px; color: #dc3545; flex-shrink: 0;">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                        </svg>
-                        <h4>Are you sure you want to delete this user?</h4>
+                <div class="terms-modal-body">
+                    <div class="terms-section">
+                        <h3 class="terms-section-title">1. Role and Responsibilities</h3>
+                        <p class="terms-text">
+                            As a System Administrator, you are responsible for managing user accounts, processing registration requests, reviewing reports and messages, and maintaining the integrity of the iKonek176B system. You must exercise your administrative privileges with care and in accordance with barangay policies and regulations.
+                        </p>
                     </div>
 
-                    <div class="user-info-box">
-                        <img :src="selectedUser?.profile" :alt="selectedUser?.name" class="modal-user-avatar" />
-                        <div class="modal-user-details">
-                            <h4>{{ selectedUser?.name }}</h4>
-                            <p>{{ selectedUser?.role }}</p>
-                            <p class="user-meta">{{ selectedUser?.address }}</p>
-                        </div>
+                    <div class="terms-section">
+                        <h3 class="terms-section-title">2. Access and Security</h3>
+                        <p class="terms-text">
+                            You have been granted elevated access to the system. You must maintain the confidentiality of your login credentials and immediately report any suspected security breaches. Sharing your account credentials with unauthorized persons is strictly prohibited and may result in immediate account termination.
+                        </p>
                     </div>
 
-                    <div class="delete-notice">
-                        <p><strong>This action cannot be undone.</strong></p>
-                        <p>All user data, posts, comments, and related information will be permanently deleted.</p>
+                    <div class="terms-section">
+                        <h3 class="terms-section-title">3. Data Privacy and Confidentiality</h3>
+                        <p class="terms-text">
+                            You have access to sensitive personal information of residents and officials. You must handle all data in accordance with the Data Privacy Act of 2012. Personal information must only be accessed for legitimate administrative purposes and must never be disclosed to unauthorized parties or used for personal gain.
+                        </p>
+                    </div>
+
+                    <div class="terms-section">
+                        <h3 class="terms-section-title">4. User Account Management</h3>
+                        <p class="terms-text">
+                            When creating, modifying, or restricting user accounts, you must ensure that all actions are justified, documented, and in compliance with barangay policies. Unauthorized account creation, modification, or deletion is prohibited. All administrative actions are logged and may be subject to audit.
+                        </p>
+                    </div>
+
+                    <div class="terms-section">
+                        <h3 class="terms-section-title">5. Registration Requests</h3>
+                        <p class="terms-text">
+                            You are responsible for reviewing and processing registration requests in a timely and fair manner. Approval or rejection decisions must be based on valid criteria and documented requirements. Discrimination or bias in processing requests is strictly prohibited.
+                        </p>
+                    </div>
+
+                    <div class="terms-section">
+                        <h3 class="terms-section-title">6. Reports and Messages</h3>
+                        <p class="terms-text">
+                            You must review reports and contact messages promptly and take appropriate action when necessary. Actions taken on reported content must be justified and in accordance with community guidelines. Abuse of moderation powers is prohibited.
+                        </p>
+                    </div>
+
+                    <div class="terms-section">
+                        <h3 class="terms-section-title">7. Limitations and Restrictions</h3>
+                        <p class="terms-text">
+                            Your administrative privileges do not grant you the right to:
+                            <ul class="terms-list">
+                                <li>Access or modify system code or database structure without authorization</li>
+                                <li>Bypass system security measures or attempt to exploit system vulnerabilities</li>
+                                <li>Use administrative functions for personal purposes or to gain unfair advantage</li>
+                                <li>Delete or modify system logs or audit trails</li>
+                                <li>Grant administrative privileges to other users without proper authorization</li>
+                            </ul>
+                        </p>
+                    </div>
+
+                    <div class="terms-section">
+                        <h3 class="terms-section-title">8. Prohibited Activities</h3>
+                        <p class="terms-text">
+                            The following activities are strictly prohibited:
+                            <ul class="terms-list">
+                                <li>Unauthorized access to user accounts or data</li>
+                                <li>Tampering with system records or documentation</li>
+                                <li>Using administrative access to harass, intimidate, or discriminate against users</li>
+                                <li>Sharing confidential information outside of official channels</li>
+                                <li>Engaging in any activity that compromises system security or integrity</li>
+                            </ul>
+                        </p>
+                    </div>
+
+                    <div class="terms-section">
+                        <h3 class="terms-section-title">9. Accountability and Auditing</h3>
+                        <p class="terms-text">
+                            All administrative actions are logged and monitored. You are accountable for all actions performed using your account. Regular audits may be conducted to ensure compliance with these terms. Failure to comply may result in disciplinary action, including but not limited to account suspension or termination.
+                        </p>
+                    </div>
+
+                    <div class="terms-section">
+                        <h3 class="terms-section-title">10. Violations and Consequences</h3>
+                        <p class="terms-text">
+                            Violation of these terms and conditions may result in immediate suspension or termination of your administrative account, legal action if applicable, and reporting to appropriate barangay authorities. The severity of consequences will depend on the nature and extent of the violation.
+                        </p>
+                    </div>
+
+                    <div class="terms-section">
+                        <h3 class="terms-section-title">11. Updates to Terms</h3>
+                        <p class="terms-text">
+                            These terms and conditions may be updated periodically. You will be notified of significant changes. Continued use of administrative privileges after changes constitutes acceptance of the updated terms.
+                        </p>
+                    </div>
+
+                    <div class="terms-section">
+                        <h3 class="terms-section-title">12. Contact and Support</h3>
+                        <p class="terms-text">
+                            For questions, concerns, or to report issues related to your administrative role, contact the Barangay 176B office at ikonek176b@dev.ph or +639193076338.
+                        </p>
                     </div>
                 </div>
-
-                <div class="modal-footer">
-                    <button class="btn-cancel" @click="closeDeleteModal">
-                        Cancel
-                    </button>
-                    <button class="btn-delete-confirm" @click="confirmDeleteUser">
-                        Delete User
+                <div class="terms-modal-footer">
+                    <button @click="closeTermsModal" class="terms-modal-btn">
+                        I Understand
                     </button>
                 </div>
             </div>
@@ -570,7 +819,7 @@
 <script setup>
 import { Link } from '@inertiajs/vue3'
 import { Head, usePage } from '@inertiajs/vue3'
-import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { router } from '@inertiajs/vue3'
 
 // Props from backend
@@ -612,8 +861,18 @@ const displayRole = computed(() => {
   return id ? (roleMap[id] ?? `Role ${id}`) : 'Resident' // fallback to 'Resident' or whatever you prefer
 })
 
+// Get role class for badge styling (matches history tab)
+const getRoleClass = (role) => {
+  const roleLower = role.toLowerCase().replace(/\s+/g, '-')
+  // Check if it's a resident (role_id 1)
+  if (roleLower === 'resident') return 'resident'
+  // All other roles are officials
+  return 'official'
+}
+
 // Reactive data
 const showSettings = ref(false)
+const showTermsModal = ref(false)
 const postRequestYear = ref('2025')
 const postRequestRange = ref('jan')
 const reportYear = ref('2025')
@@ -640,12 +899,62 @@ const closeSettings = () => {
     showSettings.value = false
 }
 
+const openTermsModal = (e) => {
+    if (e) {
+        e.preventDefault()
+        e.stopPropagation()
+    }
+    showSettings.value = false
+    // Use nextTick to ensure the modal opens after settings closes and DOM updates
+    nextTick(() => {
+        showTermsModal.value = true
+    })
+}
+
+const closeTermsModal = () => {
+    showTermsModal.value = false
+}
+
 const logout = () => {
   router.get(route('login_admin'))
 }
 
 const openHelp = () => {
     console.log('Open help center')
+}
+
+// Success modal state
+const showSuccessModal = ref(false)
+
+// Error modal state
+const showErrorModal = ref(false)
+
+// Watch for success message and show modal
+watch(() => page.props.flash?.success, (newVal) => {
+    if (newVal) {
+        showSuccessModal.value = true
+    }
+}, { immediate: true })
+
+// Watch for error message and show modal
+watch(() => page.props.flash?.error, (newVal) => {
+    if (newVal) {
+        showErrorModal.value = true
+    }
+}, { immediate: true })
+
+// Close success modal
+const closeSuccessModal = () => {
+    showSuccessModal.value = false
+    // Clear the flash message after closing modal
+    router.reload({ only: [] })
+}
+
+// Close error modal
+const closeErrorModal = () => {
+    showErrorModal.value = false
+    // Clear the flash message after closing modal
+    router.reload({ only: [] })
 }
 
 // Dismiss flash messages
@@ -680,6 +989,10 @@ const selectRole = (value) => {
 
 // Close dropdowns when clicking outside
 const handleClickOutside = (event) => {
+    // Don't close anything if clicking on the terms modal
+    if (event.target.closest('.terms-modal') || event.target.closest('.modal-overlay')) {
+        return
+    }
     if (!event.target.closest('.header-actions')) {
         showSettings.value = false
     }
@@ -711,6 +1024,10 @@ watch(() => props.users, (newUsers) => {
     }
 }, { immediate: true, deep: true })
 
+// Get document types and event types from props (using existing page variable)
+const documentTypes = computed(() => page?.props?.value?.documentTypes ?? page?.props?.documentTypes ?? [])
+const eventTypes = computed(() => page?.props?.value?.eventTypes ?? page?.props?.eventTypes ?? [])
+
 // Filters
 const searchQuery = ref('')
 const sortBy = ref('newest')
@@ -724,16 +1041,25 @@ const showRoleDropdown = ref(false)
 const showRestrictModal = ref(false)
 const showPasswordModal = ref(false)
 const showDeleteModal = ref(false)
+const showPasswordSuccessModal = ref(false)
+const showPasswordErrorModal = ref(false)
+const passwordChangeErrorMessage = ref('')
+const showDeleteSuccessModal = ref(false)
+const showDeleteErrorModal = ref(false)
+const deleteErrorMessage = ref('')
+const deletedUserName = ref('')
 const selectedUser = ref(null)
 
 // Restrict modal data
-const restrictionReason = ref('')
 const restrictions = ref({
     posting: false,
     commenting: false,
-    messaging: false,
-    profileEdit: false,
-    fileUpload: false
+    documentRequest: false,
+    eventAssistanceRequest: false,
+    restrictedDocumentTypes: [],
+    allowedDocumentTypes: [],
+    restrictedEventTypes: [],
+    allowedEventTypes: []
 })
 
 // Password modal data
@@ -813,20 +1139,45 @@ const filteredUsers = computed(() => {
 const openRestrictModal = (user) => {
     selectedUser.value = user
     showRestrictModal.value = true
-    restrictionReason.value = ''
-    restrictions.value = {
-        posting: false,
-        commenting: false,
-        messaging: false,
-        profileEdit: false,
-        fileUpload: false
+    // If user is already restricted, load their current restrictions
+    if (user.is_restricted && user.restrictions) {
+        restrictions.value = {
+            posting: user.restrictions.posting || false,
+            commenting: user.restrictions.commenting || false,
+            documentRequest: user.restrictions.documentRequest || false,
+            eventAssistanceRequest: user.restrictions.eventAssistanceRequest || false,
+            restrictedDocumentTypes: user.restrictions.restrictedDocumentTypes || [],
+            allowedDocumentTypes: user.restrictions.allowedDocumentTypes || [],
+            restrictedEventTypes: user.restrictions.restrictedEventTypes || [],
+            allowedEventTypes: user.restrictions.allowedEventTypes || []
+        }
+    } else {
+        restrictions.value = {
+            posting: false,
+            commenting: false,
+            documentRequest: false,
+            eventAssistanceRequest: false,
+            restrictedDocumentTypes: [],
+            allowedDocumentTypes: [],
+            restrictedEventTypes: [],
+            allowedEventTypes: []
+        }
     }
 }
 
 const closeRestrictModal = () => {
     showRestrictModal.value = false
     selectedUser.value = null
-    restrictionReason.value = ''
+    restrictions.value = {
+        posting: false,
+        commenting: false,
+        documentRequest: false,
+        eventAssistanceRequest: false,
+        restrictedDocumentTypes: [],
+        allowedDocumentTypes: [],
+        restrictedEventTypes: [],
+        allowedEventTypes: []
+    }
 }
 
 const openPasswordModal = (user) => {
@@ -859,31 +1210,42 @@ const closeDeleteModal = () => {
 
 // Actions
 const applyRestrictions = async () => {
-    const selectedRestrictions = Object.keys(restrictions.value).filter(key => restrictions.value[key])
-    
-    if (selectedRestrictions.length === 0) {
-        alert('Please select at least one restriction.')
+    if (!selectedUser.value || !selectedUser.value.id) {
+        alert('Error: No user selected for restriction.')
         return
     }
 
-    if (!restrictionReason.value.trim()) {
-        alert('Please provide a reason for the restriction.')
+    const selectedRestrictions = Object.keys(restrictions.value).filter(key => restrictions.value[key])
+    
+    // If user is restricted and all are unchecked, that means removing all restrictions
+    if (selectedUser.value.is_restricted && selectedRestrictions.length === 0) {
+        // This is fine - it means removing all restrictions
+    } else if (!selectedUser.value.is_restricted && selectedRestrictions.length === 0) {
+        alert('Please select at least one restriction.')
         return
     }
 
     try {
         const response = await window.axios.post(route('admin.users.restrict', selectedUser.value.id), {
-            reason: restrictionReason.value,
             restrictions: restrictions.value
         })
 
         if (response.data.success) {
-            alert(`User restrictions applied successfully to ${selectedUser.value.name}!`)
+            if (selectedUser.value.is_restricted) {
+                if (selectedRestrictions.length === 0) {
+                    alert(`All restrictions have been removed from ${selectedUser.value.name}!`)
+                } else {
+                    alert(`Restrictions updated successfully for ${selectedUser.value.name}!`)
+                }
+            } else {
+                alert(`User restrictions applied successfully to ${selectedUser.value.name}!`)
+            }
             closeRestrictModal()
+            router.reload()
         }
     } catch (error) {
-        console.error('Error restricting user:', error)
-        const message = error.response?.data?.message || 'Failed to apply restrictions. Please try again.'
+        console.error('Error updating restrictions:', error)
+        const message = error.response?.data?.message || 'Failed to update restrictions. Please try again.'
         alert(message)
     }
 }
@@ -913,33 +1275,83 @@ const changePassword = async () => {
         })
 
         if (response.data.success) {
-            alert('Password changed successfully!')
+            // Clear form
+            newPassword.value = ''
+            confirmPassword.value = ''
+            passwordError.value = ''
+            showPassword.value = false
+            showConfirmPassword.value = false
+            
+            // Close password modal
             closePasswordModal()
+            
+            // Show success modal
+            showPasswordSuccessModal.value = true
         }
     } catch (error) {
         console.error('Error changing password:', error)
-        passwordError.value = error.response?.data?.message || 'Failed to change password. Please try again.'
+        const errorMessage = error.response?.data?.message || error.response?.data?.errors?.password?.[0] || 'Failed to change password. Please try again.'
+        passwordError.value = errorMessage
+        
+        // Close password modal and show error modal
+        closePasswordModal()
+        passwordChangeErrorMessage.value = errorMessage
+        showPasswordErrorModal.value = true
     }
+}
+
+const closePasswordSuccessModal = () => {
+    showPasswordSuccessModal.value = false
+}
+
+const closePasswordErrorModal = () => {
+    showPasswordErrorModal.value = false
 }
 
 const confirmDeleteUser = async () => {
     if (!selectedUser.value) return
 
+    const userName = selectedUser.value.name || 'User'
+    
     try {
         const response = await window.axios.delete(route('admin.users.delete', selectedUser.value.id))
 
         if (response.data.success) {
+            // Store user name for success message
+            deletedUserName.value = userName
+            
+            // Remove user from list
             users.value = users.value.filter(u => u.id !== selectedUser.value.id)
-            alert(`${selectedUser.value.name} has been successfully deleted.`)
+            
+            // Close delete modal
             closeDeleteModal()
-            // Reload the page to refresh data
-            router.reload()
+            
+            // Show success modal
+            showDeleteSuccessModal.value = true
         }
     } catch (error) {
         console.error('Error deleting user:', error)
         const message = error.response?.data?.message || 'Failed to delete user. Please try again.'
-        alert(message)
+        
+        // Close delete modal
+        closeDeleteModal()
+        
+        // Show error modal
+        deleteErrorMessage.value = message
+        showDeleteErrorModal.value = true
     }
+}
+
+const closeDeleteSuccessModal = () => {
+    showDeleteSuccessModal.value = false
+    deletedUserName.value = ''
+    // Reload the page to refresh data
+    router.reload()
+}
+
+const closeDeleteErrorModal = () => {
+    showDeleteErrorModal.value = false
+    deleteErrorMessage.value = ''
 }
 
 </script>
@@ -1036,6 +1448,7 @@ const confirmDeleteUser = async () => {
     transition: all 0.2s;
     cursor: pointer;
     font-weight: 500;
+    white-space: nowrap;
 }
 
 .settings-item:hover {
@@ -1139,12 +1552,13 @@ const confirmDeleteUser = async () => {
 }
 
 .nav-item:hover {
-    background: #fff7ef;
+    background: #e8f8ed;
+    color: #239640;
     transform: translateX(3px);
 }
 
 .nav-item.active {
-    background: linear-gradient(135deg, #fff7ef, #ffede0);
+    background: linear-gradient(135deg, #e8f8ed, #d4f1dd);
     color: #239640;
     font-weight: 600;
     border-left: 4px solid #239640;
@@ -1513,7 +1927,7 @@ const confirmDeleteUser = async () => {
     padding: 16px 20px;
     text-align: left;
     font-weight: 600;
-    font-size: 11px;
+    font-size: 15px;
     color: #6b7280;
     border-bottom: 1px solid #e5e7eb;
     text-transform: uppercase;
@@ -1523,7 +1937,7 @@ const confirmDeleteUser = async () => {
 .ums-table td {
     padding: 16px 20px;
     border-bottom: 1px solid #f3f4f6;
-    font-size: 14px;
+    font-size: 15px;
     color: #111827;
 }
 
@@ -1544,22 +1958,26 @@ const confirmDeleteUser = async () => {
 }
 
 .role-badge {
-    display: inline-block;
-    padding: 4px 12px;
-    border-radius: 6px;
-    font-size: 10px;
+    font-size: 13px;
+    padding: 6px 14px;
+    border-radius: 12px;
     font-weight: 600;
-    color: white;
+    display: inline-block;
     text-transform: uppercase;
-    letter-spacing: 0.3px;
+    color: white;
 }
 
-.role-badge.role-resident {
-    background: #10b981;
+.role-badge.resident {
+    background: #239640;
 }
 
-.role-badge.role-official {
-    background: #ff8c42;
+.role-badge.official {
+    background: linear-gradient(135deg, #ff8c42, #ff7a28);
+}
+
+/* Default style for any role badge that doesn't match above classes */
+.role-badge:not(.resident):not(.official) {
+    background: linear-gradient(135deg, #6b7280, #4b5563);
 }
 
 .action-buttons {
@@ -1596,6 +2014,16 @@ const confirmDeleteUser = async () => {
 .btn-restrict:hover {
     background: #e5e7eb;
     color: #374151;
+}
+
+/* Unrestrict Button (Gray - matches Restrict button) */
+.btn-unrestrict {
+    background: #e5e7eb;
+    color: #374151;
+}
+.btn-unrestrict:hover {
+    background: #d1d5db;
+    color: #1f2937;
 }
 
 /* Change Password Button (Blue) */
@@ -1646,13 +2074,15 @@ const confirmDeleteUser = async () => {
 
 .modal-container {
     background: white;
-    border-radius: 12px;
+    border-radius: 20px;
     width: 90%;
-    max-width: 550px;
+    max-width: 500px;
     max-height: 90vh;
     overflow-y: auto;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
     animation: modalSlideIn 0.3s ease;
+    position: relative;
+    padding: 40px;
 }
 
 @keyframes modalSlideIn {
@@ -1684,23 +2114,24 @@ const confirmDeleteUser = async () => {
 }
 
 .modal-close {
-    background: none;
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    background: #f0f0f0;
     border: none;
-    color: #999;
+    width: 35px;
+    height: 35px;
+    border-radius: 50%;
     cursor: pointer;
-    padding: 0;
-    width: 30px;
-    height: 30px;
     display: flex;
     align-items: center;
     justify-content: center;
-    justify-content: center;
-    border-radius: 50%;
+    color: #666;
     transition: all 0.2s;
 }
 
 .modal-close:hover {
-    background: #e0e0e0;
+    background: #f8f9fa;
     color: #333;
 }
 
@@ -1849,6 +2280,208 @@ const confirmDeleteUser = async () => {
     color: #666;
 }
 
+.restriction-message {
+    display: block;
+    margin-top: 6px;
+    padding: 8px;
+    background: #f0f9ff;
+    border-left: 3px solid #3b82f6;
+    border-radius: 4px;
+    font-size: 11px;
+    color: #1e40af;
+    font-style: italic;
+}
+
+/* Granular Restrictions Styles */
+.granular-restrictions {
+    margin-top: 20px;
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border: 1px solid #e0e0e0;
+}
+
+.granular-help-text {
+    font-size: 12px;
+    color: #666;
+    margin-top: 5px;
+    margin-bottom: 15px;
+    font-style: italic;
+}
+
+.granular-checkbox-group {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.granular-checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    padding: 8px 12px;
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    transition: all 0.2s;
+}
+
+.granular-checkbox-label:hover {
+    background: #f0f9ff;
+    border-color: #239640;
+}
+
+.granular-checkbox-input {
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+    accent-color: #239640;
+}
+
+.granular-checkbox-text {
+    font-size: 13px;
+    color: #333;
+    font-weight: 500;
+}
+
+.granular-allowed-section {
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 2px dashed #ddd;
+}
+
+.modal-content {
+    margin-top: 10px;
+}
+
+.modal-title {
+    font-size: 24px;
+    font-weight: 700;
+    color: #333;
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+.modal-warning {
+    background: linear-gradient(135deg, #fef2f2, #fee2e2);
+    border-left: 4px solid #ef4444;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: start;
+    gap: 10px;
+}
+
+.modal-warning .warning-icon {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+    color: #dc3545;
+}
+
+.modal-warning span:last-child {
+    font-size: 13px;
+    color: #991b1b;
+    line-height: 1.5;
+}
+
+.modal-info {
+    background: linear-gradient(135deg, #f0fdf4, #dcfce7);
+    border-left: 4px solid #10b981;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+}
+
+.modal-info .info-icon {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+    color: #059669;
+    margin-top: 2px;
+}
+
+.modal-info span {
+    font-size: 13px;
+    color: #047857;
+    line-height: 1.6;
+    flex: 1;
+}
+
+.confirm-btn {
+    width: 100%;
+    padding: 14px 30px;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    font-weight: 700;
+    font-size: 14px;
+    transition: all 0.3s ease;
+    color: white;
+}
+
+.delete-confirm {
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+    box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
+}
+
+.delete-confirm:hover {
+    background: linear-gradient(135deg, #dc2626, #b91c1c);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
+}
+
+.success-confirm {
+    background: linear-gradient(135deg, #10b981, #059669);
+    box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+}
+
+.success-confirm:hover {
+    background: linear-gradient(135deg, #059669, #047857);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+}
+
+.restrict-btn {
+    padding: 12px 24px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 700;
+    font-size: 13px;
+    transition: all 0.3s ease;
+    white-space: nowrap;
+    color: white;
+}
+
+.restrict-btn-red {
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+    box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
+}
+
+.restrict-btn-red:hover {
+    background: linear-gradient(135deg, #dc2626, #b91c1c);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
+}
+
+.unrestrict-btn {
+    background: linear-gradient(135deg, #10b981, #059669);
+    box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+}
+
+.unrestrict-btn:hover {
+    background: linear-gradient(135deg, #059669, #047857);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+}
+
 .error-message {
     padding: 10px;
     background: #fee;
@@ -1942,5 +2575,315 @@ const confirmDeleteUser = async () => {
 
 .btn-delete-confirm:hover {
     background: #c82333;
+}
+
+/* Success Modal Styles */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+    animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+.success-modal {
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    max-width: 500px;
+    width: 90%;
+    overflow: hidden;
+    animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+    from {
+        transform: translateY(20px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.success-modal-header {
+    background: white;
+    padding: 30px 25px;
+    text-align: center;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.success-icon-wrapper {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 15px;
+}
+
+.success-icon {
+    width: 120px;
+    height: 120px;
+    color: #239640;
+    background: transparent;
+    border-radius: 50%;
+    padding: 0;
+}
+
+.success-modal-title {
+    margin: 0;
+    font-size: 24px;
+    font-weight: 700;
+    color: #239640;
+}
+
+.success-modal-body {
+    padding: 30px 25px;
+    text-align: center;
+}
+
+.success-message {
+    margin: 0;
+    font-size: 16px;
+    line-height: 1.6;
+    color: #333;
+}
+
+.success-modal-footer {
+    padding: 20px 25px;
+    border-top: 1px solid #e0e0e0;
+    display: flex;
+    justify-content: center;
+    background: #f8f9fa;
+}
+
+.success-modal-btn {
+    padding: 12px 40px;
+    background: #ff8c42;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(255, 140, 66, 0.3);
+}
+
+.success-modal-btn:hover {
+    background: #ff7a28;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(255, 140, 66, 0.4);
+}
+
+/* Error Modal Styles */
+.error-modal {
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    max-width: 500px;
+    width: 90%;
+    overflow: hidden;
+    animation: slideUp 0.3s ease;
+}
+
+.error-modal-header {
+    background: white;
+    padding: 30px 25px;
+    text-align: center;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.error-icon-wrapper {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 15px;
+}
+
+.error-icon {
+    width: 120px;
+    height: 120px;
+    color: #dc2626;
+    background: transparent;
+    border-radius: 50%;
+    padding: 0;
+}
+
+.error-modal-title {
+    margin: 0;
+    font-size: 24px;
+    font-weight: 700;
+    color: #dc2626;
+}
+
+.error-modal-body {
+    padding: 30px 25px;
+    text-align: center;
+}
+
+.error-message-text {
+    margin: 0;
+    font-size: 16px;
+    line-height: 1.6;
+    color: #333;
+}
+
+.error-modal-footer {
+    padding: 20px 25px;
+    border-top: 1px solid #e0e0e0;
+    display: flex;
+    justify-content: center;
+    background: #f8f9fa;
+}
+
+.error-modal-btn {
+    padding: 12px 40px;
+    background: #ff8c42;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(255, 140, 66, 0.3);
+}
+
+.error-modal-btn:hover {
+    background: #ff7a28;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(255, 140, 66, 0.4);
+}
+
+/* Terms and Conditions Modal Styles */
+.terms-modal {
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    max-width: 800px;
+    width: 90%;
+    max-height: 90vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    animation: slideUp 0.3s ease;
+}
+
+.terms-modal-header {
+    background: white;
+    padding: 25px 30px;
+    border-bottom: 1px solid #e0e0e0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.terms-modal-title {
+    margin: 0;
+    font-size: 28px;
+    font-weight: 700;
+    color: #333;
+}
+
+.terms-modal-close {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 8px;
+    color: #666;
+    transition: all 0.2s ease;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.terms-modal-close:hover {
+    background: #f0f0f0;
+    color: #333;
+}
+
+.terms-modal-body {
+    padding: 30px;
+    overflow-y: auto;
+    flex: 1;
+}
+
+.terms-section {
+    margin-bottom: 25px;
+}
+
+.terms-section:last-child {
+    margin-bottom: 0;
+}
+
+.terms-section-title {
+    margin: 0 0 12px 0;
+    font-size: 18px;
+    font-weight: 700;
+    color: #239640;
+}
+
+.terms-text {
+    margin: 0;
+    font-size: 15px;
+    line-height: 1.7;
+    color: #555;
+    text-align: justify;
+}
+
+.terms-list {
+    margin: 10px 0 0 20px;
+    padding: 0;
+}
+
+.terms-list li {
+    margin-bottom: 8px;
+    font-size: 15px;
+    line-height: 1.6;
+    color: #555;
+}
+
+.terms-modal-footer {
+    padding: 20px 30px;
+    border-top: 1px solid #e0e0e0;
+    display: flex;
+    justify-content: center;
+    background: #f8f9fa;
+    flex-shrink: 0;
+}
+
+.terms-modal-btn {
+    padding: 12px 50px;
+    background: #ff8c42;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(255, 140, 66, 0.3);
+}
+
+.terms-modal-btn:hover {
+    background: #ff7a28;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(255, 140, 66, 0.4);
 }
 </style>

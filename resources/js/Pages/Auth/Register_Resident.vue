@@ -97,7 +97,7 @@
           @click="closeOtpModal"
           :disabled="isVerifyingOtp || form.processing"
         >
-          Cancel
+          CANCEL
         </button>
         <button 
           type="button" 
@@ -170,9 +170,12 @@
                   <div class="select-wrapper">
                     <select v-model="form.suffix" class="form-input">
                       <option value="">Suffix</option>
-                      <option value="Jr">Jr.</option>
-                      <option value="Sr">Sr.</option>
+                      <option value="Jr.">Jr.</option>
+                      <option value="Sr.">Sr.</option>
+                      <option value="II">II</option>
                       <option value="III">III</option>
+                      <option value="IV">IV</option>
+                      <option value="V">V</option>
                     </select>
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="select-icon">
                       <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
@@ -245,35 +248,15 @@
               <div class="form-row">
                 <div class="form-group half">
                   <div class="select-wrapper">
-                    <select v-model="form.religion" class="form-input" required>
-                      <option value="">Religion*</option>
-                      <option value="Roman Catholic">Roman Catholic</option>
-                      <option value="Islam">Islam</option>
-                      <option value="Iglesia ni Cristo">Iglesia ni Cristo</option>
-                      <option value="Protestant">Protestant</option>
-                      <option value="Baptist">Baptist</option>
-                      <option value="Methodist">Methodist</option>
-                      <option value="Seventh-day Adventist">Seventh-day Adventist</option>
-                      <option value="Jehovah's Witness">Jehovah's Witness</option>
-                      <option value="Buddhism">Buddhism</option>
-                      <option value="Hinduism">Hinduism</option>
-                      <option value="Atheist">Atheist</option>
-                      <option value="Agnostic">Agnostic</option>
-                      <option value="Other">Other</option>
-                    </select>
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="select-icon">
-                      <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
-                    </svg>
-                  </div>
-                </div>
-
-                <div class="form-group half">
-                  <div class="select-wrapper">
                     <select v-model="form.civil_status" class="form-input" required>
                       <option value="">Civil Status*</option>
                       <option value="Single">Single</option>
                       <option value="Married">Married</option>
                       <option value="Widowed">Widowed</option>
+                      <option value="Divorced">Divorced</option>
+                      <option value="Separated">Separated</option>
+                      <option value="Annulled">Annulled</option>
+                      <option value="Domestic Partnership">Domestic Partnership</option>
                     </select>
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="select-icon">
                       <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
@@ -281,51 +264,6 @@
                   </div>
                 </div>
               </div>
-
-              <div v-if="form.religion === 'Other'" class="form-row" style="margin-top:8px;">
-                <div class="form-group">
-                  <input v-model="form.religion_other" placeholder="Specify Religion*" class="form-input" required />
-                </div>
-              </div>
-
-              <div class="form-row">
-                <div class="form-group half">
-                  <div class="select-wrapper">
-                    <select v-model="form.occupation" class="form-input" required>
-                      <option value="">Occupation*</option>
-                      <option value="Student">Student</option>
-                      <option value="Employee">Employee</option>
-                      <option value="Self-employed">Self-employed</option>
-                      <option value="Business Owner">Business Owner</option>
-                      <option value="Government Employee">Government Employee</option>
-                      <option value="Teacher">Teacher</option>
-                      <option value="Nurse">Nurse</option>
-                    <option value="Doctor">Doctor</option>
-                    <option value="Engineer">Engineer</option>
-                    <option value="Lawyer">Lawyer</option>
-                    <option value="Accountant">Accountant</option>
-                    <option value="Driver">Driver</option>
-                    <option value="Security Guard">Security Guard</option>
-                    <option value="Housewife/Househusband">Housewife/Househusband</option>
-                    <option value="Retired">Retired</option>
-                    <option value="Unemployed">Unemployed</option>
-                    <option value="Other">Other</option>
-                  </select>
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="select-icon">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
-                  </svg>
-                </div>
-              </div>
-            </div>
-
-              <div v-if="form.occupation === 'Other'" class="form-row" style="margin-top:8px;">
-                <div class="form-group">
-                  <input v-model="form.occupation_other" placeholder="Specify Occupation*" class="form-input" required />
-                </div>
-              </div>
-
-              <!-- END NEW fields -->
-
             </div>
           </div>
 
@@ -506,8 +444,9 @@
               <div class="select-wrapper">
                 <select v-model="form.phase" class="form-input" required>
                   <option value="">Phase</option>
-                  <option value="Phase 2">2</option>
-                  <option value="Phase 5">5</option>
+                  <option value="Phase 2">Phase 2</option>
+                  <option value="Phase 3">Phase 3</option>
+                  <option value="Phase 5">Phase 5</option>
                 </select>
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="select-icon">
                   <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
@@ -630,6 +569,33 @@
     <div class="right-side">
       <!-- This space is for your background image/3D character -->
     </div>
+
+    <!-- Success Confirmation Modal -->
+    <div v-if="showSuccessModal" class="modal-overlay" @click.stop>
+      <div class="success-modal" @click.stop>
+        <div class="success-modal-header">
+          <div class="success-icon-wrapper">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" class="success-icon">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <h3 class="success-modal-title">Registration Request Submitted Successfully!</h3>
+        </div>
+        <div class="success-modal-body">
+          <p class="success-message">
+            Your registration request has been successfully submitted and is now pending approval. 
+            Your request will be reviewed within 1-2 business days. 
+            You will receive an update via SMS once your registration has been reviewed. 
+            Please check your messages regularly for updates.
+          </p>
+        </div>
+        <div class="success-modal-footer">
+          <button @click="closeSuccessModal" class="success-modal-btn">
+            OK
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -657,6 +623,19 @@ onBeforeUnmount(() => {
   document.body.style.overflow = ''
 })
 
+// Close success modal and redirect to login
+const closeSuccessModal = () => {
+  showSuccessModal.value = false
+  // Redirect to login page after closing modal with a slight delay for smooth transition
+  setTimeout(() => {
+    router.visit(route('login'), {
+      replace: true,
+      preserveState: false,
+      preserveScroll: false
+    })
+  }, 300)
+}
+
 // NOTE: keys below are aligned to database columns where applicable
 const form = useForm({
   last_name: '',
@@ -680,11 +659,7 @@ const form = useForm({
   proof_of_residency: '',
   proof: null,
   // personal info fields - included so they are posted
-  religion: '',
-  religion_other: '',
   nationality: 'Filipino',
-  occupation: '',
-  occupation_other: '',
   email: '',
 })
 
@@ -701,6 +676,7 @@ const isSendingOtp = ref(false)
 const isVerifyingOtp = ref(false)
 const otpError = ref('')
 const otpSuccess = ref('')
+const showSuccessModal = ref(false)
 const resendCooldown = ref(0)
 const otpInputRef = ref(null)
 
@@ -713,10 +689,32 @@ const hasLowercase = computed(() => form.password && /[a-z]/.test(form.password)
 const hasNumber = computed(() => form.password && /[0-9]/.test(form.password))
 const hasSpecialChar = computed(() => form.password && /[!@#$%^&*()_+\-=\[\]{}|;:,.<>?]/.test(form.password))
 
-// Check if phone number is valid for verification
+// Check if all required fields are filled before allowing phone verification
 const canVerifyPhone = computed(() => {
   const phoneDigits = form.contact_number ? form.contact_number.replace(/\D/g, '') : ''
-  return phoneDigits.length === 10 || phoneDigits.length === 11
+  const isValidPhone = phoneDigits.length === 10 || phoneDigits.length === 11
+  
+  // Check all required fields are filled
+  return isValidPhone &&
+         form.first_name &&
+         form.last_name &&
+         birth_month.value && birth_day.value && birth_year.value &&
+         form.sex &&
+         form.civil_status &&
+         form.nationality &&
+         form.house_number &&
+         form.street &&
+         form.phase &&
+         form.package &&
+         form.proof_of_residency &&
+         form.password &&
+         hasMinLength.value &&
+         hasUppercase.value &&
+         hasLowercase.value &&
+         hasNumber.value &&
+         hasSpecialChar.value &&
+         confirmPassword.value &&
+         passwordsMatch.value
 })
 
 // Display phone number for OTP modal (formatted)
@@ -745,9 +743,7 @@ const canSubmit = computed(() => {
          birth_month.value && birth_day.value && birth_year.value &&
          form.sex &&
          form.civil_status &&
-         form.religion &&
          form.nationality &&
-         form.occupation &&
          form.house_number &&
          form.street &&
          form.phase &&
@@ -1091,14 +1087,6 @@ async function submitRegistration() {
   // MERGE address fields here (IMPORTANT: done immediately before posting)
   mergeAddressFields()
 
-  // MERGE "other" values into main fields if "Other" is selected
-  if (form.religion === 'Other' && form.religion_other) {
-    form.religion = form.religion_other
-  }
-  if (form.occupation === 'Other' && form.occupation_other) {
-    form.occupation = form.occupation_other
-  }
-
   console.log('[DEBUG:submitRegistration] ========== STARTING FORM POST ==========');
   console.log('[DEBUG:submitRegistration] Contact number (raw):', form.contact_number);
   console.log('[DEBUG:submitRegistration] Phone verified:', phoneVerified.value);
@@ -1223,16 +1211,10 @@ async function submitRegistration() {
       localErrors.password = null
       localErrors.confirmPassword = null
       
-      // Show success message
-      alert('Registration request submitted successfully! Your request is now pending approval. Please wait 1-3 working days for approval to be sent via SMS.')
+      // Show success modal immediately - don't redirect until user clicks OK
+      showSuccessModal.value = true
       
-      // The backend redirects to login, so Inertia will handle the redirect
-      // If we're still on this page, manually redirect after a short delay
-      setTimeout(() => {
-        if (window.location.pathname.includes('register_resident')) {
-          window.location.href = route('login')
-        }
-      }, 2000)
+      // Prevent any automatic redirects - let user see the success message first
     },
     onFinish: () => {
       console.log('[DEBUG:inertia] Request finished.');
@@ -1352,7 +1334,29 @@ async function sendOtp() {
     }
   } catch (error) {
     console.error('Error sending OTP:', error)
-    otpError.value = error.response?.data?.message || 'Failed to send OTP. Please try again.'
+    
+    // Handle timeout errors
+    if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
+      otpError.value = 'Request timed out. The SMS service may be slow. Please try again.'
+      return
+    }
+    
+    // Handle network errors
+    if (!error.response && error.request) {
+      otpError.value = 'Network error. Please check your connection and try again.'
+      return
+    }
+    
+    // Handle CSRF token mismatch specifically
+    if (error.response && error.response.status === 419) {
+      otpError.value = 'Session expired. Please refresh the page and try again.'
+      // Optionally refresh the page after a delay
+      setTimeout(() => {
+        window.location.reload()
+      }, 2000)
+    } else {
+      otpError.value = error.response?.data?.message || 'Failed to send OTP. Please try again.'
+    }
   } finally {
     isSendingOtp.value = false
   }
@@ -1411,7 +1415,16 @@ async function verifyOtp() {
     }
   } catch (error) {
     console.error('Error verifying OTP:', error)
-    otpError.value = error.response?.data?.message || 'Invalid OTP code. Please try again.'
+    // Handle CSRF token mismatch specifically
+    if (error.response && error.response.status === 419) {
+      otpError.value = 'Session expired. Please refresh the page and try again.'
+      // Optionally refresh the page after a delay
+      setTimeout(() => {
+        window.location.reload()
+      }, 2000)
+    } else {
+      otpError.value = error.response?.data?.message || 'Invalid OTP code. Please try again.'
+    }
     otpCode.value = '' // Clear OTP input on error
   } finally {
     isVerifyingOtp.value = false
@@ -1704,9 +1717,14 @@ html, body {
 }
 
 .success-message {
-  color: #4CAF50;
-  font-size: 12px;
-  margin-top: 4px;
+  background: #d4edda;
+  border: 1px solid #c3e6cb;
+  color: #155724;
+  padding: 12px;
+  border-radius: 4px;
+  margin-top: 8px;
+  margin-bottom: 18px;
+  font-size: 14px;
   font-weight: 500;
 }
 
@@ -2159,5 +2177,129 @@ html, body {
   .form-actions {
     flex-direction: column;
   }
+}
+/* Success Modal Styles */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+    animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+.success-modal {
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    max-width: 550px;
+    width: 90%;
+    overflow: hidden;
+    animation: slideUp 0.3s ease;
+    position: relative;
+    z-index: 10001;
+}
+
+@keyframes slideUp {
+    from {
+        transform: translateY(20px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.success-modal-header {
+    background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+    padding: 35px 30px 25px 30px;
+    text-align: center;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.success-icon-wrapper {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 20px;
+}
+
+.success-icon {
+    width: 100px;
+    height: 100px;
+    color: #239640;
+    background: rgba(35, 150, 64, 0.1);
+    border-radius: 50%;
+    padding: 20px;
+    box-shadow: 0 4px 12px rgba(35, 150, 64, 0.2);
+}
+
+.success-modal-title {
+    margin: 0;
+    font-size: 26px;
+    font-weight: 700;
+    color: #239640;
+    line-height: 1.3;
+}
+
+.success-modal-body {
+    padding: 30px 35px;
+    text-align: center;
+    background: white;
+}
+
+.success-message {
+    margin: 0;
+    font-size: 16px;
+    line-height: 1.7;
+    color: #555;
+    text-align: justify;
+}
+
+.success-modal-footer {
+    padding: 25px 30px;
+    border-top: 1px solid #e0e0e0;
+    display: flex;
+    justify-content: center;
+    background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+}
+
+.success-modal-btn {
+    padding: 14px 50px;
+    background: linear-gradient(135deg, #239640, #1e7d35);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 12px rgba(35, 150, 64, 0.3);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.success-modal-btn:hover {
+    background: linear-gradient(135deg, #1e7d35, #166529);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(35, 150, 64, 0.4);
+}
+
+.success-modal-btn:active {
+    transform: translateY(0);
 }
 </style>

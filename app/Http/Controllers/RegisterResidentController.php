@@ -46,9 +46,9 @@ class RegisterResidentController extends Controller
             'province' => ['nullable','string','max:255'],
 
             // additional personal info
-            'religion' => ['required','string','max:255'],
+            'religion' => ['nullable','string','max:255'],
             'nationality' => ['required','string','max:255'],
-            'occupation' => ['required','string','max:255'],
+            'occupation' => ['nullable','string','max:255'],
 
             // proof file (image) - required
             'proof' => ['required','image','max:10240'],
@@ -150,17 +150,17 @@ class RegisterResidentController extends Controller
 
             'house_number' => $data['house_number'] ?? null,
             'street' => $data['street'] ?? null,
-            'phase' => $data['phase'] ?? null,
-            'package' => $data['package'] ?? null,
+            'phase' => $this->normalizePhase($data['phase'] ?? null),
+            'package' => $this->normalizePackage($data['package'] ?? null),
             'barangay' => $data['barangay'] ?? null,
             'city' => $data['city'] ?? null,
             'province' => $data['province'] ?? null,
 
             // personal info fields
             'place_of_birth' => null,
-            'religion' => $data['religion'],
+            'religion' => $data['religion'] ?? '',
             'nationality' => $data['nationality'],
-            'occupation' => $data['occupation'],
+            'occupation' => $data['occupation'] ?? '',
 
             'sex' => $data['sex'] ?? null,
             // 'birthdate' may be null; controller leaves it null when not provided
@@ -186,7 +186,61 @@ class RegisterResidentController extends Controller
             'name' => $registration->first_name . ' ' . $registration->last_name
         ]);
 
-        // For Inertia, use Inertia redirect or regular redirect with flash message
-        return redirect()->route('login')->with('success', 'Registration request submitted successfully! Please wait 1-3 working days for approval to be sent via SMS.');
+        // Return success response - frontend will show modal and handle redirect
+        return back()->with('success', 'Registration request submitted successfully! Please wait 1-3 working days for approval to be sent via SMS.');
+    }
+
+    /**
+     * Normalize phase value - extract number from "Phase X" format or return as-is if already numeric
+     */
+    private function normalizePhase($phase)
+    {
+        if (empty($phase)) {
+            return null;
+        }
+        
+        // Normalize to "Phase X" format
+        if (preg_match('/^Phase\s*(\d+)$/i', $phase, $matches)) {
+            return 'Phase ' . $matches[1]; // Already in correct format, ensure consistent spacing
+        }
+        
+        // If it's just a number, convert to "Phase X" format
+        if (preg_match('/^(\d+)$/', $phase, $matches)) {
+            return 'Phase ' . $matches[1];
+        }
+        
+        // If no pattern matches, try to extract any number and convert to "Phase X"
+        if (preg_match('/(\d+)/', $phase, $matches)) {
+            return 'Phase ' . $matches[1];
+        }
+        
+        return $phase;
+    }
+
+    /**
+     * Normalize package value - extract number from "Package X" format or return as-is if already numeric
+     */
+    private function normalizePackage($package)
+    {
+        if (empty($package)) {
+            return null;
+        }
+        
+        // Normalize to "Package X" format
+        if (preg_match('/^Package\s*(\d+)$/i', $package, $matches)) {
+            return 'Package ' . $matches[1]; // Already in correct format, ensure consistent spacing
+        }
+        
+        // If it's just a number, convert to "Package X" format
+        if (preg_match('/^(\d+)$/', $package, $matches)) {
+            return 'Package ' . $matches[1];
+        }
+        
+        // If no pattern matches, try to extract any number and convert to "Package X"
+        if (preg_match('/(\d+)/', $package, $matches)) {
+            return 'Package ' . $matches[1];
+        }
+        
+        return $package;
     }
 }

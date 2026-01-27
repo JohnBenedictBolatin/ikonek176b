@@ -42,6 +42,37 @@ class EventAssistanceRequestController extends Controller
         ]);
 
         try {
+            $userId = Auth::id();
+            if ($userId) {
+                // Check if user is restricted from event assistance requests
+                $restriction = \App\Models\UserRestriction::where('user_id', $userId)->first();
+                if ($restriction && $restriction->restrict_event_assistance_request) {
+                    return redirect()->back()->with('error', 'You are restricted from making event assistance requests. Please check your notifications for more information.');
+                }
+                
+                // Check if the specific event type is restricted
+                $eventType = $request->input('event_type', '');
+                if (!empty($eventType) && $restriction) {
+                    $restrictedEventTypes = $restriction->restricted_event_types ?? [];
+                    $allowedEventTypes = $restriction->allowed_event_types ?? [];
+                    
+                    $isRestricted = in_array($eventType, $restrictedEventTypes);
+                    $isAllowed = !empty($allowedEventTypes) && in_array($eventType, $allowedEventTypes);
+                    
+                    // If restricted and not explicitly allowed, reject the request
+                    if ($isRestricted && !$isAllowed) {
+                        \Log::warning('User attempted to request restricted event type', [
+                            'user_id' => $userId,
+                            'event_type' => $eventType,
+                        ]);
+                        
+                        return redirect()->back()
+                            ->withInput()
+                            ->with('error', "You are restricted from requesting {$eventType}. Please contact the admin for more information.");
+                    }
+                }
+            }
+
             // allowed enum values (copy your enum values exactly)
             $allowedPurposes = [
                 'Personal Celebration', 'Sports Activity', 'Barangay Escort',
@@ -628,6 +659,7 @@ class EventAssistanceRequestController extends Controller
         }
 
         // Eager load the request items (new model), user credential, and attachments
+        // Order by created_at DESC to show most recent first (resubmissions will be at top)
         $requests = EventAssistanceRequest::with(['requestItems', 'user', 'user.credential', 'attachments'])
             ->where('status', 'Pending')
             ->orderBy('created_at', 'desc')
@@ -912,6 +944,25 @@ class EventAssistanceRequestController extends Controller
             $requestModel->reviewed_at = now();
             $requestModel->admin_feedback = $data['comment'];
             $requestModel->save();
+            
+            // Create notification for the user
+            $userId = $requestModel->fk_user_id;
+            $ticket = $requestModel->event_assist_request_ticket ?? 'N/A';
+            $notificationMessage = "Your event assistance request (Ticket: {$ticket}) has been APPROVED.";
+            if (!empty($data['comment'])) {
+                $notificationMessage .= " " . substr($data['comment'], 0, 100);
+            }
+            
+            if ($userId) {
+                DB::table('notifications')->insert([
+                    'fk_user_id' => $userId,
+                    'message' => $notificationMessage,
+                    'notification_type' => 'EventAssistance',
+                    'notification_reference_id' => $requestModel->event_assist_request_id,
+                    'is_read' => false,
+                    'created_at' => now(),
+                ]);
+            }
 
             DB::commit();
 
@@ -1015,6 +1066,26 @@ class EventAssistanceRequestController extends Controller
                 $requestModel->admin_feedback = $data['reason'];
             }
             $requestModel->save();
+            
+            // Create notification for the user
+            $userId = $requestModel->fk_user_id;
+            $ticket = $requestModel->event_assist_request_ticket ?? 'N/A';
+            $notificationMessage = "Your event assistance request (Ticket: {$ticket}) has been REJECTED.";
+            if (!empty($data['reason'])) {
+                $notificationMessage .= " Reason: " . substr($data['reason'], 0, 100);
+            }
+            $notificationMessage .= " You can fix your uploaded request fields and resubmit your request through the website.";
+            
+            if ($userId) {
+                DB::table('notifications')->insert([
+                    'fk_user_id' => $userId,
+                    'message' => $notificationMessage,
+                    'notification_type' => 'EventAssistance',
+                    'notification_reference_id' => $requestModel->event_assist_request_id,
+                    'is_read' => false,
+                    'created_at' => now(),
+                ]);
+            }
 
             // Send SMS notification for rejection
             try {
@@ -1043,7 +1114,7 @@ class EventAssistanceRequestController extends Controller
                     if (!empty($data['reason'])) {
                         $message .= " Reason: " . substr($data['reason'], 0, 100);
                     }
-                    $message .= " Please contact the barangay office for more information. Thank you.";
+                    $message .= " You can fix your uploaded request fields and resubmit your request through the website. Please contact the barangay office for more information. Thank you.";
                     
                     \Log::info('Calling SMS service for event assistance rejection', [
                         'phone' => substr($phoneNumber, 0, 4) . '****',
@@ -1110,6 +1181,7 @@ class EventAssistanceRequestController extends Controller
         }
 
         $requestedStatus = $request->query('status', 'Pending');
+        // Order by created_at DESC to show most recent first (resubmissions will be at top)
         $query = EventAssistanceRequest::with(['requestItems', 'user', 'user.credential', 'attachments', 'approver'])
             ->orderBy('created_at', 'desc');
 
@@ -1255,6 +1327,450 @@ class EventAssistanceRequestController extends Controller
         return response()->json([
             'event_requests' => $eventRequests,
         ]);
+    }
+
+    /**
+     * Show appeal form for rejected request
+     * Automatically resets status to Pending when accessed
+     */
+    public function appealForm(Request $request, $id)
+    {
+        $authUser = $request->user();
+        if (!$authUser) {
+            return redirect()->route('login');
+        }
+
+        $eventRequest = EventAssistanceRequest::with(['requestItems', 'attachments', 'user'])
+            ->where('event_assist_request_id', $id)
+            ->firstOrFail();
+
+        // Check if user owns this request
+        $userId = $authUser->user_id ?? $authUser->id ?? null;
+        if ($eventRequest->fk_user_id != $userId) {
+            abort(403, 'Unauthorized');
+        }
+
+        // Check if request is rejected
+        if (strtoupper($eventRequest->status) !== 'REJECTED') {
+            return redirect()->back()->with('error', 'Only rejected requests can be appealed.');
+        }
+
+        // Automatically reset status to Pending when accessing appeal form
+        $eventRequest->status = 'Pending';
+        $eventRequest->fk_approver_id = null;
+        $eventRequest->reviewed_at = null;
+        $eventRequest->save();
+
+        // Get valid ID type name if exists
+        $validIdTypeName = null;
+        if ($eventRequest->fk_valid_id_type) {
+            $validIdType = DB::table('valid_id_types')
+                ->where('valid_id_type_id', $eventRequest->fk_valid_id_type)
+                ->first();
+            $validIdTypeName = $validIdType->id_type_name ?? $validIdType->name ?? $validIdType->type_name ?? null;
+        }
+
+        // Get extra_fields
+        $extraFields = $eventRequest->extra_fields ?? [];
+        if (is_string($extraFields)) {
+            try {
+                $decoded = json_decode($extraFields, true);
+                if (json_last_error() === JSON_ERROR_NONE) {
+                    $extraFields = $decoded;
+                }
+            } catch (\Exception $e) {
+                $extraFields = [];
+            }
+        }
+
+        // Prepare request data for editing
+        $requestData = [
+            'event_assist_request_id' => $eventRequest->event_assist_request_id,
+            'event_assist_request_ticket' => $eventRequest->event_assist_request_ticket,
+            'event_type' => $extraFields['event_type'] ?? null,
+            'purpose' => $eventRequest->purpose,
+            'other_purpose' => $eventRequest->other_purpose,
+            'event_date' => $eventRequest->event_date ? Carbon::parse($eventRequest->event_date)->format('Y-m-d') : null,
+            'event_start' => $eventRequest->event_start,
+            'event_end' => $eventRequest->event_end,
+            'expected_attendees' => $eventRequest->expected_attendees,
+            'event_location' => $eventRequest->event_location,
+            'id_type' => $validIdTypeName,
+            'fk_valid_id_type' => $eventRequest->fk_valid_id_type,
+            'valid_id_number' => null, // Add if column exists
+            'extra_fields' => $extraFields,
+            'attachments' => $eventRequest->attachments->map(function ($att) {
+                return [
+                    'id' => $att->attachment_id,
+                    'field_name' => $att->field_name,
+                    'file_name' => $att->file_name,
+                    'file_path' => $att->file_path,
+                    'file_type' => $att->file_type,
+                    'url' => $att->file_path ? Storage::url($att->file_path) : null,
+                ];
+            })->toArray(),
+            'request_items' => $eventRequest->requestItems->map(function ($item) {
+                return [
+                    'fk_event_assist_item_id' => $item->fk_event_assist_item_id ?? $item->fk_item_id ?? null,
+                    'quantity' => $item->quantity ?? null,
+                    'description' => $item->description ?? null,
+                ];
+            })->toArray(),
+            'admin_feedback' => $eventRequest->admin_feedback,
+        ];
+
+        \Log::info('Event assistance appeal form accessed, status reset to Pending', [
+            'event_assist_request_id' => $id,
+            'user_id' => $userId,
+        ]);
+
+        return Inertia::render('User/Resident/R_Event_Assistance_Appeal', [
+            'requestData' => $requestData,
+        ]);
+    }
+
+    /**
+     * Handle appeal submission - reset status to Pending and allow editing
+     */
+    public function appeal(Request $request, $id)
+    {
+        $authUser = $request->user();
+        if (!$authUser) {
+            return response()->json(['error' => 'Unauthenticated'], 401);
+        }
+
+        $eventRequest = EventAssistanceRequest::where('event_assist_request_id', $id)->firstOrFail();
+
+        // Check if user owns this request
+        $userId = $authUser->user_id ?? $authUser->id ?? null;
+        if ($eventRequest->fk_user_id != $userId) {
+            return response()->json(['error' => 'Unauthorized'], 403);
+        }
+
+        // Check if request is rejected
+        if (strtoupper($eventRequest->status) !== 'REJECTED') {
+            return response()->json(['error' => 'Only rejected requests can be appealed.'], 400);
+        }
+
+        try {
+            // Reset status to Pending and clear review information
+            $eventRequest->status = 'Pending';
+            $eventRequest->fk_approver_id = null;
+            $eventRequest->reviewed_at = null;
+            // Keep admin_feedback for reference so user can see what was wrong
+            $eventRequest->save();
+
+            \Log::info('Event assistance request appealed', [
+                'event_assist_request_id' => $id,
+                'user_id' => $userId,
+                'ticket' => $eventRequest->event_assist_request_ticket,
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Request has been reset to pending. You can now edit and resubmit it.',
+                'data' => [
+                    'event_assist_request_id' => $eventRequest->event_assist_request_id,
+                    'status' => $eventRequest->status,
+                ],
+            ]);
+        } catch (\Throwable $ex) {
+            \Log::error('Event assistance appeal exception: ' . $ex->getMessage());
+            return response()->json(['error' => 'Failed to appeal the request.'], 500);
+        }
+    }
+
+    /**
+     * Update an existing event assistance request (for appeals/resubmissions)
+     */
+    public function update(Request $request, $id)
+    {
+        \Log::info('=== EVENT ASSISTANCE REQUEST UPDATE CALLED ===', [
+            'event_assist_request_id' => $id,
+            'user_id' => Auth::id(),
+        ]);
+
+        $authUser = $request->user();
+        if (!$authUser) {
+            return response()->json(['error' => 'Unauthenticated'], 401);
+        }
+
+        $eventRequest = EventAssistanceRequest::where('event_assist_request_id', $id)->firstOrFail();
+
+        // Check if user owns this request
+        $userId = $authUser->user_id ?? $authUser->id ?? null;
+        if ($eventRequest->fk_user_id != $userId) {
+            return response()->json(['error' => 'Unauthorized'], 403);
+        }
+
+        // Check if request is Pending (should be after appeal)
+        if (strtoupper($eventRequest->status) !== 'PENDING') {
+            return response()->json(['error' => 'Only pending requests can be updated. Please appeal your rejected request first.'], 400);
+        }
+
+        // Use similar validation as store method
+        try {
+            $request->validate([
+                'event_type' => ['nullable', 'string', 'max:255'],
+                'purpose' => ['nullable', 'string'],
+                'other_purpose' => ['nullable', 'string'],
+                'event_location' => ['nullable', 'string'],
+                'event_date' => ['nullable', 'date'],
+                'event_start' => ['nullable', 'string'],
+                'event_end' => ['nullable', 'string'],
+                'expected_attendees' => ['nullable', 'integer', 'min:0'],
+                'id_type' => ['nullable', 'string'],
+                'valid_id_content' => ['nullable', 'file', 'mimes:jpg,jpeg,png,pdf', 'max:10240'],
+                'id_front' => ['nullable', 'file', 'mimes:jpg,jpeg,png,pdf', 'max:10240'],
+                'id_back' => ['nullable', 'file', 'mimes:jpg,jpeg,png,pdf', 'max:10240'],
+                'documents' => ['nullable'],
+                'documents.*' => ['nullable', 'file', 'mimes:jpg,jpeg,png,pdf', 'max:10240'],
+                'extra_fields' => ['nullable', 'array'],
+                'extra_fields.*' => ['nullable'],
+                'request_items' => ['nullable', 'array'],
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => $e->errors()
+            ], 422);
+        }
+
+        try {
+            DB::beginTransaction();
+
+            // Update basic fields
+            $updateData = [];
+            
+            if ($request->filled('purpose')) {
+                $updateData['purpose'] = $request->input('purpose');
+            }
+            if ($request->filled('other_purpose')) {
+                $updateData['other_purpose'] = $request->input('other_purpose');
+            }
+            if ($request->filled('event_location')) {
+                $updateData['event_location'] = $request->input('event_location');
+            }
+            if ($request->filled('event_date')) {
+                $updateData['event_date'] = $request->input('event_date');
+            }
+            if ($request->filled('event_start')) {
+                $updateData['event_start'] = $request->input('event_start');
+            }
+            if ($request->filled('event_end')) {
+                $updateData['event_end'] = $request->input('event_end');
+            }
+            if ($request->filled('expected_attendees')) {
+                $updateData['expected_attendees'] = $request->input('expected_attendees');
+            }
+
+            // Handle extra_fields - merge with existing, only update provided fields
+            if ($request->has('extra_fields')) {
+                $newExtraFields = $request->input('extra_fields', []);
+                $existingExtraFields = $eventRequest->extra_fields ?? [];
+                if (is_string($existingExtraFields)) {
+                    try {
+                        $decoded = json_decode($existingExtraFields, true);
+                        if (json_last_error() === JSON_ERROR_NONE) {
+                            $existingExtraFields = $decoded;
+                        }
+                    } catch (\Exception $e) {
+                        $existingExtraFields = [];
+                    }
+                }
+                
+                // Merge: keep existing fields, update only the ones provided
+                $mergedExtraFields = array_merge($existingExtraFields, $newExtraFields);
+                $updateData['extra_fields'] = $mergedExtraFields;
+            }
+
+            // Handle valid_id_type update
+            $fkValidIdType = $eventRequest->fk_valid_id_type;
+            if ($request->filled('id_type')) {
+                $idTypeString = $request->input('id_type');
+                $validIdType = DB::table('valid_id_types')
+                    ->where(function($query) use ($idTypeString) {
+                        $query->where('id_type_name', $idTypeString)
+                              ->orWhere('name', $idTypeString)
+                              ->orWhere('type_name', $idTypeString)
+                              ->orWhere('id_type', $idTypeString);
+                    })
+                    ->first();
+                
+                if ($validIdType) {
+                    $fkValidIdType = $validIdType->valid_id_type_id ?? $validIdType->id ?? $fkValidIdType;
+                }
+            }
+            $updateData['fk_valid_id_type'] = $fkValidIdType;
+
+            // Handle file uploads - update valid_id_content if new file provided
+            if ($request->hasFile('valid_id_content')) {
+                $file = $request->file('valid_id_content');
+                $updateData['valid_id_content'] = file_get_contents($file->getRealPath(), FILE_BINARY);
+            } elseif ($request->hasFile('id_front')) {
+                $file = $request->file('id_front');
+                $updateData['valid_id_content'] = file_get_contents($file->getRealPath(), FILE_BINARY);
+            }
+
+            // Update created_at to current time so resubmission brings the request back to the top
+            $updateData['created_at'] = now();
+
+            // Update the event assistance request using raw SQL for valid_id_content
+            if (isset($updateData['valid_id_content'])) {
+                $pdo = DB::connection()->getPdo();
+                $columns = array_keys($updateData);
+                $placeholders = array_map(function($col) {
+                    return "`$col` = ?";
+                }, $columns);
+                
+                $values = array_values($updateData);
+                $sql = "UPDATE event_assistance_requests SET " . implode(', ', $placeholders) . " WHERE event_assist_request_id = ?";
+                $values[] = $id;
+                
+                $stmt = $pdo->prepare($sql);
+                foreach ($values as $index => $value) {
+                    $paramIndex = $index + 1;
+                    $columnName = $index < count($columns) ? $columns[$index] : null;
+                    
+                    if ($columnName === 'valid_id_content') {
+                        $stmt->bindValue($paramIndex, $value, \PDO::PARAM_LOB);
+                    } elseif ($columnName === 'purpose') {
+                        $purposeValue = $value ?? '';
+                        $stmt->bindValue($paramIndex, $purposeValue, \PDO::PARAM_STR);
+                    } elseif ($columnName === 'fk_valid_id_type') {
+                        $stmt->bindValue($paramIndex, $value, \PDO::PARAM_INT);
+                    } elseif ($columnName === 'extra_fields') {
+                        $extraFieldsValue = is_array($value) ? json_encode($value, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) : $value;
+                        $stmt->bindValue($paramIndex, $extraFieldsValue, \PDO::PARAM_STR);
+                    } else {
+                        $stmt->bindValue($paramIndex, $value);
+                    }
+                }
+                
+                $pdo->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
+                $stmt->execute();
+            } else {
+                // No binary data to update, use regular Eloquent update
+                if (isset($updateData['extra_fields']) && is_array($updateData['extra_fields'])) {
+                    $updateData['extra_fields'] = json_encode($updateData['extra_fields'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                }
+                $eventRequest->update($updateData);
+            }
+
+            // Handle new file attachments
+            if ($request->hasFile('id_front')) {
+                $idFrontFile = $request->file('id_front');
+                if ($idFrontFile && $idFrontFile->isValid()) {
+                    $path = $idFrontFile->store('event_assistance_attachments', 'public');
+                    
+                    // Delete old attachment for this field if exists
+                    EventAssistanceAttachment::where('fk_event_assist_request_id', $eventRequest->event_assist_request_id)
+                        ->where('field_name', 'id_front')
+                        ->delete();
+                    
+                    EventAssistanceAttachment::create([
+                        'fk_event_assist_request_id' => $eventRequest->event_assist_request_id,
+                        'field_name' => 'id_front',
+                        'file_name' => $idFrontFile->getClientOriginalName(),
+                        'file_path' => $path,
+                        'file_type' => $idFrontFile->getMimeType(),
+                        'file_size' => $idFrontFile->getSize(),
+                    ]);
+                }
+            }
+
+            if ($request->hasFile('id_back')) {
+                $idBackFile = $request->file('id_back');
+                if ($idBackFile && $idBackFile->isValid()) {
+                    $path = $idBackFile->store('event_assistance_attachments', 'public');
+                    
+                    EventAssistanceAttachment::where('fk_event_assist_request_id', $eventRequest->event_assist_request_id)
+                        ->where('field_name', 'id_back')
+                        ->delete();
+                    
+                    EventAssistanceAttachment::create([
+                        'fk_event_assist_request_id' => $eventRequest->event_assist_request_id,
+                        'field_name' => 'id_back',
+                        'file_name' => $idBackFile->getClientOriginalName(),
+                        'file_path' => $path,
+                        'file_type' => $idBackFile->getMimeType(),
+                        'file_size' => $idBackFile->getSize(),
+                    ]);
+                }
+            }
+
+            // Handle extra_fields file attachments
+            if ($request->has('extra_fields')) {
+                $extraFields = $request->input('extra_fields', []);
+                foreach ($extraFields as $fieldName => $value) {
+                    if ($request->hasFile("extra_fields.{$fieldName}") || $request->hasFile("extra_fields[{$fieldName}]")) {
+                        $file = $request->file("extra_fields.{$fieldName}") ?? $request->file("extra_fields[{$fieldName}]");
+                        if ($file && $file->isValid()) {
+                            $path = $file->store('event_assistance_attachments', 'public');
+                            
+                            // Delete old attachment for this field if exists
+                            EventAssistanceAttachment::where('fk_event_assist_request_id', $eventRequest->event_assist_request_id)
+                                ->where('field_name', $fieldName)
+                                ->delete();
+                            
+                            // Create new attachment
+                            EventAssistanceAttachment::create([
+                                'fk_event_assist_request_id' => $eventRequest->event_assist_request_id,
+                                'field_name' => $fieldName,
+                                'file_name' => $file->getClientOriginalName(),
+                                'file_path' => $path,
+                                'file_type' => $file->getMimeType(),
+                                'file_size' => $file->getSize(),
+                            ]);
+                        }
+                    }
+                }
+            }
+
+            // Handle request items update
+            if ($request->has('request_items')) {
+                $requestItems = $request->input('request_items', []);
+                
+                // Delete existing items
+                EventAssistanceRequestItem::where('fk_event_assist_request_id', $eventRequest->event_assist_request_id)->delete();
+                
+                // Create new items
+                foreach ($requestItems as $item) {
+                    if (!empty($item['fk_event_assist_item_id'])) {
+                        EventAssistanceRequestItem::create([
+                            'fk_event_assist_request_id' => $eventRequest->event_assist_request_id,
+                            'fk_event_assist_item_id' => $item['fk_event_assist_item_id'],
+                            'quantity' => $item['quantity'] ?? 1,
+                            'description' => $item['description'] ?? null,
+                        ]);
+                    }
+                }
+            }
+
+            DB::commit();
+
+            \Log::info('Event assistance request updated successfully', [
+                'event_assist_request_id' => $id,
+                'user_id' => $userId,
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Request updated successfully. Your request has been resubmitted for review.',
+                'data' => [
+                    'event_assist_request_id' => $eventRequest->event_assist_request_id,
+                    'event_assist_request_ticket' => $eventRequest->event_assist_request_ticket,
+                    'status' => $eventRequest->status,
+                ],
+            ]);
+        } catch (\Throwable $ex) {
+            DB::rollBack();
+            \Log::error('Event assistance update exception: ' . $ex->getMessage(), [
+                'trace' => $ex->getTraceAsString(),
+            ]);
+            return response()->json(['error' => 'Failed to update the request: ' . $ex->getMessage()], 500);
+        }
     }
 
 }

@@ -66,12 +66,12 @@ class NotificationController extends Controller
                 'user_object_user_id' => $user->user_id ?? null
             ]);
 
-            // Get only post-related notifications
+            // Get notifications including Report type for restrictions, DocumentRequest, and EventAssistance
             // Actual table uses: fk_user_id, notification_type, notification_reference_id
             // notification_type enum: 'Post','Comment','DocumentRequest','EventAssistance','Report'
             $notifications = DB::table('notifications')
                 ->where('fk_user_id', $userId)
-                ->whereIn('notification_type', ['Post', 'Comment']) // Reactions are stored as Comment type
+                ->whereIn('notification_type', ['Post', 'Comment', 'Report', 'DocumentRequest', 'EventAssistance']) // Reactions are stored as Comment type, Report for restrictions
                 ->orderBy('created_at', 'desc')
                 ->get();
 
@@ -156,6 +156,22 @@ class NotificationController extends Controller
             $refId = $notification->notification_reference_id;
             $type = $notification->notification_type;
 
+            // For Report type (restrictions), return system admin with ADMIN.png
+            if ($type === 'Report') {
+                return [
+                    'name' => 'System Administrator',
+                    'avatar' => '/assets/ADMIN.png',
+                ];
+            }
+            
+            // For DocumentRequest and EventAssistance types, return system admin with ADMIN.png
+            if ($type === 'DocumentRequest' || $type === 'EventAssistance') {
+                return [
+                    'name' => 'System Administrator',
+                    'avatar' => '/assets/ADMIN.png',
+                ];
+            }
+
             // For Comment type, it could be a comment or a reaction (we store reactions as Comment type)
             // Try to determine by checking if the reference_id exists in post_reactions or post_comments
             if ($type === 'Comment' && $refId) {
@@ -236,7 +252,7 @@ class NotificationController extends Controller
         if (!$userId) {
             return [
                 'name' => 'Someone',
-                'avatar' => '/assets/PROFILE PIC.jpg',
+                'avatar' => '/assets/DEFAULT.jpg',
             ];
         }
 
@@ -248,25 +264,34 @@ class NotificationController extends Controller
         if (!$user) {
             return [
                 'name' => 'Someone',
-                'avatar' => '/assets/PROFILE PIC.jpg',
+                'avatar' => '/assets/DEFAULT.jpg',
             ];
         }
 
         $name = $user->name ?? trim(($user->first_name ?? '') . ' ' . ($user->last_name ?? '')) ?: 'Unknown User';
-        $avatar = $user->avatar ?? $user->profile_pic ?? '/assets/PROFILE PIC.jpg';
+        
+        // Prioritize profile_pic (uploaded by user) over avatar (legacy field)
+        $avatar = $user->profile_pic ?? $user->avatar ?? null;
 
         // Format avatar URL - ensure avatar is a string
         if ($avatar && is_string($avatar)) {
-            if (!str_starts_with($avatar, 'http://') && !str_starts_with($avatar, 'https://') && !str_starts_with($avatar, '/')) {
+            // If it's already a full URL or starts with /storage/, use as is
+            if (str_starts_with($avatar, 'http://') || str_starts_with($avatar, 'https://') || str_starts_with($avatar, '/storage/')) {
+                // Already properly formatted
+            } elseif (str_starts_with($avatar, '/')) {
+                // If it starts with / but not /storage/, assume it's an asset path
+                // Keep as is
+            } else {
+                // If it doesn't start with /, prepend /storage/
                 $avatar = '/storage/' . ltrim($avatar, '/');
             }
         } else {
-            $avatar = '/assets/PROFILE PIC.jpg';
+            $avatar = '/assets/DEFAULT.jpg';
         }
 
         return [
             'name' => $name,
-            'avatar' => $avatar ?: '/assets/PROFILE PIC.jpg',
+            'avatar' => $avatar ?: '/assets/DEFAULT.jpg',
         ];
     }
 
@@ -337,6 +362,16 @@ class NotificationController extends Controller
         $refId = $notification->notification_reference_id;
         $type = $notification->notification_type;
 
+        // For Report type (restrictions), use the message directly
+        if ($type === 'Report' && $notification->message) {
+            return $notification->message;
+        }
+        
+        // For DocumentRequest and EventAssistance types, use the message directly
+        if (($type === 'DocumentRequest' || $type === 'EventAssistance') && $notification->message) {
+            return $notification->message;
+        }
+
         // For Comment type, check if it's actually a reaction or a comment
         if ($type === 'Comment' && $refId) {
             // First check if it's a reaction
@@ -403,7 +438,7 @@ class NotificationController extends Controller
      */
     private function getAvatar($actor)
     {
-        return $actor['avatar'] ?? '/assets/PROFILE PIC.jpg';
+        return $actor['avatar'] ?? '/assets/DEFAULT.jpg';
     }
 
     /**
@@ -458,7 +493,7 @@ class NotificationController extends Controller
 
             DB::table('notifications')
                 ->where('fk_user_id', $userId)
-                ->whereIn('notification_type', ['Post', 'Comment'])
+                ->whereIn('notification_type', ['Post', 'Comment', 'Report', 'DocumentRequest', 'EventAssistance'])
                 ->update(['is_read' => true]);
 
             return response()->json([

@@ -13,9 +13,8 @@
                 <div class="header-actions">
                     <img src="/assets/SETTINGS.png" alt="Settings" class="settings-btn-img" @click="toggleSettings" />
                     <div v-if="showSettings" class="settings-dropdown">
-                        <Link href="#" class="settings-item" @click="closeSettings">Help Center</Link>
-                        <button type="button" class="settings-item" @click="openTerms">Terms & Conditions</button>
-                        <Link href="#" class="settings-item" @click="logout">Sign Out</Link>
+                        <a href="#" class="settings-item" @click.prevent.stop="openTermsModal">TERMS & CONDITIONS</a>
+                        <Link href="#" class="settings-item" @click.prevent="logout">SIGN OUT</Link>
                     </div>
                 </div>
             </div>
@@ -77,6 +76,7 @@
                             <path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0" />
                         </svg>
                         Notifications
+                        <span v-if="unreadCount > 0" class="unread-badge-nav">{{ unreadCount }}</span>
                     </Link>
                     <Link 
                         href="#" 
@@ -95,7 +95,7 @@
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="nav-icon">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 5.25h.008v.008H12v-.008Z" />
                     </svg>
-                    FAQs & Help Center
+                    FAQS & HELP CENTER
                 </button>
             </div>
 
@@ -107,6 +107,19 @@
                         <h2>Document Request</h2>
                         <div class="header-icon">
                             <img src="/assets/ICON.png" alt="iKONEK" class="small-logo" />
+                        </div>
+                    </div>
+
+                    <!-- Restriction Banner -->
+                    <div v-if="restrictions?.restrict_document_request" class="restriction-banner">
+                        <div class="restriction-content">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" style="width: 24px; height: 24px; color: #e74c3c; flex-shrink: 0;">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+                            </svg>
+                            <div class="restriction-text">
+                                <strong>Access Restricted</strong>
+                                <p>You are restricted from making document requests. Please contact the admin for more information.</p>
+                            </div>
                         </div>
                     </div>
 
@@ -136,6 +149,7 @@
                                         <button @click="selectStatus('pending')" :class="{ active: statusFilter === 'pending' }">PENDING</button>
                                         <button @click="selectStatus('approved')" :class="{ active: statusFilter === 'approved' }">APPROVED</button>
                                         <button @click="selectStatus('rejected')" :class="{ active: statusFilter === 'rejected' }">REJECTED</button>
+                                        <button @click="selectStatus('resubmitted')" :class="{ active: statusFilter === 'resubmitted' }">RESUBMITTED</button>
                                     </div>
                                 </div>
                             </div>
@@ -154,7 +168,13 @@
                                         </svg>
                                     </button>
                                 </div>
-                                <button class="request-new-btn" @click="showRequestForm">
+                                <button 
+                                    type="button"
+                                    class="request-new-btn" 
+                                    :class="{ 'disabled': restrictions?.restrict_document_request }"
+                                    @click.stop="showRequestForm"
+                                    :disabled="restrictions?.restrict_document_request"
+                                >
                                     ＋ REQUEST NEW DOCUMENT
                                 </button>
                             </div>
@@ -173,8 +193,9 @@
                                 </thead>
                                 <tbody>
                                     <tr 
-                                        v-for="request in filteredDocumentRequests" 
+                                        v-for="request in paginatedDocumentRequests" 
                                         :key="request.id"
+                                        :data-request-id="request.id"
                                         @click="viewRequestDetails(request)"
                                         class="request-row"
                                     >
@@ -184,7 +205,7 @@
                                         <td>
                                             <span class="status-badge" :class="request.status.toLowerCase()">
                                                 <span class="badge-icon">
-                                                    <template v-if="request.status.toLowerCase() === 'pending'">
+                                                    <template v-if="request.status.toLowerCase() === 'pending' || request.status.toLowerCase() === 'resubmitted'">
                                                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="badge-icon-svg">
                                                             <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
                                                         </svg>
@@ -215,7 +236,11 @@
                                                     <span class="badge-text">{{ getPaymentBadge(request).label }}</span>
                                                 </div>
                                                 <div v-else class="payment-list-badge none">
-                                                    <span class="badge-icon"></span>
+                                                    <span class="badge-icon">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" style="width: 16px; height: 16px;">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+                                                        </svg>
+                                                    </span>
                                                     <span class="badge-text">NOT PAID YET</span>
                                                 </div>
                                             </div>
@@ -227,13 +252,55 @@
                                     </tr>
                                 </tbody>
                             </table>
+                            
+                            <!-- Pagination Controls -->
+                            <div v-if="filteredDocumentRequests.length > 0" class="pagination-container">
+                                <div class="pagination-info">
+                                    Showing {{ (currentPage - 1) * itemsPerPage + 1 }} to {{ Math.min(currentPage * itemsPerPage, filteredDocumentRequests.length) }} of {{ filteredDocumentRequests.length }} requests
+                                </div>
+                                <div class="pagination-controls">
+                                    <button 
+                                        class="pagination-btn" 
+                                        :disabled="currentPage === 1"
+                                        @click="prevPage"
+                                    >
+                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" style="width: 16px; height: 16px;">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+                                        </svg>
+                                        Previous
+                                    </button>
+                                    
+                                    <div class="pagination-numbers">
+                                        <button
+                                            v-for="page in totalPages"
+                                            :key="page"
+                                            class="pagination-number"
+                                            :class="{ active: currentPage === page }"
+                                            @click="goToPage(page)"
+                                        >
+                                            {{ page }}
+                                        </button>
+                                    </div>
+                                    
+                                    <button 
+                                        class="pagination-btn" 
+                                        :disabled="currentPage === totalPages"
+                                        @click="nextPage"
+                                    >
+                                        Next
+                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" style="width: 16px; height: 16px;">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
                     <!-- View 1: Document Selection -->
                     <div v-if="currentView === 'selection'" class="document-selection">
                         <div class="document-types-wrapper">
-                            <button class="back-btn-selection" @click="backToList">
+                            <button type="button" class="back-btn-selection" @click.stop="backToList">
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width: 16px; height: 16px; display: inline-block; vertical-align: middle; margin-right: 6px;">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
                                 </svg>
@@ -241,13 +308,20 @@
                             </button>
                             <div class="document-types">
                                 <button 
-                                    v-for="docName in documentNames" 
-                                    :key="docName"
+                                    v-for="doc in documentTypesWithStatus" 
+                                    :key="doc.name"
+                                    type="button"
                                     class="doc-type-btn" 
-                                    :class="{ active: selectedDocType === docName }" 
-                                    @click="selectDocument(docName)"
+                                    :class="{ 
+                                        active: selectedDocType === doc.name,
+                                        disabled: doc.restricted
+                                    }" 
+                                    :disabled="doc.restricted"
+                                    :title="doc.restricted ? 'This document type is restricted due to past offenses. Please contact the admin for more information.' : ''"
+                                    @click.stop="handleDocumentSelect(doc)"
                                 >
-                                    {{ docName }}
+                                    {{ doc.name }}
+                                    <span v-if="doc.restricted" class="restricted-badge" title="Restricted">🔒</span>
                                 </button>
                             </div>
                         </div>
@@ -292,9 +366,10 @@
                             </div>
 
                             <button 
+                                type="button"
                                 class="request-btn" 
-                                @click="proceedToForm"
-                                :disabled="selectedDocType === 'Permit' && !selectedPermitType"
+                                @click.stop="handleProceedToForm"
+                                :disabled="!selectedDocType || (selectedDocType === 'Permit' && !selectedPermitType)"
                             >
                                 REQUEST DOCUMENT
                             </button>
@@ -574,11 +649,31 @@
 
                         </div>
 
+                        <!-- Error Message Display -->
+                        <div v-if="submitError" class="error-message-container" style="margin-top: 20px; margin-bottom: 15px;">
+                            <div class="error-alert" style="background: #fee; border: 1px solid #fcc; border-radius: 8px; padding: 15px; color: #c33;">
+                                <div style="display: flex; align-items: center; gap: 10px;">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width: 20px; height: 20px; flex-shrink: 0;">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                    <span style="font-weight: 600;">{{ submitError }}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Field Error Messages -->
+                        <div v-if="formErrors && Object.keys(formErrors).length > 0" class="field-errors-container" style="margin-bottom: 15px;">
+                            <div v-for="(error, field) in formErrors" :key="field" class="field-error" style="background: #fff3cd; border: 1px solid #ffc107; border-radius: 6px; padding: 10px; margin-bottom: 8px; color: #856404; font-size: 14px;">
+                                <strong>{{ field.replace('_', ' ').replace('extra_fields.', '') }}:</strong> {{ error }}
+                            </div>
+                        </div>
+
                         <button
                         type="button"
                         class="submit-btn"
-                        :disabled="isSubmitting"
+                        :disabled="isSubmitting || restrictions?.restrict_document_request"
                         @click="submitRequest"
+                        :title="restrictions?.restrict_document_request ? 'You are restricted from making document requests. Please contact the admin for more information.' : ''"
                         >
                             <span v-if="!isSubmitting">SUBMIT</span>
                             <span v-else>Submitting...</span>
@@ -616,10 +711,10 @@
             <button class="close-modal-btn" @click="closeDetailsModal">✕</button>
             
             <!-- Success/Status Header -->
-            <div class="modal-icon" :class="selectedRequest?.status.toLowerCase() + '-icon'">
+            <div class="modal-icon" :class="(selectedRequest?.status === 'RESUBMITTED' ? 'pending' : selectedRequest?.status.toLowerCase()) + '-icon'">
                 <div class="status-badge">
                     <span v-if="selectedRequest?.status === 'APPROVED'">✓</span>
-                    <span v-if="selectedRequest?.status === 'PENDING'">
+                    <span v-if="selectedRequest?.status === 'PENDING' || selectedRequest?.status === 'RESUBMITTED'">
                       <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" style="width: 32px; height: 32px; display: block; margin: 0 auto;">
                         <circle cx="12" cy="12" r="10"/>
                         <path stroke-linecap="round" d="M12 6v6l4 2"/>
@@ -684,10 +779,10 @@
                                 selectedRequest?.payment?.status?.toUpperCase() === 'REJECTED')" 
                         class="payment-buttons-modal">
                         <button class="pay-online-btn-modal" @click="showPaymentGateway(selectedRequest)">
-                            Pay Online
+                            PAY ONLINE
                         </button>
                         <button class="pay-onsite-btn-modal" @click="acknowledgeOnsite">
-                            Pay Onsite
+                            PAY ONSITE
                         </button>
                     </div>
 
@@ -703,22 +798,37 @@
 
                         <!-- If there's a payment object attached: show status details -->
                         <div v-if="selectedRequest?.payment" class="payment-info-card">
-                            <div :class="['payment-status-badge', selectedRequest.payment.status?.toLowerCase()]">
-                                <span class="badge-icon">
-                                    <template v-if="selectedRequest.payment.status?.toLowerCase() === 'pending'">
-                                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width: 24px; height: 24px; display: inline-block; vertical-align: middle; margin: 0;">
-                                        <circle cx="12" cy="12" r="10"/>
-                                        <path stroke-linecap="round" d="M12 6v6l4 2"/>
-                                      </svg>
-                                    </template>
-                                    <template v-else-if="selectedRequest.payment.status?.toLowerCase() === 'approved' || selectedRequest.payment.status?.toLowerCase() === 'paid'">✓</template>
-                                    <template v-else-if="selectedRequest.payment.status?.toLowerCase() === 'rejected'">✕</template>
-                                </span>
-                                <span class="badge-text">{{ formatPaymentStatus(selectedRequest.payment.status) }}</span>
+                            <!-- When payment is pending, show badge and amount side by side -->
+                            <div v-if="selectedRequest.payment.status?.toLowerCase() === 'pending'" style="display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 16px;">
+                                <div :class="['payment-status-badge', selectedRequest.payment.status?.toLowerCase()]">
+                                    <span class="badge-icon">
+                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width: 24px; height: 24px; display: inline-block; vertical-align: middle; margin: 0;">
+                                            <circle cx="12" cy="12" r="10"/>
+                                            <path stroke-linecap="round" d="M12 6v6l4 2"/>
+                                        </svg>
+                                    </span>
+                                    <span class="badge-text">{{ formatPaymentStatus(selectedRequest.payment.status) }}</span>
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 8px; margin-left: auto;">
+                                    <span style="font-weight: 600; color: #374151;">Amount:</span>
+                                    <span style="font-weight: 700; color: #1a1a1a; font-size: 18px;">₱{{ (selectedRequest.payment.amount ?? selectedRequest.amount) || '0.00' }}</span>
+                                </div>
+                            </div>
+
+                            <!-- When payment is approved/rejected, show badge separately -->
+                            <div v-else>
+                                <div :class="['payment-status-badge', selectedRequest.payment.status?.toLowerCase()]">
+                                    <span class="badge-icon">
+                                        <template v-if="selectedRequest.payment.status?.toLowerCase() === 'approved' || selectedRequest.payment.status?.toLowerCase() === 'paid'">✓</template>
+                                        <template v-else-if="selectedRequest.payment.status?.toLowerCase() === 'rejected'">✕</template>
+                                    </span>
+                                    <span class="badge-text">{{ formatPaymentStatus(selectedRequest.payment.status) }}</span>
+                                </div>
                             </div>
 
                             <div class="payment-details-grid">
-                                <div class="payment-detail-item">
+                                <!-- Only show amount in grid if payment is NOT pending (since it's shown above for pending) -->
+                                <div v-if="selectedRequest.payment.status?.toLowerCase() !== 'pending'" class="payment-detail-item">
                                     <span class="detail-label">Amount:</span>
                                     <span class="detail-value">₱{{ (selectedRequest.payment.amount ?? selectedRequest.amount) || '0.00' }}</span>
                                 </div>
@@ -728,7 +838,7 @@
                                     <span class="detail-value">{{ selectedRequest.payment.transaction_ref }}</span>
                                 </div>
 
-                                <div v-if="selectedRequest.payment.paid_at" class="payment-detail-item">
+                                <div v-if="selectedRequest.payment.paid_at && (selectedRequest.payment.status?.toLowerCase() === 'approved' || selectedRequest.payment.status?.toLowerCase() === 'paid')" class="payment-detail-item">
                                     <span class="detail-label">Paid At:</span>
                                     <span class="detail-value">{{ formatDateTime(selectedRequest.payment.paid_at) }}</span>
                                 </div>
@@ -736,7 +846,7 @@
                                 <div v-if="selectedRequest.payment.receipt_path || selectedRequest.payment.receipt_image" class="payment-detail-item">
                                     <span class="detail-label">Receipt:</span>
                                     <span class="detail-value">
-                                        <button @click="viewReceipt(selectedRequest)" class="receipt-view-btn">View/Download Receipt</button>
+                                        <button @click="viewReceipt(selectedRequest)" class="receipt-view-btn">VIEW/DOWNLOAD RECEIPT</button>
                                     </span>
                                 </div>
                             </div>
@@ -744,7 +854,7 @@
                             <!-- Change Payment Method Button for Cash/Onsite payments -->
                             <div v-if="canChangePaymentMethod(selectedRequest)" class="change-payment-method-section">
                                 <button @click="showPaymentGateway(selectedRequest)" class="change-payment-method-btn">
-                                    Change Payment Method
+                                    CHANGE PAYMENT METHOD
                                 </button>
                             </div>
                         </div>
@@ -755,29 +865,18 @@
                         </div>
                     </div>
 
-                    <!-- Admin Feedback/Comment Section for Approved Requests -->
-                    <div v-if="selectedRequest?.admin_feedback || selectedRequest?.raw?.admin_feedback" class="feedback-section">
-                        <h4 class="section-title-feedback">
-                            <span class="icon">
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" style="width: 20px; height: 20px; display: inline-block; vertical-align: middle;">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M8.625 12a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H8.25m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H12m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 0 1-2.555-.337A5.972 5.972 0 0 1 5.41 20.97a5.969 5.969 0 0 1-.474-.065 4.48 4.48 0 0 0 .978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25Z" />
-                                </svg>
-                            </span> Approver Comment
-                        </h4>
-                        <div class="feedback-box">
-                            <p>{{ selectedRequest?.admin_feedback ?? selectedRequest?.raw?.admin_feedback }}</p>
-                        </div>
-                    </div>
-
                     <p class="present-message">
                         <strong>Present this request number upon pickup:</strong><br/>
                         <span class="highlight-number">#{{ selectedRequest?.requestNumber }}</span>
                     </p>
                 </div>
 
-                <!-- PENDING Status -->
-                <div v-if="selectedRequest?.status === 'PENDING'" class="pending-section">
-                    <p class="details-message">
+                <!-- PENDING/RESUBMITTED Status -->
+                <div v-if="selectedRequest?.status === 'PENDING' || selectedRequest?.status === 'RESUBMITTED'" class="pending-section">
+                    <p class="details-message" v-if="selectedRequest?.status === 'RESUBMITTED'">
+                        Your resubmitted request is currently being reviewed by the barangay officials. You will be notified once a decision has been made.
+                    </p>
+                    <p class="details-message" v-else>
                         Your request is currently being reviewed by the barangay officials. You will be notified once a decision has been made.
                     </p>
                     
@@ -811,6 +910,20 @@
                         <h4>Reason for Rejection:</h4>
                         <p>{{ getRejectionReason(selectedRequest) }}</p>
                     </div>
+
+                    <!-- Admin Feedback/Comment Section - Only show for rejected requests -->
+                    <div v-if="selectedRequest?.admin_feedback || selectedRequest?.raw?.admin_feedback" class="feedback-section">
+                        <h4 class="section-title-feedback">
+                            <span class="icon">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" style="width: 20px; height: 20px; display: inline-block; vertical-align: middle;">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M8.625 12a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H8.25m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H12m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 0 1-2.555-.337A5.972 5.972 0 0 1 5.41 20.97a5.969 5.969 0 0 1-.474-.065 4.48 4.48 0 0 0 .978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25Z" />
+                                </svg>
+                            </span> Approver Comment
+                        </h4>
+                        <div class="feedback-box">
+                            <p>{{ selectedRequest?.admin_feedback ?? selectedRequest?.raw?.admin_feedback }}</p>
+                        </div>
+                    </div>
                     
                     <div class="request-info-box">
                         <div class="info-item">
@@ -824,8 +937,14 @@
                     </div>
                     
                     <p class="note-message">
-                        You may submit a new request with the correct information or contact Ms. Mercy Alpaño at the barangay hall for assistance.
+                        You can edit and resubmit this request by clicking the button below, or contact Ms. Mercy Alpaño at the barangay hall for assistance.
                     </p>
+                    
+                    <div class="appeal-actions">
+                        <button @click="appealRequest" class="appeal-btn">
+                            EDIT REQUEST
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -875,9 +994,11 @@
             <p class="modal-subtitle">Click <strong>Upload Payment Screenshot</strong> to complete your payment.</p>
 
             <div class="qr-preview">
-                <img v-if="selectedGateway === 'GCash'" src="/assets/GQR.png" alt="GCash QR" class="qr-image" />
-                <img v-else-if="selectedGateway === 'Maya'" src="/assets/MQR.png" alt="Maya QR" class="qr-image" />
-                <div v-else class="qr-placeholder">NO QR</div>
+                <div class="qr-image-wrapper">
+                    <img v-if="selectedGateway === 'GCash'" src="/assets/GQR.png" alt="GCash QR" class="qr-image" />
+                    <img v-else-if="selectedGateway === 'Maya'" src="/assets/MQR.png" alt="Maya QR" class="qr-image" />
+                    <div v-else class="qr-placeholder">NO QR</div>
+                </div>
             </div>
 
             <div class="upload-section">
@@ -892,7 +1013,7 @@
                     style="display: none"
                 />
 
-                <div v-if="uploadedFile" class="uploaded-file-info-compact" style="margin-top: 10px;">
+                <div v-if="uploadedFile" class="uploaded-file-info-compact">
                     <span class="file-checkmark">✓</span>
                     <span class="file-name-compact">{{ uploadedFile?.name }}</span>
                     <button 
@@ -906,31 +1027,29 @@
                 </div>
 
                 <div v-if="uploadedFile" class="evidence-form">
-                    <div class="input-and-actions">
-                        <input
-                            type="text"
-                            v-model="referenceId"
-                            placeholder="Enter Transaction Reference ID"
-                            class="reference-input"
-                        />
+                    <input
+                        type="text"
+                        v-model="referenceId"
+                        placeholder="Enter Transaction Reference ID"
+                        class="reference-input"
+                    />
 
-                        <div class="evidence-actions">
-                            <button
-                                class="submit-evidence-btn"
-                                :disabled="uploading"
-                                @click="submitEvidence"
-                            >
-                                {{ uploading ? 'Uploading...' : 'Submit' }}
-                            </button>
+                    <div class="evidence-actions">
+                        <button
+                            class="submit-evidence-btn"
+                            :disabled="uploading"
+                            @click="submitEvidence"
+                        >
+                            {{ uploading ? 'UPLOADING...' : 'SUBMIT' }}
+                        </button>
 
-                            <button 
-                                class="clear-evidence-btn" 
-                                @click="clearEvidence" 
-                                :disabled="uploading"
-                            >
-                                Clear
-                            </button>
-                        </div>
+                        <button 
+                            class="clear-evidence-btn" 
+                            @click="clearEvidence" 
+                            :disabled="uploading"
+                        >
+                            CLEAR
+                        </button>
                     </div>
                 </div>
             </div>
@@ -994,12 +1113,12 @@
 
                 <div class="receipt-actions">
                     <button class="download-receipt-btn" @click="downloadReceipt" v-if="selectedReceipt?.payment?.receipt_image || selectedReceipt?.payment?.receipt_path">
-                        Download
+                        DOWNLOAD
                     </button>
                     <button class="print-receipt-btn" @click="printReceipt" v-if="selectedReceipt?.payment?.receipt_image || selectedReceipt?.payment?.receipt_path">
-                        Print
+                        PRINT
                     </button>
-                    <button class="close-receipt-btn" @click="closeReceiptModal">Close</button>
+                    <button class="close-receipt-btn" @click="closeReceiptModal">CLOSE</button>
                 </div>
             </div>
         </div>
@@ -1058,13 +1177,474 @@
             </div>
             
             <button class="confirmation-btn" @click="closePaymentConfirmation">
-                Got it
+                GOT IT
             </button>
         </div>
     </div>
 
-    <!-- Terms & Conditions Modal -->
-    <TermsModal :open="showTerms" @close="closeTerms" />
+    <!-- Terms and Conditions Modal -->
+    <div v-if="showTermsModal" class="modal-overlay" @click.self="closeTermsModal">
+        <div class="terms-modal" @click.stop>
+            <div class="terms-modal-header">
+                <h2 class="terms-modal-title">Terms and Conditions</h2>
+                <button @click="closeTermsModal" class="terms-modal-close">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width: 24px; height: 24px;">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+            <div class="terms-modal-body">
+                <div class="terms-section">
+                    <h3 class="terms-section-title">1. Account Registration and Access</h3>
+                    <p class="terms-text">
+                        By creating an account and using the iKonek176B portal, you agree to provide accurate, current, and complete information during registration. You are responsible for maintaining the confidentiality of your account credentials and for all activities that occur under your account. You must immediately notify Barangay 176B of any unauthorized use of your account or any other breach of security.
+                    </p>
+                </div>
+
+                <div class="terms-section">
+                    <h3 class="terms-section-title">2. Use of Services</h3>
+                    <p class="terms-text">
+                        The iKonek176B portal is provided for legitimate barangay-related purposes only. You may use the portal to:
+                        <ul class="terms-list">
+                            <li>Submit document requests (e.g., Barangay Certificate, Barangay ID, Business Permit)</li>
+                            <li>Request event assistance for community activities</li>
+                            <li>View announcements and community updates</li>
+                            <li>Participate in community discussions and forums</li>
+                            <li>Access your request history and status</li>
+                        </ul>
+                    </p>
+                </div>
+
+                <div class="terms-section">
+                    <h3 class="terms-section-title">3. Accurate Information</h3>
+                    <p class="terms-text">
+                        You are responsible for ensuring that all information you submit through the portal is accurate, truthful, and complete. Providing false, misleading, or incomplete information may result in rejection of your requests, suspension of your account, and possible legal action. You must update your account information promptly if any changes occur.
+                    </p>
+                </div>
+
+                <div class="terms-section">
+                    <h3 class="terms-section-title">4. Document Requests</h3>
+                    <p class="terms-text">
+                        When submitting document requests, you must:
+                        <ul class="terms-list">
+                            <li>Provide all required documents and information</li>
+                            <li>Ensure documents are authentic and valid</li>
+                            <li>Pay applicable processing fees as required</li>
+                            <li>Follow pickup instructions and deadlines</li>
+                            <li>Use documents only for their intended legal purposes</li>
+                        </ul>
+                        The barangay reserves the right to verify all submitted information and documents. Approval of requests is subject to verification and compliance with barangay policies and regulations.
+                    </p>
+                </div>
+
+                <div class="terms-section">
+                    <h3 class="terms-section-title">5. Event Assistance Requests</h3>
+                    <p class="terms-text">
+                        When requesting event assistance, you must provide accurate event details, including date, time, location, and purpose. Event assistance is subject to availability and approval by barangay officials. You are responsible for ensuring your event complies with all applicable laws, regulations, and barangay policies. The barangay reserves the right to deny or cancel event assistance for any reason.
+                    </p>
+                </div>
+
+                <div class="terms-section">
+                    <h3 class="terms-section-title">6. Payment and Fees</h3>
+                    <p class="terms-text">
+                        Some services may require payment of processing fees. All fees must be paid according to the payment methods provided. Payments are non-refundable unless otherwise stated. The barangay is not responsible for delays or issues caused by payment processing errors or failures. You are responsible for ensuring payments are made correctly and on time.
+                    </p>
+                </div>
+
+                <div class="terms-section">
+                    <h3 class="terms-section-title">7. Data Privacy</h3>
+                    <p class="terms-text">
+                        Your personal information is collected and processed in accordance with the Data Privacy Act of 2012 (Republic Act No. 10173). The barangay will use your information only for legitimate purposes related to service delivery, record-keeping, and compliance with legal requirements. Your information will not be shared with unauthorized third parties except as required by law.
+                    </p>
+                </div>
+
+                <div class="terms-section">
+                    <h3 class="terms-section-title">8. Prohibited Activities</h3>
+                    <p class="terms-text">
+                        You are strictly prohibited from:
+                        <ul class="terms-list">
+                            <li>Using the portal for any illegal or unauthorized purpose</li>
+                            <li>Submitting false, fraudulent, or misleading information</li>
+                            <li>Attempting to gain unauthorized access to the system or other users' accounts</li>
+                            <li>Interfering with or disrupting the portal's operation</li>
+                            <li>Harassing, threatening, or abusing other users or barangay officials</li>
+                            <li>Posting inappropriate, offensive, or defamatory content</li>
+                            <li>Violating any applicable laws or regulations</li>
+                        </ul>
+                    </p>
+                </div>
+
+                <div class="terms-section">
+                    <h3 class="terms-section-title">9. Account Suspension and Termination</h3>
+                    <p class="terms-text">
+                        The barangay reserves the right to suspend or terminate your account at any time, with or without notice, if you violate these terms and conditions, engage in prohibited activities, or for any other reason deemed necessary by barangay officials. Upon termination, your right to use the portal will immediately cease.
+                    </p>
+                </div>
+
+                <div class="terms-section">
+                    <h3 class="terms-section-title">10. Limitation of Liability</h3>
+                    <p class="terms-text">
+                        The barangay is not liable for any delays, errors, or failures in service delivery caused by technical issues, system maintenance, incorrect information provided by users, or circumstances beyond the barangay's reasonable control. The barangay does not guarantee uninterrupted or error-free access to the portal.
+                    </p>
+                </div>
+
+                <div class="terms-section">
+                    <h3 class="terms-section-title">11. Updates to Terms</h3>
+                    <p class="terms-text">
+                        These terms and conditions may be updated periodically. You will be notified of significant changes through the portal or other communication channels. Continued use of the portal after changes constitutes acceptance of the updated terms.
+                    </p>
+                </div>
+
+                <div class="terms-section">
+                    <h3 class="terms-section-title">12. Contact and Support</h3>
+                    <p class="terms-text">
+                        For questions, concerns, or to report issues related to your account or the portal, contact the Barangay 176B office at ikonek176b@dev.ph or +639193076338. For technical support or assistance with using the portal, please visit the Help Center section.
+                    </p>
+                </div>
+            </div>
+            <div class="terms-modal-footer">
+                <button @click="closeTermsModal" class="terms-modal-btn">
+                    I UNDERSTAND
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Resubmission Modal -->
+    <div v-if="showResubmissionModal" class="modal-overlay resubmission-modal-overlay" @click="closeResubmissionModal">
+        <div class="modal-content resubmission-modal-content" @click.stop>
+            <button @click="closeResubmissionModal" class="modal-close">✕</button>
+            
+            <div class="resubmission-modal-header">
+                <h3 class="resubmission-modal-title">EDIT & RESUBMIT REQUEST</h3>
+                <p class="resubmission-document-type" v-if="resubmissionDocumentTypeName">
+                    Document Type: <strong>{{ resubmissionDocumentTypeName }}</strong>
+                </p>
+                <div v-if="resubmissionRequestData?.incorrect_fields && resubmissionRequestData.incorrect_fields.length > 0" class="editable-fields-notice">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" style="width: 18px; height: 18px; flex-shrink: 0;">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" />
+                    </svg>
+                    <span>Only fields marked as incorrect by the approver can be edited. Other fields are locked.</span>
+                </div>
+            </div>
+
+            <div v-if="resubmissionRequestData?.admin_feedback" class="rejection-box">
+                <h3 class="rejection-title">⚠️ Reason for Rejection:</h3>
+                <p class="rejection-text">{{ resubmissionRequestData.admin_feedback }}</p>
+            </div>
+
+            <div class="request-info-summary" v-if="resubmissionRequestData">
+                <div class="info-row">
+                    <span class="info-label">Request Ticket:</span>
+                    <span class="info-value">{{ resubmissionRequestData.doc_request_ticket }}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Status:</span>
+                    <span class="info-value status-pending">PENDING</span>
+                </div>
+            </div>
+
+            <div class="resubmission-form-container">
+                <!-- Purpose -->
+                <div class="form-section">
+                    <h4 class="section-title">
+                        <svg class="icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width: 20px; height: 20px;">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                        </svg>
+                        Purpose <span class="required-star">*</span>
+                    </h4>
+                    
+                    <div class="purpose-id-row">
+                        <div class="purpose-field">
+                            <select 
+                                v-model="resubmissionForm.purpose" 
+                                class="form-input"
+                                :disabled="!isResubmissionFieldIncorrect('purpose')"
+                                :class="{ 'field-disabled': !isResubmissionFieldIncorrect('purpose') }"
+                                required
+                                @change="handleResubmissionPurposeChange"
+                            >
+                                <option value="">Select purpose</option>
+                                <option v-for="purpose in getResubmissionDocumentPurposes()" :key="purpose" :value="purpose">
+                                    {{ purpose }}
+                                </option>
+                            </select>
+                            <input
+                                v-if="resubmissionForm.purpose === 'Others'"
+                                v-model="resubmissionPurposeOthers"
+                                @input="resubmissionForm.purpose = resubmissionPurposeOthers"
+                                placeholder="Please specify your purpose..."
+                                class="form-input"
+                                :disabled="!isResubmissionFieldIncorrect('purpose')"
+                                :class="{ 'field-disabled': !isResubmissionFieldIncorrect('purpose') }"
+                                style="margin-top: 10px;"
+                                required
+                            />
+                        </div>
+                        
+                        <div class="id-type-field">
+                            <div class="id-type-upload-row">
+                                <select 
+                                    v-model="resubmissionForm.id_type" 
+                                    class="form-input id-type-select"
+                                    :disabled="!isResubmissionFieldIncorrect('id_type')"
+                                    :class="{ 'field-disabled': !isResubmissionFieldIncorrect('id_type') }"
+                                >
+                                    <option value="">Type of Identification</option>
+                                    <option value="National ID">National ID</option>
+                                    <option value="Driver's License">Driver's License</option>
+                                    <option value="Passport">Passport</option>
+                                    <option value="Voter's ID">Voter's ID</option>
+                                    <option value="SSS ID">SSS ID</option>
+                                    <option value="UMID">UMID</option>
+                                </select>
+                                
+                                <div class="upload-row">
+                                    <button 
+                                        type="button" 
+                                        class="upload-btn" 
+                                        :disabled="!isResubmissionFieldIncorrect('id_front')"
+                                        :class="{ 'btn-disabled': !isResubmissionFieldIncorrect('id_front') }"
+                                        @click.prevent="triggerResubmissionFileUpload('front')"
+                                    >
+                                        UPLOAD FRONT
+                                    </button>
+                                    <input 
+                                        type="file" 
+                                        ref="resubmissionFileFrontInput" 
+                                        @change="handleResubmissionFileUpload($event, 'front')" 
+                                        class="file-input-hidden"
+                                        accept="image/*,.pdf"
+                                        style="display: none"
+                                        :disabled="!isResubmissionFieldIncorrect('id_front')"
+                                    />
+
+                                    <button 
+                                        type="button" 
+                                        class="upload-btn" 
+                                        :disabled="!isResubmissionFieldIncorrect('id_back')"
+                                        :class="{ 'btn-disabled': !isResubmissionFieldIncorrect('id_back') }"
+                                        @click.prevent="triggerResubmissionFileUpload('back')"
+                                    >
+                                        UPLOAD BACK
+                                    </button>
+                                    <input 
+                                        type="file" 
+                                        ref="resubmissionFileBackInput" 
+                                        @change="handleResubmissionFileUpload($event, 'back')" 
+                                        class="file-input-hidden"
+                                        accept="image/*,.pdf"
+                                        style="display: none"
+                                        :disabled="!isResubmissionFieldIncorrect('id_back')"
+                                    />
+                                </div>
+                            </div>
+                            
+                            <div class="uploaded-files-display">
+                                <p v-if="resubmissionIdFrontName" class="uploaded-file">Front: {{ resubmissionIdFrontName }}</p>
+                                <p v-if="resubmissionIdBackName" class="uploaded-file">Back: {{ resubmissionIdBackName }}</p>
+                            </div>
+                            
+                            <div v-if="showResubmissionIdNumber" class="id-number-field" style="margin-top: 12px;">
+                                <label class="field-label">{{ getResubmissionIdNumberLabel() }} <span>*</span></label>
+                                <input
+                                    type="text"
+                                    v-model="resubmissionForm.id_number"
+                                    placeholder="Enter ID Number"
+                                    class="form-input"
+                                    :disabled="!isResubmissionFieldIncorrect('id_number')"
+                                    :class="{ 'field-disabled': !isResubmissionFieldIncorrect('id_number') }"
+                                />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Dynamic fields for the selected document -->
+                <div class="form-section dynamic-fields" v-if="resubmissionDocumentFields.length">
+                    <h4 class="section-title">
+                        <svg class="icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width: 20px; height: 20px;">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                        </svg>
+                        Additional Information & Required Documents
+                    </h4>
+
+                    <!-- Special layout for Barangay Certificate -->
+                    <template v-if="resubmissionDocumentTypeName === 'Barangay Certificate'">
+                        <div class="dynamic-field-wrapper">
+                            <div class="field-header">
+                                <label class="field-label">
+                                    {{ resubmissionDocumentFields.find(f => f.name === 'duration_of_residency')?.label }}
+                                </label>
+                            </div>
+                            <div class="field-input-wrapper">
+                                <input 
+                                    type="number"
+                                    v-model.number="resubmissionForm.extra_fields.duration_of_residency"
+                                    placeholder="Enter number of years"
+                                    :min="0"
+                                    :step="1"
+                                    class="form-input"
+                                    :disabled="!isResubmissionExtraFieldIncorrect('duration_of_residency')"
+                                    :class="{ 'field-disabled': !isResubmissionExtraFieldIncorrect('duration_of_residency') }"
+                                />
+                            </div>
+                        </div>
+                    </template>
+
+                    <!-- Non-file fields (text, select, number, etc.) - for other document types -->
+                    <div v-for="field in resubmissionDocumentFields.filter(f => f.type !== 'file')" :key="field.name" class="dynamic-field-wrapper" v-if="resubmissionDocumentTypeName !== 'Barangay Certificate'">
+                        <div class="field-header">
+                            <label class="field-label">
+                                {{ field.label }} 
+                                <span v-if="field.required" class="required-star">*</span>
+                            </label>
+                            <p v-if="field.description" class="field-description">{{ field.description }}</p>
+                        </div>
+
+                        <div class="field-input-wrapper">
+                            <!-- text -->
+                            <input 
+                                v-if="field.type === 'text'"
+                                v-model="resubmissionForm.extra_fields[field.name]"
+                                :placeholder="field.placeholder || ''"
+                                class="form-input"
+                                :disabled="!isResubmissionExtraFieldIncorrect(field.name)"
+                                :class="{ 'field-disabled': !isResubmissionExtraFieldIncorrect(field.name) }"
+                                :required="field.required"
+                            />
+
+                            <!-- textarea -->
+                            <textarea
+                                v-if="field.type === 'textarea'"
+                                v-model="resubmissionForm.extra_fields[field.name]"
+                                :placeholder="field.placeholder || ''"
+                                rows="3"
+                                class="form-textarea"
+                                :disabled="!isResubmissionExtraFieldIncorrect(field.name)"
+                                :class="{ 'field-disabled': !isResubmissionExtraFieldIncorrect(field.name) }"
+                                :required="field.required"
+                            ></textarea>
+
+                            <!-- date -->
+                            <input
+                                v-if="field.type === 'date'"
+                                type="date"
+                                v-model="resubmissionForm.extra_fields[field.name]"
+                                :max="field.max || new Date().toISOString().split('T')[0]"
+                                class="form-input"
+                                :disabled="!isResubmissionExtraFieldIncorrect(field.name)"
+                                :class="{ 'field-disabled': !isResubmissionExtraFieldIncorrect(field.name) }"
+                                :required="field.required"
+                            />
+
+                            <!-- number -->
+                            <input
+                                v-if="field.type === 'number'"
+                                type="number"
+                                v-model.number="resubmissionForm.extra_fields[field.name]"
+                                :placeholder="field.placeholder || ''"
+                                :min="field.min !== undefined ? field.min : undefined"
+                                :step="field.step !== undefined ? field.step : undefined"
+                                class="form-input"
+                                :disabled="!isResubmissionExtraFieldIncorrect(field.name)"
+                                :class="{ 'field-disabled': !isResubmissionExtraFieldIncorrect(field.name) }"
+                                :required="field.required"
+                            />
+
+                            <!-- select -->
+                            <select
+                                v-if="field.type === 'select'"
+                                v-model="resubmissionForm.extra_fields[field.name]"
+                                class="form-input"
+                                :disabled="!isResubmissionExtraFieldIncorrect(field.name)"
+                                :class="{ 'field-disabled': !isResubmissionExtraFieldIncorrect(field.name) }"
+                                :required="field.required"
+                            >
+                                <option value="">{{ field.placeholder || 'Select an option' }}</option>
+                                <option v-for="opt in field.options" :key="opt" :value="opt">{{ opt }}</option>
+                            </select>
+
+                            <!-- checkbox group -->
+                            <div v-if="field.type === 'checkbox'" class="checkbox-group">
+                                <label v-for="opt in field.options" :key="opt" class="checkbox-label">
+                                    <input
+                                        type="checkbox"
+                                        :value="opt"
+                                        :disabled="!isResubmissionExtraFieldIncorrect(field.name)"
+                                        :class="{ 'field-disabled': !isResubmissionExtraFieldIncorrect(field.name) }"
+                                        @change="toggleResubmissionCheckbox(field.name, opt, $event.target.checked)"
+                                        :checked="Array.isArray(resubmissionForm.extra_fields[field.name]) && resubmissionForm.extra_fields[field.name].includes(opt)"
+                                    />
+                                    <span>{{ opt }}</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- File upload fields -->
+                    <div v-if="resubmissionDocumentFields.filter(f => f.type === 'file' && resubmissionDocumentTypeName !== 'Barangay Certificate').length > 0" class="file-uploads-grid">
+                        <div v-for="field in resubmissionDocumentFields.filter(f => f.type === 'file' && resubmissionDocumentTypeName !== 'Barangay Certificate')" :key="field.name" class="file-upload-item">
+                            <div class="file-upload-header">
+                                <label class="file-upload-label">
+                                    {{ field.label }} 
+                                    <span v-if="field.required" class="required-star">*</span>
+                                </label>
+                                <p v-if="field.description" class="file-upload-description">{{ field.description }}</p>
+                            </div>
+                            <div class="file-upload-controls">
+                                <div v-if="getResubmissionExistingFile(field.name)" class="existing-file-display">
+                                    <span class="existing-file-name">Current: {{ getResubmissionExistingFile(field.name)?.file_name }}</span>
+                                    <a :href="getResubmissionExistingFile(field.name)?.url" target="_blank" class="view-file-link">View</a>
+                                </div>
+                                <button 
+                                    type="button"
+                                    class="upload-btn-dynamic" 
+                                    :disabled="!isResubmissionExtraFieldIncorrect(field.name)"
+                                    :class="{ 'btn-disabled': !isResubmissionExtraFieldIncorrect(field.name) }"
+                                    @click.prevent="triggerResubmissionDynamicFileUpload(field.name)"
+                                >
+                                    {{ getResubmissionExistingFile(field.name) ? 'REPLACE' : 'UPLOAD' }}
+                                </button>
+                                <input
+                                    type="file"
+                                    :data-dyn-field="field.name"
+                                    style="display: none"
+                                    @change="handleResubmissionDynamicFileUpload($event, field.name)"
+                                    :accept="field.accept || 'image/*,.pdf'"
+                                />
+                                <div v-if="resubmissionExtraFileNames[field.name]" class="uploaded-file-info-compact">
+                                    <svg class="file-checkmark" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3" style="width: 18px; height: 18px; color: #4caf50;">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                                    </svg>
+                                    <span class="file-name-compact">{{ resubmissionExtraFileNames[field.name] }}</span>
+                                    <button 
+                                        type="button"
+                                        class="remove-file-btn-small" 
+                                        @click="removeResubmissionDynamicFile(field.name)"
+                                    >
+                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width: 14px; height: 14px;">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <button
+                    type="button"
+                    class="submit-btn"
+                    :disabled="isResubmitting"
+                    @click="submitResubmission"
+                >
+                    <span v-if="!isResubmitting">SUBMIT</span>
+                    <span v-else>Submitting...</span>
+                </button>
+            </div>
+        </div>
+    </div>
 </template>
 
 <script setup>
@@ -1072,11 +1652,15 @@ import { Link, usePage } from '@inertiajs/vue3'
 import { Head, useForm } from '@inertiajs/vue3'
 import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { router } from '@inertiajs/vue3'
-import TermsModal from '@/Components/TermsModal.vue'
+import axios from 'axios'
 
 // Inertia-shared auth user
 const page = usePage()
 const user = computed(() => page?.props?.value?.auth?.user ?? page?.props?.auth?.user ?? null)
+const restrictions = computed(() => page?.props?.value?.restrictions ?? page?.props?.restrictions ?? null)
+const documentTypes = computed(() => page?.props?.value?.documentTypes ?? page?.props?.documentTypes ?? [])
+const availableDocumentTypes = computed(() => page?.props?.value?.availableDocumentTypes ?? page?.props?.availableDocumentTypes ?? [])
+const restrictedDocumentTypeIds = computed(() => page?.props?.value?.restrictedDocumentTypeIds ?? page?.props?.restrictedDocumentTypeIds ?? [])
 
 // Profile picture URL
 const profilePictureUrl = computed(() => {
@@ -1122,6 +1706,21 @@ const displayRole = computed(() => {
 const showSettings = ref(false)
 const activeTab = ref('documents')
 const currentView = ref('list') // Default to 'list' view to show submitted requests
+const unreadCount = ref(0)
+
+// Fetch unread notification count
+const fetchUnreadCount = async () => {
+    try {
+        const response = await axios.get('/api/notifications')
+        if (response.data.success) {
+            const notifications = response.data.notifications || []
+            unreadCount.value = notifications.filter(n => !n.is_read).length
+        }
+    } catch (error) {
+        console.error('Error fetching unread count:', error)
+        unreadCount.value = 0
+    }
+}
 const selectedDocType = ref('Barangay Certificate')
 const selectedPermitType = ref(null) // Store selected permit type (Building Permit or Business Permit)
 const requestNumber = ref('')
@@ -1134,6 +1733,10 @@ const showStatusDropdown = ref(false)
 const sortOption = ref('newest')
 const statusFilter = ref('all')
 const searchQuery = ref('')
+
+// Pagination
+const currentPage = ref(1)
+const itemsPerPage = ref(5)
 
 // Request details modal state
 const showDetailsModal = ref(false)
@@ -1155,6 +1758,33 @@ const showPaymentConfirmation = ref(false)
 const isOnsitePayment = ref(false)
 const showReceiptModal = ref(false)
 const selectedReceipt = ref(null)
+
+// Resubmission modal state
+const showResubmissionModal = ref(false)
+const resubmissionRequestData = ref(null)
+const resubmissionForm = ref({
+    purpose: '',
+    id_type: '',
+    id_number: '',
+    extra_fields: {},
+    id_front: null,
+    id_back: null,
+    valid_id_content: null,
+})
+const resubmissionIdFrontName = ref('')
+const resubmissionIdBackName = ref('')
+const resubmissionExtraFileNames = ref({})
+const resubmissionFileFrontInput = ref(null)
+const resubmissionFileBackInput = ref(null)
+const resubmissionPurposeOthers = ref('')
+const isResubmitting = ref(false)
+const resubmissionDocumentTypeName = ref('')
+const resubmissionDocumentFields = ref([])
+
+// Form error state
+const formErrors = ref({})
+const submitError = ref('')
+const fieldErrors = ref({})
 
 // Get props from Inertia page
 const documentRequestsRaw = computed(() => {
@@ -1222,7 +1852,11 @@ const mappedDocumentRequests = computed(() => {
       timeStr = 'N/A'
     }
 
-    const status = (r.status ?? 'PENDING').toString().toUpperCase()
+    const rawStatus = (r.status ?? 'PENDING').toString().toUpperCase()
+    // If status is PENDING and has admin_feedback, it's a resubmission
+    const status = (rawStatus === 'PENDING' && r.admin_feedback && r.admin_feedback.trim() !== '') 
+      ? 'RESUBMITTED' 
+      : rawStatus
     const title = r.document_name ?? 'Document Request'
     const requestNumber = r.doc_request_ticket ?? `DOC-${r.doc_request_id}`
     
@@ -1408,14 +2042,71 @@ const displayDocumentType = computed(() => {
 // helper date
 const today = new Date().toISOString().split('T')[0]
 
-// Document lists and descriptions
-const documentNames = [
+// Allowed document types - only these should be shown
+const allowedDocumentTypes = [
     'Barangay Certificate',
     'Barangay ID',
-    'Cedula',
-    'Certificate of Indigency',
     'Permit',
+    'Cedula',
+    'Certificate of Indigency'
 ]
+
+// Create document types list with availability status
+// Only show document types that the backend provides (from database)
+// Filter to only show allowed document types
+// Note: "Permit" is a UI-only parent type, not in database
+const documentTypesWithStatus = computed(() => {
+    let allDocs = []
+    
+    // If backend provided documentTypes with restriction status, use those
+    if (documentTypes.value && documentTypes.value.length > 0) {
+        allDocs = documentTypes.value.map(doc => ({
+            name: doc.name,
+            id: doc.id || null,
+            available: doc.available !== false,
+            restricted: doc.restricted === true,
+            processing_fee: doc.processing_fee || null
+        }))
+    }
+    // Fallback: if backend provided availableDocumentTypes, use only those
+    else if (availableDocumentTypes.value && availableDocumentTypes.value.length > 0) {
+        allDocs = availableDocumentTypes.value.map(doc => ({
+            name: doc.name,
+            id: doc.id || null,
+            available: true,
+            restricted: false,
+            processing_fee: doc.processing_fee || null
+        }))
+    }
+    
+    // Filter to only show allowed document types (excluding Building Permit and Business Permit as they're handled by Permit)
+    const filtered = allDocs.filter(doc => {
+        // Exclude Building Permit and Business Permit as they're sub-types of Permit
+        if (doc.name === 'Building Permit' || doc.name === 'Business Permit') {
+            return false
+        }
+        return allowedDocumentTypes.includes(doc.name)
+    })
+    
+    // Add "Permit" as a UI-only parent type if it's in the allowed list
+    if (allowedDocumentTypes.includes('Permit')) {
+        const permitExists = filtered.some(doc => doc.name === 'Permit')
+        if (!permitExists) {
+            filtered.push({
+                name: 'Permit',
+                id: null,
+                available: true,
+                restricted: false,
+                processing_fee: null
+            })
+        }
+    }
+    
+    return filtered
+})
+
+// For backward compatibility, keep documentNames as computed
+const documentNames = computed(() => documentTypesWithStatus.value.map(doc => doc.name))
 
 const documentDescriptions = {
     'Barangay Certificate': 'Ang Barangay Certificate ay isang opisyal na dokumentong ibinibigay ng barangay upang patunayan na ang isang tao ay lehitimong residente ng nasabing lugar. Karaniwan itong kinakailangan sa iba\'t ibang transaksyong legal at administratibo gaya ng pag-apply ng trabaho, pag-enroll sa paaralan, pagkuha ng tulong mula sa gobyerno, at pagproseso ng mga permit o lisensya.',
@@ -1477,31 +2168,27 @@ const documentRequirements = {
 
 const documentFields = {
   'Barangay Certificate': [
-    { name: 'duration_of_residency', label: 'Duration of Residency (years)', type: 'number', required: false, placeholder: 'Enter number of years', min: 0, step: 1 }
+    { name: 'duration_of_residency', label: 'Duration of Residency (years)', type: 'number', required: true, placeholder: 'Enter number of years', min: 0, step: 1, description: 'Enter the number of years you have been a resident of this barangay' }
   ],
 
   'Barangay ID': [
     { name: 'photo', label: '2x2 Photo (2 copies)', type: 'file', required: true, accept: 'image/*', description: 'Upload 2x2 ID picture (2 copies)' },
     { name: 'supporting_documents', label: 'Supporting Documents for Residency', type: 'file', required: true, accept: '.pdf,image/*', description: 'Upload proof of residency documents' },
-    { name: 'birth_certificate', label: 'Birth Certificate (for first time applicants)', type: 'file', required: false, accept: '.pdf,image/*', description: 'Upload birth certificate if this is your first application' }
+    { name: 'birth_certificate', label: 'Birth Certificate', type: 'file', required: true, accept: '.pdf,image/*', description: 'Upload birth certificate' }
   ],
 
   'Cedula': [
-    { name: 'income_source', label: 'Income Source', type: 'select', required: false, placeholder: 'Select income source', options: ['Employment', 'Business', 'Pension', 'Remittance', 'Other'] },
-    { name: 'annual_income', label: 'Annual Income/Salary (PHP)', type: 'number', required: false, placeholder: 'Enter annual income or salary', min: 0, step: 0.01, description: 'Your annual income or salary from employment/profession (for tax calculation)' },
-    { name: 'business_gross_receipts', label: 'Business Gross Receipts (PHP)', type: 'number', required: false, placeholder: 'Enter business gross receipts', min: 0, step: 0.01, description: 'If you have a business, enter gross receipts from preceding year (optional)' },
-    { name: 'real_property_income', label: 'Real Property Income (PHP)', type: 'number', required: false, placeholder: 'Enter income from real property', min: 0, step: 0.01, description: 'Income from real property if applicable (optional)' },
-    { name: 'occupation', label: 'Occupation/Profession', type: 'text', required: false, placeholder: 'Enter your occupation or profession', description: 'Your current job or profession' },
-    { name: 'tin', label: 'Tax Identification Number (TIN)', type: 'text', required: false, placeholder: 'Enter TIN if available', description: 'Your TIN if you have one (optional)' },
-    { name: 'height', label: 'Height (cm)', type: 'number', required: false, placeholder: 'Enter height in centimeters', min: 0, step: 0.1, description: 'Your height (optional)' },
-    { name: 'weight', label: 'Weight (kg)', type: 'number', required: false, placeholder: 'Enter weight in kilograms', min: 0, step: 0.1, description: 'Your weight (optional)' },
-    { name: 'tax_declaration', label: 'Tax Declaration (if applicable)', type: 'file', required: false, accept: '.pdf,image/*', description: 'Upload tax declaration document' },
+    { name: 'income_source', label: 'Income Source', type: 'select', required: true, placeholder: 'Select income source', options: ['Employment', 'Business', 'Pension', 'Remittance', 'Other'] },
+    { name: 'annual_income', label: 'Annual Income/Salary (PHP)', type: 'number', required: true, placeholder: 'Enter annual income or salary', min: 0, step: 0.01, description: 'Your annual income or salary from employment/profession (for tax calculation)' },
+    { name: 'occupation', label: 'Occupation/Profession', type: 'text', required: true, placeholder: 'Enter your occupation or profession', description: 'Your current job or profession' },
+    { name: 'height', label: 'Height (cm)', type: 'number', required: true, placeholder: 'Enter height in centimeters', min: 0, step: 0.1, description: 'Your height in centimeters' },
+    { name: 'weight', label: 'Weight (kg)', type: 'number', required: true, placeholder: 'Enter weight in kilograms', min: 0, step: 0.1, description: 'Your weight in kilograms' },
     { name: 'supporting_documents', label: 'Supporting Documents for Residency', type: 'file', required: true, accept: '.pdf,image/*', description: 'Upload proof of residency documents' },
-    { name: 'income_statement', label: 'Income Statement (if employed)', type: 'file', required: false, accept: '.pdf,image/*', description: 'Upload income statement or payslip if employed' }
+    { name: 'income_statement', label: 'Income Statement', type: 'file', required: true, accept: '.pdf,image/*', description: 'Upload income statement or payslip' }
   ],
 
   'Certificate of Indigency': [
-    { name: 'household_members', label: 'Household Member Count', type: 'select', required: false, placeholder: 'Select number of members', options: ['1-2', '3-4', '5-6', '7-8', '9 or more'] },
+    { name: 'household_members', label: 'Household Member Count', type: 'select', required: true, placeholder: 'Select number of members', options: ['1-2', '3-4', '5-6', '7-8', '9 or more'] },
     { name: 'income_proof', label: 'Proof of Low Income', type: 'file', required: true, accept: '.pdf,image/*', description: 'Upload documents proving low income status' },
     { name: 'proof_of_residency', label: 'Proof of Residency', type: 'file', required: true, accept: '.pdf,image/*', description: 'Upload utility bills, lease contract, or other proof of residency' }
   ],
@@ -1509,15 +2196,13 @@ const documentFields = {
   'Permit': [
     // Common fields for both permit types
     // Note: permit_type is selected in the document selection view, not in the form
-    { name: 'supporting_documents', label: 'Supporting Documents for Residency', type: 'file', required: true, accept: '.pdf,image/*', description: 'Upload proof of residency documents' },
-    { name: 'barangay_clearance', label: 'Barangay Clearance', type: 'file', required: true, accept: '.pdf,image/*', description: 'Upload Barangay Clearance document' },
+    // Note: supporting_documents and barangay_clearance are not shown in the form, so they're not required
   ],
 }
 
 // Separate fields for Building and Business permits
 const buildingPermitFields = [
   { name: 'building_type', label: 'Building Type', type: 'select', required: true, placeholder: 'Select building type', options: ['Residential', 'Commercial', 'Mixed Use', 'Industrial', 'Institutional', 'Other'] },
-  { name: 'building_reg_number', label: 'Building Registration Number', type: 'text', required: false, placeholder: 'Enter building registration number (if available)' },
   { name: 'building_plans', label: 'Building Plans (3 copies)', type: 'file', required: true, accept: '.pdf,image/*', description: 'Upload building plans (3 copies)' },
   { name: 'engineer_cert', label: 'Engineer\'s Certification', type: 'file', required: true, accept: '.pdf,image/*', description: 'Upload engineer\'s certification document' },
   { name: 'lot_title', label: 'Lot Title or Tax Declaration', type: 'file', required: true, accept: '.pdf,image/*', description: 'Upload lot title or tax declaration' },
@@ -1526,9 +2211,7 @@ const buildingPermitFields = [
 const businessPermitFields = [
   { name: 'business_name', label: 'Business Name', type: 'text', required: true, placeholder: 'Enter your business name' },
   { name: 'business_type', label: 'Business Type', type: 'select', required: true, placeholder: 'Select business type', options: ['Retail', 'Wholesale', 'Service', 'Manufacturing', 'Food & Beverage', 'Other'] },
-  { name: 'dtI_sec_number', label: 'DTI/SEC Registration Number', type: 'text', required: false, placeholder: 'Enter DTI/SEC registration number' },
   { name: 'business_registration', label: 'Business Registration Documents', type: 'file', required: true, accept: '.pdf,image/*', description: 'Upload business registration documents' },
-  { name: 'lease_contract', label: 'Lease Contract (if renting)', type: 'file', required: false, accept: '.pdf,image/*', description: 'Upload lease contract if business location is rented' },
   { name: 'dti_registration', label: 'DTI Registration Document', type: 'file', required: true, accept: '.pdf,image/*', description: 'Upload DTI registration certificate' },
   { name: 'location_plan', label: 'Location Plan', type: 'file', required: true, accept: '.pdf,image/*', description: 'Upload location plan or site map of business' },
 ]
@@ -1691,13 +2374,17 @@ const toggleSettings = () => { showSettings.value = !showSettings.value }
 const closeSettings = () => { showSettings.value = false }
 
 // Terms & Conditions modal
-const showTerms = ref(false)
-const openTerms = () => {
+const showTermsModal = ref(false)
+const openTermsModal = (e) => {
+    if (e) {
+        e.preventDefault()
+        e.stopPropagation()
+    }
     showSettings.value = false
-    showTerms.value = true
+    showTermsModal.value = true
 }
-const closeTerms = () => {
-    showTerms.value = false
+const closeTermsModal = () => {
+    showTermsModal.value = false
 }
 const logout = () => {
     showSettings.value = false
@@ -1742,8 +2429,23 @@ const navigateToNotifications = () => { activeTab.value = 'notifications'; route
 const openFAQ = () => { router.visit(route('help_center_resident')) }
 
 // Show request form (switch to selection view)
-const showRequestForm = () => {
+const showRequestForm = (event) => {
+  console.log('showRequestForm called', event)
+  event?.preventDefault?.()
+  event?.stopPropagation?.()
+  
+  if (restrictions?.value?.restrict_document_request) {
+    alert('You are restricted from making document requests. Please contact the admin for more information.')
+    return
+  }
+  
+  // Reset form when showing request form
+  form.reset()
+  selectedDocType.value = 'Barangay Certificate'
+  selectedPermitType.value = null
+  console.log('Setting currentView to selection')
   currentView.value = 'selection'
+  console.log('currentView is now:', currentView.value)
 }
 
 // View request details (open modal - same as notification page)
@@ -1758,8 +2460,19 @@ const closeDetailsModal = () => {
   selectedRequest.value = null
 }
 
+const handleDocumentSelect = (doc) => {
+  console.log('handleDocumentSelect called', doc)
+  if (!doc.restricted) {
+    selectDocument(doc.name)
+  } else {
+    console.log('Document is restricted:', doc.name)
+  }
+}
+
 const selectDocument = (docType) => {
+  console.log('selectDocument called with:', docType)
   selectedDocType.value = docType
+  console.log('selectedDocType set to:', selectedDocType.value)
 }
 
 const selectPermitType = (permitType) => {
@@ -1773,9 +2486,28 @@ const selectPermitType = (permitType) => {
   initExtraFieldsForDocument(selectedDocType.value)
 }
 
+const handleProceedToForm = (event) => {
+  console.log('handleProceedToForm called', event)
+  event?.preventDefault?.()
+  event?.stopPropagation?.()
+  
+  // Ensure a document type is selected
+  if (!selectedDocType.value) {
+    console.warn('No document type selected')
+    alert('Please select a document type first')
+    return
+  }
+  
+  console.log('Proceeding to form with document:', selectedDocType.value)
+  proceedToForm()
+}
+
 const proceedToForm = () => {
+  console.log('proceedToForm called')
   // If Permit is selected, ensure permit type is chosen
   if (selectedDocType.value === 'Permit' && !selectedPermitType.value) {
+    console.warn('Permit selected but no permit type chosen')
+    alert('Please select a permit type (Building Permit or Business Permit)')
     return // Don't proceed if permit type not selected
   }
   
@@ -1787,8 +2519,11 @@ const proceedToForm = () => {
     form.extra_fields.permit_type = selectedPermitType.value
   }
   
+  console.log('Initializing fields for document:', selectedDocType.value)
   initExtraFieldsForDocument(selectedDocType.value)
+  console.log('Setting currentView to form')
   currentView.value = 'form'
+  console.log('currentView is now:', currentView.value)
 }
 
 const backToSelection = () => {
@@ -1994,6 +2729,518 @@ const acknowledgeOnsite = async () => {
   }
 }
 
+const appealRequest = async () => {
+  if (!selectedRequest.value) {
+    alert('No request selected.')
+    return
+  }
+
+  if (selectedRequest.value.status?.toUpperCase() !== 'REJECTED') {
+    alert('Only rejected requests can be appealed.')
+    return
+  }
+
+  const confirmed = confirm('Do you want to edit and resubmit this rejected request? The request will be reset to pending status and you can fix any issues.')
+  if (!confirmed) return
+
+  // Get request ID from various possible locations
+  const requestId = selectedRequest.value.id 
+    ?? selectedRequest.value.raw?.doc_request_id 
+    ?? selectedRequest.value.doc_request_id
+    ?? null
+
+  if (!requestId) {
+    alert('Invalid request ID. Please try again.')
+    console.error('Request ID not found. Request object:', selectedRequest.value)
+    return
+  }
+
+  // NOTE: We don't need to call the appeal POST endpoint first
+  // The appealForm GET endpoint will handle resetting the status
+  // Calling it here might cause issues with incorrect_fields
+
+  // Fetch full request data for the modal (this will also reset status to Pending)
+  try {
+    console.log('Fetching appeal data for request ID:', requestId)
+    const response = await axios.get(`/document-requests/${requestId}/appeal`, {
+      headers: {
+        'Accept': 'application/json',
+        'X-Requested-With': 'XMLHttpRequest',
+      }
+    })
+    
+    console.log('Appeal API response:', response.data)
+    
+    let requestData = null
+    if (response.data && response.data.requestData) {
+      requestData = response.data.requestData
+    } else if (response.data && response.data.props && response.data.props.requestData) {
+      requestData = response.data.props.requestData
+    } else if (response.data && response.data.success && response.data.data) {
+      requestData = response.data.data
+    }
+    
+    if (requestData) {
+      resubmissionRequestData.value = requestData
+      // Ensure incorrect_fields is an array
+      if (resubmissionRequestData.value.incorrect_fields && typeof resubmissionRequestData.value.incorrect_fields === 'string') {
+        try {
+          resubmissionRequestData.value.incorrect_fields = JSON.parse(resubmissionRequestData.value.incorrect_fields)
+        } catch (e) {
+          console.warn('Failed to parse incorrect_fields from API:', e)
+          resubmissionRequestData.value.incorrect_fields = []
+        }
+      }
+      if (!Array.isArray(resubmissionRequestData.value.incorrect_fields)) {
+        console.warn('incorrect_fields is not an array, converting. Value:', resubmissionRequestData.value.incorrect_fields)
+        resubmissionRequestData.value.incorrect_fields = []
+      }
+      console.log('Set resubmissionRequestData.value.incorrect_fields to:', resubmissionRequestData.value.incorrect_fields)
+    } else {
+      console.warn('No requestData found in response, using selectedRequest fallback')
+      // Use selectedRequest data directly
+      openResubmissionModalFromSelectedRequest()
+    }
+    
+    console.log('Resubmission data after fetch:', {
+      incorrect_fields: resubmissionRequestData.value?.incorrect_fields,
+      incorrect_fields_type: typeof resubmissionRequestData.value?.incorrect_fields,
+      incorrect_fields_is_array: Array.isArray(resubmissionRequestData.value?.incorrect_fields),
+      admin_feedback: resubmissionRequestData.value?.admin_feedback,
+      full_resubmissionRequestData: resubmissionRequestData.value,
+    })
+  } catch (error) {
+    console.error('Error fetching appeal form data:', error)
+    console.error('Error details:', error.response?.data)
+    // Fallback: use selectedRequest data directly
+    openResubmissionModalFromSelectedRequest()
+  }
+  
+  initializeResubmissionForm()
+  
+  // Debug: Log incorrect_fields when modal opens
+  console.log('=== RESUBMISSION MODAL OPENING ===')
+  console.log('resubmissionRequestData.value:', resubmissionRequestData.value)
+  console.log('incorrect_fields:', resubmissionRequestData.value?.incorrect_fields)
+  console.log('incorrect_fields type:', typeof resubmissionRequestData.value?.incorrect_fields)
+  console.log('incorrect_fields is array:', Array.isArray(resubmissionRequestData.value?.incorrect_fields))
+  
+  showResubmissionModal.value = true
+  closeDetailsModal()
+  
+  // Debug after modal is shown (functions are now available)
+  setTimeout(() => {
+    const testFields = getResubmissionIncorrectFields()
+    console.log('=== FINAL CHECK AFTER MODAL OPEN ===')
+    console.log('Parsed incorrect_fields:', testFields)
+    console.log('Test: isResubmissionFieldIncorrect("purpose"):', isResubmissionFieldIncorrect('purpose'))
+    console.log('Test: isResubmissionFieldIncorrect("id_type"):', isResubmissionFieldIncorrect('id_type'))
+    console.log('Test: isResubmissionFieldIncorrect("id_number"):', isResubmissionFieldIncorrect('id_number'))
+    console.log('Test: isResubmissionExtraFieldIncorrect("duration_of_residency"):', isResubmissionExtraFieldIncorrect('duration_of_residency'))
+    console.log('resubmissionRequestData.value:', JSON.stringify(resubmissionRequestData.value, null, 2))
+  }, 200)
+}
+
+const openResubmissionModalFromSelectedRequest = () => {
+  if (!selectedRequest.value) return
+  
+  // Use selectedRequest data to populate the form
+  const raw = selectedRequest.value.raw || selectedRequest.value
+  
+  // Get incorrect_fields from multiple possible locations (check top level first, then raw)
+  let incorrectFields = selectedRequest.value.incorrect_fields 
+    || raw.incorrect_fields
+    || []
+  
+  // Parse incorrect_fields if it's a string
+  if (typeof incorrectFields === 'string') {
+    try {
+      incorrectFields = JSON.parse(incorrectFields)
+    } catch (e) {
+      console.warn('Failed to parse incorrect_fields:', e)
+      incorrectFields = []
+    }
+  }
+  if (!Array.isArray(incorrectFields)) {
+    incorrectFields = []
+  }
+  
+  resubmissionRequestData.value = {
+    doc_request_id: raw.doc_request_id || selectedRequest.value.id,
+    doc_request_ticket: raw.doc_request_ticket || selectedRequest.value.requestNumber,
+    document_type: raw.document_type || selectedRequest.value.document_type || { name: selectedRequest.value.title },
+    document_name: raw.document_name || selectedRequest.value.title,
+    purpose: raw.purpose || '',
+    id_type: raw.id_type || raw.valid_id_type || '',
+    valid_id_number: raw.valid_id_number || '',
+    extra_fields: raw.extra_fields || {},
+    attachments: raw.attachments || [],
+    admin_feedback: raw.admin_feedback || selectedRequest.value.admin_feedback || '',
+    incorrect_fields: incorrectFields,
+  }
+  
+  console.log('Resubmission data initialized from selectedRequest:', {
+    incorrect_fields: resubmissionRequestData.value.incorrect_fields,
+    incorrect_fields_type: typeof resubmissionRequestData.value.incorrect_fields,
+    incorrect_fields_is_array: Array.isArray(resubmissionRequestData.value.incorrect_fields),
+    selectedRequest_top_level: selectedRequest.value.incorrect_fields,
+    raw_incorrect_fields: raw.incorrect_fields,
+  })
+}
+
+const closeResubmissionModal = () => {
+  showResubmissionModal.value = false
+  resubmissionRequestData.value = null
+  resetResubmissionForm()
+}
+
+const resetResubmissionForm = () => {
+  resubmissionForm.value = {
+    purpose: '',
+    id_type: '',
+    id_number: '',
+    extra_fields: {},
+    id_front: null,
+    id_back: null,
+    valid_id_content: null,
+  }
+  resubmissionIdFrontName.value = ''
+  resubmissionIdBackName.value = ''
+  resubmissionExtraFileNames.value = {}
+  resubmissionPurposeOthers.value = ''
+  resubmissionDocumentTypeName.value = ''
+  resubmissionDocumentFields.value = []
+}
+
+const initializeResubmissionForm = () => {
+  if (!resubmissionRequestData.value) return
+  
+  resubmissionDocumentTypeName.value = resubmissionRequestData.value.document_type?.name || resubmissionRequestData.value.document_name || 'Document'
+  
+  // Initialize form with existing data
+  resubmissionForm.value.purpose = resubmissionRequestData.value.purpose || ''
+  resubmissionForm.value.id_type = resubmissionRequestData.value.id_type || ''
+  resubmissionForm.value.id_number = resubmissionRequestData.value.valid_id_number || ''
+  resubmissionForm.value.extra_fields = { ...(resubmissionRequestData.value.extra_fields || {}) }
+  
+  // Initialize document fields
+  initResubmissionDocumentFields()
+}
+
+const initResubmissionDocumentFields = () => {
+  const docName = resubmissionDocumentTypeName.value
+  const baseFields = documentFields[docName] || []
+  
+  let allFields = [...baseFields]
+  
+  // For Permit, check permit_type and add appropriate fields
+  if (docName === 'Permit') {
+    const permitType = resubmissionForm.value.extra_fields?.permit_type
+    if (permitType === 'Building Permit') {
+      allFields = [...allFields, ...buildingPermitFields]
+    } else if (permitType === 'Business Permit') {
+      allFields = [...allFields, ...businessPermitFields]
+    }
+  }
+  
+  resubmissionDocumentFields.value = allFields
+  
+  // Initialize extra fields
+  allFields.forEach((f) => {
+    if (resubmissionForm.value.extra_fields[f.name] === undefined) {
+      if (f.type === 'checkbox') resubmissionForm.value.extra_fields[f.name] = []
+      else if (f.type === 'select') resubmissionForm.value.extra_fields[f.name] = null 
+      else resubmissionForm.value.extra_fields[f.name] = null
+    }
+    if (!resubmissionExtraFileNames.value[f.name]) resubmissionExtraFileNames.value[f.name] = ''
+  })
+}
+
+const getResubmissionDocumentPurposes = () => {
+  return documentPurposes[resubmissionDocumentTypeName.value] || []
+}
+
+const getResubmissionIdNumberLabel = () => {
+  const idNumberLabels = {
+    'National ID': 'National ID No.',
+    "Driver's License": "Driver's License No.",
+    'Passport': 'Passport No.',
+    "Voter's ID": "Voter's ID No.",
+    'SSS ID': 'SSS No.',
+    'UMID': 'UMID No.'
+  }
+  return idNumberLabels[resubmissionForm.value.id_type] || 'ID Number'
+}
+
+const showResubmissionIdNumber = computed(() => {
+  return !!resubmissionForm.value.id_type && (!!resubmissionForm.value.id_front || !!resubmissionForm.value.id_back)
+})
+
+const triggerResubmissionFileUpload = (side) => {
+  if (side === 'front' && resubmissionFileFrontInput.value) {
+    resubmissionFileFrontInput.value.click()
+  } else if (side === 'back' && resubmissionFileBackInput.value) {
+    resubmissionFileBackInput.value.click()
+  }
+}
+
+const handleResubmissionFileUpload = (event, side) => {
+  const file = event.target.files?.[0]
+  if (!file) return
+
+  if (side === 'front') {
+    resubmissionIdFrontName.value = file.name
+    resubmissionForm.value.id_front = file
+    resubmissionForm.value.valid_id_content = file
+  } else if (side === 'back') {
+    resubmissionIdBackName.value = file.name
+    resubmissionForm.value.id_back = file
+    if (!resubmissionForm.value.valid_id_content) {
+      resubmissionForm.value.valid_id_content = file
+    }
+  }
+}
+
+const triggerResubmissionDynamicFileUpload = (fieldName) => {
+  const input = document.querySelector(`input[data-dyn-field="${fieldName}"]`)
+  if (input && typeof input.click === 'function') {
+    input.click()
+  }
+}
+
+const handleResubmissionDynamicFileUpload = (event, fieldName) => {
+  const file = event.target.files[0]
+  if (!file) return
+  resubmissionExtraFileNames.value = { ...resubmissionExtraFileNames.value, [fieldName]: file.name }
+  resubmissionForm.value.extra_fields = { ...resubmissionForm.value.extra_fields, [fieldName]: file }
+}
+
+const removeResubmissionDynamicFile = (fieldName) => {
+  resubmissionForm.value.extra_fields = { ...resubmissionForm.value.extra_fields, [fieldName]: null }
+  resubmissionExtraFileNames.value = { ...resubmissionExtraFileNames.value, [fieldName]: '' }
+  const input = document.querySelector(`input[data-dyn-field="${fieldName}"]`)
+  if (input) input.value = ''
+}
+
+const toggleResubmissionCheckbox = (fieldName, value, checked) => {
+  if (!Array.isArray(resubmissionForm.value.extra_fields[fieldName])) {
+    resubmissionForm.value.extra_fields[fieldName] = []
+  }
+  const idx = resubmissionForm.value.extra_fields[fieldName].indexOf(value)
+  if (checked && idx === -1) resubmissionForm.value.extra_fields[fieldName].push(value)
+  if (!checked && idx !== -1) resubmissionForm.value.extra_fields[fieldName].splice(idx, 1)
+}
+
+const handleResubmissionPurposeChange = () => {
+  if (resubmissionForm.value.purpose !== 'Others') {
+    resubmissionPurposeOthers.value = ''
+  }
+}
+
+const getResubmissionExistingFile = (fieldName) => {
+  return resubmissionRequestData.value?.attachments?.find(att => att.field_name === fieldName)
+}
+
+// Helper to get and normalize incorrect_fields array
+const getResubmissionIncorrectFields = () => {
+  if (!resubmissionRequestData.value) {
+    console.warn('getResubmissionIncorrectFields: resubmissionRequestData.value is null')
+    return []
+  }
+  
+  let incorrectFields = resubmissionRequestData.value.incorrect_fields
+  
+  // If incorrect_fields is undefined or null, return empty array (all fields disabled)
+  if (incorrectFields === undefined || incorrectFields === null) {
+    console.warn('incorrect_fields is undefined or null')
+    return []
+  }
+  
+  // Handle string format (in case it's stored as JSON string)
+  if (typeof incorrectFields === 'string') {
+    try {
+      incorrectFields = JSON.parse(incorrectFields)
+    } catch (e) {
+      console.warn('Failed to parse incorrect_fields:', e, 'Raw value:', incorrectFields)
+      return []
+    }
+  }
+  
+  // Ensure it's an array
+  if (!Array.isArray(incorrectFields)) {
+    console.warn('incorrect_fields is not an array:', incorrectFields, 'Type:', typeof incorrectFields)
+    return []
+  }
+  
+  // Only log once per modal open to reduce console spam
+  if (incorrectFields.length > 0) {
+    console.log('getResubmissionIncorrectFields returning:', incorrectFields)
+  }
+  return incorrectFields
+}
+
+// Check if a field is marked as incorrect
+const isResubmissionFieldIncorrect = (fieldName) => {
+  if (!resubmissionRequestData.value) {
+    return false
+  }
+  const incorrectFields = getResubmissionIncorrectFields()
+  const isIncorrect = incorrectFields.includes(fieldName)
+  // Only log if field is being checked (reduce spam)
+  if (incorrectFields.length > 0) {
+    console.log(`isResubmissionFieldIncorrect("${fieldName}"):`, isIncorrect, 'Available fields:', incorrectFields)
+  }
+  return isIncorrect
+}
+
+// Check if an extra field is marked as incorrect
+const isResubmissionExtraFieldIncorrect = (fieldName) => {
+  if (!resubmissionRequestData.value) {
+    return false
+  }
+  const incorrectFields = getResubmissionIncorrectFields()
+  const fieldKey = `extra_fields.${fieldName}`
+  const isIncorrect = incorrectFields.includes(fieldKey)
+  // Only log if field is being checked (reduce spam)
+  if (incorrectFields.length > 0) {
+    console.log(`isResubmissionExtraFieldIncorrect("${fieldName}") -> checking "${fieldKey}":`, isIncorrect, 'Available fields:', incorrectFields)
+  }
+  return isIncorrect
+}
+
+const submitResubmission = async () => {
+  // Validate purpose only if it's an incorrect field
+  if (isResubmissionFieldIncorrect('purpose')) {
+    const purposeValue = resubmissionForm.value.purpose || resubmissionPurposeOthers.value || ''
+    if (!purposeValue || purposeValue.trim() === '') {
+      alert('Please provide a purpose for your request.')
+      return
+    }
+  }
+
+  // Validate required dynamic fields - only for incorrect fields
+  const missing = resubmissionDocumentFields.value
+    .filter(f => f.required && isResubmissionExtraFieldIncorrect(f.name))
+    .find(f => {
+      const val = resubmissionForm.value.extra_fields?.[f.name]
+      if (f.type === 'file') return !val && !getResubmissionExistingFile(f.name)
+      if (f.type === 'checkbox') return !Array.isArray(val) || val.length === 0
+      return !val
+    })
+  if (missing) {
+    alert(`Please provide: ${missing.label}`)
+    return
+  }
+
+  // Validate ID fields only if they are incorrect
+  if (isResubmissionFieldIncorrect('id_type') && resubmissionForm.value.id_type && (!resubmissionForm.value.id_front || !resubmissionForm.value.id_back)) {
+    if (isResubmissionFieldIncorrect('id_front') || isResubmissionFieldIncorrect('id_back')) {
+      alert('Please upload both the front and back of your selected ID.')
+      return
+    }
+  }
+
+  if (isResubmissionFieldIncorrect('id_number') && resubmissionForm.value.id_type && !resubmissionForm.value.id_number) {
+    alert(`Please enter ${getResubmissionIdNumberLabel()}`)
+    return
+  }
+
+  if (isResubmitting.value) return
+  isResubmitting.value = true
+
+  try {
+    const formData = new FormData()
+    const requestId = resubmissionRequestData.value.doc_request_id
+
+    // First, call appeal endpoint to reset status to Pending
+    try {
+      await axios.post(route('document_requests.appeal', { id: requestId }))
+    } catch (appealError) {
+      console.warn('Appeal endpoint call failed, continuing with update:', appealError)
+    }
+
+    // Append scalar fields - only send incorrect fields
+    if (isResubmissionFieldIncorrect('purpose')) {
+      const purposeValue = resubmissionForm.value.purpose || resubmissionPurposeOthers.value || ''
+      if (purposeValue && purposeValue.trim() !== '') {
+        formData.append('purpose', purposeValue.trim())
+      }
+    }
+    
+    if (isResubmissionFieldIncorrect('id_type') && resubmissionForm.value.id_type) {
+      formData.append('id_type', resubmissionForm.value.id_type)
+    }
+    
+    if (isResubmissionFieldIncorrect('id_number') && resubmissionForm.value.id_number) {
+      formData.append('id_number', resubmissionForm.value.id_number)
+      formData.append('valid_id_number', resubmissionForm.value.id_number)
+    }
+
+    // Append ID files - only if field is incorrect
+    if (isResubmissionFieldIncorrect('id_front') && resubmissionForm.value.id_front instanceof File) {
+      formData.append('id_front', resubmissionForm.value.id_front)
+      formData.append('valid_id_content', resubmissionForm.value.id_front)
+    }
+    if (isResubmissionFieldIncorrect('id_back') && resubmissionForm.value.id_back instanceof File) {
+      formData.append('id_back', resubmissionForm.value.id_back)
+    }
+
+    // Append extra_fields - only incorrect ones
+    Object.keys(resubmissionForm.value.extra_fields).forEach(key => {
+      // Only send if this field is marked as incorrect
+      if (!isResubmissionExtraFieldIncorrect(key)) return
+      
+      const val = resubmissionForm.value.extra_fields[key]
+      if (val === null || val === undefined || val === '') return
+
+      if (val instanceof File) {
+        formData.append(`extra_fields[${key}]`, val)
+      } else if (Array.isArray(val)) {
+        val.forEach(v => {
+          if (v !== null && v !== undefined && v !== '') {
+            formData.append(`extra_fields[${key}][]`, v)
+          }
+        })
+      } else {
+        formData.append(`extra_fields[${key}]`, val)
+      }
+    })
+
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
+
+    const response = await axios.put(
+      route('document_requests.update', { id: requestId }),
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+          'X-CSRF-TOKEN': csrfToken,
+          'X-Requested-With': 'XMLHttpRequest',
+        },
+      }
+    )
+
+    if (response.data.success) {
+      alert('Request updated successfully! Your request has been resubmitted for review.')
+      closeResubmissionModal()
+      closeDetailsModal()
+      // Reload the page to refresh the request list
+      router.reload()
+    } else {
+      alert(response.data.message || 'Failed to update request. Please try again.')
+    }
+  } catch (error) {
+    console.error('Resubmission error:', error)
+    const errorMessage = error.response?.data?.message || 
+                       error.response?.data?.errors ? 
+                       Object.values(error.response.data.errors).flat().join(', ') : 
+                       'Failed to update request. Please try again.'
+    alert(errorMessage)
+  } finally {
+    isResubmitting.value = false
+  }
+}
+
 const getRejectionReason = (request) => {
   const adminFeedback = request?.admin_feedback ?? request?.raw?.admin_feedback ?? null
   if (adminFeedback && adminFeedback.trim() !== '') {
@@ -2026,22 +3273,12 @@ const getPickupSchedule = (request = null) => {
     const dateStr = startDate.toLocaleDateString('en-US', dateOptions).toUpperCase()
     const startTimeStr = startDate.toLocaleTimeString('en-US', timeOptions)
 
-    if (endDate) {
-      const sameDay = startDate.toDateString() === endDate.toDateString()
-      const endTimeStr = endDate.toLocaleTimeString('en-US', timeOptions)
-      if (sameDay) {
-        return `${dateStr}, ${startTimeStr} - ${endTimeStr}`
-      } else {
-        const endDateStr = endDate.toLocaleDateString('en-US', dateOptions).toUpperCase()
-        return `${dateStr}, ${startTimeStr} - ${endDateStr}, ${endTimeStr}`
-      }
-    } else {
-      const hasTime = !(startTimeStr === '12:00 AM' && startDate.getHours() === 0 && startDate.getMinutes() === 0)
-      if (hasTime) {
-        return `${dateStr}, ${startTimeStr}`
-      }
-      return `${dateStr}, 9:00 AM - 3:00 PM`
+    // Only show start time, not end time
+    const hasTime = !(startTimeStr === '12:00 AM' && startDate.getHours() === 0 && startDate.getMinutes() === 0)
+    if (hasTime) {
+      return `${dateStr}, ${startTimeStr}`
     }
+    return `${dateStr}, 9:00 AM`
   }
 
   const today = new Date()
@@ -2049,7 +3286,7 @@ const getPickupSchedule = (request = null) => {
   pickupDate.setDate(today.getDate() + 3)
 
   const defaultDateStr = pickupDate.toLocaleDateString('en-US', dateOptions).toUpperCase()
-  return `${defaultDateStr}, 9:00 AM - 3:00 PM`
+  return `${defaultDateStr}, 9:00 AM`
 }
 
 const formatPaymentStatus = (s) => {
@@ -2101,9 +3338,16 @@ const filteredDocumentRequests = computed(() => {
 
   // Filter by status
   if (statusFilter.value !== 'all') {
+    if (statusFilter.value === 'resubmitted') {
+      // Show only resubmitted requests (status is RESUBMITTED)
+      filtered = filtered.filter(request => 
+        request.status.toLowerCase() === 'resubmitted'
+      )
+    } else {
     filtered = filtered.filter(request => 
       request.status.toLowerCase() === statusFilter.value.toLowerCase()
     )
+    }
   }
 
   // Filter by search query
@@ -2139,6 +3383,47 @@ const filteredDocumentRequests = computed(() => {
   }
 
   return filtered
+})
+
+// Paginated requests
+const paginatedDocumentRequests = computed(() => {
+  const start = (currentPage.value - 1) * itemsPerPage.value
+  const end = start + itemsPerPage.value
+  return filteredDocumentRequests.value.slice(start, end)
+})
+
+// Total pages
+const totalPages = computed(() => {
+  return Math.ceil(filteredDocumentRequests.value.length / itemsPerPage.value)
+})
+
+// Pagination functions
+const goToPage = (page) => {
+  if (page >= 1 && page <= totalPages.value) {
+    currentPage.value = page
+    // Scroll to top of table
+    const tableContainer = document.querySelector('.requests-table-container')
+    if (tableContainer) {
+      tableContainer.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }
+  }
+}
+
+const nextPage = () => {
+  if (currentPage.value < totalPages.value) {
+    goToPage(currentPage.value + 1)
+  }
+}
+
+const prevPage = () => {
+  if (currentPage.value > 1) {
+    goToPage(currentPage.value - 1)
+  }
+}
+
+// Watch for filter changes to reset to page 1
+watch([statusFilter, searchQuery, sortOption], () => {
+  currentPage.value = 1
 })
 
 // Filter functions
@@ -2425,46 +3710,94 @@ const handlePurposeChange = () => {
 const testing = true  // keep while you test — set false when you want strict validation
 
 // Submit handler — sends form.extra_fields as JSON (or file objects — Inertia's FormData handles it)
-const submitRequest = () => {
-  // Validate purpose/description is provided (required field)
-  if (!form.purpose || form.purpose.trim() === '') {
-    alert('Please provide a description/purpose for your request.')
-    return
+// Clear errors helper
+const clearErrors = () => {
+  formErrors.value = {}
+  submitError.value = ''
+  fieldErrors.value = {}
+}
+
+// Validation helper
+const validateForm = () => {
+  clearErrors()
+  let isValid = true
+  const errors = {}
+
+  // Check if user is restricted
+  if (restrictions?.restrict_document_request) {
+    submitError.value = 'You are restricted from making document requests. Please contact the admin for more information.'
+    isValid = false
+    return isValid
   }
 
-  if (!testing) {
-    // dynamic required fields
-    const missing = currentDocumentFields.value
-      .filter(f => f.required)
-      .find(f => {
-        const val = form.extra_fields?.[f.name]
-        if (f.type === 'file') return !val
-        if (f.type === 'checkbox') return !Array.isArray(val) || val.length === 0
-        return !val
-      })
-    if (missing) {
-      alert(`Please provide: ${missing.label}`)
-      return
-    }
+  // Validate purpose
+  if (!form.purpose || form.purpose.trim() === '') {
+    errors.purpose = 'Please provide a description/purpose for your request.'
+    isValid = false
+  }
 
-    if (!form.first_name || !form.last_name) {
-      alert('Please fill in your first and last name.')
-      return
-    }
+  // Validate basic fields
+  if (!form.first_name || form.first_name.trim() === '') {
+    errors.first_name = 'First name is required.'
+    isValid = false
+  }
+  if (!form.last_name || form.last_name.trim() === '') {
+    errors.last_name = 'Last name is required.'
+    isValid = false
+  }
 
-    // if user chose an ID type, require both front and back (change to require only front if you'd like)
-    if (form.id_type && (!form.id_front || !form.id_back)) {
-      alert('Please upload both the front and back of your selected ID.')
-      return
+  // Validate ID fields
+  if (form.id_type) {
+    if (!form.id_front) {
+      errors.id_front = 'Please upload the front of your ID.'
+      isValid = false
     }
-
-    // require id number when id_type selected
-    if (form.id_type && !form.id_number) {
-      alert(`Please enter ${idNumberLabel.value}`)
-      return
+    if (!form.id_back) {
+      errors.id_back = 'Please upload the back of your ID.'
+      isValid = false
     }
+    if (!form.id_number || form.id_number.trim() === '') {
+      errors.id_number = `Please enter ${idNumberLabel.value}`
+      isValid = false
+    }
+  }
 
-    
+  // Validate dynamic required fields
+  const missingFields = currentDocumentFields.value
+    .filter(f => f.required)
+    .filter(f => {
+      const val = form.extra_fields?.[f.name]
+      if (f.type === 'file') return !val
+      if (f.type === 'checkbox') return !Array.isArray(val) || val.length === 0
+      return !val || val === '' || val === null
+    })
+
+  missingFields.forEach(field => {
+    errors[`extra_fields.${field.name}`] = `${field.label} is required.`
+    isValid = false
+  })
+
+  formErrors.value = errors
+  return isValid
+}
+
+const submitRequest = () => {
+  // Clear previous errors
+  clearErrors()
+
+  // Validate form
+  if (!validateForm()) {
+    // Scroll to first error
+    const firstErrorField = Object.keys(formErrors.value)[0]
+    if (firstErrorField) {
+      const errorElement = document.querySelector(`[data-field="${firstErrorField}"]`) || 
+                          document.querySelector(`[name="${firstErrorField}"]`)
+      if (errorElement) {
+        errorElement.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        errorElement.focus()
+      }
+    }
+    return
   }
 
     // ensure backend receives a fallback single-file field if it expects 'document'
@@ -2598,16 +3931,64 @@ const submitRequest = () => {
   }).catch(error => {
     console.error('Error submitting request:', error)
     console.error('Error response:', error.response?.data)
-    if (error.response?.data?.errors) {
-      const errors = error.response.data.errors
-      const firstError = Object.values(errors)[0]
-      alert(Array.isArray(firstError) ? firstError[0] : firstError)
-    } else if (error.response?.data?.message) {
-      alert(error.response.data.message)
-    } else {
-      alert('Failed to submit request. Please try again. ' + (error.message || ''))
-    }
     isSubmitting.value = false
+    
+    // Handle different error types
+    if (error.response) {
+      // Server responded with error
+      if (error.response.status === 422) {
+        // Validation errors
+        const validationErrors = error.response.data.errors || {}
+        const newErrors = {}
+        
+        // Map validation errors to form fields
+        Object.keys(validationErrors).forEach(key => {
+          const errorMessages = Array.isArray(validationErrors[key]) 
+            ? validationErrors[key] 
+            : [validationErrors[key]]
+          newErrors[key] = errorMessages[0]
+        })
+        
+        formErrors.value = { ...formErrors.value, ...newErrors }
+        
+        // Set general error message
+        const firstError = Object.values(validationErrors)[0]
+        submitError.value = Array.isArray(firstError) ? firstError[0] : firstError
+        
+        // Scroll to first error
+        const firstErrorField = Object.keys(newErrors)[0]
+        if (firstErrorField) {
+          setTimeout(() => {
+            const errorElement = document.querySelector(`[data-field="${firstErrorField}"]`) || 
+                                document.querySelector(`[name="${firstErrorField}"]`)
+            if (errorElement) {
+              errorElement.scrollIntoView({ behavior: 'smooth', block: 'center' })
+              errorElement.focus()
+            }
+          }, 100)
+        }
+      } else if (error.response.status === 403) {
+        submitError.value = 'You do not have permission to perform this action.'
+      } else if (error.response.status === 500) {
+        submitError.value = 'A server error occurred. Please try again later or contact support.'
+      } else {
+        submitError.value = error.response.data?.message || 'An error occurred while submitting your request. Please try again.'
+      }
+    } else if (error.request) {
+      // Request made but no response received
+      submitError.value = 'Network error. Please check your internet connection and try again.'
+    } else {
+      // Error setting up request
+      submitError.value = error.message || 'An unexpected error occurred. Please try again.'
+    }
+    
+    // Scroll to error message
+    setTimeout(() => {
+      const errorContainer = document.querySelector('.error-message-container')
+      if (errorContainer) {
+        errorContainer.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      }
+    }, 100)
   })
 }
 
@@ -2658,9 +4039,56 @@ const viewRequest = async () => {
   }
 }
 
+// Function to scroll to a specific request and highlight it
+const scrollToRequest = async (requestId) => {
+  // Find the request in the full filtered list
+  const requestIndex = filteredDocumentRequests.value.findIndex(req => req.id === requestId)
+  
+  if (requestIndex === -1) {
+    // Request not found in filtered list
+    return
+  }
+  
+  // Calculate which page the request is on (0-indexed, so add 1)
+  const targetPage = Math.floor(requestIndex / itemsPerPage.value) + 1
+  
+  // Navigate to the correct page if not already there
+  if (currentPage.value !== targetPage) {
+    goToPage(targetPage)
+    // Wait for Vue to update the DOM after page change
+    await nextTick()
+    // Give a bit more time for the scroll animation to complete
+    await new Promise(resolve => setTimeout(resolve, 300))
+  }
+  
+  // Now find and highlight the request element
+  await nextTick()
+  const requestElement = document.querySelector(`[data-request-id="${requestId}"]`)
+  if (requestElement) {
+    requestElement.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    // Highlight the request briefly with light green (same as posts)
+    requestElement.style.transition = 'background-color 0.3s'
+    requestElement.style.backgroundColor = '#d4edda'
+    setTimeout(() => {
+      requestElement.style.backgroundColor = ''
+    }, 2000)
+  }
+}
+
 onMounted(() => {
   document.addEventListener('click', handleClickOutside)
   activeTab.value = 'documents'
+
+  // Fetch unread notification count
+  fetchUnreadCount()
+  
+  // Set up polling to update unread count every 30 seconds
+  const unreadCountInterval = setInterval(() => {
+    fetchUnreadCount()
+  }, 30000)
+  
+  // Store interval ID for cleanup
+  window.unreadCountInterval = unreadCountInterval
 
   // try to read flashed ticket - if there's a success ticket, show success view
   try {
@@ -2675,10 +4103,37 @@ onMounted(() => {
   } catch (e) {
     currentView.value = 'list'
   }
+
+  // Check for request query parameter from notification click
+  const urlParams = new URLSearchParams(window.location.search)
+  const requestId = urlParams.get('request')
+  if (requestId) {
+    // Convert to number if it's a numeric string
+    const requestIdNum = Number(requestId)
+    if (!isNaN(requestIdNum)) {
+      // Try to scroll to request, with retries in case data isn't loaded yet
+      const tryScrollToRequest = async (retries = 3) => {
+        if (mappedDocumentRequests.value.length > 0) {
+          await scrollToRequest(requestIdNum)
+        } else if (retries > 0) {
+          // Wait a bit and retry if data isn't loaded yet
+          setTimeout(() => tryScrollToRequest(retries - 1), 500)
+        }
+      }
+      // Start trying after a short delay to allow initial render
+      setTimeout(() => tryScrollToRequest(), 500)
+    }
+  }
 })
 
 onUnmounted(() => {
     document.removeEventListener('click', handleClickOutside)
+    
+    // Clear unread count polling interval
+    if (window.unreadCountInterval) {
+        clearInterval(window.unreadCountInterval)
+        window.unreadCountInterval = null
+    }
 })
 </script>
 
@@ -2852,13 +4307,14 @@ select option[value=""] {
 .uploaded-file-info-compact {
     display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 8px 12px;
-    background: linear-gradient(135deg, #e8f5e9, #c8e6c9);
-    border-radius: 6px;
-    border: 1px solid #4caf50;
-    box-shadow: 0 1px 4px rgba(76, 175, 80, 0.2);
-    font-size: 12px;
+    gap: 10px;
+    padding: 12px 15px;
+    background: #e8f8ed;
+    border: 1px solid #c3e6cb;
+    border-radius: 8px;
+    box-shadow: 0 1px 4px rgba(76, 175, 80, 0.15);
+    font-size: 13px;
+    width: 100%;
 }
 
 .file-name-compact {
@@ -3047,6 +4503,7 @@ select option[value=""] {
     border-bottom: 1px solid #f0f0f0;
     cursor: pointer;
     font-weight: 500;
+    white-space: nowrap;
 }
 
 .settings-item:hover {
@@ -3091,7 +4548,7 @@ select option[value=""] {
 
 .profile-name {
     font-weight: 700;
-    font-size: 17px;
+    font-size: 15px;
     text-shadow: 0 1px 3px rgba(0,0,0,0.2);
 }
 
@@ -3147,6 +4604,19 @@ select option[value=""] {
     color: #ff8c42;
     font-weight: 600;
     border-left: 4px solid #ff8c42;
+}
+
+.unread-badge-nav {
+    background: linear-gradient(135deg, #ff8c42, #ff7a28);
+    color: white;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 4px 8px;
+    border-radius: 12px;
+    min-width: 20px;
+    text-align: center;
+    margin-left: auto;
+    box-shadow: 0 2px 6px rgba(255, 140, 66, 0.4);
 }
 
 .faq-btn {
@@ -3281,6 +4751,27 @@ select option[value=""] {
     background: linear-gradient(135deg, #ff8c42, #ff7a28);
     color: white;
     border-left-color: #ff8c42;
+}
+
+.doc-type-btn.disabled,
+.doc-type-btn:disabled {
+    background: #f5f5f5;
+    color: #999;
+    cursor: not-allowed;
+    opacity: 0.6;
+    position: relative;
+}
+
+.doc-type-btn.disabled:hover,
+.doc-type-btn:disabled:hover {
+    background: #f5f5f5;
+    color: #999;
+}
+
+.restricted-badge {
+    margin-left: 8px;
+    font-size: 12px;
+    opacity: 0.8;
 }
 
 .document-info {
@@ -3647,9 +5138,10 @@ select option[value=""] {
 
 .upload-section {
     display: flex;
-    justify-content: flex-start;
-    gap: 10px;
-    margin-top: 15px;
+    flex-direction: column;
+    gap: 15px;
+    margin-top: 25px;
+    width: 100%;
 }
 
 .upload-btn {
@@ -4239,9 +5731,71 @@ select option[value=""] {
     letter-spacing: 0.5px;
 }
 
-.request-new-btn:hover {
+.request-new-btn:hover:not(.disabled) {
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(255, 140, 66, 0.4);
+}
+
+.request-new-btn.disabled {
+    background: #ccc;
+    color: #666;
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+.request-new-wrapper {
+    position: relative;
+    display: inline-block;
+}
+
+.restriction-info-icon {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    background: #e74c3c;
+    color: white;
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: help;
+    z-index: 10;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.restriction-banner {
+    background: linear-gradient(135deg, #fee, #fdd);
+    border-left: 4px solid #e74c3c;
+    padding: 15px 25px;
+    margin: 20px 25px;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(231, 76, 60, 0.2);
+}
+
+.restriction-content {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+}
+
+.restriction-text {
+    flex: 1;
+}
+
+.restriction-text strong {
+    display: block;
+    color: #e74c3c;
+    font-size: 16px;
+    margin-bottom: 5px;
+}
+
+.restriction-text p {
+    color: #c0392b;
+    font-size: 14px;
+    margin: 0;
+    line-height: 1.5;
 }
 
 .request-new-btn:active {
@@ -4368,6 +5922,101 @@ select option[value=""] {
     background: #f5f5f5 !important;
 }
 
+/* Pagination Styles */
+.pagination-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 30px;
+    padding: 20px;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.pagination-info {
+    font-size: 14px;
+    color: #666;
+    font-weight: 500;
+}
+
+.pagination-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.pagination-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 18px;
+    background: #fff;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #333;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.pagination-btn:hover:not(:disabled) {
+    background: #ff8c42;
+    border-color: #ff8c42;
+    color: #fff;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(255, 140, 66, 0.3);
+}
+
+.pagination-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background: #f5f5f5;
+}
+
+.pagination-numbers {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+}
+
+.pagination-number {
+    min-width: 40px;
+    height: 40px;
+    padding: 0 12px;
+    background: #fff;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #333;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.pagination-number:hover {
+    background: #f8f9fa;
+    border-color: #ff8c42;
+    color: #ff8c42;
+    transform: translateY(-1px);
+}
+
+.pagination-number.active {
+    background: linear-gradient(135deg, #ff8c42, #ff7a28);
+    border-color: #ff8c42;
+    color: #fff;
+    box-shadow: 0 2px 8px rgba(255, 140, 66, 0.3);
+}
+
+.pagination-number.active:hover {
+    background: linear-gradient(135deg, #ff7a28, #ff6a18);
+    transform: translateY(-1px);
+}
+
 /* Status badges in table - specific selector to avoid conflicts */
 .requests-table .status-badge {
     padding: 8px 16px;
@@ -4406,7 +6055,8 @@ select option[value=""] {
     text-transform: uppercase;
 }
 
-.requests-table .status-badge.pending {
+.requests-table .status-badge.pending,
+.requests-table .status-badge.resubmitted {
     background: #fff3cd;
     color: #856404;
     border: 1px solid #ffeeba;
@@ -4458,9 +6108,13 @@ select option[value=""] {
 
 /* When no payment */
 .payment-list-badge.none {
-    background: transparent;
-    color: #6c757d;
-    border: 1px dashed rgba(0, 0, 0, 0.06);
+    background: transparent !important;
+    border: 2px solid #dc3545 !important;
+    color: #dc3545 !important;
+}
+
+.payment-list-badge.none .badge-icon svg {
+    stroke: #dc3545;
 }
 
 /* Badge icon */
@@ -4577,6 +6231,19 @@ select option[value=""] {
     color: #333;
 }
 
+.modal-subtitle {
+    font-size: 14px;
+    color: #666;
+    text-align: center;
+    margin: 8px 0;
+    line-height: 1.5;
+}
+
+.modal-subtitle strong {
+    color: #333;
+    font-weight: 600;
+}
+
 .request-number-display {
     text-align: center;
     font-size: 14px;
@@ -4622,6 +6289,36 @@ select option[value=""] {
     color: #721c24;
     font-size: 14px;
     margin: 0;
+}
+
+.appeal-actions {
+    margin-top: 25px;
+    text-align: center;
+}
+
+.appeal-btn {
+    background: linear-gradient(135deg, #ff8c42, #e6763a);
+    color: white;
+    border: none;
+    padding: 14px 30px;
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    box-shadow: 0 2px 8px rgba(255, 140, 66, 0.3);
+}
+
+.appeal-btn:hover {
+    background: linear-gradient(135deg, #e6763a, #d4652a);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(255, 140, 66, 0.4);
+}
+
+.appeal-btn:active {
+    transform: translateY(0);
 }
 
 /* Payment Modal Styles */
@@ -4686,8 +6383,8 @@ select option[value=""] {
 
 /* QR Modal Styles */
 .qr-modal {
-    max-width: 500px;
-    padding: 30px 40px;
+    max-width: 550px;
+    padding: 35px 40px;
 }
 
 .payment-success-banner {
@@ -4706,17 +6403,34 @@ select option[value=""] {
 }
 
 .qr-preview {
-    text-align: center;
-    margin: 20px 0;
-    padding: 20px;
+    margin: 25px 0;
+    padding: 0;
+    background: transparent;
+    border-radius: 12px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.qr-image-wrapper {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    padding: 25px;
     background: #f8f9fa;
     border-radius: 12px;
+    border: 2px solid #e9ecef;
 }
 
 .qr-image {
-    max-width: 250px;
+    max-width: 280px;
+    width: 100%;
     height: auto;
     border-radius: 8px;
+    display: block;
+    margin: 0 auto;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .qr-placeholder {
@@ -4729,14 +6443,15 @@ select option[value=""] {
     background: linear-gradient(135deg, #2bb24a, #239640);
     color: white;
     border: none;
-    padding: 12px 24px;
+    padding: 14px 24px;
     border-radius: 8px;
     font-weight: 700;
     cursor: pointer;
     transition: all 0.3s ease;
     font-size: 14px;
     width: 100%;
-    margin-top: 15px;
+    text-transform: uppercase;
+    box-shadow: 0 2px 8px rgba(43, 178, 74, 0.3);
 }
 
 .upload-btn-payment:hover {
@@ -4745,26 +6460,32 @@ select option[value=""] {
 }
 
 .evidence-form {
-    margin-top: 15px;
-}
-
-.input-and-actions {
+    margin-top: 0;
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 12px;
+    width: 100%;
 }
 
 .reference-input {
     width: 100%;
-    padding: 10px;
+    padding: 12px 15px;
     border: 1px solid #ddd;
     border-radius: 8px;
     font-size: 14px;
+    transition: border-color 0.2s;
+}
+
+.reference-input:focus {
+    outline: none;
+    border-color: #ff8c42;
+    box-shadow: 0 0 0 3px rgba(255, 140, 66, 0.1);
 }
 
 .evidence-actions {
     display: flex;
-    gap: 10px;
+    gap: 12px;
+    width: 100%;
 }
 
 .submit-evidence-btn {
@@ -4772,12 +6493,14 @@ select option[value=""] {
     background: linear-gradient(135deg, #ff8c42, #ff7a28);
     color: white;
     border: none;
-    padding: 10px 20px;
+    padding: 12px 24px;
     border-radius: 8px;
     font-weight: 700;
     cursor: pointer;
     transition: all 0.3s ease;
     font-size: 14px;
+    text-transform: uppercase;
+    box-shadow: 0 2px 8px rgba(255, 140, 66, 0.3);
 }
 
 .submit-evidence-btn:hover:not(:disabled) {
@@ -4791,19 +6514,22 @@ select option[value=""] {
 }
 
 .clear-evidence-btn {
-    background: #dc3545;
-    color: white;
-    border: none;
-    padding: 10px 20px;
+    background: white;
+    color: #4a4a4a;
+    border: 1px solid #e0e0e0;
+    padding: 12px 24px;
     border-radius: 8px;
-    font-weight: 700;
+    font-weight: 500;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: all 0.2s ease;
     font-size: 14px;
+    text-transform: uppercase;
+    min-width: 100px;
 }
 
 .clear-evidence-btn:hover:not(:disabled) {
-    background: #c82333;
+    background: #f8f9fa;
+    border-color: #d0d0d0;
 }
 
 .clear-evidence-btn:disabled {
@@ -4936,8 +6662,8 @@ select option[value=""] {
 }
 
 .no-payment-card {
-    background: #fff3cd;
-    border: 1px solid #ffc107;
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
     border-radius: 8px;
     padding: 15px;
     text-align: center;
@@ -4946,7 +6672,7 @@ select option[value=""] {
 .no-payment-card p {
     margin: 0;
     font-size: 14px;
-    color: #856404;
+    color: #495057;
 }
 
 /* Payment Buttons in Modal */
@@ -4968,6 +6694,7 @@ select option[value=""] {
     cursor: pointer;
     transition: all 0.3s ease;
     font-size: 14px;
+    text-transform: uppercase;
 }
 
 .pay-online-btn-modal:hover {
@@ -4986,6 +6713,7 @@ select option[value=""] {
     cursor: pointer;
     transition: all 0.3s ease;
     font-size: 14px;
+    text-transform: uppercase;
 }
 
 .pay-onsite-btn-modal:hover {
@@ -5077,10 +6805,11 @@ select option[value=""] {
     text-align: center;
     margin-top: 25px;
     padding: 15px;
-    background: #fff3cd;
+    background: #f8f9fa;
     border-radius: 8px;
     font-size: 14px;
-    color: #856404;
+    color: #495057;
+    border: 1px solid #dee2e6;
 }
 
 .highlight-number {
@@ -5101,8 +6830,13 @@ select option[value=""] {
 
 .note-message.small {
     font-size: 12px;
-    margin-top: 10px;
-    padding: 10px;
+    margin-top: 20px;
+    padding: 12px 15px;
+    text-align: center;
+    background: #f0f7ff;
+    border: 1px solid #d0e7ff;
+    border-radius: 8px;
+    color: #555;
 }
 
 /* Confirmation Modal */
@@ -5366,11 +7100,636 @@ select option[value=""] {
 }
 
 .close-receipt-btn {
-    background: #6c757d;
-    color: white;
+    background: white;
+    border: 1px solid #e0e0e0;
+    color: #4a4a4a;
 }
 
 .close-receipt-btn:hover {
-    background: #5a6268;
+    background: #f8f9fa;
+    border-color: #d0d0d0;
+}
+
+/* Resubmission Modal Styles */
+.resubmission-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(4px);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 10000;
+    padding: 20px;
+}
+
+.resubmission-modal-content {
+    background: white;
+    border-radius: 15px;
+    max-width: 1200px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+    overflow-x: visible;
+    position: relative;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+    padding: 40px;
+}
+
+.resubmission-modal-header {
+    margin-bottom: 25px;
+    padding-bottom: 20px;
+    border-bottom: 2px solid #e9ecef;
+}
+
+.resubmission-modal-title {
+    font-size: 28px;
+    font-weight: 700;
+    color: #333;
+    margin-bottom: 10px;
+    text-align: center;
+}
+
+.resubmission-document-type {
+    font-size: 16px;
+    color: #666;
+    text-align: center;
+    margin: 0;
+}
+
+.resubmission-document-type strong {
+    color: #ff8c42;
+    font-weight: 700;
+}
+
+.resubmission-form-container {
+    margin-top: 30px;
+    position: relative;
+    overflow: visible;
+}
+
+.rejection-box {
+    background: #fff3cd;
+    border: 2px solid #ffc107;
+    border-radius: 8px;
+    padding: 20px;
+    margin: 20px 0;
+}
+
+.rejection-title {
+    font-size: 18px;
+    color: #856404;
+    margin-bottom: 10px;
+    font-weight: 600;
+}
+
+.rejection-text {
+    font-size: 15px;
+    color: #856404;
+    line-height: 1.6;
+    margin: 0;
+}
+
+.request-info-summary {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 20px;
+    margin: 20px 0;
+}
+
+.info-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 12px 0;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.info-row:last-child {
+    border-bottom: none;
+}
+
+.info-label {
+    font-weight: 600;
+    color: #495057;
+    font-size: 14px;
+}
+
+.info-value {
+    color: #1a1a1a;
+    font-size: 14px;
+}
+
+.status-pending {
+    color: #ff8c42;
+    font-weight: 600;
+}
+
+.form-section {
+    background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+    border-radius: 12px;
+    padding: 25px;
+    border: 1px solid rgba(0,0,0,0.05);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    margin-bottom: 25px;
+    position: relative;
+    overflow: visible;
+}
+
+.dynamic-fields {
+    background: white;
+}
+
+.section-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: #333;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.required-star {
+    color: #e74c3c;
+    font-size: 16px;
+    margin-left: 4px;
+}
+
+.purpose-id-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+}
+
+.purpose-field,
+.id-type-field {
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    z-index: 1;
+}
+
+/* Ensure select dropdowns are not clipped - native selects render above everything */
+.purpose-field,
+.id-type-field {
+    overflow: visible;
+    position: relative;
+}
+
+.purpose-field select,
+.id-type-field select {
+    position: relative;
+}
+
+/* Ensure form containers don't clip dropdowns */
+.resubmission-form-container {
+    overflow: visible;
+}
+
+.form-section {
+    overflow: visible;
+}
+
+.purpose-id-row {
+    overflow: visible;
+    position: relative;
+}
+
+.id-type-upload-row {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+}
+
+.id-type-select {
+    flex: 1;
+}
+
+.upload-row {
+    display: flex;
+    gap: 8px;
+}
+
+.upload-btn {
+    background: linear-gradient(135deg, #2bb24a, #239640);
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    font-size: 12px;
+    transition: all 0.3s;
+}
+
+.upload-btn:hover:not(.btn-disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(43, 178, 74, 0.4);
+}
+
+.upload-btn.btn-disabled {
+    background: #ccc !important;
+    cursor: not-allowed !important;
+    opacity: 0.6;
+}
+
+.uploaded-files-display {
+    margin-top: 10px;
+}
+
+.uploaded-file {
+    font-size: 14px;
+    color: #4caf50;
+    font-weight: 500;
+    margin: 5px 0;
+}
+
+.field-label {
+    display: block;
+    font-size: 14px;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 6px;
+}
+
+.form-input,
+.form-textarea {
+    padding: 12px 15px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    font-size: 14px;
+    background: white;
+    transition: all 0.3s ease;
+    width: 100%;
+    font-family: inherit;
+}
+
+.form-input:focus:not(.field-disabled),
+.form-textarea:focus:not(.field-disabled) {
+    outline: none;
+    border-color: #ff8c42;
+    box-shadow: 0 2px 8px rgba(255, 140, 66, 0.2);
+}
+
+.form-textarea {
+    resize: vertical;
+    min-height: 80px;
+}
+
+.field-disabled {
+    background-color: #f5f5f5 !important;
+    cursor: not-allowed !important;
+    opacity: 0.7;
+    color: #666;
+}
+
+.dynamic-field-wrapper {
+    margin-bottom: 20px;
+}
+
+.field-header {
+    margin-bottom: 10px;
+}
+
+.field-description {
+    font-size: 12px;
+    color: #666;
+    margin-top: 5px;
+}
+
+.checkbox-group {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+}
+
+.file-uploads-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 20px;
+    margin-top: 20px;
+}
+
+.file-upload-item {
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border: 1px solid #e0e0e0;
+}
+
+.file-upload-header {
+    margin-bottom: 10px;
+}
+
+.file-upload-label {
+    font-weight: 600;
+    font-size: 14px;
+    color: #333;
+    display: block;
+    margin-bottom: 5px;
+}
+
+.file-upload-description {
+    font-size: 12px;
+    color: #666;
+}
+
+.file-upload-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.upload-btn-dynamic {
+    background: linear-gradient(135deg, #2bb24a, #239640);
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    font-size: 12px;
+    transition: all 0.3s;
+    width: fit-content;
+}
+
+.upload-btn-dynamic:hover:not(.btn-disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(43, 178, 74, 0.4);
+}
+
+.upload-btn-dynamic.btn-disabled {
+    background: #ccc !important;
+    cursor: not-allowed !important;
+    opacity: 0.6;
+}
+
+.existing-file-display {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px;
+    background: white;
+    border-radius: 6px;
+    margin-bottom: 10px;
+}
+
+.existing-file-name {
+    font-size: 13px;
+    color: #666;
+}
+
+.view-file-link {
+    color: #ff8c42;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 12px;
+}
+
+.view-file-link:hover {
+    text-decoration: underline;
+}
+
+.uploaded-file-info-compact {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    background: #e8f5e9;
+    border-radius: 6px;
+    font-size: 13px;
+}
+
+.file-checkmark {
+    color: #4caf50;
+}
+
+.file-name-compact {
+    flex: 1;
+    color: #2e7d32;
+    font-weight: 500;
+}
+
+.remove-file-btn-small {
+    background: transparent;
+    border: none;
+    color: #e74c3c;
+    cursor: pointer;
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.remove-file-btn-small:hover {
+    background: #ffebee;
+    border-radius: 4px;
+}
+
+.submit-btn {
+    background: linear-gradient(135deg, #ff8c42, #ff7a28);
+    color: white;
+    border: none;
+    padding: 15px 50px;
+    border-radius: 10px;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 12px rgba(255, 140, 66, 0.3);
+    display: block;
+    margin: 30px auto 0;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    width: 100%;
+    max-width: 300px;
+}
+
+.submit-btn:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 18px rgba(255, 140, 66, 0.4);
+}
+
+.submit-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.editable-fields-notice {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: #e3f2fd;
+    border: 1px solid #90caf9;
+    border-radius: 8px;
+    padding: 12px 15px;
+    margin-top: 15px;
+    font-size: 13px;
+    color: #1565c0;
+}
+
+.editable-fields-notice svg {
+    color: #1976d2;
+    flex-shrink: 0;
+}
+
+@media (max-width: 768px) {
+    .resubmission-modal-content {
+        padding: 20px;
+        max-height: 95vh;
+    }
+    
+    .purpose-id-row {
+        grid-template-columns: 1fr;
+    }
+    
+    .file-uploads-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Terms and Conditions Modal Styles */
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.modal-overlay:has(.terms-modal) {
+    z-index: 10000 !important;
+}
+
+.terms-modal {
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    max-width: 800px;
+    width: 90%;
+    max-height: 90vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    animation: slideUp 0.3s ease;
+    position: relative;
+    z-index: 10001;
+}
+
+.terms-modal-header {
+    background: white;
+    padding: 25px 30px;
+    border-bottom: 1px solid #e0e0e0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.terms-modal-title {
+    margin: 0;
+    font-size: 28px;
+    font-weight: 700;
+    color: #333;
+}
+
+.terms-modal-close {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 8px;
+    color: #666;
+    transition: all 0.2s ease;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.terms-modal-close:hover {
+    background: #f0f0f0;
+    color: #333;
+}
+
+.terms-modal-body {
+    padding: 30px;
+    overflow-y: auto;
+    flex: 1;
+}
+
+.terms-section {
+    margin-bottom: 25px;
+}
+
+.terms-section:last-child {
+    margin-bottom: 0;
+}
+
+.terms-section-title {
+    margin: 0 0 12px 0;
+    font-size: 18px;
+    font-weight: 700;
+    color: #ff8c42;
+}
+
+.terms-text {
+    margin: 0;
+    font-size: 15px;
+    line-height: 1.7;
+    color: #555;
+    text-align: justify;
+}
+
+.terms-list {
+    margin: 10px 0 0 20px;
+    padding: 0;
+}
+
+.terms-list li {
+    margin-bottom: 8px;
+    font-size: 15px;
+    line-height: 1.6;
+    color: #555;
+}
+
+.terms-modal-footer {
+    padding: 20px 30px;
+    border-top: 1px solid #e0e0e0;
+    display: flex;
+    justify-content: center;
+    background: #f8f9fa;
+    flex-shrink: 0;
+}
+
+.terms-modal-btn {
+    padding: 12px 50px;
+    background: #ff8c42;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(255, 140, 66, 0.3);
+}
+
+.terms-modal-btn:hover {
+    background: #ff7a28;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(255, 140, 66, 0.4);
 }
 </style>

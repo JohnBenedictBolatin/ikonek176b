@@ -3,6 +3,8 @@
 .env
 .env.backup
 .env.production
+.env.*
+!.env.example
 .phpactor.json
 .phpunit.result.cache
 /.fleet
@@ -22,3 +24,21 @@
 Homestead.json
 Homestead.yaml
 Thumbs.db
+
+# Sensitive files - API keys, credentials, etc.
+*_credentials.txt
+*_api_keys.txt
+*_secrets.txt
+*_passwords.txt
+*.key
+*.pem
+*.p12
+*.pfx
+
+# Temporary/debug files
+check_*.php
+fix_*.php
+ensure_*.php
+run_*.php
+create_*.sql
+ADD_*.sql

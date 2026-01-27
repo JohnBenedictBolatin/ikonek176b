@@ -28,13 +28,20 @@ class ContactController extends Controller
                 'user_email' => $request->email,
                 'message' => $request->message,
                 'user_name' => $request->first_name . ' ' . $request->last_name,
-                'status' => 'pending',
+                'status' => 'New', // Use 'New' to match the enum values: 'New', 'Read', 'Replied'
+                'user_type' => null, // Guest users don't have a user_type
             ]);
 
             return back()->with('success', 'Thank you for your message! We will get back to you as soon as possible.');
         } catch (\Exception $e) {
+            \Log::error('Error creating contact message: ' . $e->getMessage(), [
+                'request' => $request->all(),
+                'trace' => $e->getTraceAsString()
+            ]);
             return back()->withErrors(['message' => 'An error occurred while submitting your message. Please try again.'])->withInput();
         }
     }
 }
+
+
 

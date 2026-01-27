@@ -45,7 +45,7 @@ class NotificationRequestController extends Controller
                 'admin_feedback',
             ])
             ->where('fk_user_id', $userId)
-            ->orderByDesc('doc_request_id')
+            ->orderBy('created_at', 'desc')
             ->limit($limit)
             ->get();
 
@@ -56,6 +56,9 @@ class NotificationRequestController extends Controller
                 'fk_user_id',
                 'purpose',
                 'event_location',
+                'event_date',
+                'event_start',
+                'event_end',
                 'status',
                 'extra_fields',
                 'created_at',
@@ -63,7 +66,7 @@ class NotificationRequestController extends Controller
                 'admin_feedback',
             ])
             ->where('fk_user_id', $userId)
-            ->orderByDesc('event_assist_request_id')
+            ->orderBy('created_at', 'desc')
             ->limit($limit)
             ->get();
 
@@ -143,6 +146,59 @@ class NotificationRequestController extends Controller
             $eventType = is_array($extraFields) ? ($extraFields['event_type'] ?? null) : null;
             $title = $eventType ?? $sanitizeString($m->purpose ?? 'Event Assistance Request');
             
+            // For event assistance, we need to combine event_date + event_start to create pickup_start
+            // and event_date + event_end to create pickup_end (for compatibility with getPickupSchedule)
+            $pickupStart = null;
+            $pickupEnd = null;
+            
+            if ($m->event_date && $m->event_start) {
+                try {
+                    // event_start might be time (H:i:s) or datetime - try both
+                    $eventStartStr = is_object($m->event_start) ? $m->event_start->format('H:i:s') : (string)$m->event_start;
+                    $eventDateStr = is_object($m->event_date) ? $m->event_date->format('Y-m-d') : (string)$m->event_date;
+                    
+                    // If event_start is just time (H:i:s), combine with date
+                    if (preg_match('/^\d{2}:\d{2}:\d{2}$/', $eventStartStr)) {
+                        $pickupStart = \Carbon\Carbon::parse($eventDateStr . ' ' . $eventStartStr)->toIso8601String();
+                    } else {
+                        // It's already a datetime, use as-is
+                        $pickupStart = \Carbon\Carbon::parse($m->event_start)->toIso8601String();
+                    }
+                } catch (\Throwable $e) {
+                    $pickupStart = null;
+                }
+            } elseif ($m->event_start) {
+                try {
+                    $pickupStart = \Carbon\Carbon::parse($m->event_start)->toIso8601String();
+                } catch (\Throwable $e) {
+                    $pickupStart = null;
+                }
+            }
+            
+            if ($m->event_date && $m->event_end) {
+                try {
+                    // event_end might be time (H:i:s) or datetime - try both
+                    $eventEndStr = is_object($m->event_end) ? $m->event_end->format('H:i:s') : (string)$m->event_end;
+                    $eventDateStr = is_object($m->event_date) ? $m->event_date->format('Y-m-d') : (string)$m->event_date;
+                    
+                    // If event_end is just time (H:i:s), combine with date
+                    if (preg_match('/^\d{2}:\d{2}:\d{2}$/', $eventEndStr)) {
+                        $pickupEnd = \Carbon\Carbon::parse($eventDateStr . ' ' . $eventEndStr)->toIso8601String();
+                    } else {
+                        // It's already a datetime, use as-is
+                        $pickupEnd = \Carbon\Carbon::parse($m->event_end)->toIso8601String();
+                    }
+                } catch (\Throwable $e) {
+                    $pickupEnd = null;
+                }
+            } elseif ($m->event_end) {
+                try {
+                    $pickupEnd = \Carbon\Carbon::parse($m->event_end)->toIso8601String();
+                } catch (\Throwable $e) {
+                    $pickupEnd = null;
+                }
+            }
+            
             return [
                 'event_assist_request_id' => $m->event_assist_request_id,
                 'eventassist_request_ticket' => $sanitizeString($m->event_assist_request_ticket ?? ''),
@@ -151,6 +207,11 @@ class NotificationRequestController extends Controller
                 'title' => $title,
                 'event_type' => $eventType,
                 'event_location' => $sanitizeString($m->event_location ?? ''),
+                'event_date' => $m->event_date ? $m->event_date->toIso8601String() : null,
+                'event_start' => $m->event_start ? (\Carbon\Carbon::parse($m->event_start)->toIso8601String() ?? null) : null,
+                'event_end' => $m->event_end ? (\Carbon\Carbon::parse($m->event_end)->toIso8601String() ?? null) : null,
+                'pickup_start' => $pickupStart, // For compatibility with getPickupSchedule
+                'pickup_end' => $pickupEnd, // For compatibility with getPickupSchedule
                 'status' => $sanitizeString($m->status ?? 'PENDING'),
                 'created_at' => $m->created_at ? $m->created_at->toIso8601String() : null,
                 'reviewed_at' => $m->reviewed_at ? $m->reviewed_at->toIso8601String() : null,
@@ -252,9 +313,10 @@ class NotificationRequestController extends Controller
         };
 
         // Document requests for the authenticated user - sanitize data before returning
+        // Order by created_at DESC to show most recent first (resubmissions will be at top)
         $documentRequestsRaw = DocumentRequest::with(['documentType', 'user', 'userCredential'])
             ->where('fk_user_id', $userId)
-            ->orderByDesc('doc_request_id')
+            ->orderBy('created_at', 'desc')
             ->get();
 
         // Convert to arrays and sanitize string fields
@@ -298,7 +360,7 @@ class NotificationRequestController extends Controller
         // Event assistance requests for the authenticated user - sanitize data
         $eventAssistanceRequestsRaw = EventAssistanceRequest::with(['user', 'approver', 'details'])
             ->where('fk_user_id', $userId)
-            ->orderByDesc('event_assist_request_id')
+            ->orderBy('created_at', 'desc')
             ->get();
 
         // Convert to arrays and sanitize string fields
@@ -308,6 +370,60 @@ class NotificationRequestController extends Controller
             $eventType = is_array($extraFields) ? ($extraFields['event_type'] ?? null) : null;
             $title = $eventType ?? $sanitizeString($m->purpose ?? 'Event Assistance Request');
             
+            // For event assistance, we need to combine event_date + event_start to create pickup_start
+            // and event_date + event_end to create pickup_end (for compatibility with getPickupSchedule)
+            // Note: event_start and event_end are stored as time (H:i:s) or datetime, need to handle both
+            $pickupStart = null;
+            $pickupEnd = null;
+            
+            if ($m->event_date && $m->event_start) {
+                try {
+                    // event_start might be time (H:i:s) or datetime - try both
+                    $eventStartStr = is_object($m->event_start) ? $m->event_start->format('H:i:s') : (string)$m->event_start;
+                    $eventDateStr = is_object($m->event_date) ? $m->event_date->format('Y-m-d') : (string)$m->event_date;
+                    
+                    // If event_start is just time (H:i:s), combine with date
+                    if (preg_match('/^\d{2}:\d{2}:\d{2}$/', $eventStartStr)) {
+                        $pickupStart = \Carbon\Carbon::parse($eventDateStr . ' ' . $eventStartStr)->toIso8601String();
+                    } else {
+                        // It's already a datetime, use as-is
+                        $pickupStart = \Carbon\Carbon::parse($m->event_start)->toIso8601String();
+                    }
+                } catch (\Throwable $e) {
+                    $pickupStart = null;
+                }
+            } elseif ($m->event_start) {
+                try {
+                    $pickupStart = \Carbon\Carbon::parse($m->event_start)->toIso8601String();
+                } catch (\Throwable $e) {
+                    $pickupStart = null;
+                }
+            }
+            
+            if ($m->event_date && $m->event_end) {
+                try {
+                    // event_end might be time (H:i:s) or datetime - try both
+                    $eventEndStr = is_object($m->event_end) ? $m->event_end->format('H:i:s') : (string)$m->event_end;
+                    $eventDateStr = is_object($m->event_date) ? $m->event_date->format('Y-m-d') : (string)$m->event_date;
+                    
+                    // If event_end is just time (H:i:s), combine with date
+                    if (preg_match('/^\d{2}:\d{2}:\d{2}$/', $eventEndStr)) {
+                        $pickupEnd = \Carbon\Carbon::parse($eventDateStr . ' ' . $eventEndStr)->toIso8601String();
+                    } else {
+                        // It's already a datetime, use as-is
+                        $pickupEnd = \Carbon\Carbon::parse($m->event_end)->toIso8601String();
+                    }
+                } catch (\Throwable $e) {
+                    $pickupEnd = null;
+                }
+            } elseif ($m->event_end) {
+                try {
+                    $pickupEnd = \Carbon\Carbon::parse($m->event_end)->toIso8601String();
+                } catch (\Throwable $e) {
+                    $pickupEnd = null;
+                }
+            }
+            
             return [
                 'event_assist_request_id' => $m->event_assist_request_id,
                 'eventassist_request_ticket' => $sanitizeString($m->event_assist_request_ticket ?? ''),
@@ -316,6 +432,11 @@ class NotificationRequestController extends Controller
                 'title' => $title,
                 'event_type' => $eventType,
                 'event_location' => $sanitizeString($m->event_location ?? ''),
+                'event_date' => $m->event_date ? $m->event_date->toIso8601String() : null,
+                'event_start' => $m->event_start ? (\Carbon\Carbon::parse($m->event_start)->toIso8601String() ?? null) : null,
+                'event_end' => $m->event_end ? (\Carbon\Carbon::parse($m->event_end)->toIso8601String() ?? null) : null,
+                'pickup_start' => $pickupStart, // For compatibility with getPickupSchedule
+                'pickup_end' => $pickupEnd, // For compatibility with getPickupSchedule
                 'status' => $sanitizeString($m->status ?? 'PENDING'),
                 'created_at' => $m->created_at ? $m->created_at->toIso8601String() : null,
                 'reviewed_at' => $m->reviewed_at ? $m->reviewed_at->toIso8601String() : null,

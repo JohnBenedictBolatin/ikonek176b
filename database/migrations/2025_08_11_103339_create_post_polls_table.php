@@ -13,7 +13,8 @@ return new class extends Migration
     {
         Schema::create('post_polls', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('post_id')->constrained('posts')->onDelete('cascade');
+            $table->unsignedInteger('post_id'); // posts.post_id is int(11) unsigned
+            $table->foreign('post_id')->references('post_id')->on('posts')->onDelete('cascade');
             $table->timestamps();
         });
     }

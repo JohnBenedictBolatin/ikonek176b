@@ -1,0 +1,23 @@
+⚠️ MANUAL BACKUP RECOMMENDED
+
+Since mysqldump is not available in PATH, please backup your database manually before proceeding:
+
+Option 1: Using phpMyAdmin
+- Open phpMyAdmin
+- Select database: db_ikonek176b
+- Click "Export" tab
+- Choose "Quick" or "Custom" method
+- Click "Go" to download backup
+
+Option 2: Using MySQL Workbench
+- Connect to your database
+- Server > Data Export
+- Select database: db_ikonek176b
+- Export to file
+
+Option 3: Using Herd's MySQL
+- Open Herd dashboard
+- Use database management tool
+
+The reset will proceed now. If you need to restore, use the backup you created.
+

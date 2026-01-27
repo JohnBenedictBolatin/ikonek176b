@@ -1,6 +1,6 @@
 <template>
     <Head>
-        <title>View Payment</title>
+        <title>Payments</title>
     </Head>
 
     <!-- Full Screen Layout -->
@@ -15,9 +15,8 @@
                     <img src="/assets/SETTINGS.png" alt="Settings" class="settings-btn-img" @click="toggleSettings" />
                     <!-- Settings Dropdown -->
                     <div v-if="showSettings" class="settings-dropdown">
-                        <Link href="#" class="settings-item" @click="closeSettings">Help Center</Link>
-                        <Link href="#" class="settings-item" @click="closeSettings">Terms & Conditions</Link>
-                        <Link href="#" class="settings-item" @click="logout">Sign Out</Link>
+                        <a href="#" class="settings-item" @click.prevent.stop="openTermsModal">TERMS & CONDITIONS</a>
+                        <Link href="#" class="settings-item" @click="logout">SIGN OUT</Link>
                     </div>
                 </div>
             </div>
@@ -43,7 +42,7 @@
                         <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 003 15h-.75M15 10.5a3 3 0 11-6 0 3 3 0 016 0zm3 0h.008v.008H18V10.5zm-12 0h.008v.008H6V10.5z" />
                         </svg>
-                        View Payment
+                        Payments
                     </Link>
                     <Link 
                         href="#" 
@@ -62,10 +61,10 @@
             <div class="content-area">
                 <!-- Main Content Panel -->
                 <div class="main-content">
-                    <!-- View Payment Header -->
+                    <!-- Payments Header -->
                     <div class="users-header">
                         <div class="users-title">
-                            <h2>View Payment</h2>
+                            <h2>Payments</h2>
                         </div>
                         <div class="header-icon">
                             <img src="/assets/ICON.png" alt="iKONEK" class="small-logo" />
@@ -127,7 +126,7 @@
                     <!-- Payments Container -->
                     <div class="requests-container">
                         <div 
-                            v-for="payment in filteredPayments" 
+                            v-for="payment in paginatedPayments" 
                             :key="payment.id"
                             class="request-card"
                         >
@@ -141,26 +140,65 @@
                                     </div>
                                 </div>
                                 <div class="request-right">
-                                    <div class="request-status-badge-wrapper">
-                                        <span class="payment-status-badge" :class="payment.status?.toLowerCase() || 'pending'">
-                                            {{ payment.status || 'PENDING' }}
-                                        </span>
-                                    </div>
                                     <p class="request-date">{{ payment.date }}</p>
-                                    <button 
-                                        @click.stop="openModal(payment)" 
-                                        class="view-btn" 
-                                        type="button"
-                                    >
-                                        View Payment Details
-                                    </button>
+                                    <div style="display: flex; gap: 10px; align-items: center;">
+                                        <button 
+                                            @click.stop="openModal(payment)" 
+                                            class="view-btn" 
+                                            type="button"
+                                        >
+                                            VIEW DETAILS
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
 
                         <!-- No payments message -->
-                        <div v-if="filteredPayments.length === 0" class="no-requests">
+                        <div v-if="filteredPayments.length === 0" class="no-requests" style="grid-column: 1 / -1;">
                             <p>No payments found matching your criteria.</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Pagination Controls -->
+                    <div v-if="filteredPayments.length > 0" class="pagination-container">
+                        <div class="pagination-info">
+                            Showing {{ (currentPage - 1) * itemsPerPage + 1 }} to {{ Math.min(currentPage * itemsPerPage, filteredPayments.length) }} of {{ filteredPayments.length }} payments
+                        </div>
+                        <div class="pagination-controls">
+                            <button 
+                                class="pagination-btn" 
+                                :disabled="currentPage === 1"
+                                @click="prevPage"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" style="width: 16px; height: 16px;">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+                                </svg>
+                                PREVIOUS
+                            </button>
+                            
+                            <div class="pagination-numbers">
+                                <button
+                                    v-for="page in totalPages"
+                                    :key="page"
+                                    class="pagination-number"
+                                    :class="{ active: currentPage === page }"
+                                    @click="goToPage(page)"
+                                >
+                                    {{ page }}
+                                </button>
+                            </div>
+                            
+                            <button 
+                                class="pagination-btn" 
+                                :disabled="currentPage === totalPages"
+                                @click="nextPage"
+                            >
+                                NEXT
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" style="width: 16px; height: 16px;">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+                                </svg>
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -177,113 +215,112 @@
                     </svg>
                 </button>
 
-                <div class="modal-content">
+                <div v-if="selectedPayment" class="modal-content">
                     <!-- Top Section -->
-                    <div class="modal-top" style="grid-template-columns: 1fr 1fr; gap: 15px; align-items: start;">
-                        <div class="modal-user-section" style="display: flex; align-items: center; gap: 12px;">
-                            <img :src="selectedPayment.profileImg || '/assets/DEFAULT.jpg'" alt="Profile" class="modal-avatar" style="width: 60px; height: 60px; flex-shrink: 0;" />
+                    <div class="modal-top" style="grid-template-columns: 1fr 1fr; gap: 24px; align-items: start;">
+                        <div class="modal-user-section" style="display: flex; align-items: center; gap: 20px;">
+                            <img :src="selectedPayment.profileImg || '/assets/DEFAULT.jpg'" alt="Profile" class="modal-avatar" style="width: 80px; height: 80px; flex-shrink: 0;" />
                             <div style="flex: 1; min-width: 0;">
-                                <h3 class="modal-name" style="font-size: 18px; margin-bottom: 4px;">{{ selectedPayment.requestor || 'Unknown' }}</h3>
-                                <p class="modal-label" style="font-size: 12px; margin: 0;">Payment Request</p>
+                                <h3 class="modal-name" style="font-size: 24px; margin-bottom: 6px; font-weight: 700; color: #1a1a1a;">{{ selectedPayment.requestor || 'Unknown' }}</h3>
+                                <p class="modal-label" style="font-size: 15px; margin: 0; color: #6b7280; font-weight: 500;">Payment Request</p>
                             </div>
                         </div>
-                        <div style="display: flex; flex-direction: row; gap: 15px; align-items: center; justify-content: space-between; background: linear-gradient(135deg, #ff8c42 0%, #ff7a28 100%); color: white; padding: 10px 15px; border-radius: 10px; box-shadow: 0 3px 10px rgba(255, 122, 40, 0.3); min-height: fit-content;">
+                        <div style="display: flex; flex-direction: row; gap: 20px; align-items: center; justify-content: space-between; background: linear-gradient(135deg, #ff8c42 0%, #ff7a28 100%); color: white; padding: 20px 24px; border-radius: 16px; box-shadow: 0 4px 16px rgba(255, 122, 40, 0.25); min-height: fit-content;">
                             <div style="flex: 1;">
-                                <p style="font-size: 8px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px; margin: 0 0 3px 0; opacity: 0.9;">Payment Method</p>
-                                <h3 style="font-size: 15px; font-weight: 700; margin: 0; text-shadow: 0 1px 3px rgba(0,0,0,0.2); line-height: 1.2;">{{ (selectedPayment.paymentMethod || 'UNKNOWN METHOD').toUpperCase() }}</h3>
+                                <p style="font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 8px 0; opacity: 0.95;">Payment Method</p>
+                                <h3 style="font-size: 20px; font-weight: 700; margin: 0; text-shadow: 0 1px 3px rgba(0,0,0,0.2); line-height: 1.3;">{{ (selectedPayment.paymentMethod || 'UNKNOWN METHOD').toUpperCase() }}</h3>
                             </div>
-                            <div style="width: 1px; height: 30px; background: rgba(255,255,255,0.3); flex-shrink: 0;"></div>
+                            <div style="width: 1px; height: 40px; background: rgba(255,255,255,0.3); flex-shrink: 0;"></div>
                             <div style="flex: 0 0 auto; text-align: right;">
-                                <p style="font-size: 8px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px; margin: 0 0 3px 0; opacity: 0.9;">Document Number</p>
-                                <p style="font-size: 13px; font-weight: 700; margin: 0; font-family: monospace; letter-spacing: 0.8px; text-shadow: 0 1px 2px rgba(0,0,0,0.2);">{{ selectedPayment.document }}</p>
+                                <p style="font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 8px 0; opacity: 0.95;">Document Number</p>
+                                <p style="font-size: 18px; font-weight: 700; margin: 0; font-family: 'SF Mono', 'Monaco', 'Cascadia Code', monospace; letter-spacing: 0.5px; text-shadow: 0 1px 2px rgba(0,0,0,0.2);">{{ selectedPayment.document }}</p>
                             </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Proof of Payment Section -->
-                    <div style="margin-bottom: 20px; padding: 15px; background: #f8f9fa; border-radius: 10px;">
-                        <div style="display: flex; align-items: center; justify-content: space-between;">
-                            <div>
-                                <p style="font-size: 12px; font-weight: 600; color: #666; margin: 0 0 5px 0;">Proof of Payment</p>
-                                <p style="font-size: 11px; color: #999; margin: 0;">Transaction ID: {{ selectedPayment.transactionId || 'N/A' }}</p>
-                            </div>
-                            <button 
-                                v-if="selectedPayment.receiptImage" 
-                                class="proof-btn" 
-                                @click="viewReceipt"
-                                style="background: #ff7a28; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 13px; transition: all 0.3s ease; box-shadow: 0 2px 8px rgba(255, 122, 40, 0.3);"
-                            >
-                                View Proof
-                            </button>
-                            <p v-else class="no-receipt-text" style="color: #999; font-size: 12px; font-style: italic; margin: 0;">No proof of payment uploaded</p>
                         </div>
                     </div>
 
                     <!-- Details Section -->
                     <div class="modal-details">
-                        <!-- Payment Details Grid -->
-                        <div class="details-grid">
-                            <div class="detail-item">
-                                <p class="detail-label">Document Type:</p>
-                                <p class="detail-value">{{ selectedPayment.documentType }}</p>
-                            </div>
-                            <div class="detail-item">
-                                <p class="detail-label">Document Number:</p>
-                                <p class="detail-value">{{ selectedPayment.document }}</p>
-                            </div>
-                            <div class="detail-item">
-                                <p class="detail-label">Amount:</p>
-                                <p class="detail-value">₱{{ selectedPayment.amount.toFixed(2) }}</p>
-                            </div>
-                            <div class="detail-item">
-                                <p class="detail-label">Date Submitted:</p>
-                                <p class="detail-value">{{ selectedPayment.date }}</p>
-                            </div>
-                            <div class="detail-item">
-                                <p class="detail-label">Contact Number:</p>
-                                <p class="detail-value">{{ selectedPayment.contact }}</p>
-                            </div>
-                        </div>
-
-                        <!-- Payment Method Specific Details - Always show transaction ID -->
-                        <div class="details-grid-2" v-if="selectedPayment.paymentMethodKey !== 'cash'">
-                            <div class="detail-item">
-                                <p class="detail-label">Transaction ID:</p>
-                                <p class="detail-value">{{ selectedPayment.transactionId || 'N/A' }}</p>
-                            </div>
-                            <div class="detail-item">
-                                <p class="detail-label">Payment Method:</p>
-                                <p class="detail-value">{{ selectedPayment.paymentMethod || 'N/A' }}</p>
-                            </div>
-                            <div class="detail-item">
-                                <p class="detail-label">Payment Time:</p>
-                                <p class="detail-value">{{ selectedPayment.paymentTime || 'N/A' }}</p>
-                            </div>
-                        </div>
-                        
-                        <!-- Transaction ID for Cash payments too -->
-                        <div class="details-grid-2" v-if="selectedPayment.paymentMethodKey === 'cash' && selectedPayment.transactionId && selectedPayment.transactionId !== 'N/A'">
-                            <div class="detail-item">
-                                <p class="detail-label">Transaction ID:</p>
-                                <p class="detail-value">{{ selectedPayment.transactionId }}</p>
+                        <!-- Payment Information -->
+                        <div class="detail-section" style="margin-bottom: 24px;">
+                            <h4 class="section-title" style="margin-bottom: 16px; font-size: 20px;">Payment Information</h4>
+                            <div class="details-grid" style="grid-template-columns: repeat(4, 1fr); gap: 12px 16px;">
+                                <div class="detail-item" style="margin: 0;">
+                                    <p class="detail-label" style="font-size: 13px; margin-bottom: 6px; color: #6b7280;">Document Type:</p>
+                                    <p class="detail-value" style="font-size: 15px; margin: 0; color: #1a1a1a;">{{ selectedPayment.documentType }}</p>
+                                </div>
+                                <div class="detail-item" style="margin: 0;">
+                                    <p class="detail-label" style="font-size: 13px; margin-bottom: 6px; color: #6b7280;">Amount:</p>
+                                    <p class="detail-value" style="font-size: 15px; margin: 0; color: #239640; font-weight: 600;">₱{{ selectedPayment.amount.toFixed(2) }}</p>
+                                </div>
+                                <div class="detail-item" style="margin: 0;">
+                                    <p class="detail-label" style="font-size: 13px; margin-bottom: 6px; color: #6b7280;">Date Submitted:</p>
+                                    <p class="detail-value" style="font-size: 15px; margin: 0; color: #1a1a1a;">{{ selectedPayment.date }}</p>
+                                </div>
+                                <div class="detail-item" style="margin: 0;">
+                                    <p class="detail-label" style="font-size: 13px; margin-bottom: 6px; color: #6b7280;">Contact Number:</p>
+                                    <p class="detail-value" style="font-size: 15px; margin: 0; color: #1a1a1a;">{{ selectedPayment.contact || 'N/A' }}</p>
+                                </div>
+                                <div v-if="selectedPayment.transactionId && selectedPayment.transactionId !== 'N/A'" class="detail-item" style="margin: 0;">
+                                    <p class="detail-label" style="font-size: 13px; margin-bottom: 6px; color: #6b7280;">Transaction ID:</p>
+                                    <p class="detail-value" style="font-size: 15px; margin: 0; color: #1a1a1a; font-family: monospace;">{{ selectedPayment.transactionId }}</p>
+                                </div>
+                                <div v-if="selectedPayment.paymentTime && selectedPayment.paymentTime !== 'N/A'" class="detail-item" style="margin: 0;">
+                                    <p class="detail-label" style="font-size: 13px; margin-bottom: 6px; color: #6b7280;">Payment Time:</p>
+                                    <p class="detail-value" style="font-size: 15px; margin: 0; color: #1a1a1a;">{{ selectedPayment.paymentTime }}</p>
+                                </div>
                             </div>
                         </div>
 
-                        <!-- Action Button - Only show for PENDING payments -->
+                        <!-- Proof of Payment Section -->
+                        <div class="detail-section">
+                            <h4 class="section-title">Proof of Payment</h4>
+                            <div style="margin-top: 15px;">
+                                <div v-if="selectedPayment.receiptImage" class="attachment-preview-section">
+                                    <p class="detail-label" style="font-size: 14px; font-weight: 700; color: #6b7280; margin: 0 0 12px 0; text-transform: uppercase; letter-spacing: 0.5px;">Receipt Image:</p>
+                                    <div v-if="selectedPayment.transactionId && selectedPayment.transactionId !== 'N/A'" style="margin-bottom: 12px; text-align: center;">
+                                        <p class="detail-label" style="font-size: 13px; margin-bottom: 6px; color: #6b7280;">Transaction ID:</p>
+                                        <p class="detail-value" style="font-size: 15px; margin: 0; color: #1a1a1a; font-family: monospace;">{{ selectedPayment.transactionId }}</p>
+                                    </div>
+                                    <div class="image-preview-container-inline">
+                                        <img 
+                                            :src="selectedPayment.receiptImage" 
+                                            alt="Payment Receipt" 
+                                            class="attachment-image-inline"
+                                            style="max-width: 100%; max-height: 400px; border-radius: 8px; border: 1px solid #ddd; box-shadow: 0 2px 8px rgba(0,0,0,0.1); display: block; margin: 0 auto;"
+                                            @error="handleImageError"
+                                        />
+                                    </div>
+                                    <div class="attachment-actions-inline" style="margin-top: 15px; text-align: center;">
+                                        <a 
+                                            :href="selectedPayment.receiptImage" 
+                                            :download="`receipt_${selectedPayment.transactionId || selectedPayment.document || 'attachment'}.jpg`" 
+                                            class="download-receipt-btn"
+                                            target="_blank"
+                                        >
+                                            DOWNLOAD RECEIPT
+                                        </a>
+                                    </div>
+                                </div>
+                                <div v-else style="padding: 20px; background: #f8f9fa; border-radius: 8px; text-align: center;">
+                                    <p style="color: #999; font-size: 14px; margin: 0;">No proof of payment uploaded</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Action Buttons - Only show for PENDING payments -->
                         <div class="modal-actions" v-if="selectedPayment.status === 'PENDING'">
                             <button @click="openApproveModal" class="approve-btn">
-                                Confirm Payment
+                                CONFIRM PAYMENT
                             </button>
-
                             <button @click="openRejectModal" class="reject-btn">
-                                Reject Payment
+                                REJECT PAYMENT
                             </button>
                         </div>
                         
                         <!-- Status display for non-pending payments -->
-                        <div class="modal-status-display" v-else>
+                        <div class="modal-status-display" v-else style="text-align: center; margin-top: 20px;">
                             <div class="status-info">
-                                <p class="status-label">Payment Status:</p>
+                                <p class="status-label" style="font-size: 14px; color: #666; margin-bottom: 8px;">Payment Status:</p>
                                 <span class="payment-status-badge-large" :class="selectedPayment.status?.toLowerCase() || 'pending'">
                                     {{ selectedPayment.status || 'PENDING' }}
                                 </span>
@@ -294,21 +331,25 @@
             </div>
         </div>
 
-        <!-- Confirmation Modal -->
+        <!-- Payment Confirmed Success Modal -->
         <div v-if="showConfirmModal" class="modal-overlay" @click="closeConfirmModal">
-            <div class="confirm-modal-container" @click.stop>
-                <div class="confirm-modal-content">
-                    <div class="confirm-icon">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width: 32px; height: 32px;">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            <div class="success-modal" @click.stop>
+                <div class="success-modal-header">
+                    <div class="success-icon-wrapper">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" class="success-icon">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                     </div>
-                    <h3 class="confirm-title">Payment Confirmed!</h3>
-                    <p class="confirm-message">
+                    <h3 class="success-modal-title">Payment Confirmed!</h3>
+                </div>
+                <div class="success-modal-body">
+                    <p class="success-message">
                         Payment from <strong>{{ confirmedPaymentSnapshot?.requestor || 'Unknown' }}</strong> for 
                         <strong>{{ confirmedPaymentSnapshot?.document || 'N/A' }}</strong> has been successfully confirmed.
                     </p>
-                    <button @click="closeConfirmModal" class="confirm-ok-btn">
+                </div>
+                <div class="success-modal-footer">
+                    <button @click="closeConfirmModal" class="success-modal-btn">
                         OK
                     </button>
                 </div>
@@ -319,12 +360,12 @@
         <div v-if="showApproveModal" class="modal-overlay" @click="closeApproveModal">
             <div class="confirm-modal-container" @click.stop>
                 <div class="confirm-modal-content">
-                    <div class="confirm-icon" style="background: #239640;">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width: 32px; height: 32px;">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    <div class="confirm-icon-wrapper confirm-icon-green">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                     </div>
-                    <h3 class="confirm-title">Confirm Payment</h3>
+                    <h3 class="confirm-title confirm-title-green">Confirm Payment</h3>
                     <p class="confirm-message">
                         Are you sure you want to confirm the payment from 
                         <strong>{{ selectedPayment?.requestor }}</strong> for 
@@ -332,8 +373,8 @@
                         This action cannot be undone.
                     </p>
                     <div class="confirm-actions">
-                        <button @click="closeApproveModal" class="confirm-cancel-btn">Cancel</button>
-                        <button @click="confirmPayment" class="confirm-approve-btn">Confirm</button>
+                        <button @click="closeApproveModal" class="confirm-cancel-btn">CANCEL</button>
+                        <button @click="confirmPayment" class="confirm-approve-btn">CONFIRM</button>
                     </div>
                 </div>
             </div>
@@ -343,8 +384,12 @@
         <div v-if="showRejectModal" class="modal-overlay" @click="closeRejectModal">
             <div class="confirm-modal-container" @click.stop>
                 <div class="confirm-modal-content">
-                    <div class="confirm-icon">!</div>
-                    <h3 class="confirm-title">Reject Payment</h3>
+                    <div class="confirm-icon-wrapper confirm-icon-red">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9.75 9.75l4.5 4.5m0-4.5l-4.5 4.5M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    </div>
+                    <h3 class="confirm-title confirm-title-red">Reject Payment</h3>
                     <p class="confirm-message">
                         Are you sure you want to reject the payment from 
                         <strong>{{ selectedPayment?.requestor }}</strong> for 
@@ -352,24 +397,32 @@
                         This action cannot be undone.
                     </p>
                     <div class="confirm-actions">
-                        <button @click="closeRejectModal" class="confirm-cancel-btn">Cancel</button>
-                        <button @click="rejectPaymentConfirmed" class="confirm-reject-btn">Reject</button>
+                        <button @click="closeRejectModal" class="confirm-cancel-btn">CANCEL</button>
+                        <button @click="rejectPaymentConfirmed" class="confirm-reject-btn">REJECT</button>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Reject Success Modal -->
+        <!-- Payment Rejected Success Modal -->
         <div v-if="showRejectConfirmModal" class="modal-overlay" @click="closeRejectConfirmModal">
-            <div class="confirm-modal-container" @click.stop>
-                <div class="confirm-modal-content reject-modal-content">
-                    <div class="confirm-icon reject-icon">✖</div>
-                    <h3 class="confirm-title reject-title">Payment Rejected</h3>
-                    <p class="confirm-message">
+            <div class="error-modal" @click.stop>
+                <div class="error-modal-header">
+                    <div class="error-icon-wrapper">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" class="error-icon">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9.75 9.75l4.5 4.5m0-4.5l-4.5 4.5M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    </div>
+                    <h3 class="error-modal-title">Payment Rejected!</h3>
+                </div>
+                <div class="error-modal-body">
+                    <p class="error-message-text">
                         Payment from <strong>{{ rejectedPaymentSnapshot?.requestor }}</strong> for 
                         <strong>{{ rejectedPaymentSnapshot?.document }}</strong> has been rejected.
                     </p>
-                    <button @click="closeRejectConfirmModal" class="confirm-ok-btn reject-ok-btn">
+                </div>
+                <div class="error-modal-footer">
+                    <button @click="closeRejectConfirmModal" class="error-modal-btn">
                         OK
                     </button>
                 </div>
@@ -402,13 +455,140 @@
                 </div>
             </div>
         </div>
+
+        <!-- Terms and Conditions Modal -->
+        <div v-if="showTermsModal" class="modal-overlay" @click.self="closeTermsModal">
+            <div class="terms-modal" @click.stop>
+                <div class="terms-modal-header">
+                    <h2 class="terms-modal-title">Terms and Conditions</h2>
+                    <button @click="closeTermsModal" class="terms-modal-close">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width: 24px; height: 24px;">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+                <div class="terms-modal-body">
+                    <div class="terms-section">
+                        <h3 class="terms-section-title">1. Role and Responsibilities</h3>
+                        <p class="terms-text">
+                            As a Treasurer/Payment Handler, you are responsible for processing payment requests, verifying payment receipts, approving or rejecting payments, and maintaining accurate payment records for the iKonek176B system. You must exercise your payment handling privileges with care and in accordance with barangay financial policies and regulations.
+                        </p>
+                    </div>
+
+                    <div class="terms-section">
+                        <h3 class="terms-section-title">2. Access and Security</h3>
+                        <p class="terms-text">
+                            You have been granted access to payment processing functions. You must maintain the confidentiality of your login credentials and immediately report any suspected security breaches. Sharing your account credentials with unauthorized persons is strictly prohibited and may result in immediate account termination.
+                        </p>
+                    </div>
+
+                    <div class="terms-section">
+                        <h3 class="terms-section-title">3. Payment Processing</h3>
+                        <p class="terms-text">
+                            You are responsible for reviewing payment requests in a timely manner. When processing payments, you must:
+                            <ul class="terms-list">
+                                <li>Verify that payment receipts are valid and match the payment amount</li>
+                                <li>Ensure payment methods are correctly identified (Cash, GCash, Maya, Onsite)</li>
+                                <li>Approve or reject payments based on valid criteria and documented requirements</li>
+                                <li>Maintain accurate records of all payment transactions</li>
+                                <li>Process payments in accordance with barangay financial policies</li>
+                            </ul>
+                        </p>
+                    </div>
+
+                    <div class="terms-section">
+                        <h3 class="terms-section-title">4. Financial Data Privacy and Confidentiality</h3>
+                        <p class="terms-text">
+                            You have access to sensitive financial information of residents and officials. You must handle all payment data in accordance with the Data Privacy Act of 2012. Financial information must only be accessed for legitimate payment processing purposes and must never be disclosed to unauthorized parties or used for personal gain.
+                        </p>
+                    </div>
+
+                    <div class="terms-section">
+                        <h3 class="terms-section-title">5. Payment Approval and Rejection</h3>
+                        <p class="terms-text">
+                            When approving or rejecting payments, you must ensure that all decisions are justified, documented, and in compliance with barangay financial policies. Discrimination or bias in processing payments is strictly prohibited. All payment actions are logged and may be subject to audit.
+                        </p>
+                    </div>
+
+                    <div class="terms-section">
+                        <h3 class="terms-section-title">6. Receipt Verification</h3>
+                        <p class="terms-text">
+                            You must carefully verify payment receipts to ensure they are legitimate and match the payment request. If a receipt appears fraudulent or does not match the payment details, you must reject the payment and document the reason. Failure to properly verify receipts may result in financial discrepancies.
+                        </p>
+                    </div>
+
+                    <div class="terms-section">
+                        <h3 class="terms-section-title">7. Limitations and Restrictions</h3>
+                        <p class="terms-text">
+                            Your payment processing privileges do not grant you the right to:
+                            <ul class="terms-list">
+                                <li>Access or modify system code or database structure without authorization</li>
+                                <li>Bypass system security measures or attempt to exploit system vulnerabilities</li>
+                                <li>Use payment processing functions for personal purposes or to gain unfair advantage</li>
+                                <li>Delete or modify payment logs or audit trails</li>
+                                <li>Grant payment processing privileges to other users without proper authorization</li>
+                                <li>Approve payments without proper verification</li>
+                            </ul>
+                        </p>
+                    </div>
+
+                    <div class="terms-section">
+                        <h3 class="terms-section-title">8. Prohibited Activities</h3>
+                        <p class="terms-text">
+                            The following activities are strictly prohibited:
+                            <ul class="terms-list">
+                                <li>Unauthorized access to payment records or financial data</li>
+                                <li>Tampering with payment records or documentation</li>
+                                <li>Approving payments without proper verification</li>
+                                <li>Sharing financial information outside of official channels</li>
+                                <li>Engaging in any activity that compromises system security or financial integrity</li>
+                                <li>Accepting bribes or favors in exchange for payment approval</li>
+                            </ul>
+                        </p>
+                    </div>
+
+                    <div class="terms-section">
+                        <h3 class="terms-section-title">9. Accountability and Auditing</h3>
+                        <p class="terms-text">
+                            All payment processing actions are logged and monitored. You are accountable for all actions performed using your account. Regular audits may be conducted to ensure compliance with these terms and financial policies. Failure to comply may result in disciplinary action, including but not limited to account suspension or termination.
+                        </p>
+                    </div>
+
+                    <div class="terms-section">
+                        <h3 class="terms-section-title">10. Violations and Consequences</h3>
+                        <p class="terms-text">
+                            Violation of these terms and conditions may result in immediate suspension or termination of your payment processing account, legal action if applicable, and reporting to appropriate barangay authorities. The severity of consequences will depend on the nature and extent of the violation.
+                        </p>
+                    </div>
+
+                    <div class="terms-section">
+                        <h3 class="terms-section-title">11. Updates to Terms</h3>
+                        <p class="terms-text">
+                            These terms and conditions may be updated periodically. You will be notified of significant changes. Continued use of payment processing privileges after changes constitutes acceptance of the updated terms.
+                        </p>
+                    </div>
+
+                    <div class="terms-section">
+                        <h3 class="terms-section-title">12. Contact and Support</h3>
+                        <p class="terms-text">
+                            For questions, concerns, or to report issues related to your payment processing role, contact the Barangay 176B office at ikonek176b@dev.ph or +639193076338.
+                        </p>
+                    </div>
+                </div>
+                <div class="terms-modal-footer">
+                    <button @click="closeTermsModal" class="terms-modal-btn">
+                        I UNDERSTAND
+                    </button>
+                </div>
+            </div>
+        </div>
     </div>
 </template>
 
 <script setup>
 import { Link } from '@inertiajs/vue3'
 import { Head, usePage } from '@inertiajs/vue3'
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import { router } from '@inertiajs/vue3'
 
   // --- Inertia-shared auth user ---
@@ -435,6 +615,7 @@ const displayRole = computed(() => {
 
 // Reactive data
 const showSettings = ref(false)
+const showTermsModal = ref(false)
 const showSortDropdown = ref(false)
 const showFilterDropdown = ref(false)
 const sortOption = ref('newest')
@@ -524,6 +705,10 @@ onMounted(() => {
 })
 
 // Computed filtered payments
+// Pagination
+const currentPage = ref(1)
+const itemsPerPage = ref(10)
+
 const filteredPayments = computed(() => {
     let filtered = [...payments.value]
 
@@ -561,6 +746,42 @@ const filteredPayments = computed(() => {
     return filtered
 })
 
+// Paginated payments
+const paginatedPayments = computed(() => {
+    const start = (currentPage.value - 1) * itemsPerPage.value
+    const end = start + itemsPerPage.value
+    return filteredPayments.value.slice(start, end)
+})
+
+// Total pages
+const totalPages = computed(() => {
+    return Math.ceil(filteredPayments.value.length / itemsPerPage.value)
+})
+
+// Pagination functions
+const goToPage = (page) => {
+    if (page >= 1 && page <= totalPages.value) {
+        currentPage.value = page
+        // Scroll to top of requests container
+        const requestsContainer = document.querySelector('.requests-container')
+        if (requestsContainer) {
+            requestsContainer.scrollIntoView({ behavior: 'smooth', block: 'start' })
+        }
+    }
+}
+
+const nextPage = () => {
+    if (currentPage.value < totalPages.value) {
+        goToPage(currentPage.value + 1)
+    }
+}
+
+const prevPage = () => {
+    if (currentPage.value > 1) {
+        goToPage(currentPage.value - 1)
+    }
+}
+
 // -- helper to call backend and handle success/failure
 const sendStatusUpdate = (paymentId, status, notes = '') => {
   // Use a direct URL so Ziggy missing-route errors won't break the call.
@@ -593,6 +814,21 @@ const toggleSettings = () => {
 
 const closeSettings = () => {
     showSettings.value = false
+}
+
+const openTermsModal = (e) => {
+    if (e) {
+        e.preventDefault()
+        e.stopPropagation()
+    }
+    showSettings.value = false
+    nextTick(() => {
+        showTermsModal.value = true
+    })
+}
+
+const closeTermsModal = () => {
+    showTermsModal.value = false
 }
 
 const toggleSortDropdown = () => {
@@ -756,6 +992,10 @@ const navigateToHistory = () => {
 
 // Close dropdowns when clicking outside
 const handleClickOutside = (event) => {
+    // If the terms modal is open and the click is inside it, do nothing
+    if (showTermsModal.value && event.target.closest('.terms-modal')) {
+        return
+    }
     if (!event.target.closest('.header-actions')) {
         showSettings.value = false
     }
@@ -796,12 +1036,23 @@ onUnmounted(() => {
   cursor: pointer;
 }
 .reject-btn {
-  padding: 8px 14px;
-  border-radius: 6px;
-  border: none;
-  background-color: #dc3545;
-  color: white;
-  cursor: pointer;
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+    color: white;
+    border: none;
+    padding: 14px 32px;
+    border-radius: 12px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 16px;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(239, 68, 68, 0.25);
+    letter-spacing: 0.01em;
+}
+
+.reject-btn:hover {
+    background: linear-gradient(135deg, #dc2626, #b91c1c);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 16px rgba(239, 68, 68, 0.35);
 }
 
 /* Confirm modal action buttons */
@@ -814,9 +1065,12 @@ onUnmounted(() => {
 .confirm-cancel-btn {
   padding: 8px 12px;
   border-radius: 6px;
-  border: 1px solid #ccc;
+  border: 1px solid #e0e0e0;
   background: white;
+  color: #4a4a4a;
   cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s ease;
 }
 .confirm-approve-btn {
   padding: 8px 12px;
@@ -1228,9 +1482,10 @@ onUnmounted(() => {
 
 /* Requests Container */
 .requests-container {
-    padding: 25px;
-    max-height: calc(100vh - 350px);
-    overflow-y: auto;
+    padding: 25px 25px 10px 25px;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
 }
 
 .request-card {
@@ -1238,7 +1493,6 @@ onUnmounted(() => {
     border: 1px solid #e0e0e0;
     border-radius: 12px;
     padding: 20px;
-    margin-bottom: 20px;
     box-shadow: 0 4px 12px rgba(0,0,0,0.06);
     transition: all 0.3s ease;
 }
@@ -1261,11 +1515,11 @@ onUnmounted(() => {
 }
 
 .modal-avatar {
-    width: 70px;
-    height: 70px;
-    border-radius: 15px;
+    width: 60px;
+    height: 60px;
+    border-radius: 12px;
     object-fit: cover;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
     flex-shrink: 0;
 }
 
@@ -1396,6 +1650,107 @@ onUnmounted(() => {
     background: #1e7e34;
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(35, 150, 64, 0.4);
+}
+
+.view-btn {
+    pointer-events: auto;
+    position: relative;
+    z-index: 10;
+}
+
+/* Pagination Styles */
+.pagination-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: -5px;
+    padding: 15px 20px;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.pagination-info {
+    font-size: 14px;
+    color: #666;
+    font-weight: 500;
+}
+
+.pagination-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.pagination-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 18px;
+    background: #fff;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #333;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.pagination-btn:hover:not(:disabled) {
+    background: #ff8c42;
+    border-color: #ff8c42;
+    color: #fff;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(255, 140, 66, 0.3);
+}
+
+.pagination-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background: #f5f5f5;
+}
+
+.pagination-numbers {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+}
+
+.pagination-number {
+    min-width: 40px;
+    height: 40px;
+    padding: 0 12px;
+    background: #fff;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #333;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.pagination-number:hover {
+    background: #f8f9fa;
+    border-color: #ff8c42;
+    color: #ff8c42;
+    transform: translateY(-1px);
+}
+
+.pagination-number.active {
+    background: linear-gradient(135deg, #ff8c42, #ff7a28);
+    border-color: #ff8c42;
+    color: #fff;
+    box-shadow: 0 2px 8px rgba(255, 140, 66, 0.3);
+}
+
+.pagination-number.active:hover {
+    background: linear-gradient(135deg, #ff7a28, #ff6a18);
+    transform: translateY(-1px);
 }
 
 .no-requests {
@@ -1576,20 +1931,43 @@ onUnmounted(() => {
     border-radius: 10px;
 }
 
-.detail-label {
-    font-size: 12px;
+.detail-section {
+    margin-top: 24px;
+    padding-top: 24px;
+    border-top: 1px solid #e5e7eb;
+}
+
+.detail-section:first-of-type {
+    margin-top: 0;
+    padding-top: 0;
+    border-top: none;
+}
+
+.section-title {
+    font-size: 20px;
     font-weight: 700;
-    color: #666;
-    margin: 0 0 5px 0;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
+    color: #239640;
+    margin: 0 0 16px 0;
+    padding-bottom: 12px;
+    border-bottom: 2px solid #239640;
+    letter-spacing: -0.01em;
+}
+
+.detail-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: #6b7280;
+    margin: 0 0 6px 0;
+    text-transform: none;
+    letter-spacing: 0;
 }
 
 .detail-value {
-    font-size: 14px;
-    color: #333;
-    font-weight: 600;
+    font-size: 15px;
+    color: #1a1a1a;
+    font-weight: 500;
     margin: 0;
+    line-height: 1.5;
 }
 
 
@@ -1598,6 +1976,8 @@ onUnmounted(() => {
     justify-content: flex-end;
     gap: 15px;
     margin-top: 10px;
+    padding-top: 24px;
+    border-top: 1px solid #e5e7eb;
 }
 
 .modal-status-display {
@@ -1661,17 +2041,20 @@ onUnmounted(() => {
     background: #239640;
     color: white;
     border: none;
-    padding: 12px 30px;
-    border-radius: 10px;
+    padding: 14px 32px;
+    border-radius: 12px;
     cursor: pointer;
-    font-weight: 700;
-    font-size: 14px;
+    font-weight: 600;
+    font-size: 16px;
     transition: all 0.3s ease;
-    box-shadow: 0 2px 8px rgba(35, 150, 64, 0.3);
+    box-shadow: 0 2px 8px rgba(35, 150, 64, 0.25);
+    letter-spacing: 0.01em;
 }
 
 .approve-btn:hover {
-    background: #1e7d36;
+    background: #1e7d35;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 16px rgba(35, 150, 64, 0.35);
 }
 
 /* Confirmation Modal */
@@ -1693,30 +2076,38 @@ onUnmounted(() => {
     gap: 20px;
 }
 
-.confirm-icon {
-    width: 80px;
-    height: 80px;
-    border-radius: 50%;
-    background: #239640;
-    color: white;
+.confirm-icon-wrapper {
     display: flex;
     align-items: center;
     justify-content: center;
     margin: 0 auto 20px;
-    box-shadow: 0 4px 15px rgba(35, 150, 64, 0.3);
 }
 
-.confirm-icon svg {
-    width: 32px;
-    height: 32px;
-    stroke-width: 3;
+.confirm-icon-wrapper svg {
+    width: 120px;
+    height: 120px;
+}
+
+.confirm-icon-green svg {
+    color: #239640;
+}
+
+.confirm-icon-red svg {
+    color: #dc2626;
 }
 
 .confirm-title {
     font-size: 26px;
     font-weight: 700;
-    color: #239640;
     margin: 0;
+}
+
+.confirm-title-green {
+    color: #239640;
+}
+
+.confirm-title-red {
+    color: #dc2626;
 }
 
 .confirm-message {
@@ -1744,15 +2135,6 @@ onUnmounted(() => {
     background: #1e7d36;
 }
 
-/* Reject Confirmation Modal - Red Theme */
-.reject-icon {
-    background: #dc3545 !important;
-    box-shadow: 0 4px 15px rgba(220, 53, 69, 0.3) !important;
-}
-
-.reject-title {
-    color: #dc3545 !important;
-}
 
 .reject-ok-btn {
     background: #dc3545 !important;
@@ -1938,4 +2320,328 @@ onUnmounted(() => {
     .view-btn {
         width: 100%;
     }
-}</style>
+}
+
+/* Success Modal Styles */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+.success-modal {
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    max-width: 500px;
+    width: 90%;
+    overflow: hidden;
+    animation: slideUp 0.3s ease;
+}
+
+.success-modal-header {
+    background: white;
+    padding: 30px 25px;
+    text-align: center;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.success-icon-wrapper {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 15px;
+}
+
+.success-icon {
+    width: 120px;
+    height: 120px;
+    color: #239640;
+    background: transparent;
+    border-radius: 50%;
+    padding: 0;
+}
+
+.success-modal-title {
+    margin: 0;
+    font-size: 24px;
+    font-weight: 700;
+    color: #239640;
+}
+
+.success-modal-body {
+    padding: 30px 25px;
+    text-align: center;
+}
+
+.success-message {
+    margin: 0;
+    font-size: 16px;
+    line-height: 1.6;
+    color: #333;
+}
+
+.success-modal-footer {
+    padding: 20px 25px;
+    border-top: 1px solid #e0e0e0;
+    display: flex;
+    justify-content: center;
+    background: #f8f9fa;
+}
+
+.success-modal-btn {
+    padding: 12px 40px;
+    background: #ff8c42;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(255, 140, 66, 0.3);
+}
+
+.success-modal-btn:hover {
+    background: #ff7a28;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(255, 140, 66, 0.4);
+}
+
+/* Error Modal Styles */
+.error-modal {
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    max-width: 500px;
+    width: 90%;
+    overflow: hidden;
+    animation: slideUp 0.3s ease;
+}
+
+.error-modal-header {
+    background: white;
+    padding: 30px 25px;
+    text-align: center;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.error-icon-wrapper {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 15px;
+}
+
+.error-icon {
+    width: 120px;
+    height: 120px;
+    color: #dc2626;
+    background: transparent;
+    border-radius: 50%;
+    padding: 0;
+}
+
+.error-modal-title {
+    margin: 0;
+    font-size: 24px;
+    font-weight: 700;
+    color: #dc2626;
+}
+
+.error-modal-body {
+    padding: 30px 25px;
+    text-align: center;
+}
+
+.error-message-text {
+    margin: 0;
+    font-size: 16px;
+    line-height: 1.6;
+    color: #333;
+}
+
+.error-modal-footer {
+    padding: 20px 25px;
+    border-top: 1px solid #e0e0e0;
+    display: flex;
+    justify-content: center;
+    background: #f8f9fa;
+}
+
+.error-modal-btn {
+    padding: 12px 40px;
+    background: #ff8c42;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(255, 140, 66, 0.3);
+}
+
+.error-modal-btn:hover {
+    background: #ff7a28;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(255, 140, 66, 0.4);
+}
+
+/* Terms and Conditions Modal Styles */
+@keyframes slideUp {
+    from {
+        transform: translateY(20px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.terms-modal {
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    max-width: 800px;
+    width: 90%;
+    max-height: 90vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    animation: slideUp 0.3s ease;
+}
+
+.terms-modal-header {
+    background: white;
+    padding: 25px 30px;
+    border-bottom: 1px solid #e0e0e0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.terms-modal-title {
+    margin: 0;
+    font-size: 28px;
+    font-weight: 700;
+    color: #333;
+}
+
+.terms-modal-close {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 8px;
+    color: #666;
+    transition: all 0.2s ease;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.terms-modal-close:hover {
+    background: #f0f0f0;
+    color: #333;
+}
+
+.terms-modal-body {
+    padding: 30px;
+    overflow-y: auto;
+    flex: 1;
+}
+
+.terms-section {
+    margin-bottom: 25px;
+}
+
+.terms-section:last-child {
+    margin-bottom: 0;
+}
+
+.terms-section-title {
+    margin: 0 0 12px 0;
+    font-size: 18px;
+    font-weight: 700;
+    color: #239640;
+}
+
+.terms-text {
+    margin: 0;
+    font-size: 15px;
+    line-height: 1.7;
+    color: #555;
+    text-align: justify;
+}
+
+.terms-list {
+    margin: 10px 0 0 20px;
+    padding: 0;
+}
+
+.terms-list li {
+    margin-bottom: 8px;
+    font-size: 15px;
+    line-height: 1.6;
+    color: #555;
+}
+
+.terms-modal-footer {
+    padding: 20px 30px;
+    border-top: 1px solid #e0e0e0;
+    display: flex;
+    justify-content: center;
+    background: #f8f9fa;
+    flex-shrink: 0;
+}
+
+.terms-modal-btn {
+    padding: 12px 50px;
+    background: #ff8c42;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(255, 140, 66, 0.3);
+}
+
+.terms-modal-btn:hover {
+    background: #ff7a28;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(255, 140, 66, 0.4);
+}
+
+.settings-item {
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.download-receipt-btn {
+    display: inline-block;
+    text-align: center;
+    padding: 12px 24px;
+    background: transparent;
+    color: #239640;
+    border: 2px solid #239640;
+    text-decoration: none;
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: 15px;
+    transition: all 0.3s ease;
+    white-space: nowrap;
+}
+
+.download-receipt-btn:hover {
+    background: #239640;
+    color: white;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(35, 150, 64, 0.3);
+}
+</style>

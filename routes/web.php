@@ -24,6 +24,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ResidentAnnouncementController;
 use App\Http\Controllers\PostReactionController;
 use App\Http\Controllers\PostCommentController;
+use App\Http\Controllers\CommentReactionController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\TagController;
@@ -128,7 +129,10 @@ Route::middleware('auth')->group(function () {
     Route::post('/discussion/store', [DiscussionController::class, 'store'])->name('posts.store');
 
     // General posts
-    Route::post('/posts', [PostController::class, 'store'])->name('posts.store');
+    Route::delete('/posts/{postId}', [PostController::class, 'destroy'])->name('posts.destroy');
+
+    // Comments
+    Route::delete('/comments/{commentId}', [PostCommentController::class, 'destroy'])->name('comments.destroy');
 });
 
 
@@ -151,6 +155,16 @@ Route::middleware(['auth'])->group(function () {
 Route::middleware(['auth'])->group(function () {
     Route::post('/event-assistance', [EventAssistanceRequestController::class, 'store'])
         ->name('event_assist.store');
+    
+    // Event Assistance Appeal/Resubmission routes
+    Route::get('/event-assistance/{id}/appeal', [EventAssistanceRequestController::class, 'appealForm'])
+        ->name('event_assistance_appeal');
+    
+    Route::post('/event-assistance/{id}/appeal', [EventAssistanceRequestController::class, 'appeal'])
+        ->name('event_assistance.appeal');
+    
+    Route::put('/event-assistance/{id}', [EventAssistanceRequestController::class, 'update'])
+        ->name('event_assistance.update');
 });
 
 Route::inertia("/r_notification_activities", 'User/Resident/R_Notification_Activities')->name('notification_activities_resident');
@@ -204,7 +218,9 @@ Route::middleware('auth')->group(function () {
     Route::post('/employee/announcement/store', [AnnouncementController::class, 'store'])->name('announcement_employee.store');
     Route::get('/employee/announcement/{id}', [AnnouncementController::class, 'show'])->name('announcement_clickpost_employee');
 
-    Route::post('/posts', [PostController::class, 'store'])->name('posts.store');
+    // Note: This route is kept for backward compatibility but should not be used
+    // Residents should use /discussion/store (posts.store) which goes to DiscussionController
+    Route::post('/posts', [PostController::class, 'store'])->name('posts.store.legacy');
 });
 
 Route::inertia("/e_document_request_select", 'User/Employee/E_Document_Request_Select')->name('document_request_select_employee');
@@ -241,6 +257,9 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/posts/{postId}/comments', [PostCommentController::class, 'getComments'])->name('posts.comments.get');
     Route::get('/posts/{postId}/comments/count', [PostCommentController::class, 'getCommentCount'])->name('posts.comments.count');
     
+    // Comment reactions
+    Route::post('/comments/{commentId}/reactions', [CommentReactionController::class, 'toggle'])->name('comments.reactions.toggle');
+    
     // Tags API
     Route::get('/api/tags/trending', [TagController::class, 'trending'])->name('api.tags.trending');
     
@@ -248,6 +267,13 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/api/notifications', [NotificationController::class, 'index'])->name('api.notifications.index');
     Route::put('/api/notifications/{id}/read', [NotificationController::class, 'markAsRead'])->name('api.notifications.mark-read');
     Route::put('/api/notifications/mark-all-read', [NotificationController::class, 'markAllAsRead'])->name('api.notifications.mark-all-read');
+    
+    // Posts API - Check if posts exist
+    Route::post('/api/posts/check', [PostController::class, 'checkPosts'])->name('api.posts.check');
+    
+    // Poll routes
+    Route::post('/polls/{pollId}/vote', [\App\Http\Controllers\PollController::class, 'vote'])->name('polls.vote');
+    Route::get('/posts/{postId}/poll', [\App\Http\Controllers\PollController::class, 'getPoll'])->name('posts.poll');
 });
 
 Route::inertia("/e_help_center", 'User/Employee/E_Help_Center')->name('help_center_employee');
@@ -255,7 +281,6 @@ Route::inertia("/e_help_center", 'User/Employee/E_Help_Center')->name('help_cent
 // Approver Routes
 Route::inertia("/a_dashboard", 'Admin/Approver/A_Dashboard')->name('dashboard_approver');
 
-Route::inertia("/a_document_request", 'Admin/Approver/A_Document_Request')->name('document_request_approver');
 Route::get('/a_document_request', [DocumentRequestController::class, 'docuReq'])
      ->middleware(['auth']) // make sure it matches your auth middleware
      ->name('document_request_approver');
@@ -271,6 +296,19 @@ Route::post('/document-requests/{id}/approve', [DocumentRequestController::class
 
 Route::post('/document-requests/{id}/reject', [DocumentRequestController::class, 'reject'])
     ->name('document_requests.reject')
+    ->middleware(['auth']);
+
+// Appeal/reapply rejected request
+Route::get('/document-requests/{id}/appeal', [DocumentRequestController::class, 'appealForm'])
+    ->name('document_request_appeal')
+    ->middleware(['auth']);
+
+Route::post('/document-requests/{id}/appeal', [DocumentRequestController::class, 'appeal'])
+    ->name('document_requests.appeal')
+    ->middleware(['auth']);
+
+Route::put('/document-requests/{id}', [DocumentRequestController::class, 'update'])
+    ->name('document_requests.update')
     ->middleware(['auth']);
 
 // Download generated document
@@ -312,6 +350,10 @@ Route::get("/s_dashboard", [DashboardController::class, 'index'])
 // User management actions
 Route::post('/admin/users/{userId}/restrict', [DashboardController::class, 'restrictUser'])
     ->name('admin.users.restrict')
+    ->middleware('auth');
+
+Route::post('/admin/users/{userId}/unrestrict', [DashboardController::class, 'unrestrictUser'])
+    ->name('admin.users.unrestrict')
     ->middleware('auth');
 
 Route::post('/admin/users/{userId}/password', [DashboardController::class, 'changePassword'])
@@ -364,10 +406,23 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/reports', [ReportController::class, 'store'])->name('reports.store');
     Route::post('/reports/{id}/dismiss', [ReportController::class, 'dismiss'])->name('reports.dismiss');
     Route::delete('/admin/posts/{postId}', [ReportController::class, 'deletePost'])->name('admin.posts.delete');
+    Route::post('/admin/contact_messages/{id}', [ReportController::class, 'updateContactMessage'])->name('admin.contact_messages.update');
+});
+
+// History API routes
+Route::middleware(['auth'])->prefix('api/history')->group(function () {
+    Route::get('/officials', [\App\Http\Controllers\HistoryController::class, 'getOfficials'])->name('api.history.officials');
+    Route::get('/reports', [\App\Http\Controllers\HistoryController::class, 'getReports'])->name('api.history.reports');
+    Route::get('/messages', [\App\Http\Controllers\HistoryController::class, 'getMessages'])->name('api.history.messages');
 });
 
 // OTP routes for registration (no auth required)
 Route::post('/otp/send', [\App\Http\Controllers\OtpController::class, 'send'])->name('otp.send');
 Route::post('/otp/verify', [\App\Http\Controllers\OtpController::class, 'verify'])->name('otp.verify');
 Route::post('/otp/check-verification', [\App\Http\Controllers\OtpController::class, 'checkVerification'])->name('otp.check-verification');
+
+// Forgot password routes (no auth required)
+Route::post('/forgot-password/send-otp', [\App\Http\Controllers\ForgotPasswordController::class, 'sendOtp'])->name('forgot-password.send-otp');
+Route::post('/forgot-password/verify-otp', [\App\Http\Controllers\ForgotPasswordController::class, 'verifyOtp'])->name('forgot-password.verify-otp');
+Route::post('/forgot-password/reset', [\App\Http\Controllers\ForgotPasswordController::class, 'resetPassword'])->name('forgot-password.reset');
 

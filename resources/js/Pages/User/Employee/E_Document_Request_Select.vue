@@ -14,7 +14,7 @@
                     <img src="/assets/SETTINGS.png" alt="Settings" class="settings-btn-img" @click="toggleSettings" />
                     <!-- Settings Dropdown -->
                     <div v-if="showSettings" class="settings-dropdown">
-                        <Link href="#" class="settings-item" @click="closeSettings">Help Center</Link>
+                        <Link href="#" class="settings-item" @click.prevent="navigateToHelpCenter">Help Center</Link>
                         <button type="button" class="settings-item" @click="openTerms">Terms & Conditions</button>
                         <Link href="#" class="settings-item" @click="logout">Sign Out</Link>
                     </div>
@@ -78,6 +78,7 @@
                             <path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0" />
                         </svg>
                         Notifications
+                        <span v-if="unreadCount > 0" class="unread-badge-nav">{{ unreadCount }}</span>
                     </Link>
                     <Link 
                         href="#" 
@@ -96,7 +97,7 @@
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="nav-icon">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 5.25h.008v.008H12v-.008Z" />
                     </svg>
-                    FAQs & Help Center
+                    FAQS & HELP CENTER
                 </button>
             </div>
 
@@ -276,7 +277,6 @@
                                         <label class="field-label">
                                             {{ field.label }} 
                                             <span v-if="field.required" class="required-star">*</span>
-                                            <span v-else class="optional-text">(Optional)</span>
                                         </label>
                                         <p v-if="field.description" class="field-description">{{ field.description }}</p>
                                     </div>
@@ -357,7 +357,6 @@
                                             <label class="file-upload-label">
                                                 {{ field.label }} 
                                                 <span v-if="field.required" class="required-star">*</span>
-                                                <span v-else class="optional-text">(Optional)</span>
                                             </label>
                                             <p v-if="field.description" class="file-upload-description">{{ field.description }}</p>
                                         </div>
@@ -396,6 +395,25 @@
                                 </div>
                             </div>
 
+                        </div>
+
+                        <!-- Error Message Display -->
+                        <div v-if="submitError" class="error-message-container" style="margin-top: 20px; margin-bottom: 15px;">
+                            <div class="error-alert" style="background: #fee; border: 1px solid #fcc; border-radius: 8px; padding: 15px; color: #c33;">
+                                <div style="display: flex; align-items: center; gap: 10px;">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width: 20px; height: 20px; flex-shrink: 0;">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                    <span style="font-weight: 600;">{{ submitError }}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Field Error Messages -->
+                        <div v-if="Object.keys(formErrors).length > 0" class="field-errors-container" style="margin-bottom: 15px;">
+                            <div v-for="(error, field) in formErrors" :key="field" class="field-error" style="background: #fff3cd; border: 1px solid #ffc107; border-radius: 6px; padding: 10px; margin-bottom: 8px; color: #856404; font-size: 14px;">
+                                <strong>{{ field.replace('_', ' ').replace('extra_fields.', '') }}:</strong> {{ error }}
+                            </div>
                         </div>
 
                         <button
@@ -445,6 +463,7 @@ import { Link, usePage } from '@inertiajs/vue3'
 import { Head, useForm } from '@inertiajs/vue3'
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { router } from '@inertiajs/vue3'
+import axios from 'axios'
 import TermsModal from '@/Components/TermsModal.vue'
 
 // Get page props
@@ -526,6 +545,12 @@ const selectedDocType = ref('Barangay Certificate')
 const requestNumber = ref('')
 const isSubmitting = ref(false)
 const purposeOthers = ref('') // For custom purpose input when "Others" is selected
+const unreadCount = ref(0)
+
+// Error handling state
+const formErrors = ref({})
+const submitError = ref('')
+const fieldErrors = ref({})
 
 // Common purposes for Barangay Certificate
 const barangayCertificatePurposes = [
@@ -616,31 +641,22 @@ const today = new Date().toISOString().split('T')[0]
 // Document lists and descriptions
 const documentNames = [
     'Barangay Certificate',
-    'Barangay Clearance',
     'Barangay ID',
+    'Permit',
     'Cedula',
-    'Business Permit',
-    'Building Permit',
     'Certificate of Indigency',
-    'Certificate of Good Moral',
 ]
 
 const documentDescriptions = {
     'Barangay Certificate': 'Ang Barangay Certificate ay isang opisyal na dokumentong ibinibigay ng barangay upang patunayan na ang isang tao ay lehitimong residente ng nasabing lugar. Karaniwan itong kinakailangan sa iba\'t ibang transaksyong legal at administratibo gaya ng pag-apply ng trabaho, pag-enroll sa paaralan, pagkuha ng tulong mula sa gobyerno, at pagproseso ng mga permit o lisensya.',
     
-    'Barangay Clearance': 'Ang Barangay Clearance ay sertipikasyon na nagpapatunay na ang isang residente ay walang pending case o anumang kaso sa loob ng barangay. Ito ay kailangan para sa employment, business permits, at iba pang legal transactions. Nagpapakita rin ito ng mabuting asal ng isang tao sa komunidad.',
-    
     'Barangay ID': 'Ang Barangay ID ay isang opisyal na identification card na ibinibigay ng barangay sa mga lehitimong residente. Ito ay ginagamit bilang proof of residency at maaaring gamitin sa iba\'t ibang transaksyon sa loob at labas ng barangay. May kasamang larawan at personal na impormasyon ng may-ari.',
+    
+    'Permit': 'Ang Permit ay maaaring maging Barangay Business Permit o Barangay Building Permit. Piliin ang uri ng permit na nais mong i-request.',
     
     'Cedula': 'Ang Cedula o Community Tax Certificate ay isang dokumento na nagpapatunay na ang isang indibidwal ay nagbayad ng community tax. Ito ay kailangan sa iba\'t ibang legal at business transactions, at ginagamit din bilang valid ID sa ilang transaksyon.',
         
     'Certificate of Indigency': 'Ang Certificate of Indigency ay sertipikasyon na nagpapatunay na ang isang pamilya o indibidwal ay walang sapat na kita at nangangailangan ng tulong. Ito ay ginagamit upang makakuha ng medical assistance, educational scholarships, at iba pang social services mula sa gobyerno at pribadong organisasyon.',
-    
-    'Business Permit': 'Ang Barangay Business Permit ay kinakailangan para sa lahat ng negosyo na nais magsimula ng operasyon sa loob ng barangay. Ito ay nagpapatunay na ang negosyo ay sumusunod sa mga regulasyon ng barangay at hindi nakakasagabal sa kapakanan ng mga residente.',
-    
-    'Building Permit': 'Ang Barangay Building Permit ay kinakailangan bago magsimula ng anumang konstruksyon o renovation sa loob ng barangay. Ito ay bahagi ng proseso ng pagkuha ng building permit mula sa munisipyo at nagsisiguro na ang plano ay sumusunod sa zoning at safety regulations.',
-    
-    'Certificate of Good Moral': 'Ang Certificate of Good Moral ay sertipikasyon na nagpapatunay na ang isang residente ay may mabuting asal at walang record ng maling gawa sa loob ng barangay. Ito ay kailangan para sa employment, school admission, at iba pang professional requirements.',
 }
 
 const documentRequirements = {
@@ -650,13 +666,6 @@ const documentRequirements = {
         '• Personal appearance',
         '• Processing fee',
     ],
-    'Barangay Clearance': [
-        '• Valid ID of the requestor',
-        '• 2x2 photo (2 copies)',
-        '• Supporting documents for residency verification',
-        '• Processing fee',
-        '• Cedula',
-    ],
     'Barangay ID': [
         '• Valid ID of the requestor',
         '• 2x2 photo (2 copies)',
@@ -664,6 +673,12 @@ const documentRequirements = {
         '• Processing fee',
         '• Birth Certificate',
         '• Personal appearance',
+    ],
+    'Permit': [
+        '• Valid ID of the requestor',
+        '• Supporting documents for residency verification',
+        '• Processing fee',
+        '• Additional requirements depend on permit type (Building/Business)',
     ],
     'Cedula': [
         '• Valid ID of the requestor',
@@ -680,99 +695,39 @@ const documentRequirements = {
         '• Personal appearance',
         '• Processing fee',
     ],
-    'Business Permit': [
-        '• Valid ID of the requestor (owner)',
-        '• Business registration documents',
-        '• Supporting documents for residency verification',
-        '• Lease Contract (if renting)',
-        '• Barangay Clearance',
-        '• DTI Registration',
-        '• Location Plan',
-        '• Processing fee',
-        '• Personal appearance',
-    ],
-    'Building Permit': [
-        '• Valid ID of the requestor (owner)',
-        '• Building plans (3 copies)',
-        '• Lot title or tax declaration',
-        '• Supporting documents for residency verification',
-        '• Barangay Clearance',
-        '• Engineer/s Certification',
-        '• Processing fee',
-        '• Personal appearance',
-    ],
-    'Certificate of Good Moral': [
-        '• Valid ID of the requestor',
-        '• Supporting documents for residency verification',
-        '• Processing fee',
-        '• Personal appearance',
-    ],
 }
 
 const documentFields = {
   'Barangay Certificate': [
-    { name: 'duration_of_residency', label: 'Duration of Residency (years)', type: 'number', required: false, placeholder: 'Enter number of years', min: 0, step: 1 },
+    { name: 'duration_of_residency', label: 'Duration of Residency (years)', type: 'number', required: true, placeholder: 'Enter number of years', min: 0, step: 1, description: 'Enter the number of years you have been a resident of this barangay' },
     { name: 'supporting_documents', label: 'Supporting Documents for Residency Verification', type: 'file', required: true, accept: '.pdf,image/*', description: 'Upload utility bills, lease contract, or other proof of residency' }
-  ],
-
-  'Barangay Clearance': [
-    { name: 'clearance_for', label: 'Clearance Type', type: 'select', required: true, placeholder: 'Select clearance purpose', options: ['Employment', 'Business', 'Travel', 'School Admission', 'Government Transaction', 'Other'] },
-    { name: '2x2_photo', label: '2x2 Photo (2 copies)', type: 'file', required: true, accept: 'image/*', description: 'Upload 2x2 ID picture (2 copies)' },
-    { name: 'supporting_documents', label: 'Supporting Documents for Residency', type: 'file', required: true, accept: '.pdf,image/*', description: 'Upload proof of residency documents' },
-    { name: 'cedula', label: 'Cedula (if applicable)', type: 'file', required: false, accept: '.pdf,image/*', description: 'Upload your Cedula document' }
   ],
 
   'Barangay ID': [
     { name: 'photo', label: '2x2 Photo (2 copies)', type: 'file', required: true, accept: 'image/*', description: 'Upload 2x2 ID picture (2 copies)' },
     { name: 'supporting_documents', label: 'Supporting Documents for Residency', type: 'file', required: true, accept: '.pdf,image/*', description: 'Upload proof of residency documents' },
-    { name: 'birth_certificate', label: 'Birth Certificate (for first time applicants)', type: 'file', required: false, accept: '.pdf,image/*', description: 'Upload birth certificate if this is your first application' }
+    { name: 'birth_certificate', label: 'Birth Certificate', type: 'file', required: true, accept: '.pdf,image/*', description: 'Upload birth certificate' }
+  ],
+
+  'Permit': [
+    { name: 'permit_type', label: 'Permit Type', type: 'select', required: true, placeholder: 'Select permit type', options: ['Building Permit', 'Business Permit'], description: 'Select whether you need a Building Permit or Business Permit' },
+    { name: 'supporting_documents', label: 'Supporting Documents for Residency', type: 'file', required: true, accept: '.pdf,image/*', description: 'Upload proof of residency documents' }
   ],
 
   'Cedula': [
-    { name: 'income_source', label: 'Income Source', type: 'select', required: false, placeholder: 'Select income source', options: ['Employment', 'Business', 'Pension', 'Remittance', 'Other'] },
-    { name: 'annual_income', label: 'Annual Income/Salary (PHP)', type: 'number', required: false, placeholder: 'Enter annual income or salary', min: 0, step: 0.01, description: 'Your annual income or salary from employment/profession (for tax calculation)' },
-    { name: 'business_gross_receipts', label: 'Business Gross Receipts (PHP)', type: 'number', required: false, placeholder: 'Enter business gross receipts', min: 0, step: 0.01, description: 'If you have a business, enter gross receipts from preceding year (optional)' },
-    { name: 'real_property_income', label: 'Real Property Income (PHP)', type: 'number', required: false, placeholder: 'Enter income from real property', min: 0, step: 0.01, description: 'Income from real property if applicable (optional)' },
-    { name: 'occupation', label: 'Occupation/Profession', type: 'text', required: false, placeholder: 'Enter your occupation or profession', description: 'Your current job or profession' },
-    { name: 'tin', label: 'Tax Identification Number (TIN)', type: 'text', required: false, placeholder: 'Enter TIN if available', description: 'Your TIN if you have one (optional)' },
-    { name: 'height', label: 'Height (cm)', type: 'number', required: false, placeholder: 'Enter height in centimeters', min: 0, step: 0.1, description: 'Your height (optional)' },
-    { name: 'weight', label: 'Weight (kg)', type: 'number', required: false, placeholder: 'Enter weight in kilograms', min: 0, step: 0.1, description: 'Your weight (optional)' },
-    { name: 'tax_declaration', label: 'Tax Declaration (if applicable)', type: 'file', required: false, accept: '.pdf,image/*', description: 'Upload tax declaration document' },
+    { name: 'income_source', label: 'Income Source', type: 'select', required: true, placeholder: 'Select income source', options: ['Employment', 'Business', 'Pension', 'Remittance', 'Other'] },
+    { name: 'annual_income', label: 'Annual Income/Salary (PHP)', type: 'number', required: true, placeholder: 'Enter annual income or salary', min: 0, step: 0.01, description: 'Your annual income or salary from employment/profession (for tax calculation)' },
+    { name: 'occupation', label: 'Occupation/Profession', type: 'text', required: true, placeholder: 'Enter your occupation or profession', description: 'Your current job or profession' },
+    { name: 'height', label: 'Height (cm)', type: 'number', required: true, placeholder: 'Enter height in centimeters', min: 0, step: 0.1, description: 'Your height in centimeters' },
+    { name: 'weight', label: 'Weight (kg)', type: 'number', required: true, placeholder: 'Enter weight in kilograms', min: 0, step: 0.1, description: 'Your weight in kilograms' },
     { name: 'supporting_documents', label: 'Supporting Documents for Residency', type: 'file', required: true, accept: '.pdf,image/*', description: 'Upload proof of residency documents' },
-    { name: 'income_statement', label: 'Income Statement (if employed)', type: 'file', required: false, accept: '.pdf,image/*', description: 'Upload income statement or payslip if employed' }
+    { name: 'income_statement', label: 'Income Statement', type: 'file', required: true, accept: '.pdf,image/*', description: 'Upload income statement or payslip' }
   ],
 
   'Certificate of Indigency': [
-    { name: 'household_members', label: 'Household Member Count', type: 'select', required: false, placeholder: 'Select number of members', options: ['1-2', '3-4', '5-6', '7-8', '9 or more'] },
+    { name: 'household_members', label: 'Household Member Count', type: 'select', required: true, placeholder: 'Select number of members', options: ['1-2', '3-4', '5-6', '7-8', '9 or more'] },
     { name: 'income_proof', label: 'Proof of Low Income', type: 'file', required: true, accept: '.pdf,image/*', description: 'Upload documents proving low income status' },
     { name: 'proof_of_residency', label: 'Proof of Residency', type: 'file', required: true, accept: '.pdf,image/*', description: 'Upload utility bills, lease contract, or other proof of residency' }
-  ],
-
-  'Business Permit': [
-    { name: 'business_name', label: 'Business Name', type: 'text', required: true, placeholder: 'Enter your business name' },
-    { name: 'business_type', label: 'Business Type', type: 'select', required: true, placeholder: 'Select business type', options: ['Retail', 'Wholesale', 'Service', 'Manufacturing', 'Food & Beverage', 'Other'] },
-    { name: 'dtI_sec_number', label: 'DTI/SEC Registration Number', type: 'text', required: false, placeholder: 'Enter DTI/SEC registration number' },
-    { name: 'business_registration', label: 'Business Registration Documents', type: 'file', required: true, accept: '.pdf,image/*', description: 'Upload business registration documents' },
-    { name: 'supporting_documents', label: 'Supporting Documents for Residency', type: 'file', required: true, accept: '.pdf,image/*', description: 'Upload proof of residency documents' },
-    { name: 'lease_contract', label: 'Lease Contract (if renting)', type: 'file', required: false, accept: '.pdf,image/*', description: 'Upload lease contract if business location is rented' },
-    { name: 'barangay_clearance', label: 'Barangay Clearance', type: 'file', required: true, accept: '.pdf,image/*', description: 'Upload Barangay Clearance document' },
-    { name: 'dti_registration', label: 'DTI Registration Document', type: 'file', required: true, accept: '.pdf,image/*', description: 'Upload DTI registration certificate' },
-    { name: 'location_plan', label: 'Location Plan', type: 'file', required: true, accept: '.pdf,image/*', description: 'Upload location plan or site map of business' }
-  ],
-
-  'Building Permit': [
-    { name: 'building_type', label: 'Building Type', type: 'select', required: true, placeholder: 'Select building type', options: ['Residential', 'Commercial', 'Mixed Use', 'Industrial', 'Institutional', 'Other'] },
-    { name: 'building_reg_number', label: 'Building Registration Number', type: 'text', required: false, placeholder: 'Enter building registration number (if available)' },
-    { name: 'building_plans', label: 'Building Plans (3 copies)', type: 'file', required: true, accept: '.pdf,image/*', description: 'Upload building plans (3 copies)' },
-    { name: 'engineer_cert', label: 'Engineer\'s Certification', type: 'file', required: true, accept: '.pdf,image/*', description: 'Upload engineer\'s certification document' },
-    { name: 'lot_title', label: 'Lot Title or Tax Declaration', type: 'file', required: true, accept: '.pdf,image/*', description: 'Upload lot title or tax declaration' },
-    { name: 'supporting_documents', label: 'Supporting Documents for Residency', type: 'file', required: true, accept: '.pdf,image/*', description: 'Upload proof of residency documents' },
-    { name: 'barangay_clearance', label: 'Barangay Clearance', type: 'file', required: true, accept: '.pdf,image/*', description: 'Upload Barangay Clearance document' }
-  ],
-  
-  'Certificate of Good Moral': [
-    { name: 'photo', label: '2x2 Photo (2 copies)', type: 'file', required: false, accept: 'image/*', description: 'Upload 2x2 ID picture (2 copies)' },
-    { name: 'supporting_documents', label: 'Supporting Documents for Residency', type: 'file', required: true, accept: '.pdf,image/*', description: 'Upload proof of residency documents' }
   ],
 }
 
@@ -1126,16 +1081,64 @@ const submitRequest = () => {
   }).catch(error => {
     console.error('Error submitting request:', error)
     console.error('Error response:', error.response?.data)
-    if (error.response?.data?.errors) {
-      const errors = error.response.data.errors
-      const firstError = Object.values(errors)[0]
-      alert(Array.isArray(firstError) ? firstError[0] : firstError)
-    } else if (error.response?.data?.message) {
-      alert(error.response.data.message)
-    } else {
-      alert('Failed to submit request. Please try again. ' + (error.message || ''))
-    }
     isSubmitting.value = false
+    
+    // Handle different error types
+    if (error.response) {
+      // Server responded with error
+      if (error.response.status === 422) {
+        // Validation errors
+        const validationErrors = error.response.data.errors || {}
+        const newErrors = {}
+        
+        // Map validation errors to form fields
+        Object.keys(validationErrors).forEach(key => {
+          const errorMessages = Array.isArray(validationErrors[key]) 
+            ? validationErrors[key] 
+            : [validationErrors[key]]
+          newErrors[key] = errorMessages[0]
+        })
+        
+        formErrors.value = { ...formErrors.value, ...newErrors }
+        
+        // Set general error message
+        const firstError = Object.values(validationErrors)[0]
+        submitError.value = Array.isArray(firstError) ? firstError[0] : firstError
+        
+        // Scroll to first error
+        const firstErrorField = Object.keys(newErrors)[0]
+        if (firstErrorField) {
+          setTimeout(() => {
+            const errorElement = document.querySelector(`[data-field="${firstErrorField}"]`) || 
+                                document.querySelector(`[name="${firstErrorField}"]`)
+            if (errorElement) {
+              errorElement.scrollIntoView({ behavior: 'smooth', block: 'center' })
+              errorElement.focus()
+            }
+          }, 100)
+        }
+      } else if (error.response.status === 403) {
+        submitError.value = 'You do not have permission to perform this action.'
+      } else if (error.response.status === 500) {
+        submitError.value = 'A server error occurred. Please try again later or contact support.'
+      } else {
+        submitError.value = error.response.data?.message || 'An error occurred while submitting your request. Please try again.'
+      }
+    } else if (error.request) {
+      // Request made but no response received
+      submitError.value = 'Network error. Please check your internet connection and try again.'
+    } else {
+      // Error setting up request
+      submitError.value = error.message || 'An unexpected error occurred. Please try again.'
+    }
+    
+    // Scroll to error message
+    setTimeout(() => {
+      const errorContainer = document.querySelector('.error-message-container')
+      if (errorContainer) {
+        errorContainer.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      }
+    }, 100)
   })
 }
 
@@ -1154,10 +1157,27 @@ const handleClickOutside = (event) => {
 onMounted(() => {
     document.addEventListener('click', handleClickOutside)
     activeTab.value = 'documents'
+    
+    // Fetch unread count on mount
+    fetchUnreadCount()
+    
+    // Set up polling to update unread count every 30 seconds
+    const unreadCountInterval = setInterval(() => {
+        fetchUnreadCount()
+    }, 30000)
+    
+    // Store interval ID for cleanup
+    window.unreadCountInterval = unreadCountInterval
 })
 
 onUnmounted(() => {
     document.removeEventListener('click', handleClickOutside)
+    
+    // Clear unread count polling interval
+    if (window.unreadCountInterval) {
+        clearInterval(window.unreadCountInterval)
+        window.unreadCountInterval = null
+    }
 })
 </script>
 
@@ -1237,6 +1257,7 @@ onUnmounted(() => {
     border-bottom: 1px solid #f0f0f0;
     cursor: pointer;
     font-weight: 500;
+    white-space: nowrap;
 }
 
 .settings-item:hover {
@@ -1284,7 +1305,7 @@ onUnmounted(() => {
 
 .profile-name {
     font-weight: 700;
-    font-size: 17px;
+    font-size: 15px;
     text-shadow: 0 1px 3px rgba(0,0,0,0.2);
 }
 
@@ -1334,6 +1355,19 @@ onUnmounted(() => {
 
 .nav-item:last-child {
     border-bottom: none;
+}
+
+.unread-badge-nav {
+    background: linear-gradient(135deg, #ff8c42, #ff7a28);
+    color: white;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 4px 8px;
+    border-radius: 12px;
+    min-width: 20px;
+    text-align: center;
+    margin-left: auto;
+    box-shadow: 0 2px 6px rgba(255, 140, 66, 0.4);
 }
 
 .nav-item:hover {

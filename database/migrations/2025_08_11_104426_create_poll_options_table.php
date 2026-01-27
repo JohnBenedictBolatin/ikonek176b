@@ -13,10 +13,10 @@ return new class extends Migration
     {
         Schema::create('poll_options', function (Blueprint $table) {
             $table->id();
-            // $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
-            // $table->foreignId('poll_id')->constrained('post_polls')->onDelete('cascade');
-            // $table->foreignId('option_id')->constrained('poll_options')->onDelete('cascade');
-            $table->timestamp('voted_at')->useCurrent();
+            $table->foreignId('poll_id')->constrained('post_polls')->onDelete('cascade');
+            $table->string('option_text', 255);
+            $table->integer('vote_count')->default(0);
+            $table->timestamps();
         });
     }
 

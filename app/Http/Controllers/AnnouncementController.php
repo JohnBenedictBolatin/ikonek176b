@@ -50,7 +50,7 @@ class AnnouncementController extends Controller
             Log::info('✅ User is an employee, proceeding with employee announcements');
 
             // Employees see all announcements (approved and pending)
-            $posts = Post::with(['author', 'tags'])
+            $posts = Post::with(['author', 'tags', 'poll.options', 'poll.votes'])
                 ->where('section', 'Announcement')
                 ->orderBy('created_at', 'desc')
                 ->get();
@@ -133,6 +133,34 @@ class AnnouncementController extends Controller
                     }
                 }
 
+                // Get poll data if this is a poll post
+                $pollData = null;
+                if ($post->is_poll && $post->poll) {
+                    $poll = $post->poll;
+                    $totalVotes = $poll->votes()->count();
+                    $userId = $authUser ? ($authUser->user_id ?? $authUser->id) : null;
+                    $userVote = null;
+                    if ($userId) {
+                        $userVote = \App\Models\PollVote::where('poll_id', $poll->id)
+                            ->where('user_id', $userId)
+                            ->first();
+                    }
+
+                    $pollData = [
+                        'id' => $poll->id,
+                        'total_votes' => $totalVotes,
+                        'user_voted_option_id' => $userVote ? $userVote->option_id : null,
+                        'options' => $poll->options->map(function($option) use ($totalVotes) {
+                            return [
+                                'id' => $option->id,
+                                'option_text' => $option->option_text,
+                                'vote_count' => $option->vote_count,
+                                'percentage' => $totalVotes > 0 ? round(($option->vote_count / $totalVotes) * 100, 1) : 0,
+                            ];
+                        })->toArray(),
+                    ];
+                }
+
                 return [
                     'id' => $post->post_id,
                     'author' => $authorName,
@@ -159,6 +187,8 @@ class AnnouncementController extends Controller
                     'content' => $post->content ?? '',
                     'images' => $images,
                     'video_content' => $post->video_content,
+                    'is_poll' => (bool) $post->is_poll,
+                    'poll' => $pollData,
                     'likes' => $likes,
                     'dislikes' => $dislikes,
                     'comments' => $comments,
@@ -225,12 +255,21 @@ class AnnouncementController extends Controller
             'tag_ids.*' => ['integer', 'exists:tags,tag_id'],
             'image' => ['nullable', 'file', 'image', 'max:5120'],
             'video_content' => ['nullable', 'string'],
+            'is_poll' => ['nullable', 'boolean'],
+            'poll_options' => ['required_if:is_poll,true', 'array', 'min:2', 'max:10'],
+            'poll_options.*' => ['required', 'string', 'max:255'],
         ]);
 
         try {
             $userId = Auth::id();
             if (!$userId) {
                 return redirect()->back()->with('error', 'You must be logged in to post.');
+            }
+
+            // Check if user is restricted from posting
+            $restriction = \App\Models\UserRestriction::where('user_id', $userId)->first();
+            if ($restriction && $restriction->restrict_posting) {
+                return redirect()->back()->with('error', 'You are restricted from creating posts. Please check your notifications for more information.');
             }
 
             $post = new Post();
@@ -253,7 +292,8 @@ class AnnouncementController extends Controller
             }
 
             $post->video_content = $request->input('video_content', null);
-            $post->is_poll = $request->boolean('is_poll') ? 1 : 0;
+            $isPoll = $request->boolean('is_poll');
+            $post->is_poll = $isPoll ? 1 : 0;
             $post->is_reported = 0;
 
             $post->save();
@@ -263,6 +303,33 @@ class AnnouncementController extends Controller
                 'section' => $post->section,
                 'author_id' => $post->fk_post_author_id
             ]);
+
+            // Create poll if this is a poll post
+            if ($isPoll && $request->has('poll_options') && is_array($request->poll_options)) {
+                $pollOptions = array_filter($request->poll_options, function($option) {
+                    return !empty(trim($option));
+                });
+
+                if (count($pollOptions) >= 2) {
+                    $poll = \App\Models\PostPoll::create([
+                        'post_id' => $post->post_id,
+                    ]);
+
+                    foreach ($pollOptions as $optionText) {
+                        \App\Models\PollOption::create([
+                            'poll_id' => $poll->id,
+                            'option_text' => trim($optionText),
+                            'vote_count' => 0,
+                        ]);
+                    }
+
+                    Log::info('✅ Poll created with announcement', [
+                        'post_id' => $post->post_id,
+                        'poll_id' => $poll->id,
+                        'options_count' => count($pollOptions)
+                    ]);
+                }
+            }
 
             // Attach tags
             if (!empty($validated['tag_ids'])) {

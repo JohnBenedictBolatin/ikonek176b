@@ -15,9 +15,8 @@
                     <img src="/assets/SETTINGS.png" alt="Settings" class="settings-btn-img" @click="toggleSettings" />
                     <!-- Settings Dropdown -->
                     <div v-if="showSettings" class="settings-dropdown">
-                        <Link href="#" class="settings-item" @click="closeSettings">Help Center</Link>
-                        <Link href="#" class="settings-item" @click="closeSettings">Terms & Conditions</Link>
-                        <Link href="#" class="settings-item" @click="logout">Sign Out</Link>
+                        <a href="#" class="settings-item" @click.prevent.stop="openTermsModal">TERMS & CONDITIONS</a>
+                        <Link href="#" class="settings-item" @click="logout">SIGN OUT</Link>
                     </div>
                 </div>
             </div>
@@ -47,25 +46,6 @@
                         Dashboard
                     </Link>
                     <Link 
-                        href="#" 
-                        class="nav-item active"
-                    >
-                        <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        History
-                    </Link>
-                    <Link 
-                        href="#" 
-                        class="nav-item"
-                        @click="navigateToRegisterRequest"
-                    >
-                        <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                        </svg>
-                        Register Request
-                    </Link>
-                    <Link 
                         :href="route('registration_employee')" 
                         class="nav-item"
                     >
@@ -77,12 +57,31 @@
                     <Link 
                         href="#" 
                         class="nav-item"
+                        @click="navigateToRegisterRequest"
+                    >
+                        <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                        </svg>
+                        Register Requests
+                    </Link>
+                    <Link 
+                        href="#" 
+                        class="nav-item active"
+                    >
+                        <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        History
+                    </Link>
+                    <Link 
+                        href="#" 
+                        class="nav-item"
                         @click="navigateToReport"
                     >
                         <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                         </svg>
-                        Report
+                        Reports & Messages
                     </Link>
                 </div>
 
@@ -129,6 +128,11 @@
                                 <div v-if="showFilterDropdown" class="filter-dropdown-menu">
                                     <button @click="selectFilter('all')" :class="{ active: filterOption === 'all' }">ALL</button>
                                     <button @click="selectFilter('approved')" :class="{ active: filterOption === 'approved' }">APPROVED</button>
+                                    <button @click="selectFilter('created')" :class="{ active: filterOption === 'created' }">CREATED</button>
+                                    <button @click="selectFilter('dismissed')" :class="{ active: filterOption === 'dismissed' }">DISMISSED</button>
+                                    <button @click="selectFilter('deleted')" :class="{ active: filterOption === 'deleted' }">DELETED</button>
+                                    <button @click="selectFilter('read')" :class="{ active: filterOption === 'read' }">READ</button>
+                                    <button @click="selectFilter('replied')" :class="{ active: filterOption === 'replied' }">REPLIED</button>
                                 </div>
                             </div>
                         </div>
@@ -205,13 +209,131 @@
                 </div>
             </div>
         </div>
+
+        <!-- Terms and Conditions Modal -->
+        <div v-if="showTermsModal" class="modal-overlay" @click.self="closeTermsModal">
+            <div class="terms-modal" @click.stop>
+                <div class="terms-modal-header">
+                    <h2 class="terms-modal-title">Terms and Conditions</h2>
+                    <button @click="closeTermsModal" class="terms-modal-close">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width: 24px; height: 24px;">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+                <div class="terms-modal-body">
+                    <div class="terms-section">
+                        <h3 class="terms-section-title">1. Role and Responsibilities</h3>
+                        <p class="terms-text">
+                            As a System Administrator, you are responsible for managing user accounts, processing registration requests, reviewing reports and messages, and maintaining the integrity of the iKonek176B system. You must exercise your administrative privileges with care and in accordance with barangay policies and regulations.
+                        </p>
+                    </div>
+
+                    <div class="terms-section">
+                        <h3 class="terms-section-title">2. Access and Security</h3>
+                        <p class="terms-text">
+                            You have been granted elevated access to the system. You must maintain the confidentiality of your login credentials and immediately report any suspected security breaches. Sharing your account credentials with unauthorized persons is strictly prohibited and may result in immediate account termination.
+                        </p>
+                    </div>
+
+                    <div class="terms-section">
+                        <h3 class="terms-section-title">3. Data Privacy and Confidentiality</h3>
+                        <p class="terms-text">
+                            You have access to sensitive personal information of residents and officials. You must handle all data in accordance with the Data Privacy Act of 2012. Personal information must only be accessed for legitimate administrative purposes and must never be disclosed to unauthorized parties or used for personal gain.
+                        </p>
+                    </div>
+
+                    <div class="terms-section">
+                        <h3 class="terms-section-title">4. User Account Management</h3>
+                        <p class="terms-text">
+                            When creating, modifying, or restricting user accounts, you must ensure that all actions are justified, documented, and in compliance with barangay policies. Unauthorized account creation, modification, or deletion is prohibited. All administrative actions are logged and may be subject to audit.
+                        </p>
+                    </div>
+
+                    <div class="terms-section">
+                        <h3 class="terms-section-title">5. Registration Requests</h3>
+                        <p class="terms-text">
+                            You are responsible for reviewing and processing registration requests in a timely and fair manner. Approval or rejection decisions must be based on valid criteria and documented requirements. Discrimination or bias in processing requests is strictly prohibited.
+                        </p>
+                    </div>
+
+                    <div class="terms-section">
+                        <h3 class="terms-section-title">6. Reports and Messages</h3>
+                        <p class="terms-text">
+                            You must review reports and contact messages promptly and take appropriate action when necessary. Actions taken on reported content must be justified and in accordance with community guidelines. Abuse of moderation powers is prohibited.
+                        </p>
+                    </div>
+
+                    <div class="terms-section">
+                        <h3 class="terms-section-title">7. Limitations and Restrictions</h3>
+                        <p class="terms-text">
+                            Your administrative privileges do not grant you the right to:
+                            <ul class="terms-list">
+                                <li>Access or modify system code or database structure without authorization</li>
+                                <li>Bypass system security measures or attempt to exploit system vulnerabilities</li>
+                                <li>Use administrative functions for personal purposes or to gain unfair advantage</li>
+                                <li>Delete or modify system logs or audit trails</li>
+                                <li>Grant administrative privileges to other users without proper authorization</li>
+                            </ul>
+                        </p>
+                    </div>
+
+                    <div class="terms-section">
+                        <h3 class="terms-section-title">8. Prohibited Activities</h3>
+                        <p class="terms-text">
+                            The following activities are strictly prohibited:
+                            <ul class="terms-list">
+                                <li>Unauthorized access to user accounts or data</li>
+                                <li>Tampering with system records or documentation</li>
+                                <li>Using administrative access to harass, intimidate, or discriminate against users</li>
+                                <li>Sharing confidential information outside of official channels</li>
+                                <li>Engaging in any activity that compromises system security or integrity</li>
+                            </ul>
+                        </p>
+                    </div>
+
+                    <div class="terms-section">
+                        <h3 class="terms-section-title">9. Accountability and Auditing</h3>
+                        <p class="terms-text">
+                            All administrative actions are logged and monitored. You are accountable for all actions performed using your account. Regular audits may be conducted to ensure compliance with these terms. Failure to comply may result in disciplinary action, including but not limited to account suspension or termination.
+                        </p>
+                    </div>
+
+                    <div class="terms-section">
+                        <h3 class="terms-section-title">10. Violations and Consequences</h3>
+                        <p class="terms-text">
+                            Violation of these terms and conditions may result in immediate suspension or termination of your administrative account, legal action if applicable, and reporting to appropriate barangay authorities. The severity of consequences will depend on the nature and extent of the violation.
+                        </p>
+                    </div>
+
+                    <div class="terms-section">
+                        <h3 class="terms-section-title">11. Updates to Terms</h3>
+                        <p class="terms-text">
+                            These terms and conditions may be updated periodically. You will be notified of significant changes. Continued use of administrative privileges after changes constitutes acceptance of the updated terms.
+                        </p>
+                    </div>
+
+                    <div class="terms-section">
+                        <h3 class="terms-section-title">12. Contact and Support</h3>
+                        <p class="terms-text">
+                            For questions, concerns, or to report issues related to your administrative role, contact the Barangay 176B office at ikonek176b@dev.ph or +639193076338.
+                        </p>
+                    </div>
+                </div>
+                <div class="terms-modal-footer">
+                    <button @click="closeTermsModal" class="terms-modal-btn">
+                        I Understand
+                    </button>
+                </div>
+            </div>
+        </div>
     </div>
 </template>
 
 <script setup>
 import { Link } from '@inertiajs/vue3'
 import { Head, usePage } from '@inertiajs/vue3'
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import { router } from '@inertiajs/vue3'
 import axios from 'axios'
 
@@ -239,6 +361,7 @@ const displayRole = computed(() => {
 
 // Reactive data
 const showSettings = ref(false)
+const showTermsModal = ref(false)
 const showSortDropdown = ref(false)
 const showFilterDropdown = ref(false)
 const sortOption = ref('newest')
@@ -305,51 +428,153 @@ const getAdminName = (req) => {
 const fetchHistory = async () => {
   isLoading.value = true
   try {
-    // Build URL for registration requests
-    const buildRegUrl = (status) => {
-      return `/s_register_request?status=${status}`
-    }
-
-    // Fetch approved registration requests (rejected ones are deleted, so we only fetch approved)
-    const approvedRegRes = await axios.get(buildRegUrl('Approved'), {
-      headers: {
-        'Accept': 'application/json',
-        'X-Requested-With': 'XMLHttpRequest'
-      }
-    })
-
-    // Extract requests from JSON response
-    let approvedRegRequests = approvedRegRes?.data?.registration_requests || []
-    
-    // Debug logging
-    console.log('Approved registration requests found:', approvedRegRequests.length)
-
     const historyItems = []
 
-    // Map approved registration requests
-    approvedRegRequests.forEach((req) => {
-      const admin = getAdminName(req)
-      
-      let profileImg = req.profile_pic || '/assets/DEFAULT.jpg'
-      if (profileImg && !profileImg.startsWith('http') && !profileImg.startsWith('/')) {
-        profileImg = `/storage/${profileImg}`.replace('//', '/')
-      }
-
-      const roleId = req.role_id || 1
-      const role = roleMap[roleId] || 'Resident'
-
-      historyItems.push({
-        id: req.registration_request_id || req.id,
-        name: req.name || `${req.first_name || ''} ${req.last_name || ''}`.trim() || 'Unknown',
-        role: role,
-        activity: 'Registration Request',
-        action: 'Approved',
-        moderator: admin,
-        date: formatDate(req.updated_at || req.created_at),
-        dateObj: new Date(req.updated_at || req.created_at || new Date()),
-        avatar: profileImg
+    // 1. Fetch approved registration requests
+    try {
+      const approvedRegRes = await axios.get(`/s_register_request?status=Approved`, {
+        headers: {
+          'Accept': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest'
+        }
       })
-    })
+
+      let approvedRegRequests = approvedRegRes?.data?.registration_requests || []
+      
+      approvedRegRequests.forEach((req) => {
+        const admin = getAdminName(req)
+        
+        let profileImg = req.profile_pic || '/assets/DEFAULT.jpg'
+        if (profileImg && !profileImg.startsWith('http') && !profileImg.startsWith('/')) {
+          profileImg = `/storage/${profileImg}`.replace('//', '/')
+        }
+
+        const roleId = req.role_id || 1
+        const role = roleMap[roleId] || 'Resident'
+
+        historyItems.push({
+          id: `reg_req_${req.registration_request_id || req.id}`,
+          name: req.name || `${req.first_name || ''} ${req.last_name || ''}`.trim() || 'Unknown',
+          role: role,
+          activity: 'Registration Request',
+          action: 'Approved',
+          moderator: admin,
+          date: formatDate(req.updated_at || req.created_at),
+          dateObj: new Date(req.updated_at || req.created_at || new Date()),
+          avatar: profileImg
+        })
+      })
+    } catch (error) {
+      console.error('Error fetching registration requests:', error)
+    }
+
+    // 2. Fetch registered officials (users with fk_role_id != 1, created by system admin)
+    try {
+      const officialsRes = await axios.get('/api/history/officials', {
+        headers: {
+          'Accept': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest'
+        }
+      })
+
+      let officials = officialsRes?.data?.officials || []
+      
+      officials.forEach((official) => {
+        let profileImg = official.profile_pic || official.profile_image || '/assets/DEFAULT.jpg'
+        if (profileImg && !profileImg.startsWith('http') && !profileImg.startsWith('/')) {
+          profileImg = `/storage/${profileImg}`.replace('//', '/')
+        }
+
+        const roleId = official.fk_role_id || official.role_id || 1
+        const role = roleMap[roleId] || 'Resident'
+
+        historyItems.push({
+          id: `official_${official.id || official.user_id}`,
+          name: official.name || `${official.first_name || ''} ${official.last_name || ''}`.trim() || 'Unknown',
+          role: role,
+          activity: 'Registered Official',
+          action: 'Created',
+          moderator: user.value?.name ? (user.value.name.split(' ')[0] + (user.value.name.split(' ').length > 1 ? ' ' + user.value.name.split(' ')[user.value.name.split(' ').length - 1].charAt(0) + '.' : '')) : 'System Admin',
+          date: formatDate(official.created_at),
+          dateObj: new Date(official.created_at || new Date()),
+          avatar: profileImg
+        })
+      })
+    } catch (error) {
+      console.error('Error fetching registered officials:', error)
+    }
+
+    // 3. Fetch reviewed reports (dismissed/kept/deleted)
+    try {
+      const reportsRes = await axios.get('/api/history/reports', {
+        headers: {
+          'Accept': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest'
+        }
+      })
+
+      let reports = reportsRes?.data?.reports || []
+      
+      reports.forEach((report) => {
+        let profileImg = report.reporter_avatar || report.reporter_profile_pic || '/assets/DEFAULT.jpg'
+        if (profileImg && !profileImg.startsWith('http') && !profileImg.startsWith('/')) {
+          profileImg = `/storage/${profileImg}`.replace('//', '/')
+        }
+
+        const action = report.status === 'Dismissed' ? 'Dismissed' : 
+                      report.status === 'Deleted' ? 'Deleted' : 
+                      report.status === 'Removed' ? 'Removed' : 'Reviewed'
+
+        historyItems.push({
+          id: `report_${report.post_report_id || report.id}`,
+          name: report.reported_by || report.reporter_name || 'Unknown',
+          role: 'Resident',
+          activity: 'Post Report',
+          action: action,
+          moderator: report.reviewed_by || (user.value?.name ? (user.value.name.split(' ')[0] + (user.value.name.split(' ').length > 1 ? ' ' + user.value.name.split(' ')[user.value.name.split(' ').length - 1].charAt(0) + '.' : '')) : 'System Admin'),
+          date: formatDate(report.reviewed_at || report.updated_at || report.created_at),
+          dateObj: new Date(report.reviewed_at || report.updated_at || report.created_at || new Date()),
+          avatar: profileImg
+        })
+      })
+    } catch (error) {
+      console.error('Error fetching reviewed reports:', error)
+    }
+
+    // 4. Fetch reviewed contact messages (Read/Replied)
+    try {
+      const messagesRes = await axios.get('/api/history/messages', {
+        headers: {
+          'Accept': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest'
+        }
+      })
+
+      let messages = messagesRes?.data?.messages || []
+      
+      messages.forEach((message) => {
+        let profileImg = message.user_avatar || message.profile_pic || '/assets/DEFAULT.jpg'
+        if (profileImg && !profileImg.startsWith('http') && !profileImg.startsWith('/')) {
+          profileImg = `/storage/${profileImg}`.replace('//', '/')
+        }
+
+        const action = message.status === 'Replied' ? 'Replied' : 'Read'
+
+        historyItems.push({
+          id: `message_${message.contact_id || message.id}`,
+          name: message.user_name || `${message.first_name || ''} ${message.last_name || ''}`.trim() || 'Guest',
+          role: message.user_type === 'Official' ? 'Official' : 'Resident',
+          activity: 'Contact Message',
+          action: action,
+          moderator: message.reviewed_by || (user.value?.name ? (user.value.name.split(' ')[0] + (user.value.name.split(' ').length > 1 ? ' ' + user.value.name.split(' ')[user.value.name.split(' ').length - 1].charAt(0) + '.' : '')) : 'System Admin'),
+          date: formatDate(message.updated_at || message.reviewed_at || message.created_at),
+          dateObj: new Date(message.updated_at || message.reviewed_at || message.created_at || new Date()),
+          avatar: profileImg
+        })
+      })
+    } catch (error) {
+      console.error('Error fetching reviewed messages:', error)
+    }
 
     history.value = historyItems
   } catch (error) {
@@ -409,6 +634,21 @@ const closeSettings = () => {
     showSettings.value = false
 }
 
+const openTermsModal = (e) => {
+    if (e) {
+        e.preventDefault()
+        e.stopPropagation()
+    }
+    showSettings.value = false
+    nextTick(() => {
+        showTermsModal.value = true
+    })
+}
+
+const closeTermsModal = () => {
+    showTermsModal.value = false
+}
+
 const toggleSortDropdown = () => {
     showSortDropdown.value = !showSortDropdown.value
     showFilterDropdown.value = false
@@ -442,7 +682,11 @@ const getActionClass = (action) => {
     const actionLower = action.toLowerCase()
     if (actionLower === 'approved') return 'approved'
     if (actionLower === 'rejected') return 'rejected'
-    if (actionLower === 'deleted') return 'deleted'
+    if (actionLower === 'deleted' || actionLower === 'removed') return 'deleted'
+    if (actionLower === 'dismissed') return 'dismissed'
+    if (actionLower === 'created') return 'created'
+    if (actionLower === 'read') return 'read'
+    if (actionLower === 'replied') return 'replied'
     if (actionLower === 'restricted') return 'restricted'
     if (actionLower === 'password changed') return 'password-changed'
     return 'default'
@@ -474,6 +718,10 @@ const navigateToReport = () => {
 
 // Close dropdowns when clicking outside
 const handleClickOutside = (event) => {
+    // Don't close anything if clicking on the terms modal
+    if (event.target.closest('.terms-modal') || event.target.closest('.modal-overlay')) {
+        return
+    }
     if (!event.target.closest('.header-actions')) {
         showSettings.value = false
     }
@@ -585,6 +833,7 @@ onUnmounted(() => {
     transition: all 0.2s;
     cursor: pointer;
     font-weight: 500;
+    white-space: nowrap;
 }
 
 .settings-item:hover {
@@ -901,7 +1150,7 @@ onUnmounted(() => {
     padding: 12px 8px;
     text-align: left;
     font-weight: 600;
-    font-size: 13px;
+    font-size: 15px;
     text-transform: uppercase;
     letter-spacing: 0.5px;
     vertical-align: middle;
@@ -926,7 +1175,7 @@ onUnmounted(() => {
 
 .users-table td {
     padding: 12px 8px;
-    font-size: 13px;
+    font-size: 15px;
     color: #555;
     vertical-align: middle;
     text-align: left;
@@ -954,11 +1203,12 @@ onUnmounted(() => {
     font-weight: 600;
     color: #333;
     text-align: left;
+    font-size: 15px;
 }
 
 .role-badge {
-    font-size: 11px;
-    padding: 5px 12px;
+    font-size: 13px;
+    padding: 6px 14px;
     border-radius: 12px;
     font-weight: 600;
     display: inline-block;
@@ -980,8 +1230,8 @@ onUnmounted(() => {
 }
 
 .action-badge {
-    font-size: 11px;
-    padding: 5px 12px;
+    font-size: 13px;
+    padding: 6px 14px;
     border-radius: 12px;
     font-weight: 600;
     display: inline-block;
@@ -1011,6 +1261,22 @@ onUnmounted(() => {
 
 .action-badge.default {
     background: linear-gradient(135deg, #6b7280, #4b5563);
+}
+
+.action-badge.dismissed {
+    background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+}
+
+.action-badge.created {
+    background: linear-gradient(135deg, #06b6d4, #0891b2);
+}
+
+.action-badge.read {
+    background: linear-gradient(135deg, #3b82f6, #2563eb);
+}
+
+.action-badge.replied {
+    background: linear-gradient(135deg, #10b981, #059669);
 }
 
 .loading-state {
@@ -1092,5 +1358,156 @@ onUnmounted(() => {
     .users-table td {
         padding: 8px 4px;
     }
+}
+/* Terms and Conditions Modal Styles */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+    animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+.terms-modal {
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    max-width: 800px;
+    width: 90%;
+    max-height: 90vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+    from {
+        transform: translateY(20px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.terms-modal-header {
+    background: white;
+    padding: 25px 30px;
+    border-bottom: 1px solid #e0e0e0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.terms-modal-title {
+    margin: 0;
+    font-size: 28px;
+    font-weight: 700;
+    color: #333;
+}
+
+.terms-modal-close {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 8px;
+    color: #666;
+    transition: all 0.2s ease;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.terms-modal-close:hover {
+    background: #f0f0f0;
+    color: #333;
+}
+
+.terms-modal-body {
+    padding: 30px;
+    overflow-y: auto;
+    flex: 1;
+}
+
+.terms-section {
+    margin-bottom: 25px;
+}
+
+.terms-section:last-child {
+    margin-bottom: 0;
+}
+
+.terms-section-title {
+    margin: 0 0 12px 0;
+    font-size: 18px;
+    font-weight: 700;
+    color: #239640;
+}
+
+.terms-text {
+    margin: 0;
+    font-size: 15px;
+    line-height: 1.7;
+    color: #555;
+    text-align: justify;
+}
+
+.terms-list {
+    margin: 10px 0 0 20px;
+    padding: 0;
+}
+
+.terms-list li {
+    margin-bottom: 8px;
+    font-size: 15px;
+    line-height: 1.6;
+    color: #555;
+}
+
+.terms-modal-footer {
+    padding: 20px 30px;
+    border-top: 1px solid #e0e0e0;
+    display: flex;
+    justify-content: center;
+    background: #f8f9fa;
+    flex-shrink: 0;
+}
+
+.terms-modal-btn {
+    padding: 12px 50px;
+    background: #ff8c42;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(255, 140, 66, 0.3);
+}
+
+.terms-modal-btn:hover {
+    background: #ff7a28;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(255, 140, 66, 0.4);
 }
 </style>

@@ -12,9 +12,10 @@
                 <div class="header-actions">
                     <img src="/assets/SETTINGS.png" alt="Settings" class="settings-btn-img" @click="toggleSettings" />
                     <div v-if="showSettings" class="settings-dropdown">
-                        <Link href="#" class="settings-item" @click="closeSettings">Help Center</Link>
-                        <Link href="#" class="settings-item" @click="closeSettings">Terms & Conditions</Link>
-                        <Link href="#" class="settings-item" @click="logout">Sign Out</Link>
+                        <a href="#" class="settings-item" @click.prevent.stop="openTermsModal">TERMS & CONDITIONS</a>
+                        <Link href="#" class="settings-item" @click.prevent="logout">
+                            SIGN OUT
+                        </Link>
                     </div>
                 </div>
             </div>
@@ -88,6 +89,8 @@
                                 </button>
                                 <div v-if="showFilterDropdown" class="filter-dropdown-menu">
                                     <button @click="selectFilter('all')" :class="{ active: filterOption === 'all' }">ALL</button>
+                                    <button @click="selectFilter('new')" :class="{ active: filterOption === 'new' }">NEW</button>
+                                    <button @click="selectFilter('resubmitted')" :class="{ active: filterOption === 'resubmitted' }">RESUBMITTED</button>
                                     <button @click="selectFilter('venue')" :class="{ active: filterOption === 'venue' }">VENUE</button>
                                     <button @click="selectFilter('equipment')" :class="{ active: filterOption === 'equipment' }">EQUIPMENT</button>
                                     <button @click="selectFilter('personnel')" :class="{ active: filterOption === 'personnel' }">PERSONNEL</button>
@@ -108,7 +111,7 @@
 
                     <div class="requests-container">
                         <div 
-                            v-for="(request, index) in filteredRequests" 
+                            v-for="(request, index) in paginatedRequests" 
                             :key="request.id || request.referenceCode || index"
                             class="request-card"
                         >
@@ -116,7 +119,12 @@
                                 <div class="request-left">
                                     <img :src="request.profileImg || '/assets/DEFAULT.jpg'" alt="Profile" class="modal-avatar" />
                                     <div class="request-info">
-                                        <h3 class="request-name">{{ request.name }}</h3>
+                                        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 0; line-height: 1.2;">
+                                            <h3 class="request-name" style="margin: 0;">{{ request.name }}</h3>
+                                            <span v-if="request.admin_feedback && request.status === 'Pending'" class="resubmitted-badge">
+                                                RESUBMITTED
+                                            </span>
+                                        </div>
                                         <p class="request-doc-type">{{ request.event_type || request.assistanceType || 'Event Assistance' }}</p>
                                         <p class="request-ref-code">{{ request.referenceCode }}</p>
                                     </div>
@@ -128,7 +136,7 @@
                                         class="view-btn" 
                                         type="button"
                                     >
-                                        View Request Details
+                                        View Details
                                     </button>
                                 </div>
                             </div>
@@ -137,6 +145,48 @@
                         <!-- No requests message -->
                         <div v-if="filteredRequests.length === 0" class="no-requests" style="grid-column: 1 / -1;">
                             <p>No event assistance requests found matching your criteria.</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Pagination Controls -->
+                    <div v-if="filteredRequests.length > 0" class="pagination-container">
+                        <div class="pagination-info">
+                            Showing {{ (currentPage - 1) * itemsPerPage + 1 }} to {{ Math.min(currentPage * itemsPerPage, filteredRequests.length) }} of {{ filteredRequests.length }} requests
+                        </div>
+                        <div class="pagination-controls">
+                            <button 
+                                class="pagination-btn" 
+                                :disabled="currentPage === 1"
+                                @click="prevPage"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" style="width: 16px; height: 16px;">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+                                </svg>
+                                Previous
+                            </button>
+                            
+                            <div class="pagination-numbers">
+                                <button
+                                    v-for="page in totalPages"
+                                    :key="page"
+                                    class="pagination-number"
+                                    :class="{ active: currentPage === page }"
+                                    @click="goToPage(page)"
+                                >
+                                    {{ page }}
+                                </button>
+                            </div>
+                            
+                            <button 
+                                class="pagination-btn" 
+                                :disabled="currentPage === totalPages"
+                                @click="nextPage"
+                            >
+                                Next
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" style="width: 16px; height: 16px;">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+                                </svg>
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -153,23 +203,23 @@
 
                 <div v-if="selectedRequest" class="modal-content">
                     <!-- Top Section - Matching Document Request Design -->
-                    <div class="modal-top" style="grid-template-columns: 1fr 1fr; gap: 15px; align-items: start;">
-                        <div class="modal-user-section" style="display: flex; align-items: center; gap: 12px;">
-                            <img :src="selectedRequest?.profileImg || '/assets/DEFAULT.jpg'" alt="Profile" class="modal-avatar" style="width: 60px; height: 60px; flex-shrink: 0;" />
+                    <div class="modal-top" style="grid-template-columns: 1fr 1fr; gap: 24px; align-items: start;">
+                        <div class="modal-user-section" style="display: flex; align-items: center; gap: 20px;">
+                            <img :src="selectedRequest?.profileImg || '/assets/DEFAULT.jpg'" alt="Profile" class="modal-avatar" style="width: 80px; height: 80px; flex-shrink: 0;" />
                             <div style="flex: 1; min-width: 0;">
-                                <h3 class="modal-name" style="font-size: 18px; margin-bottom: 4px;">{{ selectedRequest?.name || 'Unknown' }}</h3>
-                                <p class="modal-label" style="font-size: 12px; margin: 0;">Event Assistance Request</p>
+                                <h3 class="modal-name" style="font-size: 24px; margin-bottom: 6px; font-weight: 700; color: #1a1a1a;">{{ selectedRequest?.name || 'Unknown' }}</h3>
+                                <p class="modal-label" style="font-size: 15px; margin: 0; color: #6b7280; font-weight: 500;">Event Assistance Request</p>
                             </div>
                         </div>
-                        <div style="display: flex; flex-direction: row; gap: 15px; align-items: center; justify-content: space-between; background: linear-gradient(135deg, #ff8c42 0%, #ff7a28 100%); color: white; padding: 10px 15px; border-radius: 10px; box-shadow: 0 3px 10px rgba(255, 122, 40, 0.3); min-height: fit-content;">
+                        <div style="display: flex; flex-direction: row; gap: 20px; align-items: center; justify-content: space-between; background: linear-gradient(135deg, #ff8c42 0%, #ff7a28 100%); color: white; padding: 20px 24px; border-radius: 16px; box-shadow: 0 4px 16px rgba(255, 122, 40, 0.25); min-height: fit-content;">
                             <div style="flex: 1;">
-                                <p style="font-size: 8px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px; margin: 0 0 3px 0; opacity: 0.9;">Type of Assistance</p>
-                                <h3 style="font-size: 15px; font-weight: 700; margin: 0; text-shadow: 0 1px 3px rgba(0,0,0,0.2); line-height: 1.2;">{{ selectedRequest.event_type || selectedRequest.assistanceType || 'Unknown Assistance Type' }}</h3>
+                                <p style="font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 8px 0; opacity: 0.95;">Type of Assistance</p>
+                                <h3 style="font-size: 20px; font-weight: 700; margin: 0; text-shadow: 0 1px 3px rgba(0,0,0,0.2); line-height: 1.3;">{{ selectedRequest.event_type || selectedRequest.assistanceType || 'Unknown Assistance Type' }}</h3>
                             </div>
-                            <div style="width: 1px; height: 30px; background: rgba(255,255,255,0.3); flex-shrink: 0;"></div>
+                            <div style="width: 1px; height: 40px; background: rgba(255,255,255,0.3); flex-shrink: 0;"></div>
                             <div style="flex: 0 0 auto; text-align: right;">
-                                <p style="font-size: 8px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px; margin: 0 0 3px 0; opacity: 0.9;">Request Number</p>
-                                <p style="font-size: 13px; font-weight: 700; margin: 0; font-family: monospace; letter-spacing: 0.8px; text-shadow: 0 1px 2px rgba(0,0,0,0.2);">{{ selectedRequest.referenceCode }}</p>
+                                <p style="font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 8px 0; opacity: 0.95;">Request Number</p>
+                                <p style="font-size: 18px; font-weight: 700; margin: 0; font-family: 'SF Mono', 'Monaco', 'Cascadia Code', monospace; letter-spacing: 0.5px; text-shadow: 0 1px 2px rgba(0,0,0,0.2);">{{ selectedRequest.referenceCode }}</p>
                             </div>
                         </div>
                     </div>
@@ -177,93 +227,93 @@
                     <!-- Details Section -->
                     <div class="modal-details">
                         <!-- Request Information - Compact -->
-                        <div class="detail-section" style="margin-bottom: 15px;">
-                            <h4 class="section-title" style="margin-bottom: 10px; font-size: 16px;">Request Information</h4>
-                            <div class="details-grid" style="grid-template-columns: auto 1fr; gap: 12px 15px; align-items: start;">
-                                <div v-if="selectedRequest.purpose || selectedRequest.eventName" class="detail-item" style="margin: 0; min-width: 120px;">
-                                    <p class="detail-label" style="font-size: 12px; margin-bottom: 3px;">Purpose:</p>
-                                    <p class="detail-value" style="font-size: 13px; font-weight: 600; color: #239640; margin: 0;">
+                        <div class="detail-section" style="margin-bottom: 24px;">
+                            <h4 class="section-title" style="margin-bottom: 16px; font-size: 20px;">Request Information</h4>
+                            <div class="details-grid" style="grid-template-columns: auto 1fr; gap: 16px 20px; align-items: start;">
+                                <div v-if="selectedRequest.purpose || selectedRequest.eventName" class="detail-item" style="margin: 0; min-width: 140px;">
+                                    <p class="detail-label" style="font-size: 13px; margin-bottom: 6px;">Purpose:</p>
+                                    <p class="detail-value" style="font-size: 16px; font-weight: 600; color: #239640; margin: 0;">
                                         {{ selectedRequest.purpose || selectedRequest.eventName || 'Not specified' }}
                                     </p>
                                 </div>
                                 <div v-if="selectedRequest.eventDescription || selectedRequest.other_purpose" class="detail-item" style="margin: 0; flex: 1;">
-                                    <p class="detail-label" style="font-size: 12px; margin-bottom: 3px;">Description:</p>
-                                    <p class="detail-value" style="font-size: 13px; margin: 0; line-height: 1.4; text-align: left; word-wrap: break-word;">{{ selectedRequest.eventDescription || selectedRequest.other_purpose || 'No description provided' }}</p>
+                                    <p class="detail-label" style="font-size: 13px; margin-bottom: 6px;">Description:</p>
+                                    <p class="detail-value" style="font-size: 16px; margin: 0; line-height: 1.6; text-align: left; word-wrap: break-word; color: #1a1a1a;">{{ selectedRequest.eventDescription || selectedRequest.other_purpose || 'No description provided' }}</p>
                                 </div>
                             </div>
                         </div>
 
                         <!-- Event Details -->
-                        <div class="detail-section" style="margin-bottom: 15px;">
-                            <h4 class="section-title" style="margin-bottom: 10px; font-size: 16px;">Event Details</h4>
-                            <div class="details-grid" style="grid-template-columns: repeat(4, 1fr); gap: 8px 12px;">
+                        <div class="detail-section" style="margin-bottom: 24px;">
+                            <h4 class="section-title" style="margin-bottom: 16px; font-size: 20px;">Event Details</h4>
+                            <div class="details-grid" style="grid-template-columns: repeat(4, 1fr); gap: 12px 16px;">
                                 <div v-if="selectedRequest.eventDate" class="detail-item" style="margin: 0;">
-                                    <p class="detail-label" style="font-size: 11px; margin-bottom: 2px; color: #666;">Event Date:</p>
-                                    <p class="detail-value" style="font-size: 12px; margin: 0;">{{ selectedRequest.eventDate }}</p>
+                                    <p class="detail-label" style="font-size: 13px; margin-bottom: 6px; color: #6b7280;">Event Date:</p>
+                                    <p class="detail-value" style="font-size: 15px; margin: 0; color: #1a1a1a;">{{ selectedRequest.eventDate }}</p>
                                 </div>
                                 <div v-if="selectedRequest.eventTime" class="detail-item" style="margin: 0;">
-                                    <p class="detail-label" style="font-size: 11px; margin-bottom: 2px; color: #666;">Event Time:</p>
-                                    <p class="detail-value" style="font-size: 12px; margin: 0;">{{ selectedRequest.eventTime }}</p>
+                                    <p class="detail-label" style="font-size: 13px; margin-bottom: 6px; color: #6b7280;">Event Time:</p>
+                                    <p class="detail-value" style="font-size: 15px; margin: 0; color: #1a1a1a;">{{ selectedRequest.eventTime }}</p>
                                 </div>
                                 <div v-if="selectedRequest.expectedAttendees" class="detail-item" style="margin: 0;">
-                                    <p class="detail-label" style="font-size: 11px; margin-bottom: 2px; color: #666;">Expected Attendees:</p>
-                                    <p class="detail-value" style="font-size: 12px; margin: 0;">{{ selectedRequest.expectedAttendees }}</p>
+                                    <p class="detail-label" style="font-size: 13px; margin-bottom: 6px; color: #6b7280;">Expected Attendees:</p>
+                                    <p class="detail-value" style="font-size: 15px; margin: 0; color: #1a1a1a;">{{ selectedRequest.expectedAttendees }}</p>
                                 </div>
                                 <div v-if="selectedRequest.venue || selectedRequest.event_location" class="detail-item" style="margin: 0;">
-                                    <p class="detail-label" style="font-size: 11px; margin-bottom: 2px; color: #666;">Venue/Location:</p>
-                                    <p class="detail-value" style="font-size: 12px; margin: 0;">{{ selectedRequest.venue || selectedRequest.event_location || 'Not specified' }}</p>
+                                    <p class="detail-label" style="font-size: 13px; margin-bottom: 6px; color: #6b7280;">Venue/Location:</p>
+                                    <p class="detail-value" style="font-size: 15px; margin: 0; color: #1a1a1a;">{{ selectedRequest.venue || selectedRequest.event_location || 'Not specified' }}</p>
                                 </div>
                             </div>
                         </div>
 
                         <!-- User & Personal Information - Merged (like document requests) -->
-                        <div class="detail-section" style="margin-bottom: 15px;">
-                            <h4 class="section-title" style="margin-bottom: 10px; font-size: 16px;">User Information</h4>
-                            <div class="details-grid" style="grid-template-columns: repeat(4, 1fr); gap: 8px 12px;">
+                        <div class="detail-section" style="margin-bottom: 24px;">
+                            <h4 class="section-title" style="margin-bottom: 16px; font-size: 20px;">User Information</h4>
+                            <div class="details-grid" style="grid-template-columns: repeat(4, 1fr); gap: 12px 16px;">
                                 <!-- Personal Info -->
                                 <div v-if="selectedRequest.first_name" class="detail-item" style="margin: 0;">
-                                    <p class="detail-label" style="font-size: 11px; margin-bottom: 2px; color: #666;">First Name:</p>
-                                    <p class="detail-value" style="font-size: 12px; margin: 0;">{{ selectedRequest.first_name }}</p>
+                                    <p class="detail-label" style="font-size: 13px; margin-bottom: 6px; color: #6b7280;">First Name:</p>
+                                    <p class="detail-value" style="font-size: 15px; margin: 0; color: #1a1a1a;">{{ selectedRequest.first_name }}</p>
                                 </div>
                                 <div v-if="selectedRequest.middle_name" class="detail-item" style="margin: 0;">
-                                    <p class="detail-label" style="font-size: 11px; margin-bottom: 2px; color: #666;">Middle Name:</p>
-                                    <p class="detail-value" style="font-size: 12px; margin: 0;">{{ selectedRequest.middle_name }}</p>
+                                    <p class="detail-label" style="font-size: 13px; margin-bottom: 6px; color: #6b7280;">Middle Name:</p>
+                                    <p class="detail-value" style="font-size: 15px; margin: 0; color: #1a1a1a;">{{ selectedRequest.middle_name }}</p>
                                 </div>
                                 <div v-if="selectedRequest.last_name" class="detail-item" style="margin: 0;">
-                                    <p class="detail-label" style="font-size: 11px; margin-bottom: 2px; color: #666;">Last Name:</p>
-                                    <p class="detail-value" style="font-size: 12px; margin: 0;">{{ selectedRequest.last_name }}</p>
+                                    <p class="detail-label" style="font-size: 13px; margin-bottom: 6px; color: #6b7280;">Last Name:</p>
+                                    <p class="detail-value" style="font-size: 15px; margin: 0; color: #1a1a1a;">{{ selectedRequest.last_name }}</p>
                                 </div>
                                 <div v-if="selectedRequest.suffix" class="detail-item" style="margin: 0;">
-                                    <p class="detail-label" style="font-size: 11px; margin-bottom: 2px; color: #666;">Suffix:</p>
-                                    <p class="detail-value" style="font-size: 12px; margin: 0;">{{ selectedRequest.suffix }}</p>
+                                    <p class="detail-label" style="font-size: 13px; margin-bottom: 6px; color: #6b7280;">Suffix:</p>
+                                    <p class="detail-value" style="font-size: 15px; margin: 0; color: #1a1a1a;">{{ selectedRequest.suffix }}</p>
                                 </div>
                                 <div v-if="selectedRequest.birthdate" class="detail-item" style="margin: 0;">
-                                    <p class="detail-label" style="font-size: 11px; margin-bottom: 2px; color: #666;">Birthdate:</p>
-                                    <p class="detail-value" style="font-size: 12px; margin: 0;">{{ formatDate(selectedRequest.birthdate) }}</p>
+                                    <p class="detail-label" style="font-size: 13px; margin-bottom: 6px; color: #6b7280;">Birthdate:</p>
+                                    <p class="detail-value" style="font-size: 15px; margin: 0; color: #1a1a1a;">{{ formatDate(selectedRequest.birthdate) }}</p>
                                 </div>
                                 <div v-if="selectedRequest.age" class="detail-item" style="margin: 0;">
-                                    <p class="detail-label" style="font-size: 11px; margin-bottom: 2px; color: #666;">Age:</p>
-                                    <p class="detail-value" style="font-size: 12px; margin: 0;">{{ selectedRequest.age }}</p>
+                                    <p class="detail-label" style="font-size: 13px; margin-bottom: 6px; color: #6b7280;">Age:</p>
+                                    <p class="detail-value" style="font-size: 15px; margin: 0; color: #1a1a1a;">{{ selectedRequest.age }}</p>
                                 </div>
                                 <div v-if="selectedRequest.sex" class="detail-item" style="margin: 0;">
-                                    <p class="detail-label" style="font-size: 11px; margin-bottom: 2px; color: #666;">Sex:</p>
-                                    <p class="detail-value" style="font-size: 12px; margin: 0;">{{ selectedRequest.sex }}</p>
+                                    <p class="detail-label" style="font-size: 13px; margin-bottom: 6px; color: #6b7280;">Sex:</p>
+                                    <p class="detail-value" style="font-size: 15px; margin: 0; color: #1a1a1a;">{{ selectedRequest.sex }}</p>
                                 </div>
                                 <div v-if="selectedRequest.civilStatus" class="detail-item" style="margin: 0;">
-                                    <p class="detail-label" style="font-size: 11px; margin-bottom: 2px; color: #666;">Civil Status:</p>
-                                    <p class="detail-value" style="font-size: 12px; margin: 0;">{{ selectedRequest.civilStatus }}</p>
+                                    <p class="detail-label" style="font-size: 13px; margin-bottom: 6px; color: #6b7280;">Civil Status:</p>
+                                    <p class="detail-value" style="font-size: 15px; margin: 0; color: #1a1a1a;">{{ selectedRequest.civilStatus }}</p>
                                 </div>
                                 
                                 <!-- Contact Info -->
                                 <div v-if="selectedRequest.contact" class="detail-item" style="margin: 0;">
-                                    <p class="detail-label" style="font-size: 11px; margin-bottom: 2px; color: #666;">Contact:</p>
-                                    <p class="detail-value" style="font-size: 12px; margin: 0;">{{ selectedRequest.contact }}</p>
+                                    <p class="detail-label" style="font-size: 13px; margin-bottom: 6px; color: #6b7280;">Contact:</p>
+                                    <p class="detail-value" style="font-size: 15px; margin: 0; color: #1a1a1a;">{{ selectedRequest.contact }}</p>
                                 </div>
                                 
                                 <!-- Address Info (Compact) -->
                                 <div v-if="selectedRequest.address" class="detail-item" style="grid-column: span 2; margin: 0;">
-                                    <p class="detail-label" style="font-size: 11px; margin-bottom: 2px; color: #666;">Address:</p>
-                                    <p class="detail-value" style="font-size: 12px; margin: 0; line-height: 1.3;">
+                                    <p class="detail-label" style="font-size: 13px; margin-bottom: 6px; color: #6b7280;">Address:</p>
+                                    <p class="detail-value" style="font-size: 15px; margin: 0; line-height: 1.5; color: #1a1a1a;">
                                         {{ selectedRequest.address }}
                                     </p>
                                 </div>
@@ -271,24 +321,24 @@
                         </div>
 
                         <!-- Extra Fields (Dynamic Fields) -->
-                        <div v-if="(selectedRequest.extra_fields && getExtraFieldsCount(selectedRequest.extra_fields) > 0) || selectedRequest.valid_id_type || selectedRequest.valid_id_number" class="detail-section" style="margin-bottom: 15px;">
-                            <h4 class="section-title" style="margin-bottom: 10px; font-size: 16px;">Additional Information</h4>
-                            <div class="details-grid" style="grid-template-columns: repeat(4, 1fr); gap: 8px 12px;">
+                        <div v-if="(selectedRequest.extra_fields && getExtraFieldsCount(selectedRequest.extra_fields) > 0) || selectedRequest.valid_id_type || selectedRequest.valid_id_number" class="detail-section" style="margin-bottom: 24px;">
+                            <h4 class="section-title" style="margin-bottom: 16px; font-size: 20px;">Additional Information</h4>
+                            <div class="details-grid" style="grid-template-columns: repeat(4, 1fr); gap: 12px 16px;">
                                 <!-- ID Type and ID Number -->
-                                <div v-if="selectedRequest.valid_id_type" class="detail-item" style="margin: 0; padding: 8px 10px;">
-                                    <p class="detail-label" style="font-size: 11px; margin-bottom: 2px; color: #666;">ID Type:</p>
-                                    <p class="detail-value" style="font-size: 12px; margin: 0; line-height: 1.3;">{{ getValidIdTypeName(selectedRequest.valid_id_type) }}</p>
+                                <div v-if="selectedRequest.valid_id_type" class="detail-item" style="margin: 0; padding: 12px 14px;">
+                                    <p class="detail-label" style="font-size: 13px; margin-bottom: 6px; color: #6b7280;">ID Type:</p>
+                                    <p class="detail-value" style="font-size: 15px; margin: 0; line-height: 1.5; color: #1a1a1a;">{{ getValidIdTypeName(selectedRequest.valid_id_type) }}</p>
                                 </div>
-                                <div v-if="selectedRequest.valid_id_number" class="detail-item" style="margin: 0; padding: 8px 10px;">
-                                    <p class="detail-label" style="font-size: 11px; margin-bottom: 2px; color: #666;">ID Number:</p>
-                                    <p class="detail-value" style="font-size: 12px; margin: 0; line-height: 1.3;">{{ selectedRequest.valid_id_number }}</p>
+                                <div v-if="selectedRequest.valid_id_number" class="detail-item" style="margin: 0; padding: 12px 14px;">
+                                    <p class="detail-label" style="font-size: 13px; margin-bottom: 6px; color: #6b7280;">ID Number:</p>
+                                    <p class="detail-value" style="font-size: 15px; margin: 0; line-height: 1.5; color: #1a1a1a;">{{ selectedRequest.valid_id_number }}</p>
                                 </div>
                                 
                                 <!-- Dynamic Extra Fields -->
                                 <template v-for="(value, key) in getExtraFieldsObject(selectedRequest.extra_fields)" :key="key">
-                                    <div class="detail-item" v-if="isValidExtraFieldValue(value)" style="margin: 0; padding: 8px 10px;">
-                                        <p class="detail-label" style="font-size: 11px; margin-bottom: 2px; color: #666;">{{ formatFieldName(key) }}:</p>
-                                        <p class="detail-value" style="font-size: 12px; margin: 0; line-height: 1.3;">
+                                    <div class="detail-item" v-if="isValidExtraFieldValue(value)" style="margin: 0; padding: 12px 14px;">
+                                        <p class="detail-label" style="font-size: 13px; margin-bottom: 6px; color: #6b7280;">{{ formatFieldName(key) }}:</p>
+                                        <p class="detail-value" style="font-size: 15px; margin: 0; line-height: 1.5; color: #1a1a1a;">
                                             <span v-if="Array.isArray(value)">{{ value.length > 0 ? value.join(', ') : 'Not provided' }}</span>
                                             <span v-else-if="typeof value === 'object' && value !== null && !(value instanceof File)">{{ JSON.stringify(value) }}</span>
                                             <span v-else>{{ String(value) }}</span>
@@ -299,8 +349,8 @@
                         </div>
 
                         <!-- Valid ID Attachments Section -->
-                        <div v-if="idAttachments.length > 0 || (selectedRequest.valid_id_url || selectedRequest.hasValidId)" class="detail-section" style="margin-bottom: 15px;">
-                            <h4 class="section-title" style="margin-bottom: 10px; font-size: 16px;">Valid Identification</h4>
+                        <div v-if="idAttachments.length > 0 || (selectedRequest.valid_id_url || selectedRequest.hasValidId)" class="detail-section" style="margin-bottom: 24px;">
+                            <h4 class="section-title" style="margin-bottom: 16px; font-size: 20px;">Valid Identification</h4>
                             
                             <!-- ID Front and Back Attachments -->
                             <template v-if="idAttachments.length > 0">
@@ -409,8 +459,8 @@
                         </div>
                             
                         <!-- Other Attachments -->
-                        <div class="detail-section" style="margin-bottom: 15px;">
-                            <h4 class="section-title" style="margin-bottom: 10px; font-size: 16px;">Other Uploaded Files</h4>
+                        <div class="detail-section" style="margin-bottom: 24px;">
+                            <h4 class="section-title" style="margin-bottom: 16px; font-size: 20px;">Other Uploaded Files</h4>
                             
                             <!-- Show attachments if available (excluding ID front/back which are shown separately) -->
                             <div v-if="otherAttachments && Array.isArray(otherAttachments) && otherAttachments.length > 0" class="attachments-list" style="display: grid; gap: 10px; margin-top: 10px;">
@@ -560,6 +610,7 @@
                         </div>
 
                         <div class="approval-actions">
+                            <button @click="closeApprovalModal" class="cancel-btn">Cancel</button>
                             <button 
                                 @click="confirmApproval"
                                 class="confirm-btn"
@@ -567,8 +618,6 @@
                             >
                                 {{ isSubmittingApproval ? 'Submitting...' : 'Confirm Approval' }}
                             </button>
-
-                            <button @click="closeApprovalModal" class="cancel-btn">Cancel</button>
                         </div>
                     </div>
                 </div>
@@ -593,6 +642,7 @@
                         </div>
 
                         <div class="rejection-actions">
+                            <button @click="closeRejectionModal" class="cancel-btn">Cancel</button>
                             <button 
                                 @click="confirmRejection"
                                 class="confirm-reject-btn"
@@ -600,9 +650,137 @@
                             >
                                 {{ isSubmittingRejection ? 'Submitting...' : 'Confirm Rejection' }}
                             </button>
-                            <button @click="closeRejectionModal" class="cancel-btn">Cancel</button>
                         </div>
                     </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Terms and Conditions Modal -->
+        <div v-if="showTermsModal" class="modal-overlay" @click.self="closeTermsModal">
+            <div class="terms-modal" @click.stop>
+                <div class="terms-modal-header">
+                    <h2 class="terms-modal-title">Terms and Conditions</h2>
+                    <button @click="closeTermsModal" class="terms-modal-close">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width: 24px; height: 24px;">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+                <div class="terms-modal-body">
+                    <div class="terms-section">
+                        <h3 class="terms-section-title">1. Role and Responsibilities</h3>
+                        <p class="terms-text">
+                            As an Approver, you are responsible for reviewing and processing document requests and event assistance requests for the iKonek176B system. You must exercise your approval privileges with care and in accordance with barangay policies and regulations. Your decisions directly impact residents' access to essential services and assistance.
+                        </p>
+                    </div>
+
+                    <div class="terms-section">
+                        <h3 class="terms-section-title">2. Access and Security</h3>
+                        <p class="terms-text">
+                            You have been granted access to approval functions for document and event assistance requests. You must maintain the confidentiality of your login credentials and immediately report any suspected security breaches. Sharing your account credentials with unauthorized persons is strictly prohibited and may result in immediate account termination.
+                        </p>
+                    </div>
+
+                    <div class="terms-section">
+                        <h3 class="terms-section-title">3. Request Review and Processing</h3>
+                        <p class="terms-text">
+                            You are responsible for reviewing requests in a timely and fair manner. When processing requests, you must:
+                            <ul class="terms-list">
+                                <li>Verify that all required documents and information are provided</li>
+                                <li>Ensure requests meet the eligibility criteria and documented requirements</li>
+                                <li>Approve or reject requests based on valid criteria and barangay policies</li>
+                                <li>Provide clear feedback when rejecting requests, explaining the reason for rejection</li>
+                                <li>Set appropriate assistance details when approving event assistance requests</li>
+                                <li>Maintain accurate records of all approval decisions</li>
+                            </ul>
+                        </p>
+                    </div>
+
+                    <div class="terms-section">
+                        <h3 class="terms-section-title">4. Data Privacy and Confidentiality</h3>
+                        <p class="terms-text">
+                            You have access to sensitive personal information of residents and officials through request submissions. You must handle all data in accordance with the Data Privacy Act of 2012. Personal information must only be accessed for legitimate approval purposes and must never be disclosed to unauthorized parties or used for personal gain.
+                        </p>
+                    </div>
+
+                    <div class="terms-section">
+                        <h3 class="terms-section-title">5. Approval and Rejection Decisions</h3>
+                        <p class="terms-text">
+                            When approving or rejecting requests, you must ensure that all decisions are justified, documented, and in compliance with barangay policies. Discrimination or bias in processing requests is strictly prohibited. All approval actions are logged and may be subject to audit. You must provide constructive feedback when rejecting requests to help residents understand what is needed.
+                        </p>
+                    </div>
+
+                    <div class="terms-section">
+                        <h3 class="terms-section-title">6. Document Verification</h3>
+                        <p class="terms-text">
+                            You must carefully verify all submitted documents and attachments to ensure they are legitimate and meet the requirements. If documents appear fraudulent, incomplete, or do not match the request details, you must reject the request and document the reason clearly. Failure to properly verify documents may result in improper approvals or service delivery issues.
+                        </p>
+                    </div>
+
+                    <div class="terms-section">
+                        <h3 class="terms-section-title">7. Limitations and Restrictions</h3>
+                        <p class="terms-text">
+                            Your approval privileges do not grant you the right to:
+                            <ul class="terms-list">
+                                <li>Access or modify system code or database structure without authorization</li>
+                                <li>Bypass system security measures or attempt to exploit system vulnerabilities</li>
+                                <li>Use approval functions for personal purposes or to gain unfair advantage</li>
+                                <li>Delete or modify approval logs or audit trails</li>
+                                <li>Grant approval privileges to other users without proper authorization</li>
+                                <li>Approve requests without proper verification</li>
+                            </ul>
+                        </p>
+                    </div>
+
+                    <div class="terms-section">
+                        <h3 class="terms-section-title">8. Prohibited Activities</h3>
+                        <p class="terms-text">
+                            The following activities are strictly prohibited:
+                            <ul class="terms-list">
+                                <li>Unauthorized access to request records or user data</li>
+                                <li>Tampering with request records or documentation</li>
+                                <li>Approving requests without proper verification</li>
+                                <li>Sharing confidential information outside of official channels</li>
+                                <li>Engaging in any activity that compromises system security or integrity</li>
+                                <li>Accepting bribes or favors in exchange for request approval</li>
+                                <li>Discriminating against residents based on personal bias or prejudice</li>
+                            </ul>
+                        </p>
+                    </div>
+
+                    <div class="terms-section">
+                        <h3 class="terms-section-title">9. Accountability and Auditing</h3>
+                        <p class="terms-text">
+                            All approval actions are logged and monitored. You are accountable for all actions performed using your account. Regular audits may be conducted to ensure compliance with these terms and barangay policies. Failure to comply may result in disciplinary action, including but not limited to account suspension or termination.
+                        </p>
+                    </div>
+
+                    <div class="terms-section">
+                        <h3 class="terms-section-title">10. Violations and Consequences</h3>
+                        <p class="terms-text">
+                            Violation of these terms and conditions may result in immediate suspension or termination of your approval account, legal action if applicable, and reporting to appropriate barangay authorities. The severity of consequences will depend on the nature and extent of the violation.
+                        </p>
+                    </div>
+
+                    <div class="terms-section">
+                        <h3 class="terms-section-title">11. Updates to Terms</h3>
+                        <p class="terms-text">
+                            These terms and conditions may be updated periodically. You will be notified of significant changes. Continued use of approval privileges after changes constitutes acceptance of the updated terms.
+                        </p>
+                    </div>
+
+                    <div class="terms-section">
+                        <h3 class="terms-section-title">12. Contact and Support</h3>
+                        <p class="terms-text">
+                            For questions, concerns, or to report issues related to your approval role, contact the Barangay 176B office at ikonek176b@dev.ph or +639193076338.
+                        </p>
+                    </div>
+                </div>
+                <div class="terms-modal-footer">
+                    <button @click="closeTermsModal" class="terms-modal-btn">
+                        I Understand
+                    </button>
                 </div>
             </div>
         </div>
@@ -638,6 +816,11 @@ const displayRole = computed(() => {
 })
 
 const showSettings = ref(false)
+const showTermsModal = ref(false)
+
+// Pagination
+const currentPage = ref(1)
+const itemsPerPage = ref(8)
 const showSortDropdown = ref(false)
 const showFilterDropdown = ref(false)
 const sortOption = ref('newest')
@@ -834,32 +1017,90 @@ const filteredRequests = computed(() => {
         )
     }
 
-    if (filterOption.value !== 'all') {
+    if (filterOption.value === 'new') {
+        // Show only new requests (no admin_feedback)
+        filtered = filtered.filter(item => !item.admin_feedback || item.admin_feedback.trim() === '')
+    } else if (filterOption.value === 'resubmitted') {
+        // Show only resubmitted requests (has admin_feedback)
+        filtered = filtered.filter(item => item.admin_feedback && item.admin_feedback.trim() !== '')
+    } else if (filterOption.value !== 'all') {
+        // Event type filters (venue, equipment, personnel)
         filtered = filtered.filter(item => 
             (item.event_type || item.assistanceType || '').toLowerCase().includes(filterOption.value.toLowerCase())
         )
     }
 
-    if (sortOption.value === 'newest') {
-        filtered.sort((a, b) => b.dateObj - a.dateObj)
-    } else if (sortOption.value === 'oldest') {
-        filtered.sort((a, b) => a.dateObj - b.dateObj)
-    } else if (sortOption.value === 'relevant') {
-        filtered.sort((a, b) => {
+    // Sort: resubmitted requests (with admin_feedback) go to top, then by sort option
+    filtered.sort((a, b) => {
+        const aResubmitted = !!(a.admin_feedback && a.admin_feedback.trim() !== '')
+        const bResubmitted = !!(b.admin_feedback && b.admin_feedback.trim() !== '')
+        
+        // If one is resubmitted and the other isn't, resubmitted goes first
+        if (aResubmitted && !bResubmitted) return -1
+        if (!aResubmitted && bResubmitted) return 1
+        
+        // Both are same resubmission status, sort by sort option
+        if (sortOption.value === 'newest') {
+            return b.dateObj - a.dateObj
+        } else if (sortOption.value === 'oldest') {
+            return a.dateObj - b.dateObj
+        } else if (sortOption.value === 'relevant') {
             const urgentKeywords = ['urgent', 'asap', 'soonest', 'deadline', 'immediately']
             const aUrgent = urgentKeywords.some(keyword => 
-                a.eventDescription.toLowerCase().includes(keyword)
+                (a.eventDescription || '').toLowerCase().includes(keyword)
             )
             const bUrgent = urgentKeywords.some(keyword => 
-                b.eventDescription.toLowerCase().includes(keyword)
+                (b.eventDescription || '').toLowerCase().includes(keyword)
             )
             if (aUrgent && !bUrgent) return -1
             if (!aUrgent && bUrgent) return 1
             return b.dateObj - a.dateObj
-        })
-    }
+        }
+        return 0
+    })
 
     return filtered
+})
+
+// Paginated requests
+const paginatedRequests = computed(() => {
+  const start = (currentPage.value - 1) * itemsPerPage.value
+  const end = start + itemsPerPage.value
+  return filteredRequests.value.slice(start, end)
+})
+
+// Total pages
+const totalPages = computed(() => {
+  return Math.ceil(filteredRequests.value.length / itemsPerPage.value)
+})
+
+// Pagination functions
+const goToPage = (page) => {
+  if (page >= 1 && page <= totalPages.value) {
+    currentPage.value = page
+    // Scroll to top of requests container
+    const requestsContainer = document.querySelector('.requests-container')
+    if (requestsContainer) {
+      requestsContainer.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }
+  }
+}
+
+const nextPage = () => {
+  if (currentPage.value < totalPages.value) {
+    goToPage(currentPage.value + 1)
+  }
+}
+
+const prevPage = () => {
+  if (currentPage.value > 1) {
+    goToPage(currentPage.value - 1)
+  }
+}
+
+// Watch for filter changes to reset to page 1
+watch([filterOption, searchQuery, sortOption], () => {
+  currentPage.value = 1
 })
 
 /*
@@ -918,6 +1159,20 @@ const logout = () => {
     showSettings.value = false
     router.visit(route('login_approver'))
 }
+
+const openTermsModal = (e) => {
+    if (e) {
+        e.preventDefault()
+        e.stopPropagation()
+    }
+    showSettings.value = false
+    showTermsModal.value = true
+}
+
+const closeTermsModal = () => {
+    showTermsModal.value = false
+}
+
 const performSearch = () => console.log('Performing search:', searchQuery.value)
 
 // Helper function to get attachment URL consistently
@@ -1347,6 +1602,10 @@ const navigateToDocumentRequest = () => router.visit(route('document_request_app
 const navigateToHistory = () => router.visit(route('history_approver'))
 
 const handleClickOutside = (event) => {
+    // Don't close anything if clicking on the terms modal
+    if (event.target.closest('.terms-modal') || event.target.closest('.modal-overlay')) {
+        return
+    }
     if (!event.target.closest('.header-actions')) showSettings.value = false
     if (!event.target.closest('.filter-dropdown-wrapper')) {
         showSortDropdown.value = false
@@ -1432,7 +1691,7 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside))
     background: white;
     border-radius: 12px;
     box-shadow: 0 8px 25px rgba(0,0,0,0.15);
-    min-width: 200px;
+    min-width: 240px;
     z-index: 1000;
     margin-top: 10px;
     border: 1px solid rgba(0,0,0,0.1);
@@ -1448,6 +1707,7 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside))
     transition: all 0.2s;
     cursor: pointer;
     font-weight: 500;
+    white-space: nowrap;
 }
 
 .settings-item:hover {
@@ -1634,6 +1894,7 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside))
     transition: all 0.2s;
     display: flex;
     align-items: center;
+    text-transform: uppercase;
     gap: 8px;
     min-width: 120px;
     justify-content: space-between;
@@ -1672,6 +1933,7 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside))
     padding: 10px 15px;
     background: none;
     border: none;
+    text-transform: uppercase;
     text-align: left;
     color: #333;
     cursor: pointer;
@@ -1728,9 +1990,7 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside))
 }
 
 .requests-container {
-    padding: 25px;
-    max-height: calc(100vh - 350px);
-    overflow-y: auto;
+    padding: 25px 25px 10px 25px;
     display: grid;
     grid-template-columns: repeat(2, 1fr);
     gap: 20px;
@@ -1740,7 +2000,7 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside))
     background: white;
     border: 1px solid #e0e0e0;
     border-radius: 12px;
-    padding: 20px;
+    padding: 14px 20px;
     box-shadow: 0 4px 12px rgba(0,0,0,0.06);
     transition: all 0.3s ease;
 }
@@ -1778,20 +2038,20 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside))
     font-size: 18px;
     font-weight: 700;
     color: #333;
-    margin: 0 0 5px 0;
+    margin: 0 0 3px 0;
 }
 
 .request-doc-type {
     font-size: 14px;
     color: #239640;
     font-weight: 600;
-    margin: 3px 0;
+    margin: 2px 0;
 }
 
 .request-ref-code {
     font-size: 12px;
     color: #999;
-    margin: 3px 0;
+    margin: 2px 0;
     font-family: monospace;
 }
 
@@ -1799,7 +2059,7 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside))
     display: flex;
     flex-direction: column;
     align-items: flex-end;
-    gap: 10px;
+    gap: 8px;
 }
 
 .request-date {
@@ -1822,12 +2082,109 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside))
     pointer-events: auto;
     position: relative;
     z-index: 10;
+    text-transform: uppercase;
 }
 
 .view-btn:hover {
     background: #1e7e34;
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(35, 150, 64, 0.4);
+}
+
+/* Pagination Styles */
+.pagination-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: -5px;
+    padding: 15px 20px;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.pagination-info {
+    font-size: 14px;
+    color: #666;
+    font-weight: 500;
+}
+
+.pagination-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.pagination-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 18px;
+    background: #fff;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #333;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-transform: uppercase;
+}
+
+.pagination-btn:hover:not(:disabled) {
+    background: #ff8c42;
+    border-color: #ff8c42;
+    color: #fff;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(255, 140, 66, 0.3);
+}
+
+.pagination-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background: #f5f5f5;
+}
+
+.pagination-numbers {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+}
+
+.pagination-number {
+    min-width: 40px;
+    height: 40px;
+    padding: 0 12px;
+    background: #fff;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #333;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.pagination-number:hover {
+    background: #f8f9fa;
+    border-color: #ff8c42;
+    color: #ff8c42;
+    transform: translateY(-1px);
+}
+
+.pagination-number.active {
+    background: linear-gradient(135deg, #ff8c42, #ff7a28);
+    border-color: #ff8c42;
+    color: #fff;
+    box-shadow: 0 2px 8px rgba(255, 140, 66, 0.3);
+}
+
+.pagination-number.active:hover {
+    background: linear-gradient(135deg, #ff7a28, #ff6a18);
+    transform: translateY(-1px);
 }
 
 .no-requests {
@@ -1856,14 +2213,14 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside))
 
 .modal-container {
     background: white !important;
-    border-radius: 20px;
-    padding: 30px;
+    border-radius: 24px;
+    padding: 40px;
     width: 90%;
-    max-width: 900px;
+    max-width: 1000px;
     max-height: 90vh;
     overflow-y: auto;
     position: relative !important;
-    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    box-shadow: 0 25px 80px rgba(0,0,0,0.15);
     z-index: 10000 !important;
     visibility: visible !important;
     opacity: 1 !important;
@@ -1876,66 +2233,70 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside))
 
 .modal-close {
     position: absolute;
-    top: 15px;
-    right: 15px;
-    background: #f0f0f0;
+    top: 20px;
+    right: 20px;
+    background: #f3f4f6;
     border: none;
-    width: 35px;
-    height: 35px;
+    width: 40px;
+    height: 40px;
     border-radius: 50%;
     cursor: pointer;
     font-size: 20px;
-    transition: all 0.2s;
+    transition: all 0.2s ease;
     display: flex;
     align-items: center;
     justify-content: center;
+    color: #6b7280;
 }
 
 .modal-close:hover {
-    background: #e0e0e0;
-    color: #666;
+    background: #e5e7eb;
+    color: #1a1a1a;
+    transform: scale(1.05);
 }
 
 
 .modal-content {
-    margin-top: 10px;
+    margin-top: 0;
 }
 
 .modal-top {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 15px;
-    padding-bottom: 20px;
-    border-bottom: 1px solid #e0e0e0;
-    margin-bottom: 20px;
+    gap: 24px;
+    padding-bottom: 32px;
+    border-bottom: 1px solid #e5e7eb;
+    margin-bottom: 32px;
     align-items: start;
 }
 
 .modal-user-section {
     display: flex;
     align-items: center;
-    gap: 15px;
+    gap: 12px;
 }
 
 .modal-avatar {
-    width: 70px;
-    height: 70px;
-    border-radius: 15px;
+    width: 80px;
+    height: 80px;
+    border-radius: 16px;
     object-fit: cover;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.1);
 }
 
 .modal-name {
-    font-size: 20px;
+    font-size: 24px;
     font-weight: 700;
-    color: #333;
-    margin: 0 0 5px 0;
+    color: #1a1a1a;
+    margin: 0 0 6px 0;
+    letter-spacing: -0.02em;
 }
 
 .modal-label {
-    font-size: 13px;
-    color: #666;
+    font-size: 15px;
+    color: #6b7280;
     margin: 0 0 3px 0;
+    font-weight: 500;
 }
 
 .modal-ref {
@@ -2087,6 +2448,7 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside))
     font-weight: 700;
     font-size: 14px;
     transition: all 0.3s ease;
+    text-transform: uppercase;
 }
 
 .approve-btn:hover {
@@ -2105,6 +2467,7 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside))
     font-size: 14px;
     transition: all 0.3s ease;
     box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
+    text-transform: uppercase;
 }
 
 .reject-btn:hover {
@@ -2194,6 +2557,7 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside))
     font-weight: 700;
     font-size: 15px;
     transition: all 0.3s ease;
+    text-transform: uppercase;
     box-shadow: 0 2px 8px rgba(35, 150, 64, 0.3);
 }
 
@@ -2205,22 +2569,23 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside))
 
 .cancel-btn {
     flex: 1;
-    background: #6b7280;
-    color: white;
-    border: none;
+    background: white;
+    color: #666;
+    border: 1px solid #e0e0e0;
     padding: 14px 30px;
     border-radius: 10px;
     cursor: pointer;
-    font-weight: 700;
+    font-weight: 600;
     font-size: 15px;
     transition: all 0.3s ease;
-    box-shadow: 0 2px 8px rgba(107, 114, 128, 0.3);
+    text-transform: uppercase;
 }
 
 .cancel-btn:hover {
-    background: #4b5563;
+    background: #f5f5f5;
+    border-color: #d0d0d0;
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(107, 114, 128, 0.4);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .rejection-title {
@@ -2261,6 +2626,7 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside))
     font-weight: 700;
     font-size: 15px;
     transition: all 0.3s ease;
+    text-transform: uppercase;
     box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
 }
 
@@ -2437,5 +2803,147 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside))
         width: 100%;
         align-items: flex-start;
     }
+}
+/* Terms and Conditions Modal Styles */
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.terms-modal {
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    max-width: 800px;
+    width: 90%;
+    max-height: 90vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    animation: slideUp 0.3s ease;
+}
+
+.terms-modal-header {
+    background: white;
+    padding: 25px 30px;
+    border-bottom: 1px solid #e0e0e0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.terms-modal-title {
+    margin: 0;
+    font-size: 28px;
+    font-weight: 700;
+    color: #333;
+}
+
+.terms-modal-close {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 8px;
+    color: #666;
+    transition: all 0.2s ease;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.terms-modal-close:hover {
+    background: #f0f0f0;
+    color: #333;
+}
+
+.terms-modal-body {
+    padding: 30px;
+    overflow-y: auto;
+    flex: 1;
+}
+
+.terms-section {
+    margin-bottom: 25px;
+}
+
+.terms-section:last-child {
+    margin-bottom: 0;
+}
+
+.terms-section-title {
+    margin: 0 0 12px 0;
+    font-size: 18px;
+    font-weight: 700;
+    color: #239640;
+}
+
+.terms-text {
+    margin: 0;
+    font-size: 15px;
+    line-height: 1.7;
+    color: #555;
+    text-align: justify;
+}
+
+.terms-list {
+    margin: 10px 0 0 20px;
+    padding: 0;
+}
+
+.terms-list li {
+    margin-bottom: 8px;
+    font-size: 15px;
+    line-height: 1.6;
+    color: #555;
+}
+
+.terms-modal-footer {
+    padding: 20px 30px;
+    border-top: 1px solid #e0e0e0;
+    display: flex;
+    justify-content: center;
+    background: #f8f9fa;
+    flex-shrink: 0;
+}
+
+.resubmitted-badge {
+    display: inline-block;
+    background: transparent;
+    color: #ff8c42;
+    border: 2px solid #ff8c42;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    line-height: 1;
+}
+
+.terms-modal-btn {
+    padding: 12px 50px;
+    background: #ff8c42;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(255, 140, 66, 0.3);
+}
+
+.terms-modal-btn:hover {
+    background: #ff7a28;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(255, 140, 66, 0.4);
 }
 </style>
