@@ -11,6 +11,9 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (Schema::hasTable('event_assistance_restrictions')) {
+            return;
+        }
         Schema::create('event_assistance_restrictions', function (Blueprint $table) {
             $table->id('restriction_id');
             $table->string('event_type', 100); // e.g., 'Court Reservation', 'Sports Equipment Borrowing'

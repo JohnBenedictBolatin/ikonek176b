@@ -11,6 +11,9 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (Schema::hasTable('comment_reactions')) {
+            return;
+        }
         Schema::create('comment_reactions', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('comment_id');

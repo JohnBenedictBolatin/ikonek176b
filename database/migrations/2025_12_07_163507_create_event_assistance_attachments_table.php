@@ -11,6 +11,9 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (Schema::hasTable('event_assistance_attachments')) {
+            return;
+        }
         Schema::create('event_assistance_attachments', function (Blueprint $table) {
             $table->id('attachment_id');
             // Use unsignedInteger to match int(11) unsigned in event_assistance_requests table

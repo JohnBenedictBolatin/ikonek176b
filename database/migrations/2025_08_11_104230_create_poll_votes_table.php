@@ -11,6 +11,9 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (Schema::hasTable('poll_votes')) {
+            return;
+        }
         Schema::create('poll_votes', function (Blueprint $table) {
             $table->id();
             $table->unsignedInteger('user_id'); // users.user_id is int(11) unsigned

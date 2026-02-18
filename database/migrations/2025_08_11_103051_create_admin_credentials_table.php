@@ -11,6 +11,9 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (Schema::hasTable('admin_credentials')) {
+            return;
+        }
         Schema::create('admin_credentials', function (Blueprint $table) {
             $table->id();
             $table->string('username', 100)->unique();

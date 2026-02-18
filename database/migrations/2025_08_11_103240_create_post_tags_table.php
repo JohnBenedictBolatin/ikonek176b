@@ -11,6 +11,9 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (Schema::hasTable('post_tags')) {
+            return;
+        }
         Schema::create('post_tags', function (Blueprint $table) {
             $table->id();
             // $table->foreignId('post_id')->constrained('posts')->onDelete('cascade');

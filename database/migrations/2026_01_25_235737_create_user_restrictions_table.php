@@ -11,6 +11,9 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (Schema::hasTable('user_restrictions')) {
+            return;
+        }
         Schema::create('user_restrictions', function (Blueprint $table) {
             $table->id();
             // Users table uses user_id as int(11) unsigned, so we use unsignedInteger to match

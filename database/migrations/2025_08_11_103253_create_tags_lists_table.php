@@ -11,6 +11,9 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (Schema::hasTable('tags_lists')) {
+            return;
+        }
         Schema::create('tags_lists', function (Blueprint $table) {
             $table->id();
             $table->string('tag_name', 50);

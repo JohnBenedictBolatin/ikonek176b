@@ -11,6 +11,9 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (Schema::hasTable('document_type_restrictions')) {
+            return;
+        }
         Schema::create('document_type_restrictions', function (Blueprint $table) {
             $table->id('restriction_id');
             $table->unsignedInteger('fk_document_type_id');

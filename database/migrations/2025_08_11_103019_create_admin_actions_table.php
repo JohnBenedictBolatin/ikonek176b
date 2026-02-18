@@ -11,6 +11,9 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (Schema::hasTable('admin_actions')) {
+            return;
+        }
         Schema::create('admin_actions', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('admin_id');
