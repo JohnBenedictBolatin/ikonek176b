@@ -11,9 +11,14 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('document_requests', function (Blueprint $table) {
-            $table->json('incorrect_fields')->nullable()->after('admin_feedback');
-        });
+        if (!Schema::hasTable('document_requests')) {
+            return;
+        }
+        if (!Schema::hasColumn('document_requests', 'incorrect_fields')) {
+            Schema::table('document_requests', function (Blueprint $table) {
+                $table->json('incorrect_fields')->nullable();
+            });
+        }
     }
 
     /**
@@ -21,8 +26,13 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('document_requests', function (Blueprint $table) {
-            $table->dropColumn('incorrect_fields');
-        });
+        if (!Schema::hasTable('document_requests')) {
+            return;
+        }
+        if (Schema::hasColumn('document_requests', 'incorrect_fields')) {
+            Schema::table('document_requests', function (Blueprint $table) {
+                $table->dropColumn('incorrect_fields');
+            });
+        }
     }
 };
