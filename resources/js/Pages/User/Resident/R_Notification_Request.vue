@@ -4014,6 +4014,7 @@ padding: 10px;
 .payment-modal {
     padding: 30px 20px;
 }
+}
 
 /* Terms Modal Styles */
 .terms-modal {
