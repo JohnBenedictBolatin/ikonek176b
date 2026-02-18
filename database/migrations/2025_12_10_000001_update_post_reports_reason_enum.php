@@ -12,17 +12,17 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // For MySQL, we need to alter the enum column
+        if (!Schema::hasTable('post_reports') || !Schema::hasColumn('post_reports', 'reason')) {
+            return;
+        }
         if (DB::getDriverName() === 'mysql') {
             DB::statement("ALTER TABLE post_reports MODIFY COLUMN reason ENUM('spam', 'harassment', 'hate', 'violence', 'inappropriate', 'false', 'other') DEFAULT 'other'");
         } else {
-            // For other databases, drop and recreate the column
             Schema::table('post_reports', function (Blueprint $table) {
                 $table->dropColumn('reason');
             });
-            
             Schema::table('post_reports', function (Blueprint $table) {
-                $table->enum('reason', ['spam', 'harassment', 'hate', 'violence', 'inappropriate', 'false', 'other'])->default('other')->after('fk_reporter_id');
+                $table->enum('reason', ['spam', 'harassment', 'hate', 'violence', 'inappropriate', 'false', 'other'])->default('other');
             });
         }
     }
@@ -32,15 +32,17 @@ return new class extends Migration
      */
     public function down(): void
     {
+        if (!Schema::hasTable('post_reports') || !Schema::hasColumn('post_reports', 'reason')) {
+            return;
+        }
         if (DB::getDriverName() === 'mysql') {
             DB::statement("ALTER TABLE post_reports MODIFY COLUMN reason ENUM('spam', 'inappropriate', 'false', 'other') DEFAULT 'other'");
         } else {
             Schema::table('post_reports', function (Blueprint $table) {
                 $table->dropColumn('reason');
             });
-            
             Schema::table('post_reports', function (Blueprint $table) {
-                $table->enum('reason', ['spam', 'inappropriate', 'false', 'other'])->default('other')->after('fk_reporter_id');
+                $table->enum('reason', ['spam', 'inappropriate', 'false', 'other'])->default('other');
             });
         }
     }

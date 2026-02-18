@@ -11,12 +11,10 @@ return new class extends Migration
      */
     public function up(): void
     {
-        if (Schema::hasTable('post_reports')) {
-            if (!Schema::hasColumn('post_reports', 'details')) {
-                Schema::table('post_reports', function (Blueprint $table) {
-                    $table->text('details')->nullable()->after('reason');
-                });
-            }
+        if (Schema::hasTable('post_reports') && !Schema::hasColumn('post_reports', 'details')) {
+            Schema::table('post_reports', function (Blueprint $table) {
+                $table->text('details')->nullable();
+            });
         }
     }
 

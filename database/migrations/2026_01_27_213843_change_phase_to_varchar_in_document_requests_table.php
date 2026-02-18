@@ -12,7 +12,9 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // Change document_requests.phase from ENUM to VARCHAR
+        if (!Schema::hasTable('document_requests') || !Schema::hasColumn('document_requests', 'phase')) {
+            return;
+        }
         DB::statement("ALTER TABLE `document_requests` MODIFY COLUMN `phase` VARCHAR(50) NULL");
     }
 
@@ -21,8 +23,9 @@ return new class extends Migration
      */
     public function down(): void
     {
-        // Revert document_requests.phase back to ENUM
-        // Note: This will only work if all values match the ENUM values
+        if (!Schema::hasTable('document_requests') || !Schema::hasColumn('document_requests', 'phase')) {
+            return;
+        }
         DB::statement("ALTER TABLE `document_requests` MODIFY COLUMN `phase` ENUM('Phase 2', 'Phase 5') NULL");
     }
 };

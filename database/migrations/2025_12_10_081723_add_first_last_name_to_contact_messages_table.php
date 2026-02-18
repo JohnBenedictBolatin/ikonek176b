@@ -11,9 +11,16 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (!Schema::hasTable('contact_messages')) {
+            return;
+        }
         Schema::table('contact_messages', function (Blueprint $table) {
-            $table->string('first_name')->nullable()->after('user_name');
-            $table->string('last_name')->nullable()->after('first_name');
+            if (!Schema::hasColumn('contact_messages', 'first_name')) {
+                $table->string('first_name')->nullable();
+            }
+            if (!Schema::hasColumn('contact_messages', 'last_name')) {
+                $table->string('last_name')->nullable();
+            }
         });
     }
 
@@ -22,8 +29,16 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('contact_messages', function (Blueprint $table) {
-            $table->dropColumn(['first_name', 'last_name']);
-        });
+        if (!Schema::hasTable('contact_messages')) {
+            return;
+        }
+        $cols = [];
+        if (Schema::hasColumn('contact_messages', 'first_name')) $cols[] = 'first_name';
+        if (Schema::hasColumn('contact_messages', 'last_name')) $cols[] = 'last_name';
+        if (!empty($cols)) {
+            Schema::table('contact_messages', function (Blueprint $table) use ($cols) {
+                $table->dropColumn($cols);
+            });
+        }
     }
 };

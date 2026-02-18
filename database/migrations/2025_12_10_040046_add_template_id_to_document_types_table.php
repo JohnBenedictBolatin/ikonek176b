@@ -11,8 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (!Schema::hasTable('document_types') || Schema::hasColumn('document_types', 'template_id')) {
+            return;
+        }
         Schema::table('document_types', function (Blueprint $table) {
-            $table->string('template_id', 255)->nullable()->after('document_name');
+            $table->string('template_id', 255)->nullable();
         });
     }
 
@@ -21,6 +24,9 @@ return new class extends Migration
      */
     public function down(): void
     {
+        if (!Schema::hasTable('document_types') || !Schema::hasColumn('document_types', 'template_id')) {
+            return;
+        }
         Schema::table('document_types', function (Blueprint $table) {
             $table->dropColumn('template_id');
         });

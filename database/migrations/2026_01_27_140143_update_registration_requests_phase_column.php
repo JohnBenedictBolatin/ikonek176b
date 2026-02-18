@@ -12,6 +12,9 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (!Schema::hasTable('registration_requests') || !Schema::hasColumn('registration_requests', 'phase')) {
+            return;
+        }
         // First, make the column nullable temporarily
         DB::statement("ALTER TABLE `registration_requests` MODIFY COLUMN `phase` VARCHAR(50) NULL");
         
@@ -34,6 +37,9 @@ return new class extends Migration
      */
     public function down(): void
     {
+        if (!Schema::hasTable('registration_requests') || !Schema::hasColumn('registration_requests', 'phase')) {
+            return;
+        }
         // Revert to string type
         DB::statement("ALTER TABLE `registration_requests` MODIFY COLUMN `phase` VARCHAR(50) NULL");
     }

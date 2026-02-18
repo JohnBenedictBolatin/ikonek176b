@@ -15,14 +15,12 @@ return new class extends Migration
             // Check and add created_at if missing
             if (!Schema::hasColumn('post_reports', 'created_at')) {
                 Schema::table('post_reports', function (Blueprint $table) {
-                    $table->timestamp('created_at')->nullable()->after('status');
+                    $table->timestamp('created_at')->nullable();
                 });
             }
-            
-            // Check and add updated_at if missing
             if (!Schema::hasColumn('post_reports', 'updated_at')) {
                 Schema::table('post_reports', function (Blueprint $table) {
-                    $table->timestamp('updated_at')->nullable()->after('created_at');
+                    $table->timestamp('updated_at')->nullable();
                 });
             }
         }

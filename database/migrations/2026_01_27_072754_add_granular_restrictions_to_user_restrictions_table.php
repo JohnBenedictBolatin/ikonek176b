@@ -11,17 +11,23 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('user_restrictions', function (Blueprint $table) {
-            // JSON columns to store arrays of document type IDs
-            $table->json('restricted_document_types')->nullable()->after('restrict_document_request');
-            $table->json('allowed_document_types')->nullable()->after('restricted_document_types');
-            
-            // JSON columns to store arrays of event assistance type names
-            $table->json('restricted_event_types')->nullable()->after('restrict_event_assistance_request');
-            $table->json('allowed_event_types')->nullable()->after('restricted_event_types');
-            
-            // Store the reason/offenses that caused the restrictions
-            $table->text('restriction_reason')->nullable()->after('allowed_event_types');
+        if (!Schema::hasTable('user_restrictions')) {
+            return;
+        }
+        $addRestrictedDoc = !Schema::hasColumn('user_restrictions', 'restricted_document_types');
+        $addAllowedDoc = !Schema::hasColumn('user_restrictions', 'allowed_document_types');
+        $addRestrictedEvent = !Schema::hasColumn('user_restrictions', 'restricted_event_types');
+        $addAllowedEvent = !Schema::hasColumn('user_restrictions', 'allowed_event_types');
+        $addReason = !Schema::hasColumn('user_restrictions', 'restriction_reason');
+        if (!$addRestrictedDoc && !$addAllowedDoc && !$addRestrictedEvent && !$addAllowedEvent && !$addReason) {
+            return;
+        }
+        Schema::table('user_restrictions', function (Blueprint $table) use ($addRestrictedDoc, $addAllowedDoc, $addRestrictedEvent, $addAllowedEvent, $addReason) {
+            if ($addRestrictedDoc) $table->json('restricted_document_types')->nullable();
+            if ($addAllowedDoc) $table->json('allowed_document_types')->nullable();
+            if ($addRestrictedEvent) $table->json('restricted_event_types')->nullable();
+            if ($addAllowedEvent) $table->json('allowed_event_types')->nullable();
+            if ($addReason) $table->text('restriction_reason')->nullable();
         });
     }
 
@@ -30,14 +36,19 @@ return new class extends Migration
      */
     public function down(): void
     {
+        if (!Schema::hasTable('user_restrictions')) {
+            return;
+        }
         Schema::table('user_restrictions', function (Blueprint $table) {
-            $table->dropColumn([
-                'restricted_document_types',
-                'allowed_document_types',
-                'restricted_event_types',
-                'allowed_event_types',
-                'restriction_reason'
-            ]);
+            $cols = [];
+            if (Schema::hasColumn('user_restrictions', 'restricted_document_types')) $cols[] = 'restricted_document_types';
+            if (Schema::hasColumn('user_restrictions', 'allowed_document_types')) $cols[] = 'allowed_document_types';
+            if (Schema::hasColumn('user_restrictions', 'restricted_event_types')) $cols[] = 'restricted_event_types';
+            if (Schema::hasColumn('user_restrictions', 'allowed_event_types')) $cols[] = 'allowed_event_types';
+            if (Schema::hasColumn('user_restrictions', 'restriction_reason')) $cols[] = 'restriction_reason';
+            if (!empty($cols)) {
+                $table->dropColumn($cols);
+            }
         });
     }
 };
