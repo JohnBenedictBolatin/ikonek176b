@@ -17,6 +17,7 @@ return new class extends Migration
         }
         if (Schema::hasColumn('users', 'id') && !Schema::hasColumn('users', 'user_id')) {
             $this->dropForeignKeysReferencingUsersId();
+            DB::statement('ALTER TABLE users MODIFY COLUMN id BIGINT UNSIGNED NOT NULL');
             DB::statement('ALTER TABLE users DROP PRIMARY KEY');
             DB::statement('ALTER TABLE users CHANGE COLUMN id user_id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY');
             $this->addForeignKeysReferencingUsersUserId();

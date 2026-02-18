@@ -26,6 +26,7 @@ return new class extends Migration
                     // FK may not exist
                 }
             }
+            DB::statement('ALTER TABLE document_types MODIFY COLUMN id BIGINT UNSIGNED NOT NULL');
             DB::statement('ALTER TABLE document_types DROP PRIMARY KEY');
             DB::statement('ALTER TABLE document_types CHANGE COLUMN id document_type_id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY');
             if (Schema::hasTable('document_type_restrictions') && Schema::hasColumn('document_type_restrictions', 'fk_document_type_id')) {

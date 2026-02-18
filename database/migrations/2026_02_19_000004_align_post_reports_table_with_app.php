@@ -26,6 +26,7 @@ return new class extends Migration
             });
         }
 
+        DB::statement('ALTER TABLE post_reports MODIFY COLUMN report_id BIGINT UNSIGNED NOT NULL');
         DB::statement('ALTER TABLE post_reports DROP PRIMARY KEY');
         DB::statement('ALTER TABLE post_reports CHANGE COLUMN report_id post_report_id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY');
 

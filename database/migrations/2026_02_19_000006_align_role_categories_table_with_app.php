@@ -16,6 +16,7 @@ return new class extends Migration
             return;
         }
         if (Schema::hasColumn('role_categories', 'id') && !Schema::hasColumn('role_categories', 'role_id')) {
+            DB::statement('ALTER TABLE role_categories MODIFY COLUMN id BIGINT UNSIGNED NOT NULL');
             DB::statement('ALTER TABLE role_categories DROP PRIMARY KEY');
             DB::statement('ALTER TABLE role_categories CHANGE COLUMN id role_id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY');
         }

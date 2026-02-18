@@ -15,6 +15,7 @@ return new class extends Migration
             return;
         }
         if (Schema::hasColumn('document_requests', 'id') && !Schema::hasColumn('document_requests', 'doc_request_id')) {
+            DB::statement('ALTER TABLE document_requests MODIFY COLUMN id BIGINT UNSIGNED NOT NULL');
             DB::statement('ALTER TABLE document_requests DROP PRIMARY KEY');
             DB::statement('ALTER TABLE document_requests CHANGE COLUMN id doc_request_id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY');
         }
