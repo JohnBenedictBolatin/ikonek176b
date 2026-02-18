@@ -11,9 +11,15 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('event_assistance_requests', function (Blueprint $table) {
-            $table->json('extra_fields')->nullable()->after('admin_feedback');
-        });
+        if (!Schema::hasTable('event_assistance_requests')) {
+            return;
+        }
+
+        if (!Schema::hasColumn('event_assistance_requests', 'extra_fields')) {
+            Schema::table('event_assistance_requests', function (Blueprint $table) {
+                $table->json('extra_fields')->nullable();
+            });
+        }
     }
 
     /**
@@ -21,8 +27,14 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('event_assistance_requests', function (Blueprint $table) {
-            $table->dropColumn('extra_fields');
-        });
+        if (!Schema::hasTable('event_assistance_requests')) {
+            return;
+        }
+
+        if (Schema::hasColumn('event_assistance_requests', 'extra_fields')) {
+            Schema::table('event_assistance_requests', function (Blueprint $table) {
+                $table->dropColumn('extra_fields');
+            });
+        }
     }
 };
