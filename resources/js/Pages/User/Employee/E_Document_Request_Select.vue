@@ -177,7 +177,7 @@
                                         v-model="form.purpose" 
                                         class="form-input"
                                         required
-                                        @change="if (form.purpose !== 'Others') purposeOthers = ''"
+                                        @change="form.purpose !== 'Others' && (purposeOthers = '')"
                                     >
                                         <option value="">Select purpose</option>
                                         <option v-for="purpose in barangayCertificatePurposes" :key="purpose" :value="purpose">
