@@ -54,6 +54,13 @@ return [
 
     'url' => env('APP_URL', 'http://localhost'),
 
+    'asset_url' => env('ASSET_URL') ?: (
+        in_array(env('APP_ENV', 'production'), ['production', 'staging'])
+        && ($url = env('APP_URL'))
+        ? preg_replace('#^http://#', 'https://', rtrim((string) $url, '/'))
+        : null
+    ),
+
     /*
     |--------------------------------------------------------------------------
     | Application Timezone
