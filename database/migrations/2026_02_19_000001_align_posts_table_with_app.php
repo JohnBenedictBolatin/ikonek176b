@@ -27,6 +27,7 @@ return new class extends Migration
                     // FK may not exist or already reference post_id
                 }
             }
+            DB::statement('ALTER TABLE posts DROP PRIMARY KEY');
             DB::statement('ALTER TABLE posts CHANGE COLUMN id post_id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY');
             if (Schema::hasTable('post_comments') && Schema::hasColumn('post_comments', 'post_id')) {
                 try {

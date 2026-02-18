@@ -15,6 +15,7 @@ return new class extends Migration
             return;
         }
         if (Schema::hasColumn('admin_credentials', 'id') && !Schema::hasColumn('admin_credentials', 'admin_cred_id')) {
+            DB::statement('ALTER TABLE admin_credentials DROP PRIMARY KEY');
             DB::statement('ALTER TABLE admin_credentials CHANGE COLUMN id admin_cred_id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY');
         }
     }
