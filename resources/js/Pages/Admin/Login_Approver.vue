@@ -166,7 +166,7 @@ body {
   position: fixed;
   top: 0;
   left: 0;
-  background-image: url('/assets/BACKGROUND IMAGE REG1.png');
+  background-image: url('/assets/BACKGROUNDIMAGEREG1.png');
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
