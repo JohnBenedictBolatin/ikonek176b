@@ -1,4 +1,4 @@
-# Railway Deployment Guide for Laravel Application
+ # Railway Deployment Guide for Laravel Application
 
 ## Prerequisites
 
@@ -247,6 +247,9 @@ git push
 - Enable `APP_DEBUG=true` temporarily (remember to disable after)
 - Verify `APP_KEY` is set
 - Check storage permissions: `php artisan storage:link`
+
+### Column or table not found
+The app uses custom primary key names (e.g. `user_id`, `post_id`, `doc_request_id`). Migrations named `2026_02_19_*_align_*_table_with_app.php` fix mismatches: they rename `id` (or `report_id`) to the column name the models expect and add missing columns (e.g. `fk_role_id` on users, `section`/`header` on posts). They are idempotent and safe for both fresh installs and existing DBs. If you see new "column not found" errors, add a similar idempotent migration (guard with `Schema::hasTable` / `Schema::hasColumn`, avoid `after('...')` for columns that might not exist).
 
 ### Assets Not Loading
 - Ensure `npm run build` completed successfully
