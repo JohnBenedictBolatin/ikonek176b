@@ -11,7 +11,11 @@
           <img src="/assets/LOGO.png" alt="Logo" class="header-logo" />
         </div>
         <div class="header-actions">
-          <img src="/assets/SETTINGS.png" alt="Settings" class="settings-btn-img" @click="toggleSettings" />
+          <button type="button" class="settings-burger-btn" @click="toggleSettings" aria-label="Settings">
+          <svg class="settings-burger-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+          </svg>
+        </button>
           <div v-if="showSettings" class="settings-dropdown">
             <a href="#" class="settings-item" @click.prevent.stop="openTermsModal">TERMS & CONDITIONS</a>
             <Link href="#" class="settings-item" @click="logout">SIGN OUT</Link>
@@ -394,7 +398,14 @@
                       </label>
                     </div>
                     <div class="field-input-wrapper">
-                      <input type="date" v-model="form.event_date" :min="today" class="form-input" required />
+                      <input 
+                        type="date" 
+                        v-model="form.event_date" 
+                        :min="today" 
+                        @change="validateEventDate"
+                        class="form-input" 
+                        required 
+                      />
                     </div>
                   </div>
 
@@ -413,6 +424,9 @@
                               ref="startTimeInput"
                               type="time"
                               v-model="form.event_time"
+                              name="event_time"
+                              data-field="event_time"
+                              @change="validateEventTime"
                               class="form-input time-input"
                               aria-label="Event Start"
                               required
@@ -427,6 +441,9 @@
                               ref="endTimeInput"
                               type="time"
                               v-model="form.end_time"
+                              name="end_time"
+                              data-field="end_time"
+                              @change="validateEventTime"
                               class="form-input time-input"
                               aria-label="Event End"
                               required
@@ -434,6 +451,12 @@
                           </div>
                         </div>
                       </div>
+                      <p v-if="isEventDateToday" class="field-description" style="margin-top: 8px; color: #6b7280; font-size: 13px;">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" style="width: 14px; height: 14px; display: inline-block; vertical-align: middle; margin-right: 4px;">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+                        </svg>
+                        Events scheduled for today must start at least 1 hour from now. Minimum time: {{ minEventTime }}
+                      </p>
                     </div>
                   </div>
 
@@ -1353,7 +1376,7 @@ const profilePictureUrl = computed(() => {
 const roleMap = {
   1: 'Resident', 2: 'Barangay Captain', 3: 'Barangay Secretary',
   4: 'Barangay Treasurer', 5: 'Barangay Kagawad',
-  6: 'Sangguniang Kabataan Chairman', 7: 'Sangguniang Kabataan Kagawad',
+  6: 'SK Chairman', 7: 'Sangguniang Kabataan Kagawad',
   9: 'System Admin'
 }
 const displayRole = computed(() => {
@@ -1635,8 +1658,33 @@ const idBackName = ref('')
 // dynamic file names container
 const dynamicFileNames = ref({})
 
-// basic helper date
-const today = new Date().toISOString().split('T')[0]
+// basic helper date - computed to always get current date
+const today = computed(() => {
+  const now = new Date()
+  const year = now.getFullYear()
+  const month = String(now.getMonth() + 1).padStart(2, '0')
+  const day = String(now.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+})
+
+// Minimum allowed time (1 hour from now) - computed to always get current minimum time
+const minEventTime = computed(() => {
+  const now = new Date()
+  const minTime = new Date(now.getTime() + 60 * 60 * 1000) // Add 1 hour
+  const hours = String(minTime.getHours()).padStart(2, '0')
+  const minutes = String(minTime.getMinutes()).padStart(2, '0')
+  return `${hours}:${minutes}`
+})
+
+// Check if event date is today
+const isEventDateToday = computed(() => {
+  if (!form.event_date) return false
+  const eventDate = new Date(form.event_date)
+  const currentDate = new Date()
+  currentDate.setHours(0, 0, 0, 0)
+  eventDate.setHours(0, 0, 0, 0)
+  return eventDate.getTime() === currentDate.getTime()
+})
 
 // treat fields whose name contains 'birth' as future-date fields (no past selection)
 const isFutureDateField = (field) => {
@@ -2295,6 +2343,105 @@ const clearErrors = () => {
   fieldErrors.value = {}
 }
 
+// Validate event date when changed
+const validateEventDate = () => {
+  if (form.event_date) {
+    const eventDate = new Date(form.event_date)
+    const currentDate = new Date()
+    currentDate.setHours(0, 0, 0, 0)
+    eventDate.setHours(0, 0, 0, 0)
+    
+    if (eventDate < currentDate) {
+      // Reset to today if past date is selected
+      form.event_date = today.value
+      if (formErrors.value) {
+        formErrors.value.event_date = 'Event date cannot be in the past. Date has been reset to today.'
+      }
+    } else {
+      // Clear error if date is valid
+      if (formErrors.value && formErrors.value.event_date) {
+        delete formErrors.value.event_date
+      }
+    }
+    // Re-validate time when date changes
+    if (form.event_time) {
+      validateEventTime()
+    }
+  }
+}
+
+// Validate event time when changed
+const validateEventTime = () => {
+  if (!form.event_date || !form.event_time) {
+    // Clear time errors if date or time is missing
+    if (formErrors.value && formErrors.value.event_time) {
+      delete formErrors.value.event_time
+    }
+    if (formErrors.value && formErrors.value.end_time) {
+      delete formErrors.value.end_time
+    }
+    return
+  }
+
+  const eventDate = new Date(form.event_date)
+  const currentDate = new Date()
+  currentDate.setHours(0, 0, 0, 0)
+  eventDate.setHours(0, 0, 0, 0)
+  
+  // Only validate time if event date is today
+  if (eventDate.getTime() === currentDate.getTime()) {
+    const [hours, minutes] = form.event_time.split(':').map(Number)
+    const eventStartTime = new Date()
+    eventStartTime.setHours(hours, minutes, 0, 0)
+    const now = new Date()
+    
+    // Calculate minimum time (1 hour from now)
+    const minTime = new Date(now.getTime() + 60 * 60 * 1000) // Add 1 hour
+    
+    if (eventStartTime < minTime) {
+      const minHours = String(minTime.getHours()).padStart(2, '0')
+      const minMinutes = String(minTime.getMinutes()).padStart(2, '0')
+      if (!formErrors.value) formErrors.value = {}
+      formErrors.value.event_time = `Event start time must be at least 1 hour from now. Minimum time: ${minHours}:${minMinutes}`
+    } else {
+      // Clear error if time is valid
+      if (formErrors.value && formErrors.value.event_time) {
+        delete formErrors.value.event_time
+      }
+    }
+    
+    // Validate end time if provided
+    if (form.end_time) {
+      const [endHours, endMinutes] = form.end_time.split(':').map(Number)
+      const eventEndTime = new Date()
+      eventEndTime.setHours(endHours, endMinutes, 0, 0)
+      
+      if (eventEndTime < minTime) {
+        const minHours = String(minTime.getHours()).padStart(2, '0')
+        const minMinutes = String(minTime.getMinutes()).padStart(2, '0')
+        if (!formErrors.value) formErrors.value = {}
+        formErrors.value.end_time = `Event end time must be at least 1 hour from now. Minimum time: ${minHours}:${minMinutes}`
+      } else if (eventEndTime <= eventStartTime) {
+        if (!formErrors.value) formErrors.value = {}
+        formErrors.value.end_time = 'Event end time must be after event start time.'
+      } else {
+        // Clear error if time is valid
+        if (formErrors.value && formErrors.value.end_time) {
+          delete formErrors.value.end_time
+        }
+      }
+    }
+  } else {
+    // Clear time errors if date is not today
+    if (formErrors.value && formErrors.value.event_time) {
+      delete formErrors.value.event_time
+    }
+    if (formErrors.value && formErrors.value.end_time) {
+      delete formErrors.value.end_time
+    }
+  }
+}
+
 // Validation helper
 const validateEventForm = () => {
   clearErrors()
@@ -2308,18 +2455,101 @@ const validateEventForm = () => {
     return isValid
   }
 
-  // Validate basic fields
-  if (!form.purpose || form.purpose.trim() === '') {
-    errors.purpose = 'Please select a purpose for your request.'
-    isValid = false
+  // Validate purpose field based on event type
+  // Court Reservation and Community Hall Reservation use form.purpose
+  // Tent and Tables Borrowing, Sports Equipment Borrowing, and Sound System Borrowing use form.extra_fields.purpose_of_use
+  // Manpower Assistance does NOT have a purpose field
+  const eventTypesUsingPurpose = ['Court Reservation', 'Community Hall Reservation']
+  const eventTypesUsingPurposeOfUse = ['Tent and Tables Borrowing', 'Sports Equipment Borrowing', 'Sound System Borrowing']
+  
+  // Get the array from the ref (selectedEventTypes is a ref, so we need .value)
+  const eventTypesArray = selectedEventTypes.value || []
+  
+  const hasEventTypeUsingPurpose = eventTypesArray.some(type => eventTypesUsingPurpose.includes(type))
+  const hasEventTypeUsingPurposeOfUse = eventTypesArray.some(type => eventTypesUsingPurposeOfUse.includes(type))
+  
+  // Validate form.purpose for Court Reservation and Community Hall Reservation
+  if (hasEventTypeUsingPurpose) {
+    if (!form.purpose || form.purpose.trim() === '') {
+      errors.purpose = 'Please select a purpose for your request.'
+      isValid = false
+    }
+  }
+  
+  // Validate form.extra_fields.purpose_of_use for event types that have this field
+  if (hasEventTypeUsingPurposeOfUse) {
+    if (!form.extra_fields || !form.extra_fields.purpose_of_use || form.extra_fields.purpose_of_use.trim() === '') {
+      errors['extra_fields.purpose_of_use'] = 'Please select a purpose of use for your request.'
+      isValid = false
+    } else if (form.extra_fields.purpose_of_use === 'Other' && (!form.extra_fields.other_purpose_of_use || form.extra_fields.other_purpose_of_use.trim() === '')) {
+      errors['extra_fields.other_purpose_of_use'] = 'Please specify the purpose of use.'
+      isValid = false
+    }
   }
   if (!form.event_date) {
     errors.event_date = 'Please select an event date.'
     isValid = false
+  } else {
+    // Validate that event date is not in the past
+    const eventDate = new Date(form.event_date)
+    const currentDate = new Date()
+    currentDate.setHours(0, 0, 0, 0)
+    eventDate.setHours(0, 0, 0, 0)
+    
+    if (eventDate < currentDate) {
+      errors.event_date = 'Event date cannot be in the past.'
+      isValid = false
+    }
   }
   if (!form.event_time) {
     errors.event_time = 'Please select an event time.'
     isValid = false
+  }
+
+  // Validate that event start and end times are at least 1 hour in the future when event date is today
+  if (form.event_date && form.event_time) {
+    const eventDate = new Date(form.event_date)
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    eventDate.setHours(0, 0, 0, 0)
+    
+    // If event date is today, check if start time is at least 1 hour from now
+    if (eventDate.getTime() === today.getTime()) {
+      const [hours, minutes] = form.event_time.split(':').map(Number)
+      const eventStartTime = new Date()
+      eventStartTime.setHours(hours, minutes, 0, 0)
+      const now = new Date()
+      
+      // Calculate minimum time (1 hour from now)
+      const minTime = new Date(now.getTime() + 60 * 60 * 1000) // Add 1 hour
+      
+      if (eventStartTime < minTime) {
+        const minHours = String(minTime.getHours()).padStart(2, '0')
+        const minMinutes = String(minTime.getMinutes()).padStart(2, '0')
+        errors.event_time = `Event start time must be at least 1 hour from now. Minimum time: ${minHours}:${minMinutes}`
+        isValid = false
+      }
+      
+      // Also validate end time if provided
+      if (form.end_time) {
+        const [endHours, endMinutes] = form.end_time.split(':').map(Number)
+        const eventEndTime = new Date()
+        eventEndTime.setHours(endHours, endMinutes, 0, 0)
+        
+        if (eventEndTime < minTime) {
+          const minHours = String(minTime.getHours()).padStart(2, '0')
+          const minMinutes = String(minTime.getMinutes()).padStart(2, '0')
+          errors.end_time = `Event end time must be at least 1 hour from now. Minimum time: ${minHours}:${minMinutes}`
+          isValid = false
+        }
+        
+        // Also check that end time is after start time
+        if (eventEndTime <= eventStartTime) {
+          errors.end_time = 'Event end time must be after event start time.'
+          isValid = false
+        }
+      }
+    }
   }
 
   // Validate ID fields
@@ -3040,10 +3270,28 @@ onUnmounted(() => {
     position: relative;
 }
 
-.settings-btn-img {
+.settings-burger-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
     margin-right: 30px;
-    width: 30px;
+    padding: 0;
+    border: none;
+    background: transparent;
     cursor: pointer;
+    border-radius: 50%;
+    color: white;
+    transition: background 0.2s, transform 0.2s;
+}
+.settings-burger-btn:hover {
+    background: rgba(255,255,255,0.15);
+    transform: scale(1.05);
+}
+.settings-burger-icon {
+    width: 24px;
+    height: 24px;
 }
 
 .settings-dropdown {

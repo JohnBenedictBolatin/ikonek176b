@@ -463,7 +463,7 @@ class NotificationRequestController extends Controller
             'profile_pic' => $sanitizeString($user->profile_pic ?? ''),
         ];
 
-        $result = Inertia::render('User/Employee/E_Notification_Request', [
+        $result = Inertia::render('User/Resident/R_Notification_Request', [
             'document_requests' => $documentRequests,
             'documentRequests'  => $documentRequests,
             'event_assistance_requests' => $eventAssistanceRequests,

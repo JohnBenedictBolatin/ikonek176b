@@ -105,10 +105,10 @@
             <!-- Content Area -->
             <div class="content-area">
                 <div class="main-content">
-                    <!-- Discussions Header -->
+                    <!-- Announcements Header -->
                     <div class="discussions-header">
                         <div class="discussions-title">
-                            <h2>Discussions</h2>
+                            <h2>Announcements</h2>
                         </div>
                         <div class="header-icon">
                             <img src="/assets/ICON.png" alt="iKONEK" class="small-logo" />
@@ -143,7 +143,7 @@
                             />
                             <textarea 
                                 v-model="postContent"
-                                placeholder="Write a post..."
+                                placeholder="Write your announcement..."
                                 class="post-textarea"
                                 @input="updateCharCount"
                             ></textarea>
@@ -152,7 +152,7 @@
                                 <button class="attach-btn" @click="triggerFileUpload">
                                     ATTACH
                                 </button>
-                                <span class="char-count">{{ charCount }}/250</span>
+                                <span class="char-count">{{ charCount }}/1000</span>
                                 <input 
                                     type="file" 
                                     ref="fileInput" 
@@ -492,20 +492,20 @@
                     </svg>
                 </div>
                 <h3 class="success-modal-title">
-                    {{ publishedPostIsPoll ? 'Poll Published Successfully!' : 'Post Published Successfully!' }}
+                    {{ publishedPostIsPoll ? 'Poll Published Successfully!' : 'Announcement Published Successfully!' }}
                 </h3>
             </div>
             <div class="success-modal-body">
                 <p class="success-message" v-if="publishedPostIsPoll">
-                    Your poll has been successfully published and is now visible on the discussions page. 
+                    Your poll has been successfully published and is now visible on the announcements page. 
                     Other residents and barangay officials can now view your poll, vote on the options, react, and comment. 
                     You can track the poll results in real-time as community members participate. 
                     Thank you for engaging the community with your poll!
                 </p>
                 <p class="success-message" v-else>
-                    Your post has been successfully published and is now visible on the discussions page. 
-                    Other residents and barangay officials can now view, react, and comment on your post. 
-                    Thank you for contributing to the community discussions!
+                    Your announcement has been successfully published and is now visible on the announcements page. 
+                    Other residents and barangay officials can now view, react, and comment on your announcement. 
+                    Thank you for contributing to the community announcements!
                 </p>
             </div>
             <div class="success-modal-footer">
@@ -638,10 +638,9 @@ const form = useForm({
     tag_ids: [],
     custom_tag_names: [],
     image: null,
-    video_path: null,
+    video_content: null,
     is_poll: false,
     poll_options: [],
-    status: 'published',
 })
 
 // Helper function to normalize tag names for CSS classes
@@ -727,7 +726,7 @@ const logout = () => {
 }
 const setActiveTab = (tab) => activeTab.value = tab
 const navigateToDocuments = () => { activeTab.value = 'documents'; router.visit(route('document_request_select_resident')) }
-const backToPosts = () => router.visit(route('discussion_resident'))
+const backToPosts = () => router.visit(route('announcement_resident'))
 
 const openTagsModal = () => { showTagsModal.value = true; customTagError.value = '' }
 const closeTagsModal = () => { showTagsModal.value = false; customTagError.value = '' }
@@ -775,7 +774,6 @@ const removeCustomTag = (index) => {
 }
 
 const confirmTags = () => {
-    // just hide modal — selectedTagIds already updated by toggleTag
     closeTagsModal()
 }
 
@@ -861,25 +859,85 @@ const publishPost = () => {
     form.is_poll = isPoll.value
     form.poll_options = isPoll.value ? pollOptions.value.filter(opt => opt.trim().length > 0) : []
 
-    // include first file if available (you can change to send all files)
+    // Include all uploaded images
     if (uploadedFiles.value.length > 0) {
-        form.image = uploadedFiles.value[0].file
-    } else {
-        form.image = null
+        // Use FormData to send multiple files
+        const formData = new FormData()
+        formData.append('header', form.header)
+        formData.append('content', form.content)
+        formData.append('tag_ids', JSON.stringify(form.tag_ids))
+        formData.append('custom_tag_names', JSON.stringify(form.custom_tag_names))
+        formData.append('is_poll', form.is_poll ? '1' : '0')
+        if (form.is_poll) {
+            formData.append('poll_options', JSON.stringify(form.poll_options))
+        }
+        
+        // Append all images - Laravel expects images[] for array file uploads
+        uploadedFiles.value.forEach((fileObj) => {
+            formData.append('images[]', fileObj.file)
+        })
+        
+        // Use Inertia's post method with FormData
+        router.post(route('announcement_employee.store'), formData, {
+            preserveState: false,
+            preserveScroll: false,
+            forceFormData: true,
+            onStart: () => console.log('Publishing announcement...'),
+            onSuccess: (page) => {
+                console.log('Announcement published successfully')
+                publishedPostIsPoll.value = isPoll.value && pollOptions.value.filter(opt => opt.trim().length > 0).length >= 2
+                showSuccessModal.value = true
+                document.body.style.overflow = 'hidden'
+            },
+            onError: (errors) => {
+                console.error('Server validation errors', errors)
+                console.error('Form data sent:', {
+                    header: form.header,
+                    content: form.content,
+                    tag_ids: form.tag_ids,
+                    is_poll: form.is_poll,
+                    poll_options: form.poll_options,
+                    images_count: uploadedFiles.value.length
+                })
+                if (errors && typeof errors === 'object') {
+                    formErrors.value = errors
+                    const errorMessages = Object.values(errors).flat()
+                    const firstError = errorMessages.length > 0 ? errorMessages[0] : 'Failed to publish announcement. Please check the form and try again.'
+                    submitError.value = firstError
+                    
+                    if (errors.tag_ids) {
+                        submitError.value = Array.isArray(errors.tag_ids) ? errors.tag_ids[0] : 'Please select at least one tag before publishing.'
+                    }
+                    
+                    setTimeout(() => {
+                        const errorContainer = document.querySelector('.error-message-container')
+                        if (errorContainer) {
+                            errorContainer.scrollIntoView({ behavior: 'smooth', block: 'center' })
+                        }
+                    }, 100)
+                } else {
+                    submitError.value = 'An error occurred while publishing your announcement. Please try again.'
+                }
+            }
+        })
+        return
     }
+    
+    // If no images, use regular form submission
+    form.image = null
 
-    form.post(route('posts.store'), {
+    form.post(route('announcement_employee.store'), {
         preserveState: false,
         preserveScroll: false,
-        onStart: () => console.log('Posting...'),
+        onStart: () => console.log('Publishing announcement...'),
         onSuccess: (page) => {
-            console.log('Post published successfully')
-            // Redirect to discussions page immediately after successful publish
-            router.visit(route('discussion_resident'), {
-                replace: true,
-                preserveState: false,
-                preserveScroll: false
-            })
+            console.log('Announcement published successfully')
+            // Track if this was a poll post
+            publishedPostIsPoll.value = isPoll.value && pollOptions.value.filter(opt => opt.trim().length > 0).length >= 2
+            // Show success modal instead of redirecting immediately
+            showSuccessModal.value = true
+            // Prevent body scrolling while modal is open
+            document.body.style.overflow = 'hidden'
         },
         onError: (errors) => {
             console.error('Server validation errors', errors)
@@ -895,7 +953,7 @@ const publishPost = () => {
                 formErrors.value = errors
                 // Get the first error message from any field
                 const errorMessages = Object.values(errors).flat()
-                const firstError = errorMessages.length > 0 ? errorMessages[0] : 'Failed to publish post. Please check the form and try again.'
+                const firstError = errorMessages.length > 0 ? errorMessages[0] : 'Failed to publish announcement. Please check the form and try again.'
                 submitError.value = firstError
                 
                 // If tag_ids validation failed, show a more specific message
@@ -911,7 +969,7 @@ const publishPost = () => {
                     }
                 }, 100)
             } else {
-                submitError.value = 'An error occurred while publishing your post. Please try again.'
+                submitError.value = 'An error occurred while publishing your announcement. Please try again.'
             }
         }
     })
@@ -931,15 +989,16 @@ const closeSuccessModal = () => {
     postContent.value = ''
     charCount.value = 0
     selectedTagIds.value = []
+    customTagNames.value = []
     uploadedFiles.value = []
     isPoll.value = false
     pollOptions.value = ['', '']
     form.reset()
     formErrors.value = {}
     submitError.value = ''
-    // Redirect to discussion page after closing modal
+    // Redirect to announcement page after closing modal
     setTimeout(() => {
-        router.visit(route('discussion_resident'), {
+        router.visit(route('announcement_resident'), {
             replace: true,
             preserveState: false,
             preserveScroll: false
@@ -947,7 +1006,7 @@ const closeSuccessModal = () => {
     }, 300)
 }
 
-const openFAQ = () => console.log('Opening FAQ')
+const openFAQ = () => router.visit(route('help_center_resident'))
 
 const handleClickOutside = (event) => {
     if (!event.target.closest('.header-actions')) showSettings.value = false
@@ -1621,7 +1680,6 @@ onUnmounted(() => {
     justify-content: center;
     transition: all 0.2s;
 }
-
 
 .tags-dropdown {
     position: absolute;

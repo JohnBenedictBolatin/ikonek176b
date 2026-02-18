@@ -12,7 +12,40 @@
                     <img src="/assets/ADMIN LOGO1.png" alt="Logo" class="header-logo" />
                 </div>
                 <div class="header-actions">
-                    <img src="/assets/SETTINGS.png" alt="Settings" class="settings-btn-img" @click="toggleSettings" />
+                    <div class="notification-header-wrap">
+                        <button type="button" class="notification-bell-btn" @click="toggleNotifications" aria-label="Notifications">
+                            <svg class="notification-bell-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                            </svg>
+                            <span v-if="unreadNotificationCount > 0" class="notification-badge">{{ unreadNotificationCount > 99 ? '99+' : unreadNotificationCount }}</span>
+                        </button>
+                        <div v-if="showNotifications" class="notification-dropdown">
+                            <div class="notification-dropdown-header">
+                                <span class="notification-dropdown-title">Notifications</span>
+                                <button v-if="unreadNotificationCount > 0" type="button" class="notification-mark-all" @click="markAllNotificationsRead">Mark all as read</button>
+                            </div>
+                            <div class="notification-dropdown-list">
+                                <div v-if="loadingNotifications" class="notification-loading">Loading...</div>
+                                <template v-else-if="notificationsList.length === 0">
+                                    <div class="notification-empty">No notifications</div>
+                                </template>
+                                <template v-else>
+                                    <div v-for="n in notificationsList" :key="n.id" class="notification-item" :class="{ unread: !n.is_read }" @click="handleNotificationClick(n)">
+                                        <img :src="n.avatar" alt="" class="notification-item-avatar" @error="n.avatar = '/assets/DEFAULT.jpg'" />
+                                        <div class="notification-item-body">
+                                            <p class="notification-item-text"><strong>{{ n.user }}</strong> {{ n.action }}</p>
+                                            <span class="notification-item-time">{{ n.time }}</span>
+                                        </div>
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+                    </div>
+                    <button type="button" class="settings-burger-btn" @click="toggleSettings" aria-label="Settings">
+                        <svg class="settings-burger-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+                        </svg>
+                    </button>
                     <!-- Settings Dropdown -->
                     <div v-if="showSettings" class="settings-dropdown">
                         <a href="#" class="settings-item" @click.prevent.stop="openTermsModal">TERMS & CONDITIONS</a>
@@ -348,10 +381,77 @@
                         <strong>{{ confirmedPaymentSnapshot?.document || 'N/A' }}</strong> has been successfully confirmed.
                     </p>
                 </div>
-                <div class="success-modal-footer">
+                <div class="success-modal-footer" style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
+                    <button @click="openConfirmReceiptModal" class="success-modal-btn" style="background: linear-gradient(135deg, #239640 0%, #1e7e34 100%); color: white;">
+                        VIEW & PRINT RECEIPT
+                    </button>
                     <button @click="closeConfirmModal" class="success-modal-btn">
                         OK
                     </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Post-Confirmation Receipt Modal (for onsite & online - print/download right after approval) -->
+        <div v-if="showConfirmReceiptModal && confirmedPaymentSnapshot" class="modal-overlay" @click="closeConfirmReceiptModal">
+            <div class="receipt-modal-container" @click.stop style="max-width: 600px;">
+                <button @click="closeConfirmReceiptModal" class="modal-close">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width: 20px; height: 20px;">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+                <div class="receipt-modal-content">
+                    <h3 class="receipt-title">Payment Receipt</h3>
+                    <div class="receipt-details-box">
+                        <div class="receipt-row">
+                            <span class="receipt-label">Payment No:</span>
+                            <span class="receipt-value">{{ confirmedPaymentSnapshot.payment_no || confirmedPaymentSnapshot.transactionId || 'N/A' }}</span>
+                        </div>
+                        <div class="receipt-row">
+                            <span class="receipt-label">Request Ticket:</span>
+                            <span class="receipt-value">{{ confirmedPaymentSnapshot.document || 'N/A' }}</span>
+                        </div>
+                        <div class="receipt-row">
+                            <span class="receipt-label">Document Type:</span>
+                            <span class="receipt-value">{{ confirmedPaymentSnapshot.documentType || 'N/A' }}</span>
+                        </div>
+                        <div class="receipt-row">
+                            <span class="receipt-label">Payer Name:</span>
+                            <span class="receipt-value">{{ confirmedPaymentSnapshot.name || confirmedPaymentSnapshot.requestor || 'N/A' }}</span>
+                        </div>
+                        <div class="receipt-row">
+                            <span class="receipt-label">Amount Paid:</span>
+                            <span class="receipt-value amount">₱{{ (confirmedPaymentSnapshot.amount || 0).toFixed(2) }}</span>
+                        </div>
+                        <div class="receipt-row">
+                            <span class="receipt-label">Payment Method:</span>
+                            <span class="receipt-value">{{ (confirmedPaymentSnapshot.paymentMethod || 'ONSITE').toUpperCase() }}</span>
+                        </div>
+                        <div class="receipt-row">
+                            <span class="receipt-label">Payment Date:</span>
+                            <span class="receipt-value">{{ confirmedPaymentSnapshot.paymentTime || confirmedPaymentSnapshot.date || 'N/A' }}</span>
+                        </div>
+                        <div class="receipt-row">
+                            <span class="receipt-label">Status:</span>
+                            <span class="receipt-value" style="color: #239640;">APPROVED</span>
+                        </div>
+                        <div class="receipt-row">
+                            <span class="receipt-label">Approved By:</span>
+                            <span class="receipt-value">{{ confirmedPaymentSnapshot.treasurerName || 'N/A' }}</span>
+                        </div>
+                    </div>
+                    <div v-if="confirmedPaymentSnapshot.receiptImage" class="receipt-image-container">
+                        <div class="receipt-image-label">Payment Receipt Image</div>
+                        <img :src="confirmedPaymentSnapshot.receiptImage" alt="Payment Receipt" class="receipt-image" @error="handleImageError" />
+                    </div>
+                    <div class="receipt-note">
+                        <p>Thank you for your payment. This digital receipt is proof of payment issued by Barangay 176B.</p>
+                    </div>
+                    <div class="receipt-actions">
+                        <button class="download-receipt-btn" @click="printOrDownloadConfirmReceipt('download')">DOWNLOAD</button>
+                        <button class="print-receipt-btn" @click="printOrDownloadConfirmReceipt('print')">PRINT</button>
+                        <button class="close-receipt-btn" @click="closeConfirmReceiptModal">CLOSE</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -590,6 +690,7 @@ import { Link } from '@inertiajs/vue3'
 import { Head, usePage } from '@inertiajs/vue3'
 import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import { router } from '@inertiajs/vue3'
+import axios from 'axios'
 
   // --- Inertia-shared auth user ---
 const page = usePage()
@@ -602,7 +703,7 @@ const roleMap = {
   3: 'Barangay Secretary',
   4: 'Barangay Treasurer',
   5: 'Barangay Kagawad',
-  6: 'Sangguniang Kabataan Chairman',
+  6: 'SK Chairman',
   7: 'Sangguniang Kabataan Kagawad',
   9: 'System Admin',
 }
@@ -615,6 +716,10 @@ const displayRole = computed(() => {
 
 // Reactive data
 const showSettings = ref(false)
+const showNotifications = ref(false)
+const notificationsList = ref([])
+const loadingNotifications = ref(false)
+const unreadNotificationCount = computed(() => notificationsList.value.filter(n => !n.is_read).length)
 const showTermsModal = ref(false)
 const showSortDropdown = ref(false)
 const showFilterDropdown = ref(false)
@@ -626,6 +731,7 @@ const selectedPayment = ref(null)
 const showApproveModal = ref(false)
 const showConfirmModal = ref(false)
 const showReceiptModal = ref(false)
+const showConfirmReceiptModal = ref(false)
 const showRejectModal = ref(false)
 const showRejectConfirmModal = ref(false)
 const rejectedPaymentSnapshot = ref(null)
@@ -642,6 +748,11 @@ const serverPayments = computed(() => {
 const payments = ref([])
 
 const initializePaymentsFromServer = () => {
+  console.log('🔄 Initializing payments from server', {
+    serverPaymentsCount: serverPayments.value?.length ?? 0,
+    firstPayment: serverPayments.value?.[0] ?? null
+  })
+  
   payments.value = (serverPayments.value || []).map(p => {
     // compute dateObj safely
     let dateObj = null
@@ -673,6 +784,14 @@ const initializePaymentsFromServer = () => {
     // else leave default onsite or set to 'manual'
     }
 
+    // Debug receipt image
+    console.log(`📸 Payment ${p.id} receipt image:`, {
+      receiptImage: p.receiptImage,
+      receiptImageType: typeof p.receiptImage,
+      receiptImageLength: p.receiptImage?.length,
+      hasReceiptImage: !!p.receiptImage,
+      fullPayment: p
+    })
 
     return {
       id: p.id,
@@ -696,6 +815,15 @@ const initializePaymentsFromServer = () => {
       status: (p.status ?? 'PENDING').toUpperCase(),
       profileImg: p.profileImg ?? '/assets/DEFAULT.jpg',
     }
+  })
+  
+  console.log('✅ Payments initialized:', {
+    count: payments.value.length,
+    paymentsWithReceipt: payments.value.filter(p => p.receiptImage).length,
+    paymentsWithReceiptDetails: payments.value.filter(p => p.receiptImage).map(p => ({
+      id: p.id,
+      receiptImage: p.receiptImage
+    }))
   })
 }
 
@@ -809,11 +937,57 @@ const sendStatusUpdate = (paymentId, status, notes = '') => {
 
 // Methods
 const toggleSettings = () => {
+    showNotifications.value = false
     showSettings.value = !showSettings.value
 }
 
 const closeSettings = () => {
     showSettings.value = false
+}
+
+const fetchNotifications = async () => {
+    loadingNotifications.value = true
+    try {
+        const res = await axios.get('/api/notifications')
+        if (res.data?.success && Array.isArray(res.data.notifications)) {
+            notificationsList.value = res.data.notifications
+        }
+    } catch (e) {
+        console.error('Failed to fetch notifications', e)
+        notificationsList.value = []
+    } finally {
+        loadingNotifications.value = false
+    }
+}
+
+const toggleNotifications = () => {
+    showSettings.value = false
+    showNotifications.value = !showNotifications.value
+    if (showNotifications.value) fetchNotifications()
+}
+
+const markAllNotificationsRead = async () => {
+    try {
+        await axios.put('/api/notifications/mark-all-read')
+        notificationsList.value = notificationsList.value.map(n => ({ ...n, is_read: true }))
+    } catch (e) {
+        console.error('Failed to mark all read', e)
+    }
+}
+
+const markNotificationRead = async (id) => {
+    try {
+        await axios.put(`/api/notifications/${id}/read`)
+        const n = notificationsList.value.find(x => x.id === id)
+        if (n) n.is_read = true
+    } catch (e) {
+        console.error('Failed to mark read', e)
+    }
+}
+
+const handleNotificationClick = (n) => {
+    if (!n.is_read) markNotificationRead(n.id)
+    showNotifications.value = false
 }
 
 const openTermsModal = (e) => {
@@ -862,8 +1036,22 @@ const performSearch = () => {
 }
 
 const openModal = (payment) => {
-    selectedPayment.value = payment
+    console.log('🔍 Opening payment modal:', {
+      paymentId: payment.id,
+      receiptImage: payment.receiptImage,
+      hasReceiptImage: !!payment.receiptImage,
+      paymentMethod: payment.paymentMethod,
+      paymentMethodKey: payment.paymentMethodKey,
+      fullPayment: payment
+    })
+    selectedPayment.value = { ...payment } // Create a copy to ensure reactivity
     isModalOpen.value = true
+    console.log('📋 Selected payment after setting:', {
+      selectedPayment: selectedPayment.value,
+      receiptImage: selectedPayment.value?.receiptImage,
+      receiptImageType: typeof selectedPayment.value?.receiptImage,
+      receiptImageLength: selectedPayment.value?.receiptImage?.length
+    })
 }
 
 const closeModal = () => {
@@ -876,10 +1064,28 @@ const confirmPayment = async () => {
 
   const paymentId = selectedPayment.value.id
 
-  // Store snapshot for success confirmation message
+  // Store full snapshot for success message and receipt (all approved payments get a receipt)
+  const pay = selectedPayment.value
+  const paymentNo = (pay.transactionId && pay.transactionId !== 'N/A') ? pay.transactionId : ('PAY-' + paymentId)
+  const nowStr = new Date().toLocaleString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
   confirmedPaymentSnapshot.value = {
-    requestor: selectedPayment.value.requestor,
-    document: selectedPayment.value.document,
+    requestor: pay.requestor,
+    document: pay.document,
+    name: pay.requestor,
+    documentType: pay.documentType,
+    doc_type: pay.documentType,
+    amount: pay.amount,
+    paymentMethod: pay.paymentMethod,
+    method: pay.paymentMethodKey || 'onsite',
+    transactionId: paymentNo,
+    payment_no: paymentNo,
+    date: pay.date,
+    paymentTime: nowStr,
+    status: 'APPROVED',
+    receiptImage: pay.receiptImage,
+    contact: pay.contact,
+    address: pay.address,
+    treasurerName: user.value?.name || 'Treasurer',
   }
 
   // Close the approval confirmation modal
@@ -906,7 +1112,87 @@ const confirmPayment = async () => {
 
 const closeConfirmModal = () => {
     showConfirmModal.value = false
+    showConfirmReceiptModal.value = false
     confirmedPaymentSnapshot.value = null
+}
+
+const openConfirmReceiptModal = () => {
+    if (confirmedPaymentSnapshot.value) {
+        showConfirmModal.value = false
+        showConfirmReceiptModal.value = true
+    }
+}
+
+const closeConfirmReceiptModal = () => {
+    showConfirmReceiptModal.value = false
+    confirmedPaymentSnapshot.value = null
+}
+
+const printOrDownloadConfirmReceipt = (mode) => {
+    const receipt = confirmedPaymentSnapshot.value
+    if (!receipt) return
+
+    const receiptImageHtml = receipt.receiptImage
+        ? `<div class="receipt-image-container"><div class="receipt-image-label">Payment Receipt Image</div><img src="${receipt.receiptImage}" alt="Receipt" style="max-width:100%;border-radius:8px;" /></div>`
+        : ''
+
+    const html = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Payment Receipt - ${receipt.payment_no || 'N/A'}</title>
+            <meta charset="UTF-8">
+            <style>
+                body { font-family: 'Segoe UI', sans-serif; padding: 40px; max-width: 800px; margin: 0 auto; }
+                .receipt-header { text-align: center; margin-bottom: 30px; }
+                .receipt-title { font-size: 28px; font-weight: 700; color: #2e2e2e; margin: 0 0 8px 0; border-bottom: 3px solid #ff8c42; padding-bottom: 20px; }
+                .receipt-details-box { background: #f8f9fa; padding: 25px; border-radius: 16px; margin: 25px 0; }
+                .receipt-row { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #e9ecef; }
+                .receipt-row:last-child { border-bottom: none; }
+                .receipt-label { font-weight: 600; color: #666; }
+                .receipt-value { font-weight: 600; color: #2e2e2e; }
+                .receipt-value.amount { color: #239640; font-size: 22px; }
+                .receipt-note { background: #e8f8ed; border-left: 4px solid #239640; padding: 18px; border-radius: 12px; margin: 20px 0; }
+            </style>
+        </head>
+        <body>
+            <div class="receipt-header">
+                <h1 class="receipt-title">Payment Receipt</h1>
+                <p style="color: #666; margin: 0;">Barangay 176B</p>
+            </div>
+            <div class="receipt-details-box">
+                <div class="receipt-row"><span class="receipt-label">Payment No:</span><span class="receipt-value">${receipt.payment_no || 'N/A'}</span></div>
+                <div class="receipt-row"><span class="receipt-label">Request Ticket:</span><span class="receipt-value">${receipt.document || 'N/A'}</span></div>
+                <div class="receipt-row"><span class="receipt-label">Document Type:</span><span class="receipt-value">${receipt.documentType || 'N/A'}</span></div>
+                <div class="receipt-row"><span class="receipt-label">Payer Name:</span><span class="receipt-value">${receipt.name || receipt.requestor || 'N/A'}</span></div>
+                <div class="receipt-row"><span class="receipt-label">Amount Paid:</span><span class="receipt-value amount">₱${(receipt.amount || 0).toFixed(2)}</span></div>
+                <div class="receipt-row"><span class="receipt-label">Payment Method:</span><span class="receipt-value">${(receipt.paymentMethod || 'ONSITE').toUpperCase()}</span></div>
+                <div class="receipt-row"><span class="receipt-label">Payment Date:</span><span class="receipt-value">${receipt.paymentTime || receipt.date || 'N/A'}</span></div>
+                <div class="receipt-row"><span class="receipt-label">Status:</span><span class="receipt-value" style="color:#239640;">APPROVED</span></div>
+                <div class="receipt-row"><span class="receipt-label">Approved By:</span><span class="receipt-value">${receipt.treasurerName || 'N/A'}</span></div>
+            </div>
+            ${receiptImageHtml}
+            <div class="receipt-note">
+                <p style="margin:0;font-size:14px;color:#1e7e34;">Thank you for your payment. This digital receipt is proof of payment issued by Barangay 176B.</p>
+            </div>
+        </body>
+        </html>`
+
+    if (mode === 'print') {
+        const pw = window.open('', '_blank')
+        pw.document.write(html)
+        pw.document.close()
+        pw.focus()
+        setTimeout(() => { pw.print() }, 500)
+    } else {
+        const blob = new Blob([html], { type: 'text/html' })
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = `receipt_${receipt.payment_no || 'payment'}.html`
+        a.click()
+        URL.revokeObjectURL(url)
+    }
 }
 
 const viewReceipt = () => {
@@ -918,6 +1204,11 @@ const viewReceipt = () => {
 }
 
 const handleImageError = (event) => {
+    console.error('❌ Image load error:', {
+      src: event.target.src,
+      selectedPayment: selectedPayment.value,
+      receiptImage: selectedPayment.value?.receiptImage
+    })
     event.target.style.display = 'none'
     const container = event.target.closest('.receipt-image-container')
     if (container) {
@@ -998,6 +1289,7 @@ const handleClickOutside = (event) => {
     }
     if (!event.target.closest('.header-actions')) {
         showSettings.value = false
+        showNotifications.value = false
     }
     if (!event.target.closest('.filter-dropdown-wrapper')) {
         showSortDropdown.value = false
@@ -1007,6 +1299,7 @@ const handleClickOutside = (event) => {
 
 onMounted(() => {
     document.addEventListener('click', handleClickOutside)
+    fetchNotifications()
 })
 
 onUnmounted(() => {
@@ -1152,17 +1445,56 @@ onUnmounted(() => {
 
 .header-actions {
     position: relative;
+    display: flex;
+    align-items: center;
+    gap: 24px;
 }
 
-.settings-btn-img {
+.notification-header-wrap { position: relative; }
+.notification-bell-btn { display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; padding: 0; border: none; background: transparent; cursor: pointer; border-radius: 50%; color: white; transition: background 0.2s, transform 0.2s; }
+.notification-bell-btn:hover { background: rgba(255,255,255,0.15); transform: scale(1.05); }
+.notification-bell-icon { width: 24px; height: 24px; }
+.notification-badge { position: absolute; top: 2px; right: 2px; min-width: 18px; height: 18px; padding: 0 5px; font-size: 11px; font-weight: 700; color: white; background: #e41e3a; border-radius: 10px; display: flex; align-items: center; justify-content: center; line-height: 1; }
+.notification-dropdown { position: absolute; top: 100%; right: 0; margin-top: 8px; width: 380px; max-width: 90vw; background: white; border-radius: 12px; box-shadow: 0 8px 25px rgba(0,0,0,0.15); border: 1px solid rgba(0,0,0,0.1); z-index: 1001; overflow: hidden; }
+.notification-dropdown-header { padding: 14px 16px; border-bottom: 1px solid #eee; display: flex; align-items: center; justify-content: space-between; background: #fafafa; }
+.notification-dropdown-title { font-weight: 700; font-size: 16px; color: #333; }
+.notification-mark-all { font-size: 13px; color: #ff8c42; background: none; border: none; cursor: pointer; font-weight: 500; padding: 0; }
+.notification-mark-all:hover { text-decoration: underline; }
+.notification-dropdown-list { max-height: 400px; overflow-y: auto; }
+.notification-loading, .notification-empty { padding: 24px 16px; text-align: center; color: #666; font-size: 14px; }
+.notification-item { display: flex; align-items: flex-start; gap: 12px; padding: 12px 16px; cursor: pointer; border-bottom: 1px solid #f0f0f0; transition: background 0.15s; }
+.notification-item:hover { background: #f5f5f5; }
+.notification-item.unread { background: #f0f7ff; }
+.notification-item-avatar { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
+.notification-item-body { flex: 1; min-width: 0; }
+.notification-item-text { margin: 0 0 4px 0; font-size: 14px; color: #333; line-height: 1.4; }
+.notification-item-text strong { font-weight: 600; }
+.notification-item-time { font-size: 12px; color: #888; }
+
+.settings-burger-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
     margin-right: 30px;
-    width: 30px;
+    padding: 0;
+    border: none;
+    background: transparent;
     cursor: pointer;
-    transition: transform 0.2s;
+    border-radius: 50%;
+    color: white;
+    transition: background 0.2s, transform 0.2s;
 }
 
-.settings-btn-img:hover {
-    transform: scale(1.1);
+.settings-burger-btn:hover {
+    background: rgba(255,255,255,0.15);
+    transform: scale(1.05);
+}
+
+.settings-burger-icon {
+    width: 24px;
+    height: 24px;
 }
 
 .settings-dropdown {
@@ -2211,6 +2543,79 @@ onUnmounted(() => {
     display: flex;
     flex-direction: column;
     gap: 12px;
+}
+
+/* Receipt details box (for post-confirmation receipt modal) */
+.receipt-details-box {
+    background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+    padding: 25px;
+    border-radius: 16px;
+    margin: 15px 0;
+    border: 1px solid #e9ecef;
+}
+.receipt-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 12px 0;
+    border-bottom: 1px solid #e9ecef;
+}
+.receipt-row:last-child { border-bottom: none; }
+.receipt-label {
+    font-weight: 600;
+    color: #666;
+    font-size: 14px;
+}
+.receipt-value {
+    font-weight: 600;
+    color: #2e2e2e;
+    font-size: 14px;
+}
+.receipt-value.amount {
+    color: #239640;
+    font-size: 18px;
+}
+.receipt-note {
+    background: linear-gradient(135deg, #e8f8ed 0%, #d4f1dd 100%);
+    border-left: 4px solid #239640;
+    padding: 18px;
+    border-radius: 12px;
+    margin: 15px 0;
+}
+.receipt-note p { margin: 0; font-size: 14px; color: #1e7e34; }
+.receipt-image-label {
+    font-weight: 700;
+    color: #2e2e2e;
+    font-size: 14px;
+    margin-bottom: 12px;
+}
+.receipt-actions {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-top: 20px;
+}
+.download-receipt-btn,
+.print-receipt-btn,
+.close-receipt-btn {
+    padding: 12px 24px;
+    border-radius: 10px;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    font-size: 14px;
+}
+.download-receipt-btn {
+    background: linear-gradient(135deg, #239640 0%, #1e7e34 100%);
+    color: white;
+}
+.print-receipt-btn {
+    background: linear-gradient(135deg, #ff8c42 0%, #ff7a28 100%);
+    color: white;
+}
+.close-receipt-btn {
+    background: #6c757d;
+    color: white;
 }
 
 .receipt-details p {

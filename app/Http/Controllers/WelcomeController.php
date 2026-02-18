@@ -19,7 +19,7 @@ class WelcomeController extends Controller
             3 => 'Barangay Secretary',
             4 => 'Barangay Treasurer',
             5 => 'Barangay Kagawad',
-            6 => 'Sangguniang Kabataan Chairman',
+            6 => 'SK Chairman',
             7 => 'Sangguniang Kabataan Kagawad',
             9 => 'System Admin',
         ];

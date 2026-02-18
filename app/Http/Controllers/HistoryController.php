@@ -53,18 +53,29 @@ class HistoryController extends Controller
     }
 
     /**
-     * Get reviewed reports (dismissed, deleted, removed)
+     * Get reviewed reports (dismissed, deleted, removed, reviewed)
      */
     public function getReports()
     {
         try {
             // Get reports that have been reviewed (not pending)
-            $reports = PostReport::whereIn('status', ['Dismissed', 'Deleted', 'Removed', 'dismissed', 'deleted', 'removed'])
+            // ReportController sets status to 'Reviewed' when dismissing, and 'Reviewed' when deleting posts
+            $reports = PostReport::whereIn('status', ['Reviewed', 'reviewed', 'Dismissed', 'Deleted', 'Removed', 'dismissed', 'deleted', 'removed'])
                 ->with(['reporter:id,first_name,last_name,profile_pic', 'post:id,post_header'])
                 ->orderBy('updated_at', 'desc')
                 ->get()
                 ->map(function ($report) {
                     $reporter = $report->reporter;
+                    
+                    // Determine action based on status and whether post still exists
+                    $status = strtolower($report->status ?? '');
+                    $action = 'Reviewed';
+                    if (in_array($status, ['deleted', 'removed']) || ($status === 'reviewed' && !$report->post)) {
+                        $action = 'Deleted';
+                    } elseif (in_array($status, ['dismissed']) || ($status === 'reviewed' && $report->post)) {
+                        $action = 'Dismissed';
+                    }
+                    
                     return [
                         'id' => $report->post_report_id ?? $report->id,
                         'post_report_id' => $report->post_report_id ?? $report->id,
@@ -72,11 +83,11 @@ class HistoryController extends Controller
                         'reporter_name' => $reporter ? trim(($reporter->first_name ?? '') . ' ' . ($reporter->last_name ?? '')) : 'Unknown',
                         'reporter_avatar' => $reporter->profile_pic ?? null,
                         'reporter_profile_pic' => $reporter->profile_pic ?? null,
-                        'status' => ucfirst(strtolower($report->status)),
+                        'status' => $action, // Use the determined action
                         'reviewed_at' => $report->updated_at?->toDateTimeString(),
                         'updated_at' => $report->updated_at?->toDateTimeString(),
                         'created_at' => $report->created_at?->toDateTimeString(),
-                        'reviewed_by' => 'System Admin', // You can enhance this to track who reviewed
+                        'reviewed_by' => Auth::user()?->name ?? 'System Admin',
                     ];
                 });
 
@@ -124,7 +135,7 @@ class HistoryController extends Controller
                         'reviewed_at' => $message->updated_at?->toDateTimeString(),
                         'updated_at' => $message->updated_at?->toDateTimeString(),
                         'created_at' => $message->created_at?->toDateTimeString(),
-                        'reviewed_by' => 'System Admin', // You can enhance this to track who reviewed
+                        'reviewed_by' => Auth::user()?->name ?? 'System Admin',
                     ];
                 });
 

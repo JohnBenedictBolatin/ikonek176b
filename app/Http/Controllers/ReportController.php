@@ -161,7 +161,7 @@ class ReportController extends Controller
                         3 => 'Barangay Secretary',
                         4 => 'Barangay Treasurer',
                         5 => 'Barangay Kagawad',
-                        6 => 'Sangguniang Kabataan Chairman',
+                        6 => 'SK Chairman',
                         7 => 'Sangguniang Kabataan Kagawad',
                         9 => 'System Admin',
                     ];
@@ -356,14 +356,85 @@ class ReportController extends Controller
             Log::info('Attempting to delete post', ['post_id' => $postId]);
             
             DB::transaction(function () use ($postId) {
-                // Update all reports for this post to Reviewed (database enum only allows 'Pending'/'Reviewed')
+                // Get the post and author before deletion
+                $post = Post::findOrFail($postId);
+                $postAuthorId = $post->fk_post_author_id ?? $post->user_id ?? null;
+                
+                // Get all reports for this post to collect reasons
+                $reports = PostReport::where('fk_post_id', $postId)
+                    ->with('reasons')
+                    ->get();
+                
+                // Collect all unique report reasons
+                $allReasons = [];
+                foreach ($reports as $report) {
+                    $reportReasons = $report->reasons->pluck('reason')->toArray();
+                    if (empty($reportReasons) && $report->reason) {
+                        $reportReasons = [$report->reason];
+                    }
+                    $allReasons = array_merge($allReasons, $reportReasons);
+                }
+                $uniqueReasons = array_unique($allReasons);
+                
+                // Map reason codes to human-readable labels
+                $reasonMap = [
+                    'spam' => 'Spam or misleading content',
+                    'harassment' => 'Harassment or bullying',
+                    'hate' => 'Hate speech',
+                    'violence' => 'Violence or dangerous content',
+                    'inappropriate' => 'Inappropriate content',
+                    'false' => 'False information',
+                    'other' => 'Other violation',
+                ];
+                
+                $reasonLabels = array_map(function($reason) use ($reasonMap) {
+                    return $reasonMap[$reason] ?? $reason;
+                }, $uniqueReasons);
+                
+                // Build notification message
+                $reasonText = !empty($reasonLabels) 
+                    ? implode(', ', $reasonLabels)
+                    : 'Community guidelines violation';
+                
+                $notificationMessage = "Your post has been removed by the system administrator due to the following reason(s): {$reasonText}. Please review our community guidelines to ensure your future posts comply with our standards.";
+                
+                // Update all reports for this post to Reviewed
                 PostReport::where('fk_post_id', $postId)
                     ->update(['status' => 'Reviewed']);
                 
                 Log::info('Reports updated to Reviewed', ['post_id' => $postId]);
 
-                // Delete the post
-                $post = Post::findOrFail($postId);
+                // Create notification for post author if author exists
+                if ($postAuthorId) {
+                    try {
+                        // Check if notification table uses fk_user_id or user_id
+                        $userIdColumn = Schema::hasColumn('notifications', 'fk_user_id') ? 'fk_user_id' : 'user_id';
+                        $typeColumn = Schema::hasColumn('notifications', 'notification_type') ? 'notification_type' : 'type';
+                        $refIdColumn = Schema::hasColumn('notifications', 'notification_reference_id') ? 'notification_reference_id' : 'reference_id';
+                        
+                        DB::table('notifications')->insert([
+                            $userIdColumn => $postAuthorId,
+                            $typeColumn => 'Report',
+                            $refIdColumn => $postId,
+                            'message' => $notificationMessage,
+                            'is_read' => false,
+                            'created_at' => now(),
+                        ]);
+                        
+                        Log::info('Notification created for post author', [
+                            'post_id' => $postId,
+                            'author_id' => $postAuthorId,
+                            'reasons' => $reasonLabels
+                        ]);
+                    } catch (\Exception $notifError) {
+                        // Log but don't fail the deletion if notification fails
+                        Log::error('Error creating notification for deleted post', [
+                            'post_id' => $postId,
+                            'author_id' => $postAuthorId,
+                            'error' => $notifError->getMessage()
+                        ]);
+                    }
+                }
                 
                 // Delete associated image if exists
                 if ($post->image_content) {

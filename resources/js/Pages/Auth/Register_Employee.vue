@@ -65,16 +65,16 @@ For any concerns or questions regarding data privacy, contact us at ikonek176b@d
               </h3>
               
               <div class="form-group">
-                <input v-model="form.last_name" placeholder="Last Name" class="form-input" required />
+                <input v-model="form.last_name" @blur="form.last_name = toTitleCase(form.last_name)" placeholder="Last Name" class="form-input" required />
               </div>
 
               <div class="form-row">
                 <div class="form-group half">
-                  <input v-model="form.first_name" placeholder="First Name" class="form-input" required />
+                  <input v-model="form.first_name" @blur="form.first_name = toTitleCase(form.first_name)" placeholder="First Name" class="form-input" required />
                 </div>
                 
                 <div class="form-group half">
-                  <input v-model="form.middle_name" placeholder="Middle Name" class="form-input" />
+                  <input v-model="form.middle_name" @blur="form.middle_name = toTitleCase(form.middle_name)" placeholder="Middle Name" class="form-input" />
                 </div>
               </div>
 
@@ -340,11 +340,11 @@ For any concerns or questions regarding data privacy, contact us at ikonek176b@d
           <!-- house & street -->
           <div class="form-row">
             <div class="form-group half">
-              <input v-model="form.house" placeholder="House / Unit / Building No." class="form-input" />
+              <input v-model="form.house" @blur="form.house = toTitleCase(form.house)" placeholder="House / Unit / Building No." class="form-input" />
             </div>
 
             <div class="form-group half">
-              <input v-model="form.street" placeholder="Street" class="form-input" />
+              <input v-model="form.street" @blur="form.street = toTitleCase(form.street)" placeholder="Street" class="form-input" />
             </div>
           </div>
 
@@ -440,6 +440,7 @@ For any concerns or questions regarding data privacy, contact us at ikonek176b@d
 <script setup>
 import { ref, reactive, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import { Link, Head, useForm } from '@inertiajs/vue3'
+import { toTitleCase } from '@/utils/textCase'
 
 // showPrivacy defaults to true so modal is visible on page load
 const showPrivacy = ref(true)
@@ -492,6 +493,14 @@ const confirmPassword = ref('')
 const showPassword = ref(false)
 const showConfirmPassword = ref(false)
 const localErrors = reactive({ password: null, confirmPassword: null })
+
+function normalizeCasing() {
+  form.first_name = toTitleCase(form.first_name)
+  form.middle_name = toTitleCase(form.middle_name)
+  form.last_name = toTitleCase(form.last_name)
+  form.house = toTitleCase(form.house)
+  form.street = toTitleCase(form.street)
+}
 
 const passwordsMatch = computed(() => form.password === confirmPassword.value)
 
@@ -690,6 +699,8 @@ function submit() {
     showPrivacy.value = true
     return
   }
+
+  normalizeCasing()
   
   localErrors.password = null
   localErrors.confirmPassword = null

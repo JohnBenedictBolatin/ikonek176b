@@ -68,6 +68,23 @@ class RegisterOfficialController extends Controller
             'address' => ['nullable','string'],
         ]);
 
+        // -----------------------
+        // Normalize casing (uniform DB values)
+        // -----------------------
+        $normalizeTitle = function ($value) {
+            if ($value === null) return null;
+            $s = preg_replace('/\s+/', ' ', trim((string) $value));
+            if ($s === '') return '';
+            return mb_convert_case($s, MB_CASE_TITLE, 'UTF-8');
+        };
+
+        $data['first_name'] = $normalizeTitle($data['first_name'] ?? null);
+        $data['middle_name'] = $normalizeTitle($data['middle_name'] ?? null);
+        $data['last_name'] = $normalizeTitle($data['last_name'] ?? null);
+        $data['street'] = $normalizeTitle($data['street'] ?? null);
+        $data['house'] = $normalizeTitle($data['house'] ?? null);
+        $data['house_number'] = isset($data['house_number']) ? preg_replace('/\s+/', ' ', trim((string) $data['house_number'])) : null;
+
         // DEFAULT SUFFIX: make empty string if not provided
         if (empty($data['suffix'])) {
             $data['suffix'] = '';

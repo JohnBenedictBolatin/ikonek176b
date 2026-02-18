@@ -25,7 +25,7 @@
 
         <!-- Button -->
         <Link
-          :href="route('notification_request_employee')"
+          :href="route('notification_request_resident')"
           class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-2 rounded shadow"
         >
           View Request

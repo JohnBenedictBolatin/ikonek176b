@@ -225,7 +225,7 @@ class ProfileController extends Controller
                 ];
             });
         
-        return Inertia::render('User/Employee/E_Profile', [
+        return Inertia::render('User/Resident/R_Profile', [
             'stats' => [
                 'posts' => $postsCount,
                 'reactions' => $reactionsCount,

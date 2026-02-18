@@ -12,7 +12,11 @@
                     <img src="/assets/LOGO.png" alt="Logo" class="header-logo" />
                 </div>
                 <div class="header-actions">
-                    <img src="/assets/SETTINGS.png" alt="Settings" class="settings-btn-img" @click="toggleSettings" />
+                    <button type="button" class="settings-burger-btn" @click="toggleSettings" aria-label="Settings">
+                    <svg class="settings-burger-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+                    </svg>
+                </button>
                     <!-- Settings Dropdown -->
                     <div v-if="showSettings" class="settings-dropdown">
                         <a href="#" class="settings-item" @click.prevent.stop="openTermsModal">TERMS & CONDITIONS</a>
@@ -353,7 +357,7 @@
                                 <img :src="post.avatar" :alt="post.author" class="post-avatar" />
                                 <div class="post-meta">
                                     <div class="post-author">{{ post.author }}</div>
-                                    <span class="author-badge" :class="post.role && post.role.toLowerCase() !== 'resident' ? 'official' : 'resident'">{{ post.role }}</span>
+                                    <span class="author-badge" :class="isOfficialRole(post.role) ? 'official' : 'resident'">{{ post.role }}</span>
                                 </div>
                                 <div class="post-tags">
                                     <span 
@@ -444,7 +448,7 @@
                                 <img :src="selectedPost.avatar" :alt="selectedPost.author" class="post-avatar" />
                                 <div class="post-meta">
                                     <div class="post-author">{{ selectedPost.author }}</div>
-                                    <span class="author-badge" :class="selectedPost.role && selectedPost.role.toLowerCase() !== 'resident' ? 'official' : 'resident'">{{ selectedPost.role }}</span>
+                                    <span class="author-badge" :class="isOfficialRole(selectedPost.role) ? 'official' : 'resident'">{{ selectedPost.role }}</span>
                                 </div>
                                 <div class="post-tags">
                                     <span 
@@ -517,6 +521,12 @@
                                     </button>
                                 </div>
                                 <div class="post-options">
+                                    <button v-if="isPostOwner(selectedPost)" class="edit-post-btn" @click="openEditModal(selectedPost)">
+                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="report-icon">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" />
+                                        </svg>
+                                        EDIT
+                                    </button>
                                     <button v-if="isPostOwner(selectedPost)" class="delete-post-btn" @click="confirmDeletePost(selectedPost.id)">
                                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="report-icon">
                                             <path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
@@ -789,6 +799,153 @@
                         </div>
                     </div>
 
+                    <!-- Edit Post Modal -->
+                    <div v-if="showEditModal" class="report-modal-overlay" @click="closeEditModal">
+                        <div class="edit-modal" @click.stop>
+                            <div class="report-modal-header">
+                                <h3>Edit Post</h3>
+                                <button class="close-modal-btn" @click="closeEditModal">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="close-icon">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+                                    </svg>
+                                </button>
+                            </div>
+                            <div class="edit-modal-body">
+                                <div v-if="editSubmitError" class="edit-error-message">{{ editSubmitError }}</div>
+                                
+                                <div class="edit-form-group">
+                                    <label>Header (Optional)</label>
+                                    <input 
+                                        v-model="editForm.header" 
+                                        type="text" 
+                                        placeholder="Enter post header..." 
+                                        maxlength="255" 
+                                        class="edit-input" 
+                                    />
+                                </div>
+                                
+                                <div class="edit-form-group">
+                                    <label>Content <span style="color: #dc3545;">*</span></label>
+                                    <textarea 
+                                        v-model="editForm.content" 
+                                        placeholder="Write your post content..." 
+                                        maxlength="1000" 
+                                        rows="6" 
+                                        class="edit-textarea" 
+                                        required
+                                    ></textarea>
+                                    <div class="char-count">{{ editForm.content.length }}/1000</div>
+                                </div>
+                                
+                                <div class="edit-form-group">
+                                    <label>Tags <span style="color: #dc3545;">*</span></label>
+                                    <div class="edit-tags-display">
+                                        <span 
+                                            v-for="tagId in editForm.tag_ids" 
+                                            :key="tagId" 
+                                            class="edit-tag-chip"
+                                        >
+                                            #{{ availableTags.find(t => t.tag_id === tagId)?.tag_name || '' }}
+                                        </span>
+                                        <span 
+                                            v-for="(name, idx) in editForm.custom_tag_names" 
+                                            :key="'custom-' + idx" 
+                                            class="edit-tag-chip edit-tag-chip-custom"
+                                        >
+                                            #{{ name }}
+                                        </span>
+                                        <button class="edit-change-tags-btn" @click="openEditTagsModal">Change Tags</button>
+                                    </div>
+                                    <p v-if="editFormErrors.tag_ids" style="color: #dc3545; font-size: 12px; margin-top: 5px;">
+                                        {{ Array.isArray(editFormErrors.tag_ids) ? editFormErrors.tag_ids[0] : editFormErrors.tag_ids }}
+                                    </p>
+                                </div>
+                                
+                                <div class="edit-form-group">
+                                    <label>Image (Optional)</label>
+                                    <div class="edit-images-preview">
+                                        <div v-if="editForm.imagePreview" class="edit-image-preview-item">
+                                            <img :src="editForm.imagePreview" alt="Post image" class="edit-preview-image" />
+                                            <button class="edit-remove-image-btn" @click="removeEditImage">×</button>
+                                        </div>
+                                        <label v-if="!editForm.imagePreview" class="edit-add-image-btn">
+                                            <input 
+                                                type="file" 
+                                                accept="image/*" 
+                                                @change="handleEditImageUpload" 
+                                                style="display: none;" 
+                                            />
+                                            + Add Image
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="report-modal-footer">
+                                <button class="cancel-report-btn" @click="closeEditModal">CANCEL</button>
+                                <button class="submit-report-btn" @click="submitEdit" :disabled="isSubmittingEdit">
+                                    {{ isSubmittingEdit ? 'UPDATING...' : 'UPDATE' }}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tags Selection Modal for Edit -->
+                    <div v-if="showEditTagsModal" class="report-modal-overlay" @click="closeEditTagsModal">
+                        <div class="edit-tags-modal" @click.stop>
+                            <div class="report-modal-header">
+                                <h3>Select Tags</h3>
+                                <button class="close-modal-btn" @click="closeEditTagsModal">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="close-icon">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+                                    </svg>
+                                </button>
+                            </div>
+                            <div class="edit-tags-modal-body">
+                                <div v-if="availableTags && availableTags.length > 0" class="tags-grid-edit">
+                                    <button 
+                                        v-for="tag in availableTags" 
+                                        :key="tag.tag_id"
+                                        class="tag-option-edit"
+                                        :class="{ selected: editForm.tag_ids.includes(tag.tag_id) }"
+                                        @click="toggleEditTag(tag.tag_id)"
+                                    >
+                                        #{{ tag.tag_name }}
+                                    </button>
+                                </div>
+                                <div v-else class="no-tags-message">No tags available</div>
+                                <div class="custom-tag-section">
+                                    <label class="custom-tag-label">Others (add your own)</label>
+                                    <div class="custom-tag-input-row">
+                                        <input 
+                                            v-model="editCustomTagInput" 
+                                            type="text" 
+                                            class="custom-tag-input" 
+                                            placeholder="Type a tag name (e.g. Events)"
+                                            maxlength="50"
+                                            @keydown.enter.prevent="addEditCustomTag"
+                                        />
+                                        <button type="button" class="custom-tag-add-btn" @click="addEditCustomTag">Add</button>
+                                    </div>
+                                    <p v-if="editCustomTagError" class="custom-tag-error">{{ editCustomTagError }}</p>
+                                    <div v-if="editForm.custom_tag_names && editForm.custom_tag_names.length > 0" class="edit-custom-tags-list">
+                                        <span 
+                                            v-for="(name, idx) in editForm.custom_tag_names" 
+                                            :key="'ec-' + idx" 
+                                            class="edit-tag-chip edit-tag-chip-custom"
+                                        >
+                                            #{{ name }}
+                                            <button type="button" class="edit-remove-custom-tag" @click="removeEditCustomTag(idx)">×</button>
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="report-modal-footer">
+                                <button class="cancel-report-btn" @click="closeEditTagsModal">CANCEL</button>
+                                <button class="submit-report-btn" @click="saveEditTags">SAVE TAGS</button>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Delete Confirmation Modal -->
                     <div v-if="showDeleteModal" class="report-modal-overlay" @click="closeDeleteModal">
                         <div class="report-modal" @click.stop>
@@ -872,6 +1029,10 @@ const props = defineProps({
     restrictions: {
         type: Object,
         default: () => null
+    },
+    availableTags: {
+        type: Array,
+        default: () => []
     }
 })
 
@@ -909,7 +1070,7 @@ const roleMap = {
     3: 'Barangay Secretary',
     4: 'Barangay Treasurer',
     5: 'Barangay Kagawad',
-    6: 'Sangguniang Kabataan Chairman',
+    6: 'SK Chairman',
     7: 'Sangguniang Kabataan Kagawad',
     9: 'System Admin',
 }
@@ -920,6 +1081,30 @@ const displayRole = computed(() => {
     const role = roleMap[id] ?? 'Resident'
     return role.toUpperCase()
 })
+
+// Helper function to check if a role is an official role
+const isOfficialRole = (role) => {
+    if (!role) return false
+    const roleLower = String(role).toLowerCase().trim()
+    // List of official roles (case-insensitive check)
+    const officialRoles = [
+        'barangay captain',
+        'barangay secretary',
+        'barangay treasurer',
+        'barangay kagawad',
+        'sk chairman',
+        'sangguniang kabataan kagawad',
+        'system admin',
+        'official',
+        'employee'
+    ]
+    // Return true if it's an official role, false if it's "resident"
+    if (officialRoles.includes(roleLower)) {
+        return true
+    }
+    // If it's exactly "resident", return false, otherwise assume it's an official
+    return roleLower !== 'resident'
+}
 
 // Profile picture URL
 const profilePictureUrl = computed(() => {
@@ -981,6 +1166,21 @@ const trendingTags = ref([])
 const loadingTrendingTags = ref(false)
 const selectedTrendingTag = ref(null)
 const showDeleteModal = ref(false)
+const showEditModal = ref(false)
+const showEditTagsModal = ref(false)
+const editingPost = ref(null)
+const editForm = ref({
+    header: '',
+    content: '',
+    tag_ids: [],
+    image: null,
+    imagePreview: null
+})
+const editFormErrors = ref({})
+const editSubmitError = ref('')
+const isSubmittingEdit = ref(false)
+// Initialize availableTags from props or empty array
+const availableTags = ref(props.availableTags || [])
 
 // Error handling state
 const commentError = ref('')
@@ -1155,6 +1355,13 @@ const handleVisibilityChange = () => {
 
 // Scroll to post if post parameter is in URL
 onMounted(() => {
+    // Initialize tags from props, fetch if not available
+    if (props.availableTags && props.availableTags.length > 0) {
+        availableTags.value = props.availableTags
+    } else {
+        fetchTags()
+    }
+    
     // Wait for posts to load, then check for post parameter
     setTimeout(() => {
         const urlParams = new URLSearchParams(window.location.search)
@@ -1767,6 +1974,225 @@ const isCommentOwner = (comment) => {
     return comment.author_id === (user.value?.user_id ?? user.value?.id)
 }
 
+// Edit post: custom tag state (cleared when modal closes)
+const editCustomTagInput = ref('')
+const editCustomTagError = ref('')
+
+// Edit post functions
+const openEditModal = async (post) => {
+    editingPost.value = post
+    editFormErrors.value = {}
+    editSubmitError.value = ''
+    
+    // Fetch tags first so we can split tag_ids vs custom_tag_names
+    if (availableTags.value.length === 0) {
+        await fetchTags()
+    }
+    
+    const tagNames = post.tags ? post.tags.map(t => typeof t === 'string' ? t : (t.tag_name || t.name || '')) : []
+    const tagIds = []
+    const customTagNames = []
+    for (const tagName of tagNames) {
+        if (!tagName) continue
+        const found = availableTags.value.find(t => (t.tag_name || '').toLowerCase() === tagName.toLowerCase())
+        if (found) tagIds.push(found.tag_id)
+        else customTagNames.push(tagName)
+    }
+    editForm.value = {
+        header: post.header || '',
+        content: post.content || '',
+        tag_ids: tagIds,
+        custom_tag_names: customTagNames,
+        image: null,
+        imagePreview: post.images && post.images.length > 0 ? post.images[0] : null
+    }
+    
+    showEditModal.value = true
+    document.body.style.overflow = 'hidden'
+}
+
+const closeEditModal = () => {
+    showEditModal.value = false
+    showEditTagsModal.value = false
+    editingPost.value = null
+    editForm.value = {
+        header: '',
+        content: '',
+        tag_ids: [],
+        custom_tag_names: [],
+        image: null,
+        imagePreview: null
+    }
+    editCustomTagInput.value = ''
+    editCustomTagError.value = ''
+    editFormErrors.value = {}
+    editSubmitError.value = ''
+    document.body.style.overflow = ''
+}
+
+const openEditTagsModal = () => {
+    showEditTagsModal.value = true
+    editCustomTagError.value = ''
+}
+
+const closeEditTagsModal = () => {
+    showEditTagsModal.value = false
+    editCustomTagError.value = ''
+}
+
+const addEditCustomTag = () => {
+    editCustomTagError.value = ''
+    const name = editCustomTagInput.value.trim()
+    if (!name) {
+        editCustomTagError.value = 'Enter a tag name.'
+        return
+    }
+    if (!editForm.value.custom_tag_names) editForm.value.custom_tag_names = []
+    if (editForm.value.custom_tag_names.length >= 10) {
+        editCustomTagError.value = 'Maximum 10 custom tags.'
+        return
+    }
+    const lower = name.toLowerCase()
+    const exists = availableTags.value.some(t => (t.tag_name || '').toLowerCase() === lower)
+    if (exists) {
+        editCustomTagError.value = 'This tag is already in the list above. Select it there.'
+        return
+    }
+    if (editForm.value.custom_tag_names.some(n => n.toLowerCase() === lower)) {
+        editCustomTagError.value = 'This custom tag is already added.'
+        return
+    }
+    editForm.value.custom_tag_names.push(name)
+    editCustomTagInput.value = ''
+}
+
+const removeEditCustomTag = (index) => {
+    editForm.value.custom_tag_names.splice(index, 1)
+}
+
+const saveEditTags = () => {
+    closeEditTagsModal()
+}
+
+const fetchTags = async () => {
+    try {
+        // Fetch tags from the discussion create route which returns availableTags in props
+        const response = await axios.get(route('discussion_addpost_resident'))
+        // Inertia responses have a different structure - check for props
+        if (response.data && response.data.props && response.data.props.availableTags) {
+            availableTags.value = response.data.props.availableTags
+        } else if (response.data && response.data.availableTags) {
+            availableTags.value = response.data.availableTags
+        }
+    } catch (error) {
+        console.error('Error fetching tags:', error)
+        // If that fails, try to get tags from the backend directly via a simple endpoint
+        // This is a fallback - the create route should work
+    }
+}
+
+const toggleEditTag = (tagId) => {
+    const idx = editForm.value.tag_ids.indexOf(tagId)
+    if (idx > -1) {
+        editForm.value.tag_ids.splice(idx, 1)
+    } else {
+        editForm.value.tag_ids.push(tagId)
+    }
+}
+
+const handleEditImageUpload = (event) => {
+    const file = event.target.files[0]
+    if (file) {
+        editForm.value.image = file
+        const reader = new FileReader()
+        reader.onload = (e) => {
+            editForm.value.imagePreview = e.target.result
+        }
+        reader.readAsDataURL(file)
+    }
+}
+
+const removeEditImage = () => {
+    editForm.value.image = null
+    editForm.value.imagePreview = null
+}
+
+const submitEdit = async () => {
+    editFormErrors.value = {}
+    editSubmitError.value = ''
+    
+    // Validation
+    if (!editForm.value.content || !editForm.value.content.trim()) {
+        editSubmitError.value = 'Please write something before updating.'
+        return
+    }
+    
+    const hasTags = (editForm.value.tag_ids && editForm.value.tag_ids.length > 0) ||
+        (editForm.value.custom_tag_names && editForm.value.custom_tag_names.length > 0)
+    if (!hasTags) {
+        editSubmitError.value = 'Please select at least one tag or add a custom tag.'
+        return
+    }
+    
+    if (isSubmittingEdit.value) return
+    isSubmittingEdit.value = true
+    
+    try {
+        const formData = new FormData()
+        formData.append('header', editForm.value.header || '')
+        formData.append('content', editForm.value.content)
+        formData.append('_method', 'PUT')
+        
+        if (editForm.value.tag_ids && editForm.value.tag_ids.length > 0) {
+            editForm.value.tag_ids.forEach(tagId => {
+                formData.append('tag_ids[]', tagId)
+            })
+        }
+        if (editForm.value.custom_tag_names && editForm.value.custom_tag_names.length > 0) {
+            editForm.value.custom_tag_names.forEach(name => {
+                formData.append('custom_tag_names[]', name)
+            })
+        }
+        
+        // Append image if a new one was selected
+        if (editForm.value.image) {
+            formData.append('image', editForm.value.image)
+        }
+        
+        const response = await axios.post(route('posts.update', editingPost.value.id), formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data',
+            }
+        })
+        
+        if (response.status === 200 || response.status === 302) {
+            // Reload the page to show updated post
+            router.reload({
+                only: ['posts'],
+                onSuccess: () => {
+                    closeEditModal()
+                    // Refresh selected post if it's the one being edited
+                    if (selectedPost.value && selectedPost.value.id === editingPost.value.id) {
+                        // Reload the selected post data
+                        viewComments(editingPost.value.id)
+                    }
+                }
+            })
+        }
+    } catch (error) {
+        console.error('Error updating post:', error)
+        if (error.response && error.response.data && error.response.data.errors) {
+            editFormErrors.value = error.response.data.errors
+            const errorMessages = Object.values(error.response.data.errors).flat()
+            editSubmitError.value = errorMessages.length > 0 ? errorMessages[0] : 'Failed to update post. Please try again.'
+        } else {
+            editSubmitError.value = error.response?.data?.message || 'Failed to update post. Please try again.'
+        }
+    } finally {
+        isSubmittingEdit.value = false
+    }
+}
+
 const submitReport = async () => {
     if (!reportReasons.value || reportReasons.value.length === 0) {
         alert('Please select at least one reason for reporting.')
@@ -2096,13 +2522,30 @@ onUnmounted(() => {
     position: relative;
 }
 
-.settings-btn-img {
+.settings-burger-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
     margin-right: 30px;
-    width: 30px;
+    padding: 0;
+    border: none;
+    background: transparent;
     cursor: pointer;
+    border-radius: 50%;
+    color: white;
+    transition: background 0.2s, transform 0.2s;
 }
-.settings-btn-img:hover {
-    transform: scale(1.1);
+
+.settings-burger-btn:hover {
+    background: rgba(255,255,255,0.15);
+    transform: scale(1.05);
+}
+
+.settings-burger-icon {
+    width: 24px;
+    height: 24px;
 }
 
 .settings-dropdown {
@@ -2690,115 +3133,42 @@ onUnmounted(() => {
     display: flex;
     gap: 8px;
     flex-wrap: wrap;
+    align-items: center;
 }
 
+/* Category indicator — dark outline, light fill, dark text, not interactive */
 .tag {
-    font-size: 11px;
-    padding: 5px 10px;
-    border-radius: 15px;
+    font-size: 12px;
+    padding: 6px 14px;
+    border-radius: 999px;
     font-weight: 600;
-    color: white;
     text-transform: uppercase;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
-    /* Default background for unmatched tags */
-    background: linear-gradient(135deg, #95a5a6, #7f8c8d);
+    letter-spacing: 0.04em;
+    cursor: default;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    border: 2px solid #5a6a6b;
+    background: #e8eaeb;
+    color: #3d4849;
 }
 
-.tag:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-}
-
-/* Business - Blue/Purple */
-.tag.business {
-    background: linear-gradient(135deg, #6c5ce7, #5f3dc4) !important;
-}
-
-/* Education - Blue */
-.tag.education {
-    background: linear-gradient(135deg, #3498db, #2980b9) !important;
-}
-
-/* Emergency - Red */
-.tag.emergency {
-    background: linear-gradient(135deg, #e74c3c, #c0392b) !important;
-}
-
-/* Employment - Green */
-.tag.employment {
-    background: linear-gradient(135deg, #27ae60, #229954) !important;
-}
-
-/* Environment - Green */
-.tag.environment {
-    background: linear-gradient(135deg, #2ecc71, #27ae60) !important;
-}
-
-/* Governance - Purple */
-.tag.governance {
-    background: linear-gradient(135deg, #9b59b6, #8e44ad) !important;
-}
-
-/* Health - Red/Pink */
-.tag.health {
-    background: linear-gradient(135deg, #e91e63, #c2185b) !important;
-}
-
-/* Incident - Dark Red */
-.tag.incident {
-    background: linear-gradient(135deg, #c0392b, #a93226) !important;
-}
-
-/* Infrastructure - Orange */
-.tag.infrastructure {
-    background: linear-gradient(135deg, #f39c12, #e67e22) !important;
-}
-
-/* Inquiries - Yellow/Orange */
-.tag.inquiries {
-    background: linear-gradient(135deg, #f1c40f, #f39c12) !important;
-}
-
-/* Livelihood - Teal */
-.tag.livelihood {
-    background: linear-gradient(135deg, #1abc9c, #16a085) !important;
-}
-
-/* Maintenance - Brown/Orange */
-.tag.maintenance {
-    background: linear-gradient(135deg, #d35400, #ba4a00) !important;
-}
-
-/* Sanitation - Cyan */
-.tag.sanitation {
-    background: linear-gradient(135deg, #00bcd4, #0097a7) !important;
-}
-
-/* Sports - Green */
-.tag.sports {
-    background: linear-gradient(135deg, #4caf50, #388e3c) !important;
-}
-
-/* Traffic - Yellow */
-.tag.traffic {
-    background: linear-gradient(135deg, #ffc107, #ff9800) !important;
-}
-
-/* Weather - Light Blue */
-.tag.weather {
-    background: linear-gradient(135deg, #03a9f4, #0288d1) !important;
-}
-
-/* Welfare - Pink */
-.tag.welfare {
-    background: linear-gradient(135deg, #e91e63, #c2185b) !important;
-}
-
-/* Youth - Magenta */
-.tag.youth {
-    background: linear-gradient(135deg, #e91e63, #ad1457) !important;
-}
+.tag.business { border-color: #5f3dc4; background: #ede9fc; color: #5f3dc4; }
+.tag.education { border-color: #2980b9; background: #e3f2fd; color: #2980b9; }
+.tag.emergency { border-color: #c0392b; background: #ffebee; color: #c0392b; }
+.tag.employment { border-color: #1e7b4a; background: #e8f5e9; color: #1e7b4a; }
+.tag.environment { border-color: #27ae60; background: #e8f5e9; color: #27ae60; }
+.tag.governance { border-color: #8e44ad; background: #f3e5f5; color: #8e44ad; }
+.tag.health { border-color: #c2185b; background: #fce4ec; color: #c2185b; }
+.tag.incident { border-color: #a93226; background: #ffebee; color: #a93226; }
+.tag.infrastructure { border-color: #e67e22; background: #fff3e0; color: #e67e22; }
+.tag.inquiries { border-color: #b8860b; background: #fff8e1; color: #b8860b; }
+.tag.livelihood { border-color: #16a085; background: #e0f2f1; color: #16a085; }
+.tag.maintenance { border-color: #ba4a00; background: #fbe9e7; color: #ba4a00; }
+.tag.sanitation { border-color: #0097a7; background: #e0f7fa; color: #0097a7; }
+.tag.sports { border-color: #388e3c; background: #e8f5e9; color: #388e3c; }
+.tag.traffic { border-color: #e65100; background: #fff3e0; color: #e65100; }
+.tag.weather { border-color: #0288d1; background: #e1f5fe; color: #0288d1; }
+.tag.welfare { border-color: #c2185b; background: #fce4ec; color: #c2185b; }
+.tag.youth { border-color: #ad1457; background: #fce4ec; color: #ad1457; }
 
 .post-time {
     text-align: right;
@@ -3328,6 +3698,337 @@ onUnmounted(() => {
 .report-post-btn:hover {
     background: rgba(220, 53, 69, 0.1);
     transform: translateY(-1px);
+}
+
+.edit-post-btn {
+    background: none;
+    border: none;
+    color: #007bff;
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s ease;
+    margin-right: 8px;
+}
+
+.edit-post-btn .report-icon {
+    width: 16px;
+    height: 16px;
+}
+
+.edit-post-btn:hover {
+    background: rgba(0, 123, 255, 0.1);
+    transform: translateY(-1px);
+}
+
+/* Edit Modal */
+.edit-modal {
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    max-width: 600px;
+    width: 90%;
+    max-height: 90vh;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    animation: slideUp 0.3s ease;
+}
+
+.edit-modal-body {
+    padding: 25px 30px;
+    flex: 1;
+    overflow-y: auto;
+}
+
+.edit-form-group {
+    margin-bottom: 20px;
+}
+
+.edit-form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: #333;
+    font-size: 14px;
+}
+
+.edit-input, .edit-textarea {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    font-size: 14px;
+    font-family: inherit;
+    transition: border-color 0.2s;
+    box-sizing: border-box;
+}
+
+.edit-input:focus, .edit-textarea:focus {
+    outline: none;
+    border-color: #007bff;
+}
+
+.edit-textarea {
+    resize: vertical;
+    min-height: 120px;
+}
+
+.char-count {
+    text-align: right;
+    font-size: 12px;
+    color: #666;
+    margin-top: 4px;
+}
+
+.edit-tags-display {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+}
+
+.edit-tag-chip {
+    background: #f0f0f0;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 13px;
+    color: #333;
+}
+
+.edit-change-tags-btn {
+    background: #007bff;
+    color: white;
+    border: none;
+    padding: 6px 16px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.edit-change-tags-btn:hover {
+    background: #0056b3;
+}
+
+.edit-images-preview {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.edit-image-preview-item {
+    position: relative;
+    width: 100px;
+    height: 100px;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.edit-preview-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.edit-remove-image-btn {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    background: rgba(220, 53, 69, 0.9);
+    color: white;
+    border: none;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s;
+}
+
+.edit-remove-image-btn:hover {
+    background: rgba(220, 53, 69, 1);
+}
+
+.edit-add-image-btn {
+    width: 100px;
+    height: 100px;
+    border: 2px dashed #ddd;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: #666;
+    font-size: 14px;
+    transition: all 0.2s;
+}
+
+.edit-add-image-btn:hover {
+    border-color: #007bff;
+    color: #007bff;
+    background: rgba(0, 123, 255, 0.05);
+}
+
+.edit-error-message {
+    background: #fee;
+    border: 1px solid #fcc;
+    border-radius: 8px;
+    padding: 12px;
+    color: #c33;
+    margin-bottom: 15px;
+    font-size: 14px;
+}
+
+/* Edit Tags Modal */
+.edit-tags-modal {
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    max-width: 500px;
+    width: 90%;
+    max-height: 80vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    animation: slideUp 0.3s ease;
+}
+
+.edit-tags-modal-body {
+    padding: 25px 30px;
+    flex: 1;
+    overflow-y: auto;
+    max-height: 60vh;
+}
+
+.tags-grid-edit {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 10px;
+}
+
+.tag-option-edit {
+    padding: 10px 16px;
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    background: white;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 14px;
+    text-align: center;
+}
+
+.tag-option-edit:hover {
+    border-color: #007bff;
+    background: rgba(0, 123, 255, 0.05);
+}
+
+.tag-option-edit.selected {
+    border-color: #007bff;
+    background: #007bff;
+    color: white;
+}
+
+.no-tags-message {
+    text-align: center;
+    color: #666;
+    padding: 20px;
+    font-size: 14px;
+}
+
+.custom-tag-section {
+    margin-top: 20px;
+    padding-top: 16px;
+    border-top: 1px solid #e8e8e8;
+}
+.custom-tag-label {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    color: #555;
+    margin-bottom: 8px;
+}
+.custom-tag-input-row {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+.custom-tag-input {
+    flex: 1;
+    padding: 10px 12px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    font-size: 14px;
+}
+.custom-tag-input:focus {
+    outline: none;
+    border-color: #ff8c42;
+}
+.custom-tag-add-btn {
+    padding: 10px 18px;
+    background: #ff8c42;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 13px;
+    cursor: pointer;
+}
+.custom-tag-add-btn:hover {
+    background: #e67a35;
+}
+.custom-tag-error {
+    margin-top: 8px;
+    font-size: 12px;
+    color: #c0392b;
+}
+.edit-tag-chip-custom {
+    background: #e8eaeb;
+    color: #3d4849;
+    border: 2px solid #5a6a6b;
+}
+.edit-custom-tags-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 10px;
+}
+.edit-custom-tags-list .edit-tag-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+.edit-remove-custom-tag {
+    background: none;
+    border: none;
+    padding: 0 2px;
+    cursor: pointer;
+    font-size: 16px;
+    line-height: 1;
+    color: #666;
+}
+.edit-remove-custom-tag:hover {
+    color: #c0392b;
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 .delete-post-btn {

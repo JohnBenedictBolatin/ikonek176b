@@ -11,7 +11,11 @@
                     <img src="/assets/LOGO.png" alt="Logo" class="header-logo" />
                 </div>
                 <div class="header-actions">
-                    <img src="/assets/SETTINGS.png" alt="Settings" class="settings-btn-img" @click="toggleSettings" />
+                    <button type="button" class="settings-burger-btn" @click="toggleSettings" aria-label="Settings">
+                    <svg class="settings-burger-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+                    </svg>
+                </button>
                     <div v-if="showSettings" class="settings-dropdown">
                         <a href="#" class="settings-item" @click.prevent.stop="openTerms">TERMS & CONDITIONS</a>
                         <Link href="#" class="settings-item" @click="logout">SIGN OUT</Link>
@@ -361,7 +365,7 @@ const roleMap = {
   3: 'Barangay Secretary',
   4: 'Barangay Treasurer',
   5: 'Barangay Kagawad',
-  6: 'Sangguniang Kabataan Chairman',
+  6: 'SK Chairman',
   7: 'Sangguniang Kabataan Kagawad',
   9: 'System Admin',
 }
@@ -729,15 +733,30 @@ onUnmounted(() => {
     position: relative;
 }
 
-.settings-btn-img {
+.settings-burger-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
     margin-right: 30px;
-    width: 30px;
+    padding: 0;
+    border: none;
+    background: transparent;
     cursor: pointer;
-    transition: transform 0.2s;
+    border-radius: 50%;
+    color: white;
+    transition: background 0.2s, transform 0.2s;
 }
 
-.settings-btn-img:hover {
-    transform: scale(1.1);
+.settings-burger-btn:hover {
+    background: rgba(255,255,255,0.15);
+    transform: scale(1.05);
+}
+
+.settings-burger-icon {
+    width: 24px;
+    height: 24px;
 }
 
 .settings-dropdown {

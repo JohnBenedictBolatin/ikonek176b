@@ -12,7 +12,40 @@
                     <img src="/assets/ADMIN LOGO1.png" alt="Logo" class="header-logo" />
                 </div>
                 <div class="header-actions">
-                    <img src="/assets/SETTINGS.png" alt="Settings" class="settings-btn-img" @click="toggleSettings" />
+                    <div class="notification-header-wrap">
+                        <button type="button" class="notification-bell-btn" @click="toggleNotifications" aria-label="Notifications">
+                            <svg class="notification-bell-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                            </svg>
+                            <span v-if="unreadNotificationCount > 0" class="notification-badge">{{ unreadNotificationCount > 99 ? '99+' : unreadNotificationCount }}</span>
+                        </button>
+                        <div v-if="showNotifications" class="notification-dropdown">
+                            <div class="notification-dropdown-header">
+                                <span class="notification-dropdown-title">Notifications</span>
+                                <button v-if="unreadNotificationCount > 0" type="button" class="notification-mark-all" @click="markAllNotificationsRead">Mark all as read</button>
+                            </div>
+                            <div class="notification-dropdown-list">
+                                <div v-if="loadingNotifications" class="notification-loading">Loading...</div>
+                                <template v-else-if="notificationsList.length === 0">
+                                    <div class="notification-empty">No notifications</div>
+                                </template>
+                                <template v-else>
+                                    <div v-for="n in notificationsList" :key="n.id" class="notification-item" :class="{ unread: !n.is_read }" @click="handleNotificationClick(n)">
+                                        <img :src="n.avatar" alt="" class="notification-item-avatar" @error="n.avatar = '/assets/DEFAULT.jpg'" />
+                                        <div class="notification-item-body">
+                                            <p class="notification-item-text"><strong>{{ n.user }}</strong> {{ n.action }}</p>
+                                            <span class="notification-item-time">{{ n.time }}</span>
+                                        </div>
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+                    </div>
+                    <button type="button" class="settings-burger-btn" @click="toggleSettings" aria-label="Settings">
+                        <svg class="settings-burger-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+                        </svg>
+                    </button>
                     <!-- Settings Dropdown -->
                     <div v-if="showSettings" class="settings-dropdown">
                         <a href="#" class="settings-item" @click.prevent.stop="openTermsModal">TERMS & CONDITIONS</a>
@@ -168,7 +201,7 @@
                                     </td>
                                     <td style="text-align: center; padding: 15px 12px;">
                                         <button
-                                            v-if="payment.receiptImage"
+                                            v-if="payment.status === 'APPROVED'"
                                             class="receipt-btn"
                                             @click="openReceipt(payment)"
                                         >
@@ -210,19 +243,31 @@
                     <div class="receipt-details-box">
                         <div class="receipt-row">
                             <span class="receipt-label">Payment No:</span>
-                            <span class="receipt-value">{{ selectedReceipt.payment_no }}</span>
+                            <span class="receipt-value">{{ selectedReceipt.payment_no || selectedReceipt.transactionId || 'N/A' }}</span>
                         </div>
                         <div class="receipt-row">
-                            <span class="receipt-label">Document:</span>
-                            <span class="receipt-value">{{ selectedReceipt.doc_type }}</span>
+                            <span class="receipt-label">Request Ticket:</span>
+                            <span class="receipt-value">{{ selectedReceipt.document || 'N/A' }}</span>
                         </div>
                         <div class="receipt-row">
-                            <span class="receipt-label">Date:</span>
-                            <span class="receipt-value">{{ selectedReceipt.date }}</span>
+                            <span class="receipt-label">Document Type:</span>
+                            <span class="receipt-value">{{ selectedReceipt.doc_type || 'N/A' }}</span>
                         </div>
                         <div class="receipt-row">
-                            <span class="receipt-label">Payer:</span>
-                            <span class="receipt-value">{{ selectedReceipt.name }}</span>
+                            <span class="receipt-label">Payer Name:</span>
+                            <span class="receipt-value">{{ selectedReceipt.name || 'N/A' }}</span>
+                        </div>
+                        <div class="receipt-row" v-if="selectedReceipt.role">
+                            <span class="receipt-label">Payer Role:</span>
+                            <span class="receipt-value">{{ selectedReceipt.role }}</span>
+                        </div>
+                        <div class="receipt-row" v-if="selectedReceipt.contact && selectedReceipt.contact !== 'N/A'">
+                            <span class="receipt-label">Contact Number:</span>
+                            <span class="receipt-value">{{ selectedReceipt.contact }}</span>
+                        </div>
+                        <div class="receipt-row" v-if="selectedReceipt.address && selectedReceipt.address !== 'N/A'">
+                            <span class="receipt-label">Address:</span>
+                            <span class="receipt-value">{{ selectedReceipt.address }}</span>
                         </div>
                         <div class="receipt-row">
                             <span class="receipt-label">Amount Paid:</span>
@@ -237,15 +282,33 @@
                             <span class="receipt-value">{{ selectedReceipt.transactionId }}</span>
                         </div>
                         <div class="receipt-row">
+                            <span class="receipt-label">Payment Date:</span>
+                            <span class="receipt-value">{{ selectedReceipt.date || 'N/A' }}</span>
+                        </div>
+                        <div class="receipt-row" v-if="selectedReceipt.paymentTime && selectedReceipt.paymentTime !== 'N/A'">
+                            <span class="receipt-label">Payment Time:</span>
+                            <span class="receipt-value">{{ selectedReceipt.paymentTime }}</span>
+                        </div>
+                        <div class="receipt-row">
                             <span class="receipt-label">Status:</span>
                             <span class="receipt-value" :style="{ color: selectedReceipt.status === 'APPROVED' ? '#239640' : '#dc3545' }">
                                 {{ selectedReceipt.status || 'APPROVED' }}
                             </span>
                         </div>
+                        <div class="receipt-row" v-if="selectedReceipt.treasurerName && selectedReceipt.treasurerName !== 'N/A'">
+                            <span class="receipt-label">Approved By:</span>
+                            <span class="receipt-value">{{ selectedReceipt.treasurerName }}</span>
+                        </div>
                     </div>
 
-                    <div class="receipt-note" v-if="selectedReceipt.roleId === 1">
-                        <p>Thank you for your payment. This digital receipt is proof of payment issued by the Barangay.</p>
+                    <!-- Receipt Image (if available) -->
+                    <div v-if="selectedReceipt.receiptImage" class="receipt-image-container">
+                        <div class="receipt-image-label">Payment Receipt Image</div>
+                        <img :src="selectedReceipt.receiptImage" alt="Payment Receipt" class="receipt-image" @error="handleImageError" />
+                    </div>
+
+                    <div class="receipt-note">
+                        <p>Thank you for your payment. This digital receipt is proof of payment issued by Barangay 176B.</p>
                     </div>
 
                     <div class="receipt-actions">
@@ -395,6 +458,7 @@ import { Link } from '@inertiajs/vue3'
 import { Head, usePage } from '@inertiajs/vue3'
 import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import { router } from '@inertiajs/vue3'
+import axios from 'axios'
 
   // --- Inertia-shared auth user ---
 const page = usePage()
@@ -407,7 +471,7 @@ const roleMap = {
   3: 'Barangay Secretary',
   4: 'Barangay Treasurer',
   5: 'Barangay Kagawad',
-  6: 'Sangguniang Kabataan Chairman',
+  6: 'SK Chairman',
   7: 'Sangguniang Kabataan Kagawad',
   9: 'System Admin',
 }
@@ -420,6 +484,10 @@ const displayRole = computed(() => {
 
 // Reactive data
 const showSettings = ref(false)
+const showNotifications = ref(false)
+const notificationsList = ref([])
+const loadingNotifications = ref(false)
+const unreadNotificationCount = computed(() => notificationsList.value.filter(n => !n.is_read).length)
 const showTermsModal = ref(false)
 const showSortDropdown = ref(false)
 const showFilterDropdown = ref(false)
@@ -465,6 +533,9 @@ const initializePaymentsFromServer = () => {
       profileImg: p.profileImg || '/assets/DEFAULT.jpg',
       role: p.role || 'Resident',
       roleId: p.roleId || 1,
+      contact: p.contact || 'N/A',
+      address: p.address || 'N/A',
+      treasurerName: p.treasurerName || 'N/A',
     }
   })
 }
@@ -518,11 +589,57 @@ const filteredHistory = computed(() => {
 
 // Methods
 const toggleSettings = () => {
+    showNotifications.value = false
     showSettings.value = !showSettings.value
 }
 
 const closeSettings = () => {
     showSettings.value = false
+}
+
+const fetchNotifications = async () => {
+    loadingNotifications.value = true
+    try {
+        const res = await axios.get('/api/notifications')
+        if (res.data?.success && Array.isArray(res.data.notifications)) {
+            notificationsList.value = res.data.notifications
+        }
+    } catch (e) {
+        console.error('Failed to fetch notifications', e)
+        notificationsList.value = []
+    } finally {
+        loadingNotifications.value = false
+    }
+}
+
+const toggleNotifications = () => {
+    showSettings.value = false
+    showNotifications.value = !showNotifications.value
+    if (showNotifications.value) fetchNotifications()
+}
+
+const markAllNotificationsRead = async () => {
+    try {
+        await axios.put('/api/notifications/mark-all-read')
+        notificationsList.value = notificationsList.value.map(n => ({ ...n, is_read: true }))
+    } catch (e) {
+        console.error('Failed to mark all read', e)
+    }
+}
+
+const markNotificationRead = async (id) => {
+    try {
+        await axios.put(`/api/notifications/${id}/read`)
+        const n = notificationsList.value.find(x => x.id === id)
+        if (n) n.is_read = true
+    } catch (e) {
+        console.error('Failed to mark read', e)
+    }
+}
+
+const handleNotificationClick = (n) => {
+    if (!n.is_read) markNotificationRead(n.id)
+    showNotifications.value = false
 }
 
 const openTermsModal = (e) => {
@@ -570,7 +687,8 @@ const performSearch = () => {
 }
 
 const openReceipt = (payment) => {
-    if (!payment.receiptImage) return
+    // All APPROVED payments have a receipt (digital receipt with payment details)
+    if (payment.status !== 'APPROVED') return
     selectedReceipt.value = payment
     showReceipt.value = true
 }
@@ -729,20 +847,38 @@ const printReceipt = () => {
             <div class="receipt-details-box">
                 <div class="receipt-row">
                     <span class="receipt-label">Payment No:</span>
-                    <span class="receipt-value">${receipt.payment_no || 'N/A'}</span>
+                    <span class="receipt-value">${receipt.payment_no || receipt.transactionId || 'N/A'}</span>
                 </div>
                 <div class="receipt-row">
-                    <span class="receipt-label">Document:</span>
+                    <span class="receipt-label">Request Ticket:</span>
+                    <span class="receipt-value">${receipt.document || 'N/A'}</span>
+                </div>
+                <div class="receipt-row">
+                    <span class="receipt-label">Document Type:</span>
                     <span class="receipt-value">${receipt.doc_type || 'N/A'}</span>
                 </div>
                 <div class="receipt-row">
-                    <span class="receipt-label">Date:</span>
-                    <span class="receipt-value">${receipt.date || 'N/A'}</span>
-                </div>
-                <div class="receipt-row">
-                    <span class="receipt-label">Payer:</span>
+                    <span class="receipt-label">Payer Name:</span>
                     <span class="receipt-value">${receipt.name || 'N/A'}</span>
                 </div>
+                ${receipt.role ? `
+                <div class="receipt-row">
+                    <span class="receipt-label">Payer Role:</span>
+                    <span class="receipt-value">${receipt.role}</span>
+                </div>
+                ` : ''}
+                ${receipt.contact && receipt.contact !== 'N/A' ? `
+                <div class="receipt-row">
+                    <span class="receipt-label">Contact Number:</span>
+                    <span class="receipt-value">${receipt.contact}</span>
+                </div>
+                ` : ''}
+                ${receipt.address && receipt.address !== 'N/A' ? `
+                <div class="receipt-row">
+                    <span class="receipt-label">Address:</span>
+                    <span class="receipt-value">${receipt.address}</span>
+                </div>
+                ` : ''}
                 <div class="receipt-row">
                     <span class="receipt-label">Amount Paid:</span>
                     <span class="receipt-value amount">₱${receipt.amount?.toFixed(2) || '0.00'}</span>
@@ -758,17 +894,31 @@ const printReceipt = () => {
                 </div>
                 ` : ''}
                 <div class="receipt-row">
+                    <span class="receipt-label">Payment Date:</span>
+                    <span class="receipt-value">${receipt.date || 'N/A'}</span>
+                </div>
+                ${receipt.paymentTime && receipt.paymentTime !== 'N/A' ? `
+                <div class="receipt-row">
+                    <span class="receipt-label">Payment Time:</span>
+                    <span class="receipt-value">${receipt.paymentTime}</span>
+                </div>
+                ` : ''}
+                <div class="receipt-row">
                     <span class="receipt-label">Status:</span>
                     <span class="receipt-value" style="color: ${receipt.status === 'APPROVED' ? '#239640' : '#dc3545'}">
                         ${receipt.status || 'APPROVED'}
                     </span>
                 </div>
+                ${receipt.treasurerName && receipt.treasurerName !== 'N/A' ? `
+                <div class="receipt-row">
+                    <span class="receipt-label">Approved By:</span>
+                    <span class="receipt-value">${receipt.treasurerName}</span>
+                </div>
+                ` : ''}
             </div>
-            ${receipt.roleId === 1 ? `
             <div class="receipt-note">
-                <p>Thank you for your payment. This digital receipt is proof of payment issued by Barangay.</p>
+                <p>Thank you for your payment. This digital receipt is proof of payment issued by Barangay 176B.</p>
             </div>
-            ` : ''}
         </body>
         </html>
     `)
@@ -920,20 +1070,38 @@ const downloadReceipt = async () => {
                 <div class="receipt-details-box">
                     <div class="receipt-row">
                         <span class="receipt-label">Payment No:</span>
-                        <span class="receipt-value">${receipt.payment_no || 'N/A'}</span>
+                        <span class="receipt-value">${receipt.payment_no || receipt.transactionId || 'N/A'}</span>
                     </div>
                     <div class="receipt-row">
-                        <span class="receipt-label">Document:</span>
+                        <span class="receipt-label">Request Ticket:</span>
+                        <span class="receipt-value">${receipt.document || 'N/A'}</span>
+                    </div>
+                    <div class="receipt-row">
+                        <span class="receipt-label">Document Type:</span>
                         <span class="receipt-value">${receipt.doc_type || 'N/A'}</span>
                     </div>
                     <div class="receipt-row">
-                        <span class="receipt-label">Date:</span>
-                        <span class="receipt-value">${receipt.date || 'N/A'}</span>
-                    </div>
-                    <div class="receipt-row">
-                        <span class="receipt-label">Payer:</span>
+                        <span class="receipt-label">Payer Name:</span>
                         <span class="receipt-value">${receipt.name || 'N/A'}</span>
                     </div>
+                    ${receipt.role ? `
+                    <div class="receipt-row">
+                        <span class="receipt-label">Payer Role:</span>
+                        <span class="receipt-value">${receipt.role}</span>
+                    </div>
+                    ` : ''}
+                    ${receipt.contact && receipt.contact !== 'N/A' ? `
+                    <div class="receipt-row">
+                        <span class="receipt-label">Contact Number:</span>
+                        <span class="receipt-value">${receipt.contact}</span>
+                    </div>
+                    ` : ''}
+                    ${receipt.address && receipt.address !== 'N/A' ? `
+                    <div class="receipt-row">
+                        <span class="receipt-label">Address:</span>
+                        <span class="receipt-value">${receipt.address}</span>
+                    </div>
+                    ` : ''}
                     <div class="receipt-row">
                         <span class="receipt-label">Amount Paid:</span>
                         <span class="receipt-value amount">₱${receipt.amount?.toFixed(2) || '0.00'}</span>
@@ -949,17 +1117,31 @@ const downloadReceipt = async () => {
                     </div>
                     ` : ''}
                     <div class="receipt-row">
+                        <span class="receipt-label">Payment Date:</span>
+                        <span class="receipt-value">${receipt.date || 'N/A'}</span>
+                    </div>
+                    ${receipt.paymentTime && receipt.paymentTime !== 'N/A' ? `
+                    <div class="receipt-row">
+                        <span class="receipt-label">Payment Time:</span>
+                        <span class="receipt-value">${receipt.paymentTime}</span>
+                    </div>
+                    ` : ''}
+                    <div class="receipt-row">
                         <span class="receipt-label">Status:</span>
                         <span class="receipt-value" style="color: ${receipt.status === 'APPROVED' ? '#239640' : '#dc3545'}">
                             ${receipt.status || 'APPROVED'}
                         </span>
                     </div>
+                    ${receipt.treasurerName && receipt.treasurerName !== 'N/A' ? `
+                    <div class="receipt-row">
+                        <span class="receipt-label">Approved By:</span>
+                        <span class="receipt-value">${receipt.treasurerName}</span>
+                    </div>
+                    ` : ''}
                 </div>
-                ${receipt.roleId === 1 ? `
                 <div class="receipt-note">
-                    <p>Thank you for your payment. This digital receipt is proof of payment issued by Barangay.</p>
+                    <p>Thank you for your payment. This digital receipt is proof of payment issued by Barangay 176B.</p>
                 </div>
-                ` : ''}
             </body>
             </html>
         `
@@ -1013,6 +1195,7 @@ const handleClickOutside = (event) => {
     }
     if (!event.target.closest('.header-actions')) {
         showSettings.value = false
+        showNotifications.value = false
     }
     if (!event.target.closest('.filter-dropdown-wrapper')) {
         showSortDropdown.value = false
@@ -1022,6 +1205,7 @@ const handleClickOutside = (event) => {
 
 onMounted(() => {
     document.addEventListener('click', handleClickOutside)
+    fetchNotifications()
 })
 
 onUnmounted(() => {
@@ -1085,17 +1269,56 @@ onUnmounted(() => {
 
 .header-actions {
     position: relative;
+    display: flex;
+    align-items: center;
+    gap: 24px;
 }
 
-.settings-btn-img {
+.notification-header-wrap { position: relative; }
+.notification-bell-btn { display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; padding: 0; border: none; background: transparent; cursor: pointer; border-radius: 50%; color: white; transition: background 0.2s, transform 0.2s; }
+.notification-bell-btn:hover { background: rgba(255,255,255,0.15); transform: scale(1.05); }
+.notification-bell-icon { width: 24px; height: 24px; }
+.notification-badge { position: absolute; top: 2px; right: 2px; min-width: 18px; height: 18px; padding: 0 5px; font-size: 11px; font-weight: 700; color: white; background: #e41e3a; border-radius: 10px; display: flex; align-items: center; justify-content: center; line-height: 1; }
+.notification-dropdown { position: absolute; top: 100%; right: 0; margin-top: 8px; width: 380px; max-width: 90vw; background: white; border-radius: 12px; box-shadow: 0 8px 25px rgba(0,0,0,0.15); border: 1px solid rgba(0,0,0,0.1); z-index: 1001; overflow: hidden; }
+.notification-dropdown-header { padding: 14px 16px; border-bottom: 1px solid #eee; display: flex; align-items: center; justify-content: space-between; background: #fafafa; }
+.notification-dropdown-title { font-weight: 700; font-size: 16px; color: #333; }
+.notification-mark-all { font-size: 13px; color: #ff8c42; background: none; border: none; cursor: pointer; font-weight: 500; padding: 0; }
+.notification-mark-all:hover { text-decoration: underline; }
+.notification-dropdown-list { max-height: 400px; overflow-y: auto; }
+.notification-loading, .notification-empty { padding: 24px 16px; text-align: center; color: #666; font-size: 14px; }
+.notification-item { display: flex; align-items: flex-start; gap: 12px; padding: 12px 16px; cursor: pointer; border-bottom: 1px solid #f0f0f0; transition: background 0.15s; }
+.notification-item:hover { background: #f5f5f5; }
+.notification-item.unread { background: #f0f7ff; }
+.notification-item-avatar { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
+.notification-item-body { flex: 1; min-width: 0; }
+.notification-item-text { margin: 0 0 4px 0; font-size: 14px; color: #333; line-height: 1.4; }
+.notification-item-text strong { font-weight: 600; }
+.notification-item-time { font-size: 12px; color: #888; }
+
+.settings-burger-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
     margin-right: 30px;
-    width: 30px;
+    padding: 0;
+    border: none;
+    background: transparent;
     cursor: pointer;
-    transition: transform 0.2s;
+    border-radius: 50%;
+    color: white;
+    transition: background 0.2s, transform 0.2s;
 }
 
-.settings-btn-img:hover {
-    transform: scale(1.1);
+.settings-burger-btn:hover {
+    background: rgba(255,255,255,0.15);
+    transform: scale(1.05);
+}
+
+.settings-burger-icon {
+    width: 24px;
+    height: 24px;
 }
 
 .settings-dropdown {

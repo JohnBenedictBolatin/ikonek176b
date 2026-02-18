@@ -11,7 +11,11 @@
                     <img src="/assets/LOGO.png" alt="Logo" class="header-logo" />
                 </div>
                 <div class="header-actions">
-                    <img src="/assets/SETTINGS.png" alt="Settings" class="settings-btn-img" @click="toggleSettings" />
+                    <button type="button" class="settings-burger-btn" @click="toggleSettings" aria-label="Settings">
+                    <svg class="settings-burger-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+                    </svg>
+                </button>
                     <div v-if="showSettings" class="settings-dropdown">
                         <a href="#" class="settings-item" @click.prevent.stop="openTermsModal">TERMS & CONDITIONS</a>
                         <Link href="#" class="settings-item" @click.prevent="logout">SIGN OUT</Link>
@@ -249,6 +253,17 @@
                                 <option value="">{{ field.placeholder || 'Select an option' }}</option>
                                 <option v-for="opt in field.options" :key="opt" :value="opt">{{ opt }}</option>
                             </select>
+                            
+                            <!-- Text input for "Other" option in occupation field -->
+                            <input
+                                v-if="field.name === 'occupation' && form.extra_fields[field.name] === 'Other'"
+                                type="text"
+                                v-model="form.extra_fields.occupation_other"
+                                placeholder="Please specify your occupation or profession"
+                                class="form-input"
+                                style="margin-top: 10px;"
+                                :required="field.required && form.extra_fields[field.name] === 'Other'"
+                            />
 
                             <!-- checkbox group -->
                             <div v-if="field.type === 'checkbox'" class="checkbox-group">
@@ -535,7 +550,6 @@ const documentFields = {
     ],
     'Barangay ID': [
         { name: 'photo', label: '2x2 Photo (2 copies)', type: 'file', required: true, accept: 'image/*', description: 'Upload 2x2 ID picture (2 copies)' },
-        { name: 'supporting_documents', label: 'Supporting Documents for Residency', type: 'file', required: true, accept: '.pdf,image/*', description: 'Upload proof of residency documents' },
         { name: 'birth_certificate', label: 'Birth Certificate (for first time applicants)', type: 'file', required: false, accept: '.pdf,image/*', description: 'Upload birth certificate if this is your first application' }
     ],
     'Cedula': [
@@ -543,21 +557,18 @@ const documentFields = {
         { name: 'annual_income', label: 'Annual Income/Salary (PHP)', type: 'number', required: false, placeholder: 'Enter annual income or salary', min: 0, step: 0.01, description: 'Your annual income or salary from employment/profession (for tax calculation)' },
         { name: 'business_gross_receipts', label: 'Business Gross Receipts (PHP)', type: 'number', required: false, placeholder: 'Enter business gross receipts', min: 0, step: 0.01, description: 'If you have a business, enter gross receipts from preceding year (optional)' },
         { name: 'real_property_income', label: 'Real Property Income (PHP)', type: 'number', required: false, placeholder: 'Enter income from real property', min: 0, step: 0.01, description: 'Income from real property if applicable (optional)' },
-        { name: 'occupation', label: 'Occupation/Profession', type: 'text', required: false, placeholder: 'Enter your occupation or profession', description: 'Your current job or profession' },
+        { name: 'occupation', label: 'Occupation/Profession', type: 'select', required: false, placeholder: 'Select your occupation or profession', options: ['Teacher', 'Nurse', 'Engineer', 'Accountant', 'Lawyer', 'Doctor', 'Police Officer', 'Firefighter', 'Soldier', 'Government Employee', 'Private Employee', 'Business Owner', 'Entrepreneur', 'Farmer', 'Fisherman', 'Driver', 'Construction Worker', 'Electrician', 'Plumber', 'Carpenter', 'Mechanic', 'Chef', 'Waiter/Waitress', 'Salesperson', 'Cashier', 'Security Guard', 'Janitor', 'Housekeeper', 'Barber/Hairdresser', 'Beautician', 'Student', 'Unemployed', 'Retired', 'Housewife/Househusband', 'Freelancer', 'Other'], description: 'Your current job or profession' },
         { name: 'tin', label: 'Tax Identification Number (TIN)', type: 'text', required: false, placeholder: 'Enter TIN if available', description: 'Your TIN if you have one (optional)' },
         { name: 'height', label: 'Height (cm)', type: 'number', required: false, placeholder: 'Enter height in centimeters', min: 0, step: 0.1, description: 'Your height (optional)' },
         { name: 'weight', label: 'Weight (kg)', type: 'number', required: false, placeholder: 'Enter weight in kilograms', min: 0, step: 0.1, description: 'Your weight (optional)' },
         { name: 'tax_declaration', label: 'Tax Declaration (if applicable)', type: 'file', required: false, accept: '.pdf,image/*', description: 'Upload tax declaration document' },
-        { name: 'supporting_documents', label: 'Supporting Documents for Residency', type: 'file', required: true, accept: '.pdf,image/*', description: 'Upload proof of residency documents' },
         { name: 'income_statement', label: 'Income Statement (if employed)', type: 'file', required: false, accept: '.pdf,image/*', description: 'Upload income statement or payslip if employed' }
     ],
     'Certificate of Indigency': [
-        { name: 'household_members', label: 'Household Member Count', type: 'select', required: false, placeholder: 'Select number of members', options: ['1-2', '3-4', '5-6', '7-8', '9 or more'] },
-        { name: 'income_proof', label: 'Proof of Low Income', type: 'file', required: true, accept: '.pdf,image/*', description: 'Upload documents proving low income status' },
-        { name: 'proof_of_residency', label: 'Proof of Residency', type: 'file', required: true, accept: '.pdf,image/*', description: 'Upload utility bills, lease contract, or other proof of residency' }
+        { name: 'household_members', label: 'Household Member Count', type: 'number', required: false, placeholder: 'Enter number of household members', min: 1, step: 1, description: 'Enter the total number of members in your household' },
+        { name: 'income_proof', label: 'Proof of Low Income', type: 'file', required: true, accept: '.pdf,image/*', description: 'Upload documents proving low income status' }
     ],
     'Permit': [
-        { name: 'supporting_documents', label: 'Supporting Documents for Residency', type: 'file', required: true, accept: '.pdf,image/*', description: 'Upload proof of residency documents' },
         { name: 'barangay_clearance', label: 'Barangay Clearance', type: 'file', required: true, accept: '.pdf,image/*', description: 'Upload Barangay Clearance document' },
     ],
 }
@@ -871,6 +882,13 @@ const submitUpdate = async () => {
             formData.append('id_back', form.value.id_back)
         }
 
+        // Handle occupation field: if "Other" is selected, use the custom input value
+        if (form.value.extra_fields?.occupation === 'Other' && form.value.extra_fields?.occupation_other) {
+            form.value.extra_fields.occupation = form.value.extra_fields.occupation_other
+            // Remove the temporary occupation_other field
+            delete form.value.extra_fields.occupation_other
+        }
+
         // Append all extra_fields (not just incorrect ones)
         Object.keys(form.value.extra_fields).forEach(key => {
             const val = form.value.extra_fields[key]
@@ -978,13 +996,28 @@ const submitUpdate = async () => {
     gap: 15px;
 }
 
-.settings-btn-img {
+.settings-burger-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
     margin-right: 30px;
-    width: 30px;
+    padding: 0;
+    border: none;
+    background: transparent;
     cursor: pointer;
+    border-radius: 50%;
+    color: white;
+    transition: background 0.2s, transform 0.2s;
 }
-.settings-btn-img:hover {
-    transform: scale(1.1);
+.settings-burger-btn:hover {
+    background: rgba(255,255,255,0.15);
+    transform: scale(1.05);
+}
+.settings-burger-icon {
+    width: 24px;
+    height: 24px;
 }
 .settings-dropdown {
     position: absolute;

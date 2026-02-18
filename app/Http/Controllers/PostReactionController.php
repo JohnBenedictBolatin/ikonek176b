@@ -163,13 +163,22 @@ class PostReactionController extends Controller
             \Log::info('Post author found', [
                 'post_author_id' => $postAuthorId,
                 'post_id' => $postId,
+                'reactor_id' => $reactorId,
                 'fk_post_author_id' => $post->fk_post_author_id ?? 'null',
                 'user_id' => $post->user_id ?? 'null'
             ]);
             
-            // Allow notifications even for own posts (for testing)
             if (!$postAuthorId) {
                 \Log::warning('No post author ID found', ['post_id' => $postId]);
+                return;
+            }
+
+            // Don't create notification if user is reacting to their own post
+            if ($postAuthorId == $reactorId) {
+                \Log::info('Skipping notification - user is reacting to their own post', [
+                    'post_id' => $postId,
+                    'user_id' => $reactorId
+                ]);
                 return;
             }
 

@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\RateLimiter;
 use Carbon\Carbon;
 
 class DiscussionController extends Controller
@@ -105,7 +106,7 @@ class DiscussionController extends Controller
                         3 => 'Barangay Secretary',
                         4 => 'Barangay Treasurer',
                         5 => 'Barangay Kagawad',
-                        6 => 'Sangguniang Kabataan Chairman',
+                        6 => 'SK Chairman',
                         7 => 'Sangguniang Kabataan Kagawad',
                         9 => 'System Admin',
                     ];
@@ -295,9 +296,8 @@ class DiscussionController extends Controller
                 }
             })->filter(); // Remove null values
 
-            // Determine which view to render based on user role
+            // Use unified resident discussion page for both residents and officials
             $userRoleId = $authUser->fk_role_id ?? 1;
-            $isEmployee = in_array($userRoleId, [2, 3, 4, 5, 6, 7, 9]);
             
             // Get user restrictions
             $restrictions = null;
@@ -312,11 +312,13 @@ class DiscussionController extends Controller
                     ];
                 }
             }
-
-            $viewName = $isEmployee ? 'User/Employee/E_Discussion' : 'User/Resident/R_Discussion';
             
-            return Inertia::render($viewName, [
+            // Fetch tags for edit modal
+            $tags = TagsModel::orderBy('tag_name', 'asc')->get();
+            
+            return Inertia::render('User/Resident/R_Discussion', [
                 'posts' => $formattedPosts->values()->toArray(),
+                'availableTags' => $tags->toArray(),
                 'restrictions' => $restrictions,
                 'auth' => [
                     'user' => $authUser ? [
@@ -324,19 +326,16 @@ class DiscussionController extends Controller
                         'name' => $authUser->name,
                         'avatar' => $authUser->avatar ?? '/assets/DEFAULT.jpg',
                         'profile_pic' => $authUser->profile_pic ?? null,
-                        'role' => $authUser->role ?? ($isEmployee ? 'Employee' : 'Resident'),
-                        'fk_role_id' => $authUser->fk_role_id ?? ($isEmployee ? 2 : 1),
+                        'role' => $authUser->role ?? 'Resident',
+                        'fk_role_id' => $authUser->fk_role_id ?? 1,
                     ] : null
                 ]
             ]);
 
         } catch (\Exception $e) {
             Log::error('❌ ERROR in index: ' . $e->getMessage());
-            $userRoleId = $authUser->fk_role_id ?? 1;
-            $isEmployee = in_array($userRoleId, [2, 3, 4, 5, 6, 7, 9]);
-            $viewName = $isEmployee ? 'User/Employee/E_Discussion' : 'User/Resident/R_Discussion';
             
-            return Inertia::render($viewName, [
+            return Inertia::render('User/Resident/R_Discussion', [
                 'posts' => [],
                 'auth' => ['user' => $authUser ?? null],
                 'error' => $e->getMessage()
@@ -353,13 +352,10 @@ class DiscussionController extends Controller
 
             Log::info('Tags fetched:', ['count' => $tags->count()]);
 
-            // Determine which view to render based on user role
+            // Use unified resident discussion add post page for both residents and officials
             $authUser = Auth::user();
-            $userRoleId = $authUser->fk_role_id ?? 1;
-            $isEmployee = in_array($userRoleId, [2, 3, 4, 5, 6, 7, 9]);
-            $viewName = $isEmployee ? 'User/Employee/E_Discussion_AddPost' : 'User/Resident/R_Discussion_AddPost';
             
-            return Inertia::render($viewName, [
+            return Inertia::render('User/Resident/R_Discussion_AddPost', [
                 'availableTags' => $tags->toArray(),
                 'auth' => [
                     'user' => $authUser ? [
@@ -367,8 +363,8 @@ class DiscussionController extends Controller
                         'name' => $authUser->name,
                         'avatar' => $authUser->avatar ?? '/assets/DEFAULT.jpg',
                         'profile_pic' => $authUser->profile_pic ?? null,
-                        'role' => $authUser->role ?? ($isEmployee ? 'Employee' : 'Resident'),
-                        'fk_role_id' => $authUser->fk_role_id ?? ($isEmployee ? 2 : 1),
+                        'role' => $authUser->role ?? 'Resident',
+                        'fk_role_id' => $authUser->fk_role_id ?? 1,
                     ] : null
                 ]
             ]);
@@ -377,11 +373,8 @@ class DiscussionController extends Controller
             Log::error('Error fetching tags: ' . $e->getMessage());
             
             $authUser = Auth::user();
-            $userRoleId = $authUser->fk_role_id ?? 1;
-            $isEmployee = in_array($userRoleId, [2, 3, 4, 5, 6, 7, 9]);
-            $viewName = $isEmployee ? 'User/Employee/E_Discussion_AddPost' : 'User/Resident/R_Discussion_AddPost';
 
-            return Inertia::render($viewName, [
+            return Inertia::render('User/Resident/R_Discussion_AddPost', [
                 'availableTags' => [],
                 'auth' => [
                     'user' => $authUser ? [
@@ -399,6 +392,21 @@ class DiscussionController extends Controller
 
     public function store(Request $request)
     {
+        // Rate limiting: Max 3 posts per minute per user
+        $userId = Auth::id();
+        if ($userId) {
+            $key = 'post_creation:' . $userId;
+            
+            if (RateLimiter::tooManyAttempts($key, 3)) {
+                $seconds = RateLimiter::availableIn($key);
+                return redirect()->back()
+                    ->withInput()
+                    ->withErrors(['content' => "Too many posts. Please wait {$seconds} seconds before posting again."]);
+            }
+            
+            RateLimiter::hit($key, 60); // 60 seconds = 1 minute
+        }
+        
         Log::info('🔵 DiscussionController@store called', $request->all());
 
         // Base validation rules
@@ -422,6 +430,33 @@ class DiscussionController extends Controller
         }
 
         $validated = $request->validate($rules);
+
+        // Check for profanity in content and header
+        $profanityCheck = \App\Services\ProfanityFilterService::validateContent(
+            $validated['content'] ?? null,
+            $validated['header'] ?? null
+        );
+
+        if (!$profanityCheck['is_valid']) {
+            return redirect()->back()
+                ->withInput()
+                ->withErrors(['content' => $profanityCheck['message']]);
+        }
+
+        // Check poll options for profanity if it's a poll
+        if ($request->boolean('is_poll') && $request->has('poll_options')) {
+            $pollOptions = is_array($request->poll_options) 
+                ? $request->poll_options 
+                : json_decode($request->poll_options, true) ?? [];
+            
+            foreach ($pollOptions as $option) {
+                if (!empty($option) && \App\Services\ProfanityFilterService::containsProfanity($option)) {
+                    return redirect()->back()
+                        ->withInput()
+                        ->withErrors(['poll_options' => 'Poll options contain inappropriate language. Please remove offensive words.']);
+                }
+            }
+        }
 
         try {
             $userId = Auth::id();
@@ -457,6 +492,18 @@ class DiscussionController extends Controller
             $isPoll = $request->boolean('is_poll');
             $post->is_poll = $isPoll ? 1 : 0;
             $post->is_reported = 0;
+
+            // Check for spam before saving
+            $spamCheck = \App\Services\AntiSpamService::checkAndHandleSpam(
+                $userId,
+                $validated['content'],
+                $validated['header'] ?? null
+            );
+            
+            if ($spamCheck['is_spam']) {
+                return redirect()->back()
+                    ->with('error', 'Your post has been removed due to spam detection. Multiple duplicate posts were detected. Your posting privileges have been restricted. Please check your notifications for more information.');
+            }
 
             $post->save();
 
@@ -571,7 +618,7 @@ class DiscussionController extends Controller
                     3 => 'Barangay Secretary',
                     4 => 'Barangay Treasurer',
                     5 => 'Barangay Kagawad',
-                    6 => 'Sangguniang Kabataan Chairman',
+                    6 => 'SK Chairman',
                     7 => 'Sangguniang Kabataan Kagawad',
                     9 => 'System Admin',
                 ];
@@ -849,7 +896,7 @@ class DiscussionController extends Controller
                 3 => 'Barangay Secretary',
                 4 => 'Barangay Treasurer',
                 5 => 'Barangay Kagawad',
-                6 => 'Sangguniang Kabataan Chairman',
+                6 => 'SK Chairman',
                 7 => 'Sangguniang Kabawad',
                 9 => 'System Admin',
             ];

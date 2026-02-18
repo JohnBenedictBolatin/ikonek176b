@@ -11,7 +11,11 @@
                     <img src="/assets/LOGO.png" alt="Logo" class="header-logo" />
                 </div>
                 <div class="header-actions">
-                    <img src="/assets/SETTINGS.png" alt="Settings" class="settings-btn-img" @click="toggleSettings" />
+                    <button type="button" class="settings-burger-btn" @click="toggleSettings" aria-label="Settings">
+                    <svg class="settings-burger-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+                    </svg>
+                </button>
                     <div v-if="showSettings" class="settings-dropdown">
                         <button type="button" class="settings-item" @click="openTerms">TERMS & CONDITIONS</button>
                         <Link href="#" class="settings-item" @click="logout">SIGN OUT</Link>
@@ -160,7 +164,15 @@
                                     #{{ tag.tag_name }}
                                     <button class="remove-tag-btn" @click="removeTag(tag.tag_id)">⊖</button>
                                 </span>
-                                <span v-if="selectedTagsData.length === 0" class="no-tags-text">
+                                <span 
+                                    v-for="(name, idx) in customTagNames" 
+                                    :key="'custom-' + idx"
+                                    class="tag-chip tag-chip-custom"
+                                >
+                                    #{{ name }}
+                                    <button class="remove-tag-btn" @click="removeCustomTag(idx)">⊖</button>
+                                </span>
+                                <span v-if="selectedTagsData.length === 0 && customTagNames.length === 0" class="no-tags-text">
                                     No tags selected
                                 </span>
                             </div>
@@ -224,6 +236,21 @@
                     <div v-else class="no-tags-available">
                         <p>No tags available. Please contact administrator.</p>
                     </div>
+                    <div class="custom-tag-section">
+                        <label class="custom-tag-label">Others (add your own)</label>
+                        <div class="custom-tag-input-row">
+                            <input 
+                                v-model="customTagInput" 
+                                type="text" 
+                                class="custom-tag-input" 
+                                placeholder="Type a tag name (e.g. Events)"
+                                maxlength="50"
+                                @keydown.enter.prevent="addCustomTag"
+                            />
+                            <button type="button" class="custom-tag-add-btn" @click="addCustomTag">Add</button>
+                        </div>
+                        <p v-if="customTagError" class="custom-tag-error">{{ customTagError }}</p>
+                    </div>
                 </div>
                 <div class="modal-footer">
                     <button class="modal-cancel-btn" @click="closeTagsModal">Cancel</button>
@@ -243,6 +270,7 @@ import { Head } from '@inertiajs/vue3'
 import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { useForm, router } from '@inertiajs/vue3'
 import TermsModal from '@/Components/TermsModal.vue'
+import { validateContent, containsProfanity } from '@/utils/profanityFilter'
 
 const props = defineProps({
     availableTags: {
@@ -278,7 +306,7 @@ const roleMap = {
     3: 'Barangay Secretary',
     4: 'Barangay Treasurer',
     5: 'Barangay Kagawad',
-    6: 'Sangguniang Kabataan Chairman',
+    6: 'SK Chairman',
     7: 'Sangguniang Kabataan Kagawad',
     9: 'System Admin',
 }
@@ -313,6 +341,9 @@ const postHeader = ref('')
 const postContent = ref('')
 const charCount = ref(0)
 const selectedTagIds = ref([])
+const customTagNames = ref([])
+const customTagInput = ref('')
+const customTagError = ref('')
 const showTagsModal = ref(false)
 const uploadedFiles = ref([])
 const fileInput = ref(null)
@@ -332,7 +363,8 @@ const selectedTagsData = computed(() => {
 const form = useForm({
     header: '',
     content: '',
-    tag_ids: [],      // will be an array of tag ids
+    tag_ids: [],
+    custom_tag_names: [],
     image: null,
     video_content: null,
     is_poll: 0,
@@ -415,13 +447,13 @@ const logout = () => {
 }
 const setActiveTab = (tab) => activeTab.value = tab
 const navigateToDocuments = () => { activeTab.value = 'documents'; router.visit(route('document_request_select_employee')) }
-const navigateToProfile = () => { activeTab.value = 'profile'; router.visit(route('profile_employee')) }
-const navigateToEvents = () => { activeTab.value = 'events'; router.visit(route('event_assistance_employee')) }
-const navigateToNotifications = () => { activeTab.value = 'notifications'; router.visit(route('notification_request_employee')) }
+const navigateToProfile = () => { activeTab.value = 'profile'; router.visit(route('profile_resident')) }
+const navigateToEvents = () => { activeTab.value = 'events'; router.visit(route('event_assistance_resident')) }
+const navigateToNotifications = () => { activeTab.value = 'notifications'; router.visit(route('notification_request_resident')) }
 const backToPosts = () => router.visit(route('discussion_resident'))
 
-const openTagsModal = () => { showTagsModal.value = true }
-const closeTagsModal = () => { showTagsModal.value = false }
+const openTagsModal = () => { showTagsModal.value = true; customTagError.value = '' }
+const closeTagsModal = () => { showTagsModal.value = false; customTagError.value = '' }
 
 const isTagSelected = (tagId) => selectedTagIds.value.includes(tagId)
 
@@ -434,6 +466,35 @@ const toggleTag = (tag) => {
 const removeTag = (tagId) => {
     const idx = selectedTagIds.value.indexOf(tagId)
     if (idx > -1) selectedTagIds.value.splice(idx, 1)
+}
+
+const addCustomTag = () => {
+    customTagError.value = ''
+    const name = customTagInput.value.trim()
+    if (!name) {
+        customTagError.value = 'Enter a tag name.'
+        return
+    }
+    if (customTagNames.value.length >= 10) {
+        customTagError.value = 'Maximum 10 custom tags.'
+        return
+    }
+    const lower = name.toLowerCase()
+    const exists = props.availableTags?.some(t => (t.tag_name || '').toLowerCase() === lower)
+    if (exists) {
+        customTagError.value = 'This tag is already in the list above. Select it there.'
+        return
+    }
+    if (customTagNames.value.some(n => n.toLowerCase() === lower)) {
+        customTagError.value = 'This custom tag is already added.'
+        return
+    }
+    customTagNames.value.push(name)
+    customTagInput.value = ''
+}
+
+const removeCustomTag = (index) => {
+    customTagNames.value.splice(index, 1)
 }
 
 const confirmTags = () => {
@@ -465,9 +526,34 @@ const publishPost = () => {
         submitError.value = 'Please write something before publishing.'
         return
     }
-    if (selectedTagIds.value.length === 0) {
-        alert('Please select at least one tag')
+    if (selectedTagIds.value.length === 0 && customTagNames.value.length === 0) {
+        alert('Please select at least one tag or add a custom tag (Others).')
         return
+    }
+    
+    // Check for profanity in content and header
+    const profanityCheck = validateContent(postContent.value, postHeader.value)
+    
+    if (!profanityCheck.isValid) {
+        submitError.value = profanityCheck.message
+        return
+    }
+    
+    // Validate poll if it's enabled
+    if (isPoll.value) {
+        const validOptions = pollOptions.value.filter(opt => opt.trim().length > 0)
+        if (validOptions.length < 2) {
+            alert('Please provide at least 2 poll options')
+            return
+        }
+        
+        // Check poll options for profanity
+        for (const option of validOptions) {
+            if (containsProfanity(option)) {
+                alert('Poll options contain inappropriate language. Please remove offensive words.')
+                return
+            }
+        }
     }
 
     // prepare form
@@ -475,6 +561,7 @@ const publishPost = () => {
     form.header = postHeader.value.trim()
     form.content = postContent.value
     form.tag_ids = selectedTagIds.value.slice()
+    form.custom_tag_names = customTagNames.value.slice()
 
     // include first file if available
     if (uploadedFiles.value.length > 0) {
@@ -493,6 +580,7 @@ const publishPost = () => {
             postContent.value = ''
             charCount.value = 0
             selectedTagIds.value = []
+            customTagNames.value = []
             uploadedFiles.value = []
             form.reset()
             formErrors.value = {}
@@ -528,7 +616,7 @@ const deleteDraft = (draftId) => {
 }
 
 const openFAQ = () => {
-    router.visit(route('help_center_employee'))
+    router.visit(route('help_center_resident'))
 }
 
 const handleClickOutside = (event) => {
@@ -621,13 +709,28 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside))
     position: relative;
 }
 
-.settings-btn-img {
+.settings-burger-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
     margin-right: 30px;
-    width: 30px;
+    padding: 0;
+    border: none;
+    background: transparent;
     cursor: pointer;
+    border-radius: 50%;
+    color: white;
+    transition: background 0.2s, transform 0.2s;
 }
-.settings-btn-img:hover {
-    transform: scale(1.1);
+.settings-burger-btn:hover {
+    background: rgba(255,255,255,0.15);
+    transform: scale(1.05);
+}
+.settings-burger-icon {
+    width: 24px;
+    height: 24px;
 }
 .settings-dropdown {
     position: absolute;
@@ -708,10 +811,11 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside))
     text-shadow: 0 1px 3px rgba(0,0,0,0.2);
 }
 
+.profile-card .profile-role,
 .profile-role {
     font-size: 12px;
-    background: linear-gradient(135deg, #ff8c42, #ff7a28);
-    color: white;
+    background: linear-gradient(135deg, #ff8c42, #ff7a28) !important;
+    color: white !important;
     padding: 4px 12px;
     border-radius: 15px;
     display: inline-block;
@@ -1349,6 +1453,58 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside))
     text-align: center;
     padding: 40px;
     color: #999;
+}
+
+.custom-tag-section {
+    margin-top: 20px;
+    padding-top: 16px;
+    border-top: 1px solid #e8e8e8;
+}
+.custom-tag-label {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    color: #555;
+    margin-bottom: 8px;
+}
+.custom-tag-input-row {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+.custom-tag-input {
+    flex: 1;
+    padding: 10px 12px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    font-size: 14px;
+}
+.custom-tag-input:focus {
+    outline: none;
+    border-color: #ff8c42;
+}
+.custom-tag-add-btn {
+    padding: 10px 18px;
+    background: #ff8c42;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 13px;
+    cursor: pointer;
+}
+.custom-tag-add-btn:hover {
+    background: #e67a35;
+}
+.custom-tag-error {
+    margin-top: 8px;
+    font-size: 12px;
+    color: #c0392b;
+}
+.tag-chip-custom {
+    background: #e8eaeb !important;
+    color: #3d4849;
+    border: 2px solid #5a6a6b;
 }
 
 .modal-footer {

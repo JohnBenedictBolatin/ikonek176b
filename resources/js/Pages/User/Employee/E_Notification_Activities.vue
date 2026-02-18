@@ -17,7 +17,7 @@
           </button>
 
           <Link
-            :href="route('notification_request_employee')"
+            :href="route('notification_request_resident')"
             class="tab-btn"
             @click="setActiveTab('requests')"
           >
@@ -330,7 +330,7 @@ const navigateToDocuments = () => {
 
 const navigateToEvents = () => {
     activeTab.value = 'events'
-    router.visit(route('event_assistance_employee'))
+    router.visit(route('event_assistance_resident'))
 }
 
 const switchTab = (tab) => {
@@ -439,10 +439,28 @@ onUnmounted(() => {
     position: relative;
 }
 
-.settings-btn-img {
+.settings-burger-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
     margin-right: 30px;
-    width: 30px;
+    padding: 0;
+    border: none;
+    background: transparent;
     cursor: pointer;
+    border-radius: 50%;
+    color: white;
+    transition: background 0.2s, transform 0.2s;
+}
+.settings-burger-btn:hover {
+    background: rgba(255,255,255,0.15);
+    transform: scale(1.05);
+}
+.settings-burger-icon {
+    width: 24px;
+    height: 24px;
 }
 
 .settings-dropdown {
@@ -515,10 +533,11 @@ onUnmounted(() => {
     text-shadow: 0 1px 3px rgba(0,0,0,0.2);
 }
 
+.profile-card .profile-role,
 .profile-role {
     font-size: 12px;
-    background: linear-gradient(135deg, #ff8c42, #ff7a28);
-    color: white;
+    background: linear-gradient(135deg, #ff8c42, #ff7a28) !important;
+    color: white !important;
     padding: 4px 12px;
     border-radius: 15px;
     display: inline-block;

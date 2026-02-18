@@ -152,16 +152,16 @@
               </h3>
               
               <div class="form-group">
-                <input v-model="form.last_name" placeholder="Last Name*"  class="form-input" required />
+                <input v-model="form.last_name" @blur="form.last_name = toTitleCase(form.last_name)" placeholder="Last Name*"  class="form-input" required />
               </div>
 
               <div class="form-row">
                 <div class="form-group half">
-                  <input v-model="form.first_name" placeholder="First Name*" class="form-input" required />
+                  <input v-model="form.first_name" @blur="form.first_name = toTitleCase(form.first_name)" placeholder="First Name*" class="form-input" required />
                 </div>
                 
                 <div class="form-group half">
-                  <input v-model="form.middle_name" placeholder="Middle Name" class="form-input" />
+                  <input v-model="form.middle_name" @blur="form.middle_name = toTitleCase(form.middle_name)" placeholder="Middle Name" class="form-input" />
                 </div>
               </div>
 
@@ -253,10 +253,6 @@
                       <option value="Single">Single</option>
                       <option value="Married">Married</option>
                       <option value="Widowed">Widowed</option>
-                      <option value="Divorced">Divorced</option>
-                      <option value="Separated">Separated</option>
-                      <option value="Annulled">Annulled</option>
-                      <option value="Domestic Partnership">Domestic Partnership</option>
                     </select>
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="select-icon">
                       <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
@@ -419,7 +415,7 @@
             </div>
 
             <div class="form-group half">
-              <input v-model="form.street" placeholder="Street*" class="form-input" required />
+              <input v-model="form.street" @blur="form.street = toTitleCase(form.street)" placeholder="Street*" class="form-input" required />
             </div>
           </div>
 
@@ -603,6 +599,7 @@
 import { ref, reactive, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import { Link, Head, useForm, router } from '@inertiajs/vue3'
 import axios from 'axios'
+import { toTitleCase } from '@/utils/textCase'
 
 // showPrivacy defaults to true so modal is visible on page load
 const showPrivacy = ref(true)
@@ -667,6 +664,13 @@ const confirmPassword = ref('')
 const showPassword = ref(false)
 const showConfirmPassword = ref(false)
 const localErrors = reactive({ password: null, confirmPassword: null })
+
+function normalizeCasing() {
+  form.first_name = toTitleCase(form.first_name)
+  form.middle_name = toTitleCase(form.middle_name)
+  form.last_name = toTitleCase(form.last_name)
+  form.street = toTitleCase(form.street)
+}
 
 // OTP Verification state
 const phoneVerified = ref(false)
@@ -1033,6 +1037,8 @@ async function submitRegistration() {
   console.log('[DEBUG:submitRegistration] canSubmit:', canSubmit.value);
   console.log('[DEBUG:submitRegistration] form.processing:', form.processing);
   
+  normalizeCasing()
+
   // Check if form is already processing
   if (form.processing) {
     console.log('[DEBUG:submitRegistration] Form is already processing, ignoring duplicate submit')
@@ -1255,6 +1261,8 @@ async function submit(e) {
 
 // OTP Verification Functions
 async function openOtpModal() {
+  normalizeCasing()
+
   if (!canVerifyPhone.value) {
     alert('Please enter a valid phone number (10 or 11 digits)')
     return

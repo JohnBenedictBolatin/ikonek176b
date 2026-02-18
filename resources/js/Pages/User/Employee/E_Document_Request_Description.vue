@@ -19,7 +19,7 @@ resident
         <!-- left: list of document types -->
         <aside class="document-types">
           <nav class="nav-menu" style="padding:0 20px;">
-            <Link :href="route('document_request_select_employee')" class="nav-item" style="margin-bottom:12px;">Back to selection</Link>
+            <Link :href="route('document_request_select_resident')" class="nav-item" style="margin-bottom:12px;">Back to selection</Link>
           </nav>
 
           <div style="padding: 10px 20px;">
@@ -61,14 +61,14 @@ resident
 
           <div style="display:flex; gap:16px;">
             <Link
-              :href="route('document_request_form_employee', { type: selectedDocType || documentType, mode: 'single' })"
+              :href="route('document_request_form_resident', { type: selectedDocType || documentType, mode: 'single' })"
               class="request-btn"
             >
               FOR MYSELF
             </Link>
 
             <Link
-              :href="route('document_request_form_employee', { type: selectedDocType || documentType, mode: 'someone' })"
+              :href="route('document_request_form_resident', { type: selectedDocType || documentType, mode: 'someone' })"
               class="request-btn"
               style="background: linear-gradient(135deg,#ffcf42,#ffb428);"
             >
@@ -386,10 +386,28 @@ onUnmounted(() => {
     height: 60px;
 }
 
-.settings-btn-img {
+.settings-burger-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
     margin-right: 30px;
-    width: 30px;
+    padding: 0;
+    border: none;
+    background: transparent;
     cursor: pointer;
+    border-radius: 50%;
+    color: white;
+    transition: background 0.2s, transform 0.2s;
+}
+.settings-burger-btn:hover {
+    background: rgba(255,255,255,0.15);
+    transform: scale(1.05);
+}
+.settings-burger-icon {
+    width: 24px;
+    height: 24px;
 }
 
 .settings-dropdown {
@@ -458,10 +476,11 @@ onUnmounted(() => {
     font-size: 15px;
 }
 
+.profile-card .profile-role,
 .profile-role {
     font-size: 12px;
-    background: linear-gradient(135deg, #ff8c42, #ff7a28);
-    color: white;
+    background: linear-gradient(135deg, #ff8c42, #ff7a28) !important;
+    color: white !important;
     padding: 4px 12px;
     border-radius: 15px;
     display: inline-block;

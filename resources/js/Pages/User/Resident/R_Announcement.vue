@@ -12,7 +12,11 @@
                     <img src="/assets/LOGO.png" alt="Logo" class="header-logo" />
                 </div>
                 <div class="header-actions">
-                    <img src="/assets/SETTINGS.png" alt="Settings" class="settings-btn-img" @click="toggleSettings" />
+                    <button type="button" class="settings-burger-btn" @click="toggleSettings" aria-label="Settings">
+                    <svg class="settings-burger-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+                    </svg>
+                </button>
                     <!-- Settings Dropdown -->
                     <div v-if="showSettings" class="settings-dropdown">
                         <a href="#" class="settings-item" @click.prevent.stop="openTermsModal">TERMS & CONDITIONS</a>
@@ -314,7 +318,7 @@
                             </div>
                         </div>
                         <div class="filter-right">
-                            <!-- <button class="add-post-btn" @click="addPost">＋ ADD POST</button> -->
+                            <button class="add-post-btn" @click="addPost" v-if="canAddPost && currentTab === 'announcements'">＋ ADD POST</button>
                             <div class="search-container">
                                 <input 
                                     type="text" 
@@ -346,7 +350,7 @@
                                 <img :src="post.avatar" :alt="post.author" class="post-avatar" />
                                 <div class="post-meta">
                                     <div class="post-author">{{ post.author }}</div>
-                                    <span class="author-badge official">{{ post.role }}</span>
+                                    <span class="author-badge" :class="isOfficialRole(post.role) ? 'official' : 'resident'">{{ post.role }}</span>
                                 </div>
                                 <div class="post-tags">
                                     <span 
@@ -367,6 +371,33 @@
                             <div class="post-content">
                                 <h2 v-if="post.header && post.header.trim()" class="post-header-text">{{ post.header }}</h2>
                                 <p class="post-text">{{ post.content }}</p>
+                                
+                                <!-- Post Images -->
+                                <div v-if="post.images && post.images.length > 0" class="post-images">
+                                    <img 
+                                        v-for="(image, index) in post.images" 
+                                        :key="index"
+                                        :src="image" 
+                                        :alt="`Post image ${index + 1}`"
+                                        class="post-image"
+                                        @error="handleImageError($event)"
+                                        loading="lazy"
+                                    />
+                                </div>
+                                
+                                <!-- Poll Component -->
+                                <div v-if="post.is_poll" class="poll-wrapper">
+                                    <Poll 
+                                        v-if="post.poll && post.poll.options && post.poll.options.length > 0" 
+                                        :poll="post.poll" 
+                                        :poll-id="post.poll.id"
+                                        @vote-updated="handlePollUpdate(post.id, $event)"
+                                    />
+                                    <div v-else-if="post.is_poll" class="poll-error-message">
+                                        <p>⚠️ Poll options are not available for this post.</p>
+                                        <p class="poll-error-hint">This poll post was created before poll functionality was enabled. Please recreate the poll.</p>
+                                    </div>
+                                </div>
                             </div>
 
                             <div class="post-actions" @click.stop>
@@ -423,7 +454,7 @@
                                 <img :src="selectedPost.avatar" :alt="selectedPost.author" class="post-avatar" />
                                 <div class="post-meta">
                                     <div class="post-author">{{ selectedPost.author }}</div>
-                                    <span class="author-badge official">{{ selectedPost.role }}</span>
+                                    <span class="author-badge" :class="isOfficialRole(selectedPost.role) ? 'official' : 'resident'">{{ selectedPost.role }}</span>
                                 </div>
                                 <div class="post-tags">
                                     <span 
@@ -445,6 +476,20 @@
                                 <h2 v-if="selectedPost.header && selectedPost.header.trim()" class="post-header-text">{{ selectedPost.header }}</h2>
                                 <p class="post-text">{{ selectedPost.content }}</p>
                                 
+                                <!-- Poll Component -->
+                                <div v-if="selectedPost.is_poll" class="poll-wrapper">
+                                    <Poll 
+                                        v-if="selectedPost.poll && selectedPost.poll.options && selectedPost.poll.options.length > 0" 
+                                        :poll="selectedPost.poll" 
+                                        :poll-id="selectedPost.poll.id"
+                                        @vote-updated="handlePollUpdate(selectedPost.id, $event)"
+                                    />
+                                    <div v-else-if="selectedPost.is_poll" class="poll-error-message">
+                                        <p>⚠️ Poll options are not available for this post.</p>
+                                        <p class="poll-error-hint">This poll post was created before poll functionality was enabled. Please recreate the poll.</p>
+                                    </div>
+                                </div>
+                                
                                 <!-- Post Images -->
                                 <div v-if="selectedPost.images && selectedPost.images.length > 0" class="post-images">
                                     <img 
@@ -453,6 +498,8 @@
                                         :src="image" 
                                         :alt="`Post image ${index + 1}`"
                                         class="post-image"
+                                        @error="handleImageError($event)"
+                                        loading="lazy"
                                     />
                                 </div>
                             </div>
@@ -482,6 +529,18 @@
                                     </button>
                                 </div>
                                 <div class="post-options">
+                                    <button v-if="isPostOwner(selectedPost)" class="edit-post-btn" @click="openEditModal(selectedPost)">
+                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="report-icon">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" />
+                                        </svg>
+                                        EDIT
+                                    </button>
+                                    <button v-if="isPostOwner(selectedPost)" class="delete-post-btn" @click="confirmDeletePost(selectedPost.id)">
+                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="report-icon">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+                                        </svg>
+                                        DELETE
+                                    </button>
                                     <button v-if="!isPostOwner(selectedPost)" class="report-post-btn" @click="reportPost(selectedPost.id)">
                                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="report-icon">
                                             <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
@@ -765,7 +824,7 @@
         <div v-if="showDeleteModal" class="report-modal-overlay" @click="closeDeleteModal">
             <div class="report-modal" @click.stop>
                 <div class="report-modal-header">
-                    <h3>Delete Comment</h3>
+                    <h3>Delete {{ deleteType === 'post' ? 'Post' : 'Comment' }}</h3>
                     <button class="close-modal-btn" @click="closeDeleteModal">
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="close-icon">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
@@ -774,12 +833,100 @@
                 </div>
                 <div class="report-modal-body">
                     <p class="report-description">
-                        Are you sure you want to delete this comment? This action cannot be undone.
+                        Are you sure you want to delete this {{ deleteType === 'post' ? 'post' : 'comment' }}? This action cannot be undone.
                     </p>
                 </div>
                 <div class="report-modal-footer">
                     <button class="cancel-report-btn" @click="closeDeleteModal">CANCEL</button>
                     <button class="submit-report-btn delete-confirm-btn" @click="handleDelete">DELETE</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Edit Post Modal -->
+        <div v-if="showEditModal" class="report-modal-overlay" @click="closeEditModal">
+            <div class="edit-modal" @click.stop>
+                <div class="report-modal-header">
+                    <h3>Edit Post</h3>
+                    <button class="close-modal-btn" @click="closeEditModal">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="close-icon">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+                <div class="edit-modal-body">
+                    <div class="edit-form-group">
+                        <label>Header (Optional)</label>
+                        <input v-model="editForm.header" type="text" placeholder="Enter post header..." maxlength="255" class="edit-input" />
+                    </div>
+                    <div class="edit-form-group">
+                        <label>Content <span style="color: #dc3545;">*</span></label>
+                        <textarea v-model="editForm.content" placeholder="Write your post content..." maxlength="1000" rows="6" class="edit-textarea" required></textarea>
+                        <div class="char-count">{{ editForm.content.length }}/1000</div>
+                    </div>
+                    <div class="edit-form-group">
+                        <label>Tags <span style="color: #dc3545;">*</span></label>
+                        <div class="edit-tags-display">
+                            <span v-for="tag in editForm.tags" :key="tag" class="edit-tag-chip">#{{ tag }}</span>
+                            <button class="edit-change-tags-btn" @click="openEditTagsModal">Change Tags</button>
+                        </div>
+                    </div>
+                    <div class="edit-form-group">
+                        <label>Images</label>
+                        <div class="edit-images-preview">
+                            <div v-for="(image, index) in editForm.existingImages" :key="index" class="edit-image-preview-item">
+                                <img :src="image" alt="Post image" class="edit-preview-image" />
+                                <button class="edit-remove-image-btn" @click="removeExistingImage(index)">×</button>
+                            </div>
+                            <div v-for="(file, index) in editForm.newImages" :key="'new-' + index" class="edit-image-preview-item">
+                                <img :src="file.preview" alt="New image" class="edit-preview-image" />
+                                <button class="edit-remove-image-btn" @click="removeNewImage(index)">×</button>
+                            </div>
+                            <label class="edit-add-image-btn">
+                                <input type="file" accept="image/*" multiple @change="handleImageSelect" style="display: none;" />
+                                + Add Images
+                            </label>
+                        </div>
+                    </div>
+                    <div v-if="editError" class="edit-error-message">{{ editError }}</div>
+                </div>
+                <div class="report-modal-footer">
+                    <button class="cancel-report-btn" @click="closeEditModal">CANCEL</button>
+                    <button class="submit-report-btn" @click="updatePost" :disabled="isUpdating">
+                        {{ isUpdating ? 'UPDATING...' : 'UPDATE' }}
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tags Selection Modal for Edit -->
+        <div v-if="showEditTagsModal" class="report-modal-overlay" @click="closeEditTagsModal">
+            <div class="edit-tags-modal" @click.stop>
+                <div class="report-modal-header">
+                    <h3>Select Tags</h3>
+                    <button class="close-modal-btn" @click="closeEditTagsModal">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="close-icon">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+                <div class="edit-tags-modal-body">
+                    <div v-if="availableTags && availableTags.length > 0" class="tags-grid-edit">
+                        <button 
+                            v-for="tag in availableTags" 
+                            :key="tag.tag_id"
+                            class="tag-option-edit"
+                            :class="{ selected: editForm.tagIds.includes(tag.tag_id) }"
+                            @click="toggleEditTag(tag.tag_id)"
+                        >
+                            #{{ tag.tag_name }}
+                        </button>
+                    </div>
+                    <div v-else class="no-tags-message">No tags available</div>
+                </div>
+                <div class="report-modal-footer">
+                    <button class="cancel-report-btn" @click="closeEditTagsModal">CANCEL</button>
+                    <button class="submit-report-btn" @click="saveEditTags">SAVE TAGS</button>
                 </div>
             </div>
         </div>
@@ -793,6 +940,7 @@ import { Head } from '@inertiajs/vue3'
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { router } from '@inertiajs/vue3'
 import axios from 'axios'
+import Poll from '@/Components/Poll.vue'
 
 // Define props - receive posts from backend
 const props = defineProps({
@@ -807,6 +955,10 @@ const props = defineProps({
     restrictions: {
         type: Object,
         default: () => null
+    },
+    canAddPost: {
+        type: Boolean,
+        default: false
     }
 })
 
@@ -850,7 +1002,7 @@ const roleMap = {
     3: 'Barangay Secretary',
     4: 'Barangay Treasurer',
     5: 'Barangay Kagawad',
-    6: 'Sangguniang Kabataan Chairman',
+    6: 'SK Chairman',
     7: 'Sangguniang Kabataan Kagawad',
     9: 'System Admin',
 }
@@ -861,6 +1013,30 @@ const displayRole = computed(() => {
     const role = roleMap[id] ?? 'Resident'
     return role.toUpperCase()
 })
+
+// Helper function to check if a role is an official role
+const isOfficialRole = (role) => {
+    if (!role) return false
+    const roleLower = String(role).toLowerCase().trim()
+    // List of official roles (case-insensitive check)
+    const officialRoles = [
+        'barangay captain',
+        'barangay secretary',
+        'barangay treasurer',
+        'barangay kagawad',
+        'sk chairman',
+        'sangguniang kabataan kagawad',
+        'system admin',
+        'official',
+        'employee'
+    ]
+    // Return true if it's an official role, false if it's "resident"
+    if (officialRoles.includes(roleLower)) {
+        return true
+    }
+    // If it's exactly "resident", return false, otherwise assume it's an official
+    return roleLower !== 'resident'
+}
 
 // Profile picture URL
 const profilePictureUrl = computed(() => {
@@ -913,11 +1089,27 @@ const loadingTrendingTags = ref(false)
 const selectedTrendingTag = ref(null)
 const showDeleteModal = ref(false)
 
+// Edit post state
+const showEditModal = ref(false)
+const showEditTagsModal = ref(false)
+const isUpdating = ref(false)
+const editError = ref('')
+const editForm = ref({
+    postId: null,
+    header: '',
+    content: '',
+    tags: [],
+    tagIds: [],
+    existingImages: [],
+    newImages: []
+})
+const availableTags = ref([])
+
 // Error handling state
 const commentError = ref('')
 const reportError = ref('')
 const reactionError = ref('')
-const deleteType = ref('') // 'comment' only (residents can't delete announcement posts)
+const deleteType = ref('') // 'post' or 'comment'
 const deleteTargetId = ref(null)
 const deleteTargetParentId = ref(null) // For replies, store parent comment ID
 const unreadCount = ref(0)
@@ -969,8 +1161,20 @@ function normalizePost(raw) {
     if (Array.isArray(raw.images) && raw.images.length) {
         images = raw.images
     } else if (raw.image_content) {
-        // backend stored path like "posts/abcd.jpg" -> convert to asset('storage/...')
-        images = [raw.image_content.startsWith('http') ? raw.image_content : `/storage/${raw.image_content}`]
+        // Check if image_content is JSON (multiple images) or single path
+        try {
+            const decoded = JSON.parse(raw.image_content)
+            if (Array.isArray(decoded)) {
+                // Multiple images stored as JSON array
+                images = decoded.map(path => path.startsWith('http') ? path : `/storage/${path}`)
+            } else {
+                // Single image stored as string path
+                images = [raw.image_content.startsWith('http') ? raw.image_content : `/storage/${raw.image_content}`]
+            }
+        } catch (e) {
+            // Not JSON, treat as single path
+            images = [raw.image_content.startsWith('http') ? raw.image_content : `/storage/${raw.image_content}`]
+        }
     } else if (raw.image_path) {
         images = [raw.image_path.startsWith('http') ? raw.image_path : `/storage/${raw.image_path}`]
     }
@@ -996,12 +1200,40 @@ function normalizePost(raw) {
         content: raw.content ?? '',
         images,
         video_content: raw.video_content ?? raw.video_path ?? null,
+        is_poll: raw.is_poll ?? false,
+        poll: raw.poll ?? null,
         likes: raw.likes ?? 0,
         dislikes: raw.dislikes ?? 0,
         comments: raw.comments ?? 0,
         userLiked: raw.userLiked ?? false,
         userDisliked: raw.userDisliked ?? false,
         commentsList: Array.isArray(raw.commentsList) ? raw.commentsList : []
+    }
+}
+
+// Handle poll vote update
+const handlePollUpdate = (postId, updatedPoll) => {
+    const post = posts.value.find(p => p.id === postId)
+    if (post && post.poll) {
+        Object.assign(post.poll, updatedPoll)
+    }
+    
+    if (selectedPost.value && selectedPost.value.id === postId && selectedPost.value.poll) {
+        Object.assign(selectedPost.value.poll, updatedPoll)
+    }
+}
+
+// Handle image loading errors
+const handleImageError = (event) => {
+    // If image fails to load, try to reload with cache-busting or set to default
+    const img = event.target
+    const currentSrc = img.src
+    // Try adding cache-busting parameter
+    if (!currentSrc.includes('?v=')) {
+        img.src = currentSrc + (currentSrc.includes('?') ? '&' : '?') + 'v=' + Date.now()
+    } else {
+        // If still fails, set to default image
+        img.src = '/assets/DEFAULT.jpg'
     }
 }
 
@@ -1352,7 +1584,29 @@ const performSearch = () => {
 }
 
 const addPost = () => {
-    navToDiscussionAddPost()
+    try {
+        console.log('➕ Add post clicked, currentTab:', currentTab.value)
+        if (currentTab.value === 'announcements') {
+            console.log('📢 Navigating to announcement add post page...')
+            const routeName = 'announcement_addpost_employee'
+            if (typeof route !== 'undefined') {
+                router.visit(route(routeName))
+            } else {
+                router.visit('/employee/announcement/create')
+            }
+        } else {
+            console.log('💬 Navigating to discussion add post page...')
+            const routeName = 'discussion_addpost_resident'
+            if (typeof route !== 'undefined') {
+                router.visit(route(routeName))
+            } else {
+                router.visit('/discussion/create')
+            }
+        }
+    } catch (error) {
+        console.error('❌ Error navigating to add post page:', error)
+        alert('Error: Could not navigate to add post page. Please try again.')
+    }
 }
 
 const viewPost = async (postId) => {
@@ -1645,6 +1899,12 @@ const submitReport = async () => {
 }
 
 // Delete functions
+const confirmDeletePost = (postId) => {
+    deleteType.value = 'post'
+    deleteTargetId.value = postId
+    showDeleteModal.value = true
+}
+
 const confirmDeleteComment = (commentId, parentId = null) => {
     deleteType.value = 'comment'
     deleteTargetId.value = commentId
@@ -1694,8 +1954,36 @@ const deleteComment = async () => {
     }
 }
 
+const deletePost = async () => {
+    if (!deleteTargetId.value) return
+    
+    try {
+        const response = await axios.delete(route('posts.destroy', deleteTargetId.value))
+        
+        if (response.data.success) {
+            // Remove post from list
+            posts.value = posts.value.filter(p => p.id !== deleteTargetId.value)
+            
+            // If it's the selected post, close it
+            if (selectedPost.value && selectedPost.value.id === deleteTargetId.value) {
+                selectedPost.value = null
+            }
+            
+            closeDeleteModal()
+            alert('Post deleted successfully.')
+        } else {
+            alert(response.data.message || 'Failed to delete post.')
+        }
+    } catch (error) {
+        console.error('Error deleting post:', error)
+        alert(error.response?.data?.message || 'Failed to delete post. Please try again.')
+    }
+}
+
 const handleDelete = () => {
-    if (deleteType.value === 'comment') {
+    if (deleteType.value === 'post') {
+        deletePost()
+    } else if (deleteType.value === 'comment') {
         deleteComment()
     }
 }
@@ -1708,6 +1996,157 @@ const isPostOwner = (post) => {
 // Check if user owns a comment
 const isCommentOwner = (comment) => {
     return comment.author_id === (user.value?.user_id ?? user.value?.id)
+}
+
+// Edit post functions
+const openEditModal = async (post) => {
+    console.log('Opening edit modal for post:', post)
+    
+    if (!post) {
+        console.error('No post provided to openEditModal')
+        return
+    }
+    
+    editForm.value = {
+        postId: post.id,
+        header: post.header || '',
+        content: post.content || '',
+        tags: post.tags || [],
+        tagIds: [],
+        existingImages: post.images ? [...post.images] : [],
+        newImages: []
+    }
+    
+    // Get tag IDs from tag names
+    try {
+        const tagsResponse = await axios.get(route('api.tags.index'))
+        if (tagsResponse.data && tagsResponse.data.tags && Array.isArray(tagsResponse.data.tags)) {
+            availableTags.value = tagsResponse.data.tags
+            // Match tag names to IDs
+            editForm.value.tagIds = tagsResponse.data.tags
+                .filter(tag => editForm.value.tags.includes(tag.tag_name))
+                .map(tag => tag.tag_id)
+        }
+    } catch (error) {
+        console.error('Error fetching tags:', error)
+    }
+    
+    editError.value = ''
+    showEditModal.value = true
+    console.log('Edit modal should be visible now, showEditModal:', showEditModal.value)
+}
+
+const closeEditModal = () => {
+    showEditModal.value = false
+    editForm.value = {
+        postId: null,
+        header: '',
+        content: '',
+        tags: [],
+        tagIds: [],
+        existingImages: [],
+        newImages: []
+    }
+    editError.value = ''
+}
+
+const openEditTagsModal = () => {
+    showEditTagsModal.value = true
+}
+
+const closeEditTagsModal = () => {
+    showEditTagsModal.value = false
+}
+
+const toggleEditTag = (tagId) => {
+    const index = editForm.value.tagIds.indexOf(tagId)
+    if (index > -1) {
+        editForm.value.tagIds.splice(index, 1)
+    } else {
+        editForm.value.tagIds.push(tagId)
+    }
+}
+
+const saveEditTags = () => {
+    editForm.value.tags = availableTags.value
+        .filter(tag => editForm.value.tagIds.includes(tag.tag_id))
+        .map(tag => tag.tag_name)
+    closeEditTagsModal()
+}
+
+const handleImageSelect = (event) => {
+    const files = Array.from(event.target.files)
+    files.forEach(file => {
+        if (file.type.startsWith('image/')) {
+            const reader = new FileReader()
+            reader.onload = (e) => {
+                editForm.value.newImages.push({
+                    file: file,
+                    preview: e.target.result
+                })
+            }
+            reader.readAsDataURL(file)
+        }
+    })
+    event.target.value = '' // Reset input
+}
+
+const removeExistingImage = (index) => {
+    editForm.value.existingImages.splice(index, 1)
+}
+
+const removeNewImage = (index) => {
+    editForm.value.newImages.splice(index, 1)
+}
+
+const updatePost = async () => {
+    if (!editForm.value.content.trim()) {
+        editError.value = 'Content is required.'
+        return
+    }
+    
+    if (editForm.value.tagIds.length === 0) {
+        editError.value = 'Please select at least one tag.'
+        return
+    }
+    
+    isUpdating.value = true
+    editError.value = ''
+    
+    try {
+        const formData = new FormData()
+        formData.append('header', editForm.value.header || '')
+        formData.append('content', editForm.value.content)
+        formData.append('tag_ids', JSON.stringify(editForm.value.tagIds))
+        formData.append('is_poll', '0') // For now, polls can't be edited
+        formData.append('_method', 'PUT')
+        
+        // Append new images
+        editForm.value.newImages.forEach((imgObj) => {
+            formData.append('images[]', imgObj.file)
+        })
+        
+        const response = await axios.post(
+            route('announcement_employee.update', editForm.value.postId),
+            formData,
+            {
+                headers: {
+                    'Content-Type': 'multipart/form-data'
+                }
+            }
+        )
+        
+        if (response.data) {
+            // Reload the page to get updated data
+            router.reload()
+            closeEditModal()
+        }
+    } catch (error) {
+        console.error('Error updating post:', error)
+        editError.value = error.response?.data?.message || 'Failed to update post. Please try again.'
+    } finally {
+        isUpdating.value = false
+    }
 }
 
 const formatCommentDate = (date) => {
@@ -2068,13 +2507,30 @@ onUnmounted(() => {
     transition: all 0.3s ease;
     backdrop-filter: blur(10px);
 }
-.settings-btn-img {
-    margin-right: 30px; /* adjust value as needed */
-    width: 30px;
+.settings-burger-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    margin-right: 30px;
+    padding: 0;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    border-radius: 50%;
+    color: white;
+    transition: background 0.2s, transform 0.2s;
 }
 
-.settings-btn-img:hover {
-    transform: scale(1.1);
+.settings-burger-btn:hover {
+    background: rgba(255,255,255,0.15);
+    transform: scale(1.05);
+}
+
+.settings-burger-icon {
+    width: 24px;
+    height: 24px;
 }
 
 .settings-dropdown {
@@ -2635,124 +3091,58 @@ onUnmounted(() => {
     text-transform: uppercase;
 }
 
+.author-badge.resident {
+    background: linear-gradient(135deg, #2bb24a, #239640);
+    color: white;
+    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+}
+
 .author-badge.official {
     background: linear-gradient(135deg, #ff8c42, #ff7a28);
     color: white;
+    box-shadow: 0 2px 8px rgba(255, 140, 66, 0.3);
 }
 
 .post-tags {
     display: flex;
     gap: 8px;
     flex-wrap: wrap;
+    align-items: center;
 }
 
+/* Category indicator — dark outline, light fill, dark text, not interactive */
 .tag {
-    font-size: 11px;
-    padding: 5px 10px;
-    border-radius: 15px;
+    font-size: 12px;
+    padding: 6px 14px;
+    border-radius: 999px;
     font-weight: 600;
-    color: white;
     text-transform: uppercase;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
-    /* Default background for unmatched tags */
-    background: linear-gradient(135deg, #95a5a6, #7f8c8d);
+    letter-spacing: 0.04em;
+    cursor: default;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    border: 2px solid #5a6a6b;
+    background: #e8eaeb;
+    color: #3d4849;
 }
 
-.tag:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-}
-
-/* Business - Blue/Purple */
-.tag.business {
-    background: linear-gradient(135deg, #6c5ce7, #5f3dc4) !important;
-}
-
-/* Education - Blue */
-.tag.education {
-    background: linear-gradient(135deg, #3498db, #2980b9) !important;
-}
-
-/* Emergency - Red */
-.tag.emergency {
-    background: linear-gradient(135deg, #e74c3c, #c0392b) !important;
-}
-
-/* Employment - Green */
-.tag.employment {
-    background: linear-gradient(135deg, #27ae60, #229954) !important;
-}
-
-/* Environment - Green */
-.tag.environment {
-    background: linear-gradient(135deg, #2ecc71, #27ae60) !important;
-}
-
-/* Governance - Purple */
-.tag.governance {
-    background: linear-gradient(135deg, #9b59b6, #8e44ad) !important;
-}
-
-/* Health - Red/Pink */
-.tag.health {
-    background: linear-gradient(135deg, #e91e63, #c2185b) !important;
-}
-
-/* Incident - Dark Red */
-.tag.incident {
-    background: linear-gradient(135deg, #c0392b, #a93226) !important;
-}
-
-/* Infrastructure - Orange */
-.tag.infrastructure {
-    background: linear-gradient(135deg, #f39c12, #e67e22) !important;
-}
-
-/* Inquiries - Yellow/Orange */
-.tag.inquiries {
-    background: linear-gradient(135deg, #f1c40f, #f39c12) !important;
-}
-
-/* Livelihood - Teal */
-.tag.livelihood {
-    background: linear-gradient(135deg, #1abc9c, #16a085) !important;
-}
-
-/* Maintenance - Brown/Orange */
-.tag.maintenance {
-    background: linear-gradient(135deg, #d35400, #ba4a00) !important;
-}
-
-/* Sanitation - Cyan */
-.tag.sanitation {
-    background: linear-gradient(135deg, #00bcd4, #0097a7) !important;
-}
-
-/* Sports - Green */
-.tag.sports {
-    background: linear-gradient(135deg, #4caf50, #388e3c) !important;
-}
-
-/* Traffic - Yellow */
-.tag.traffic {
-    background: linear-gradient(135deg, #ffc107, #ff9800) !important;
-}
-
-/* Weather - Light Blue */
-.tag.weather {
-    background: linear-gradient(135deg, #03a9f4, #0288d1) !important;
-}
-
-/* Welfare - Pink */
-.tag.welfare {
-    background: linear-gradient(135deg, #e91e63, #c2185b) !important;
-}
-
-/* Youth - Magenta */
-.tag.youth {
-    background: linear-gradient(135deg, #e91e63, #ad1457) !important;
-}
+.tag.business { border-color: #5f3dc4; background: #ede9fc; color: #5f3dc4; }
+.tag.education { border-color: #2980b9; background: #e3f2fd; color: #2980b9; }
+.tag.emergency { border-color: #c0392b; background: #ffebee; color: #c0392b; }
+.tag.employment { border-color: #1e7b4a; background: #e8f5e9; color: #1e7b4a; }
+.tag.environment { border-color: #27ae60; background: #e8f5e9; color: #27ae60; }
+.tag.governance { border-color: #8e44ad; background: #f3e5f5; color: #8e44ad; }
+.tag.health { border-color: #c2185b; background: #fce4ec; color: #c2185b; }
+.tag.incident { border-color: #a93226; background: #ffebee; color: #a93226; }
+.tag.infrastructure { border-color: #e67e22; background: #fff3e0; color: #e67e22; }
+.tag.inquiries { border-color: #b8860b; background: #fff8e1; color: #b8860b; }
+.tag.livelihood { border-color: #16a085; background: #e0f2f1; color: #16a085; }
+.tag.maintenance { border-color: #ba4a00; background: #fbe9e7; color: #ba4a00; }
+.tag.sanitation { border-color: #0097a7; background: #e0f7fa; color: #0097a7; }
+.tag.sports { border-color: #388e3c; background: #e8f5e9; color: #388e3c; }
+.tag.traffic { border-color: #e65100; background: #fff3e0; color: #e65100; }
+.tag.weather { border-color: #0288d1; background: #e1f5fe; color: #0288d1; }
+.tag.welfare { border-color: #c2185b; background: #fce4ec; color: #c2185b; }
+.tag.youth { border-color: #ad1457; background: #fce4ec; color: #ad1457; }
 
 .post-time {
     text-align: right;
@@ -3369,9 +3759,10 @@ onUnmounted(() => {
 /* Post Images */
 .post-images {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
     gap: 15px;
     margin-top: 30px;
+    width: 100%;
 }
 
 .post-image {
@@ -3382,10 +3773,22 @@ onUnmounted(() => {
     box-shadow: 0 4px 12px rgba(0,0,0,0.15);
     cursor: pointer;
     transition: transform 0.3s ease;
+    display: block;
+    margin: 0 auto;
 }
 
 .post-image:hover {
     transform: scale(1.05);
+}
+
+/* Single image - center it */
+.post-images:has(img:only-child) {
+    display: flex;
+    justify-content: center;
+}
+
+.post-images:has(img:only-child) .post-image {
+    max-width: 600px;
 }
 
 /* Report Button for Posts */
@@ -3405,6 +3808,27 @@ onUnmounted(() => {
 }
 
 .report-post-btn:hover {
+    background: rgba(220, 53, 69, 0.1);
+    transform: translateY(-1px);
+}
+
+.delete-post-btn {
+    background: none;
+    border: none;
+    color: #dc3545;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 8px 12px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s;
+    margin-right: 10px;
+}
+
+.delete-post-btn:hover {
     background: rgba(220, 53, 69, 0.1);
     transform: translateY(-1px);
 }
@@ -3993,4 +4417,276 @@ onUnmounted(() => {
     transform: translateY(-1px);
     box-shadow: 0 4px 12px rgba(255, 140, 66, 0.4);
 }
+/* Poll wrapper and error message styles */
+.poll-wrapper {
+    margin-top: 15px;
+}
+
+.poll-error-message {
+    background: #fff3cd;
+    border: 2px solid #ffc107;
+    border-radius: 12px;
+    padding: 20px;
+    margin-top: 15px;
+    text-align: center;
+}
+
+.poll-error-message p {
+    margin: 5px 0;
+    color: #856404;
+    font-weight: 600;
+}
+
+.poll-error-hint {
+    font-size: 13px;
+    color: #856404;
+    font-weight: 400;
+    margin-top: 10px;
+}
+
+/* Edit Post Button */
+.edit-post-btn {
+    background: none;
+    border: none;
+    color: #007bff;
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s ease;
+    margin-right: 8px;
+}
+
+.edit-post-btn .report-icon {
+    width: 16px;
+    height: 16px;
+}
+
+.edit-post-btn:hover {
+    background: rgba(0, 123, 255, 0.1);
+    transform: translateY(-1px);
+}
+
+/* Edit Modal */
+.edit-modal {
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    max-width: 600px;
+    width: 90%;
+    max-height: 90vh;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    animation: slideUp 0.3s ease;
+}
+
+.edit-modal-body {
+    padding: 25px 30px;
+    flex: 1;
+    overflow-y: auto;
+}
+
+.edit-form-group {
+    margin-bottom: 20px;
+}
+
+.edit-form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: #333;
+    font-size: 14px;
+}
+
+.edit-input, .edit-textarea {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    font-size: 14px;
+    font-family: inherit;
+    transition: border-color 0.2s;
+    box-sizing: border-box;
+}
+
+.edit-input:focus, .edit-textarea:focus {
+    outline: none;
+    border-color: #007bff;
+}
+
+.edit-textarea {
+    resize: vertical;
+    min-height: 120px;
+}
+
+.char-count {
+    text-align: right;
+    font-size: 12px;
+    color: #666;
+    margin-top: 4px;
+}
+
+.edit-tags-display {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+}
+
+.edit-tag-chip {
+    background: #f0f0f0;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 13px;
+    color: #333;
+}
+
+.edit-change-tags-btn {
+    background: #007bff;
+    color: white;
+    border: none;
+    padding: 6px 16px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.edit-change-tags-btn:hover {
+    background: #0056b3;
+}
+
+.edit-images-preview {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.edit-image-preview-item {
+    position: relative;
+    width: 100px;
+    height: 100px;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.edit-preview-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.edit-remove-image-btn {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    background: rgba(220, 53, 69, 0.9);
+    color: white;
+    border: none;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s;
+}
+
+.edit-remove-image-btn:hover {
+    background: rgba(220, 53, 69, 1);
+}
+
+.edit-add-image-btn {
+    width: 100px;
+    height: 100px;
+    border: 2px dashed #ddd;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: #666;
+    font-size: 14px;
+    transition: all 0.2s;
+}
+
+.edit-add-image-btn:hover {
+    border-color: #007bff;
+    color: #007bff;
+    background: rgba(0, 123, 255, 0.05);
+}
+
+.edit-error-message {
+    background: #fee;
+    border: 1px solid #fcc;
+    border-radius: 8px;
+    padding: 12px;
+    color: #c33;
+    margin-top: 15px;
+    font-size: 14px;
+}
+
+/* Edit Tags Modal */
+.edit-tags-modal {
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    max-width: 500px;
+    width: 90%;
+    max-height: 80vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    animation: slideUp 0.3s ease;
+}
+
+.edit-tags-modal-body {
+    padding: 25px 30px;
+    flex: 1;
+    overflow-y: auto;
+    max-height: 60vh;
+}
+
+.tags-grid-edit {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 10px;
+}
+
+.tag-option-edit {
+    padding: 10px 16px;
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    background: white;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 14px;
+    text-align: center;
+}
+
+.tag-option-edit:hover {
+    border-color: #007bff;
+    background: rgba(0, 123, 255, 0.05);
+}
+
+.tag-option-edit.selected {
+    border-color: #007bff;
+    background: #007bff;
+    color: white;
+}
+
+.no-tags-message {
+    text-align: center;
+    padding: 20px;
+    color: #666;
+}
+
 </style>

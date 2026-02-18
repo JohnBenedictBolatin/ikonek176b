@@ -1,7 +1,7 @@
 <script setup>
   import { Link } from '@inertiajs/vue3'
   import { Head } from '@inertiajs/vue3'
-  import { ref, reactive } from 'vue';
+  import { ref, reactive, onMounted } from 'vue';
   import { router } from '@inertiajs/vue3'
   import { useForm } from '@inertiajs/vue3'
   import axios from 'axios'
@@ -17,6 +17,28 @@
 
   // Add state for password visibility
   const showPassword = ref(false)
+
+  // Reset form state when component mounts (fixes stuck form after logout)
+  onMounted(() => {
+    // Reset form to clear any stuck processing state
+    form.reset()
+    form.clearErrors()
+    // Clear local errors
+    localErrors.phone = null
+    localErrors.password = null
+    localErrors.general = null
+    // Reset password visibility
+    showPassword.value = false
+    
+    // Force clear any stuck processing state (safety check)
+    if (form.processing) {
+      // If form is stuck in processing, reset it
+      setTimeout(() => {
+        form.reset()
+        form.clearErrors()
+      }, 100)
+    }
+  })
   
   // Local validation errors
   const localErrors = reactive({
@@ -101,6 +123,11 @@
   }
 
   function submit() {
+    // Prevent submission if form is already processing
+    if (form.processing) {
+      return
+    }
+    
     // Clear previous errors
     localErrors.phone = null
     localErrors.password = null
@@ -149,6 +176,11 @@
         // Clear password field for security after attempt (only if login failed)
         if (form.hasErrors || localErrors.phone || localErrors.password || localErrors.general) {
           form.password = ''
+        }
+        // Ensure form processing state is cleared
+        if (form.processing) {
+          // Force reset if stuck
+          form.reset('password')
         }
       }
     })
@@ -507,7 +539,7 @@
               v-model="form.password"
               @input="clearError('password')"
               placeholder="Please enter your password"
-              class="form-input"
+              class="form-input password-input"
               required
             />
             <button 
@@ -1005,6 +1037,34 @@ html, body {
   color: #ff8c42;
 }
 
+/* Hide browser's default password reveal button */
+.password-input::-ms-reveal {
+  display: none !important;
+}
+
+.password-input::-webkit-credentials-auto-fill-button {
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+  opacity: 0 !important;
+}
+
+/* Ensure password input has right padding for toggle button */
+.password-input {
+  padding-right: 50px !important;
+}
+
+/* Ensure only our custom toggle is visible */
+.input-wrapper {
+  position: relative;
+}
+
+.input-wrapper .password-toggle {
+  position: absolute;
+  right: 0;
+  z-index: 10;
+  background: white;
+}
 
 .error-message {
   color: #e74c3c;

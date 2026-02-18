@@ -948,8 +948,31 @@ class DocumentRequestController extends Controller
                     if (!empty($data['admin_feedback'])) {
                         $message .= " " . substr($data['admin_feedback'], 0, 100);
                     }
+                    // Full pickup details from approvers
+                    $pickupParts = [];
+                    if (!empty($doc->pickup_item)) {
+                        $pickupParts[] = 'Item: ' . trim($doc->pickup_item);
+                    }
                     if (!empty($doc->pickup_location)) {
-                        $message .= " Pickup location: {$doc->pickup_location}.";
+                        $pickupParts[] = 'Location: ' . trim($doc->pickup_location);
+                    }
+                    if ($doc->pickup_start) {
+                        $start = $doc->pickup_start instanceof Carbon
+                            ? $doc->pickup_start
+                            : Carbon::parse($doc->pickup_start);
+                        $pickupParts[] = 'Date/Time: ' . $start->format('M j, Y, g:i A');
+                    }
+                    if ($doc->pickup_end) {
+                        $end = $doc->pickup_end instanceof Carbon
+                            ? $doc->pickup_end
+                            : Carbon::parse($doc->pickup_end);
+                        $pickupParts[] = 'Until: ' . $end->format('M j, Y, g:i A');
+                    }
+                    if (!empty($doc->person_to_look)) {
+                        $pickupParts[] = 'Ask for: ' . trim($doc->person_to_look);
+                    }
+                    if (!empty($pickupParts)) {
+                        $message .= ' Pickup: ' . implode('. ', $pickupParts);
                     }
                     $message .= " Thank you!";
                 } elseif ($data['status'] === 'Rejected') {

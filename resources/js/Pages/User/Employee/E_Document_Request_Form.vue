@@ -15,7 +15,7 @@
     <div class="page-root">
       <!-- Back link + page title bar -->
       <div class="title-bar">
-        <Link :href="route('document_request_select_employee')" class="back-link">&lt; BACK</Link>
+        <Link :href="route('document_request_select_resident')" class="back-link">&lt; BACK</Link>
         <div class="page-title">Document Request</div>
       </div>
 
@@ -94,7 +94,7 @@
           <!-- <div class="submit-row full">
             <button type="submit" class="btn-submit">SUBMIT</button>
           </div> -->
-          <Link :href="route('document_request_submission_employee', { type: 'barangay-id' })" class="submit-row full">
+          <Link :href="route('document_request_submission_resident', { type: 'barangay-id' })" class="submit-row full">
             SUBMIT
             </Link>
         </form>

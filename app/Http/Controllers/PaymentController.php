@@ -19,6 +19,30 @@ use Illuminate\Validation\Rule;
 class PaymentController extends Controller
 {
     /**
+     * Helper method to format receipt image URL from receipt_content
+     */
+    private function formatReceiptImageUrl($receiptContent)
+    {
+        if (empty($receiptContent)) {
+            return null;
+        }
+
+        // If it's already a full URL (http/https), use as-is (for backward compatibility)
+        if (Str::startsWith($receiptContent, ['http://', 'https://'])) {
+            return $receiptContent;
+        } 
+        // If it starts with '/storage/', it's already a URL path, use asset()
+        elseif (Str::startsWith($receiptContent, '/storage/')) {
+            return asset($receiptContent);
+        }
+        // If it's a relative path (e.g., "payments/filename.jpg") - this is the new format
+        else {
+            // Convert relative path to asset URL
+            return asset('storage/' . ltrim($receiptContent, '/'));
+        }
+    }
+
+    /**
      * Store a simulated payment (called by the frontend when QR "scanned")
      */
     public function store(Request $request)
@@ -35,6 +59,7 @@ class PaymentController extends Controller
             'onsite' => 'nullable|boolean',
             'transaction_ref' => 'nullable|string', // optional client-provided transaction ref
             'evidence' => 'nullable|file|mimes:jpg,jpeg,png,webp|max:5120', // optional file up to 5MB
+            'receipt_content' => 'nullable|file|mimes:jpg,jpeg,png,webp|max:5120', // optional file up to 5MB (alternative key name)
         ]);
 
         $docReq = DocumentRequest::find($data['fk_doc_request_id']);
@@ -103,18 +128,62 @@ class PaymentController extends Controller
                     ->first();
 
                 $receiptContent = null;
+                // Check for file upload with either 'evidence' or 'receipt_content' key
+                $fileKey = null;
+                
+                // Log all file inputs for debugging
+                \Log::info('Checking for payment file upload', [
+                    'has_evidence' => $request->hasFile('evidence'),
+                    'has_receipt_content' => $request->hasFile('receipt_content'),
+                    'all_files' => array_keys($request->allFiles()),
+                    'doc_request_id' => $docReq->doc_request_id,
+                ]);
+                
                 if ($request->hasFile('evidence') && $request->file('evidence')->isValid()) {
-                    $file = $request->file('evidence');
+                    $fileKey = 'evidence';
+                } elseif ($request->hasFile('receipt_content') && $request->file('receipt_content')->isValid()) {
+                    $fileKey = 'receipt_content';
+                }
+                
+                if ($fileKey) {
+                    $file = $request->file($fileKey);
                     $path = $file->store('payments', 'public');
-                    // store a public URL into the receipt_content column
-                    $receiptContent = Storage::url($path);
+                    
+                    // Log the storage path for debugging
+                    \Log::info('Payment evidence uploaded', [
+                        'file_key' => $fileKey,
+                        'original_name' => $file->getClientOriginalName(),
+                        'mime_type' => $file->getMimeType(),
+                        'size' => $file->getSize(),
+                        'path' => $path,
+                        'file_exists' => Storage::disk('public')->exists($path),
+                        'full_path' => storage_path('app/public/' . $path),
+                    ]);
+                    
+                    // Store just the relative path (e.g., "payments/filename.jpg")
+                    // This ensures consistent URL generation regardless of APP_URL changes
+                    $receiptContent = $path;
+                    
+                    \Log::info('Receipt content stored', ['receipt_content' => $receiptContent]);
+                } else {
+                    \Log::warning('No valid file upload found for payment', [
+                        'has_evidence' => $request->hasFile('evidence'),
+                        'has_receipt_content' => $request->hasFile('receipt_content'),
+                        'evidence_valid' => $request->hasFile('evidence') ? $request->file('evidence')->isValid() : false,
+                        'receipt_content_valid' => $request->hasFile('receipt_content') ? $request->file('receipt_content')->isValid() : false,
+                    ]);
                 }
 
                 // If existing payment found, update it instead of creating a new one
                 if ($existingPayment) {
                     // Delete old receipt file if it exists and we're uploading a new one
                     if ($receiptContent && $existingPayment->receipt_content) {
-                        $oldPath = str_replace(Storage::url(''), '', $existingPayment->receipt_content);
+                        // receipt_content now stores relative path, so use it directly
+                        $oldPath = $existingPayment->receipt_content;
+                        // Handle old format that might have /storage/ prefix
+                        if (Str::startsWith($oldPath, '/storage/')) {
+                            $oldPath = str_replace('/storage/', '', $oldPath);
+                        }
                         if ($oldPath && Storage::disk('public')->exists($oldPath)) {
                             Storage::disk('public')->delete($oldPath);
                         }
@@ -169,9 +238,19 @@ class PaymentController extends Controller
                 ? 'Payment record updated successfully' 
                 : 'Payment record created';
 
+            // Format the payment response to include receiptImage URL
+            $paymentData = $result['payment']->toArray();
+            $paymentData['receiptImage'] = $this->formatReceiptImageUrl($result['payment']->receipt_content);
+            
+            \Log::info('Payment store response', [
+                'payment_id' => $result['payment']->payment_id,
+                'receipt_content' => $result['payment']->receipt_content,
+                'receiptImage' => $paymentData['receiptImage'],
+            ]);
+
             return response()->json([
                 'message' => $message,
-                'payment' => $result['payment'],
+                'payment' => $paymentData,
                 'payment_methods' => $paymentMethods,
             ], 201);
         } catch (\Throwable $e) {
@@ -251,7 +330,7 @@ class PaymentController extends Controller
                 3 => 'Barangay Secretary',
                 4 => 'Barangay Treasurer',
                 5 => 'Barangay Kagawad',
-                6 => 'Sangguniang Kabataan Chairman',
+                6 => 'SK Chairman',
                 7 => 'Sangguniang Kabataan Kagawad',
                 9 => 'System Admin',
                 default => 'Resident',
@@ -292,29 +371,23 @@ class PaymentController extends Controller
                 ?? ($p->gateway_response['timestamp'] ?? null)
                 ?? 'N/A';
 
-            // ====== Receipt image URL handling (important fix) ======
-            // We store a URL into receipt_content (Storage::url($path)) in your store() method.
-            // Handle several possibilities:
-            //  - receipt_content already contains a URL (absolute or beginning with '/storage')
-            //  - receipt_content contains a relative path -> build asset('storage/...') for it
-            //  - older column/field 'receipt_path' (if you used that before) -> also convert to asset(...)
+            // ====== Receipt image URL handling ======
+            // receipt_content now stores the relative path (e.g., "payments/filename.jpg")
+            // We need to convert it to a proper asset URL for the frontend
             $receiptImage = null;
 
-            // priority: receipt_content (exists and non-empty)
-            if (!empty($p->receipt_content)) {
-                // if it looks like a full URL use as-is
-                if (Str::startsWith($p->receipt_content, ['http://', 'https://', '/'])) {
-                    $receiptImage = $p->receipt_content;
-                } else {
-                    // assume it's a storage path (e.g. payments/xyz.jpg)
-                    $receiptImage = asset('storage/' . ltrim($p->receipt_content, '/'));
-                }
-            } elseif (!empty($p->receipt_path)) {
-                // fallback for older field names
-                $receiptImage = asset('storage/' . ltrim($p->receipt_path, '/'));
-            } else {
-                $receiptImage = null;
-            }
+            // Use helper method to format receipt image URL
+            $receiptImage = $this->formatReceiptImageUrl($p->receipt_content ?? $p->receipt_path ?? null);
+            
+            // Log for debugging - log all payments to see what's happening
+            \Log::info('Processing receipt_content for payment', [
+                'payment_id' => $p->payment_id,
+                'receipt_content' => $p->receipt_content,
+                'receipt_path' => $p->receipt_path ?? null,
+                'file_exists' => $p->receipt_content ? Storage::disk('public')->exists($p->receipt_content) : false,
+                'receipt_image_url' => $receiptImage,
+                'payment_method' => $p->paymentMethod?->pay_method_name ?? null,
+            ]);
 
             return [
                 'id' => $p->payment_id,
@@ -400,7 +473,8 @@ class PaymentController extends Controller
         $payments = Payment::with([
             'paymentMethod',
             'user.credential',
-            'documentRequest.documentType'
+            'documentRequest.documentType',
+            'treasurer'
         ])
         ->whereIn('status', ['APPROVED', 'REJECTED'])
         ->orderBy('handled_at', 'desc')
@@ -466,22 +540,13 @@ class PaymentController extends Controller
                 $methodKey = 'onsite';
             }
 
-            // Transaction ID (use for Payment No.)
+            // Transaction ID (use for Payment No.) - for onsite with no transaction_ref, use PAY-{id}
             $transactionId = $p->transaction_ref
                 ?? ($p->gateway_response['transaction_id'] ?? null)
-                ?? 'N/A';
+                ?? ('PAY-' . $p->payment_id);
 
-            // Receipt image URL
-            $receiptImage = null;
-            if (!empty($p->receipt_content)) {
-                if (Str::startsWith($p->receipt_content, ['http://', 'https://', '/'])) {
-                    $receiptImage = $p->receipt_content;
-                } else {
-                    $receiptImage = asset('storage/' . ltrim($p->receipt_content, '/'));
-                }
-            } elseif (!empty($p->receipt_path)) {
-                $receiptImage = asset('storage/' . ltrim($p->receipt_path, '/'));
-            }
+            // Receipt image URL - use helper method for consistency
+            $receiptImage = $this->formatReceiptImageUrl($p->receipt_content ?? $p->receipt_path ?? null);
 
             // Profile image
             $profileImg = $p->user?->profile_pic ?? '/assets/DEFAULT.jpg';
@@ -499,11 +564,46 @@ class PaymentController extends Controller
                 3 => 'Barangay Secretary',
                 4 => 'Barangay Treasurer',
                 5 => 'Barangay Kagawad',
-                6 => 'Sangguniang Kabataan Chairman',
+                6 => 'SK Chairman',
                 7 => 'Sangguniang Kabataan Kagawad',
                 9 => 'System Admin',
                 default => 'Resident',
             };
+
+            // Contact
+            $contact = $p->user?->credential?->contact_number
+                ?? $p->user?->contact_number
+                ?? $p->documentRequest?->contact_number
+                ?? 'N/A';
+
+            // Address - construct from document request fields or use user address
+            $address = 'N/A';
+            if ($p->documentRequest) {
+                $addressParts = [];
+                if (!empty($p->documentRequest->house_number)) {
+                    $addressParts[] = $p->documentRequest->house_number;
+                }
+                if (!empty($p->documentRequest->phase)) {
+                    $addressParts[] = 'Phase ' . $p->documentRequest->phase;
+                }
+                if (!empty($p->documentRequest->package)) {
+                    $addressParts[] = 'Package ' . $p->documentRequest->package;
+                }
+                if (!empty($addressParts)) {
+                    $address = implode(', ', $addressParts);
+                } elseif (!empty($p->documentRequest->address)) {
+                    $address = $p->documentRequest->address;
+                } elseif (!empty($p->user?->address)) {
+                    $address = $p->user->address;
+                }
+            } elseif (!empty($p->user?->address)) {
+                $address = $p->user->address;
+            }
+
+            // Treasurer name (who approved the payment)
+            $treasurerName = $p->treasurer?->name
+                ?? trim(($p->treasurer?->first_name ?? '') . ' ' . ($p->treasurer?->last_name ?? ''))
+                ?? 'N/A';
 
             return [
                 'id' => $p->payment_id,
@@ -523,6 +623,9 @@ class PaymentController extends Controller
                 'profileImg' => $profileImg,
                 'role' => $roleName,
                 'roleId' => $roleId,
+                'contact' => $contact,
+                'address' => $address,
+                'treasurerName' => $treasurerName,
             ];
         });
 

@@ -27,27 +27,24 @@ class TagController extends Controller
     }
 
     /**
-     * Get trending tags - tags used in posts created within the last 30 days,
+     * Get trending tags - tags that have been used in posts 5+ times,
      * ordered by usage count (most used first).
      */
     public function trending(Request $request)
     {
-        $days = $request->input('days', 30); // Default to last 30 days
         $limit = $request->input('limit', 10); // Default to top 10 tags
 
-        $thirtyDaysAgo = Carbon::now()->subDays($days);
-
-        // Get trending tags from posts created in the last 30 days
+        // Get trending tags that have been used in posts 5+ times
         $trendingTags = DB::table('post_tags')
             ->join('tags', 'post_tags.fk_tag_id', '=', 'tags.tag_id')
             ->join('posts', 'post_tags.fk_post_id', '=', 'posts.post_id')
-            ->where('posts.created_at', '>=', $thirtyDaysAgo)
             ->select(
                 'tags.tag_id',
                 'tags.tag_name',
-                DB::raw('COUNT(*) as usage_count')
+                DB::raw('COUNT(DISTINCT posts.post_id) as usage_count')
             )
             ->groupBy('tags.tag_id', 'tags.tag_name')
+            ->having('usage_count', '>=', 5)
             ->orderBy('usage_count', 'desc')
             ->limit($limit)
             ->get();

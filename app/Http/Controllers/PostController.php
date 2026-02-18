@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Post;
+use App\Models\TagsModel;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
@@ -19,17 +20,33 @@ class PostController extends Controller
     {
         Log::info('PostController@store called', $request->all());
 
-        $validated = $request->validate([
+        $rules = [
             'header' => ['nullable', 'string', 'max:255'],
             'content' => ['required', 'string', 'max:1000'],
             'tag_ids' => ['nullable', 'array'],
             'tag_ids.*' => ['integer', 'exists:tags,tag_id'],
+            'custom_tag_names' => ['nullable', 'array', 'max:10'],
+            'custom_tag_names.*' => ['required', 'string', 'max:50'],
             'image' => ['nullable', 'file', 'image', 'max:5120'],
             'video_content' => ['nullable', 'string'],
             'is_poll' => ['nullable', 'boolean'],
-            'poll_options' => ['required_if:is_poll,true', 'array', 'min:2', 'max:10'],
-            'poll_options.*' => ['required', 'string', 'max:255'],
-        ]);
+        ];
+
+        // Only require poll_options if is_poll is true
+        if ($request->boolean('is_poll')) {
+            $rules['poll_options'] = ['required', 'array', 'min:2', 'max:10'];
+            $rules['poll_options.*'] = ['required', 'string', 'max:255'];
+        } else {
+            $rules['poll_options'] = ['nullable', 'array'];
+            $rules['poll_options.*'] = ['nullable', 'string', 'max:255'];
+        }
+
+        $validated = $request->validate($rules);
+
+        $tagIds = self::resolveTagIds($validated['tag_ids'] ?? [], $validated['custom_tag_names'] ?? []);
+        if (empty($tagIds)) {
+            return redirect()->back()->withInput()->withErrors(['tag_ids' => 'Please select at least one tag or add a custom tag.']);
+        }
 
         try {
             $userId = Auth::id();
@@ -108,14 +125,12 @@ class PostController extends Controller
                 }
             }
 
-            // Attach tags through pivot table if provided
-            if (!empty($validated['tag_ids'])) {
-                $post->tags()->sync($validated['tag_ids']);
-                Log::info('Tags attached to post', [
-                    'post_id' => $post->post_id,
-                    'tag_ids' => $validated['tag_ids']
-                ]);
-            }
+            // Attach tags through pivot table (resolved from tag_ids + custom_tag_names)
+            $post->tags()->sync($tagIds);
+            Log::info('Tags attached to post', [
+                'post_id' => $post->post_id,
+                'tag_ids' => $tagIds
+            ]);
 
             Log::info('Post created successfully', ['post_id' => $post->post_id]);
 
@@ -236,6 +251,115 @@ class PostController extends Controller
                 'error' => config('app.debug') ? $e->getMessage() : null,
             ], 500);
         }
+    }
+
+    /**
+     * Update a post (only by the author)
+     */
+    public function update(Request $request, $postId)
+    {
+        Log::info('PostController@update called', ['post_id' => $postId, 'request' => $request->all()]);
+
+        $rules = [
+            'header' => ['nullable', 'string', 'max:255'],
+            'content' => ['required', 'string', 'max:1000'],
+            'tag_ids' => ['nullable', 'array'],
+            'tag_ids.*' => ['integer', 'exists:tags,tag_id'],
+            'custom_tag_names' => ['nullable', 'array', 'max:10'],
+            'custom_tag_names.*' => ['required', 'string', 'max:50'],
+            'image' => ['nullable', 'file', 'image', 'max:5120'],
+            'video_content' => ['nullable', 'string'],
+        ];
+
+        $validated = $request->validate($rules);
+
+        $tagIds = self::resolveTagIds($validated['tag_ids'] ?? [], $validated['custom_tag_names'] ?? []);
+        if (empty($tagIds)) {
+            return redirect()->back()->withInput()->withErrors(['tag_ids' => 'Please select at least one tag or add a custom tag.']);
+        }
+
+        try {
+            $userId = Auth::id();
+            if (!$userId) {
+                return redirect()->back()->with('error', 'You must be logged in to edit posts.');
+            }
+
+            $post = Post::where('post_id', $postId)
+                ->where('section', 'Discussion')
+                ->first();
+
+            if (!$post) {
+                return redirect()->back()->with('error', 'Post not found.');
+            }
+
+            // Check if user is the author
+            if ($post->fk_post_author_id != $userId) {
+                return redirect()->back()->with('error', 'You can only edit your own posts.');
+            }
+
+            // Update post content
+            $post->content = $validated['content'];
+
+            // Only set header if column exists in database
+            if (Schema::hasColumn('posts', 'header')) {
+                $headerValue = $validated['header'] ?? null;
+                $post->header = (!empty(trim($headerValue ?? ''))) ? trim($headerValue) : null;
+            }
+
+            // Handle image update
+            if ($request->hasFile('image')) {
+                // Delete old image if exists
+                if ($post->image_content) {
+                    Storage::disk('public')->delete($post->image_content);
+                }
+                // Store new image
+                $image = $request->file('image');
+                $path = $image->store('posts', 'public');
+                $post->image_content = $path;
+            }
+
+            // Update video content
+            if ($request->has('video_content')) {
+                $post->video_content = $request->input('video_content', null);
+            }
+
+            $post->save();
+
+            // Update tags (resolved from tag_ids + custom_tag_names)
+            $post->tags()->sync($tagIds);
+            Log::info('Tags updated for post', [
+                'post_id' => $post->post_id,
+                'tag_ids' => $tagIds
+            ]);
+
+            Log::info('Post updated successfully', ['post_id' => $post->post_id]);
+
+            return redirect()->route('discussion_resident')
+                ->with('success', 'Post updated successfully!');
+
+        } catch (\Exception $e) {
+            Log::error('Error updating post: ' . $e->getMessage());
+            return redirect()->back()
+                ->with('error', 'Error updating post: ' . $e->getMessage())
+                ->withInput();
+        }
+    }
+
+    /**
+     * Resolve tag_ids and custom_tag_names into a single array of tag IDs.
+     * Custom names are trimmed and find-or-create in tags table.
+     */
+    protected static function resolveTagIds(array $tagIds, array $customNames): array
+    {
+        $ids = array_values(array_unique(array_map('intval', array_filter($tagIds))));
+        foreach (array_unique(array_filter(array_map('trim', $customNames))) as $name) {
+            if ($name === '') {
+                continue;
+            }
+            $tag = TagsModel::firstOrCreate(['tag_name' => $name]);
+            $ids[] = $tag->tag_id;
+        }
+        return array_values(array_unique($ids));
     }
 
     /**

@@ -386,6 +386,31 @@ class PostCommentController extends Controller
     private function createCommentNotification($postId, $commentId, $commenterId)
     {
         try {
+            // First verify the comment actually exists
+            [$postCol, $userCol, $parentCol, $pkCol] = $this->resolvePostCommentsColumns();
+            $comment = DB::table('post_comments')
+                ->where($pkCol, $commentId)
+                ->first();
+
+            if (!$comment) {
+                Log::warning('Attempted to create notification for non-existent comment', [
+                    'comment_id' => $commentId,
+                    'post_id' => $postId
+                ]);
+                return;
+            }
+
+            // Verify the comment belongs to the specified post
+            $commentPostId = $comment->{$postCol} ?? null;
+            if ($commentPostId != $postId) {
+                Log::warning('Comment does not belong to specified post', [
+                    'comment_id' => $commentId,
+                    'comment_post_id' => $commentPostId,
+                    'expected_post_id' => $postId
+                ]);
+                return;
+            }
+
             // Get post author - posts table uses post_id as primary key
             $post = DB::table('posts')
                 ->where('post_id', $postId)
@@ -396,6 +421,11 @@ class PostCommentController extends Controller
             }
 
             $postAuthorId = $post->fk_post_author_id ?? $post->user_id ?? null;
+            
+            // Don't create notification if post author is the same as commenter (own comment)
+            if ($postAuthorId == $commenterId) {
+                return;
+            }
             
             // Allow notifications even for own posts (for testing)
             if (!$postAuthorId) {

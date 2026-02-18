@@ -85,7 +85,10 @@ class NotificationController extends Controller
             $formattedNotifications = $notifications->map(function ($notification) {
                 $notificationData = $this->formatNotification($notification);
                 return $notificationData;
-            })->filter(); // Remove null entries
+            })->filter(function ($notification) {
+                // Filter out notifications with null action (invalid references)
+                return $notification !== null && isset($notification['action']) && $notification['action'] !== null;
+            }); // Remove null entries and invalid notifications
 
             return response()->json([
                 'success' => true,
@@ -120,6 +123,11 @@ class NotificationController extends Controller
 
             // Format action text based on type
             $action = $this->getActionText($notification, $actor, $post);
+
+            // If action is null, the notification reference is invalid - filter it out
+            if ($action === null) {
+                return null;
+            }
 
             // Format time
             $time = $this->formatTime($notification->created_at);
@@ -388,12 +396,49 @@ class NotificationController extends Controller
                 return "liked your post";
             }
 
-            // If not a reaction, it's a comment
-            return "commented on {$postTitle}";
+            // If not a reaction, check if it's actually a comment
+            [$commentPostCol, $commentUserCol, $commentPkCol] = $this->resolvePostCommentsColumns();
+            $comment = DB::table('post_comments')
+                ->where($commentPkCol, $refId)
+                ->first();
+
+            // Only return comment action if comment actually exists
+            if ($comment) {
+                return "commented on {$postTitle}";
+            }
+
+            // If neither reaction nor comment exists, return null to filter out invalid notification
+            return null;
         }
 
         switch ($type) {
             case 'Comment':
+                // Double-check comment exists before showing notification
+                if ($refId) {
+                    [$commentPostCol, $commentUserCol, $commentPkCol] = $this->resolvePostCommentsColumns();
+                    $comment = DB::table('post_comments')
+                        ->where($commentPkCol, $refId)
+                        ->first();
+                    
+                    if (!$comment) {
+                        // Check if it's a reaction instead
+                        [$postCol, $userCol, $pkCol] = $this->resolvePostReactionsColumns();
+                        $reaction = DB::table('post_reactions')
+                            ->where($pkCol, $refId)
+                            ->first();
+                        
+                        if ($reaction && isset($reaction->reaction_type)) {
+                            $reactionType = $reaction->reaction_type;
+                            if ($reactionType === 'Dislike') {
+                                return "disliked your post";
+                            }
+                            return "liked your post";
+                        }
+                        
+                        // Neither comment nor reaction exists - invalid notification
+                        return null;
+                    }
+                }
                 return "commented on {$postTitle}";
 
             case 'Post':

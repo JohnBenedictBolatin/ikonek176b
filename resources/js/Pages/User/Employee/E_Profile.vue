@@ -12,7 +12,11 @@
                     <img src="/assets/LOGO.png" alt="Logo" class="header-logo" />
                 </div>
                 <div class="header-actions">
-                    <img src="/assets/SETTINGS.png" alt="Settings" class="settings-btn-img" @click="toggleSettings" />
+                    <button type="button" class="settings-burger-btn" @click="toggleSettings" aria-label="Settings">
+                    <svg class="settings-burger-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+                    </svg>
+                </button>
                     <!-- Settings Dropdown -->
                     <div v-if="showSettings" class="settings-dropdown">
                         <Link href="#" class="settings-item" @click.prevent="navigateToHelpCenter">HELP CENTER</Link>
@@ -372,7 +376,7 @@ const roleMap = {
   3: 'Barangay Secretary',
   4: 'Barangay Treasurer',
   5: 'Barangay Kagawad',
-  6: 'Sangguniang Kabataan Chairman',
+  6: 'SK Chairman',
   7: 'Sangguniang Kabataan Kagawad',
   9: 'System Admin',
 }
@@ -549,7 +553,7 @@ const navigateToHelpCenter = () => {
         router.visit(route('help_center_resident'))
     } else {
         // Employee/Official
-        router.visit(route('help_center_employee'))
+        router.visit(route('help_center_resident'))
     }
 }
 
@@ -605,10 +609,10 @@ const navigateToDocuments = () => {
 
 const navigateToEvents = () => {
     activeTab.value = 'events'
-    router.visit(route('event_assistance_employee'))
+    router.visit(route('event_assistance_resident'))
 }
 
-const navigateToNotifications = () => { activeTab.value = 'notifications'; router.visit(route('notification_request_employee')) }
+const navigateToNotifications = () => { activeTab.value = 'notifications'; router.visit(route('notification_request_resident')) }
 
 const viewPost = (postId) => {
     router.visit(route('discussion_clickpost_employee', { id: postId }))
@@ -653,7 +657,7 @@ const toggleDislike = (postId) => {
 }
 
 const openFAQ = () => {
-    router.visit(route('help_center_employee'))
+    router.visit(route('help_center_resident'))
 }
 
 // Profile picture editing
@@ -897,15 +901,30 @@ onUnmounted(() => {
     position: relative;
 }
 
-.settings-btn-img {
+.settings-burger-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
     margin-right: 30px;
-    width: 30px;
+    padding: 0;
+    border: none;
+    background: transparent;
     cursor: pointer;
-    transition: transform 0.3s ease;
+    border-radius: 50%;
+    color: white;
+    transition: background 0.2s, transform 0.2s;
 }
 
-.settings-btn-img:hover {
-    transform: scale(1.1);
+.settings-burger-btn:hover {
+    background: rgba(255,255,255,0.15);
+    transform: scale(1.05);
+}
+
+.settings-burger-icon {
+    width: 24px;
+    height: 24px;
 }
 
 .settings-dropdown {
@@ -989,10 +1008,11 @@ onUnmounted(() => {
     text-shadow: 0 1px 3px rgba(0,0,0,0.2);
 }
 
+.profile-card .profile-role,
 .profile-role {
     font-size: 12px;
-    background: linear-gradient(135deg, #ff8c42, #ff7a28);
-    color: white;
+    background: linear-gradient(135deg, #ff8c42, #ff7a28) !important;
+    color: white !important;
     padding: 4px 12px;
     border-radius: 15px;
     display: inline-block;
@@ -1482,102 +1502,45 @@ position: relative;
     display: flex;
     gap: 8px;
     flex-wrap: wrap;
+    align-items: center;
 }
 
+/* Category indicator — dark outline, light fill, dark text, not interactive */
 .tag {
-    font-size: 11px;
-    padding: 5px 10px;
-    border-radius: 15px;
+    font-size: 12px;
+    padding: 6px 14px;
+    border-radius: 999px;
     font-weight: 600;
-    color: white;
     text-transform: uppercase;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-    background: #6c757d !important;
+    letter-spacing: 0.04em;
+    cursor: default;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    border: 2px solid #5a6a6b;
+    background: #e8eaeb;
+    color: #3d4849;
 }
 
-.tag.business {
-    background: linear-gradient(135deg, #6c5ce7, #5f3dc4) !important;
-}
-
-.tag.education {
-    background: linear-gradient(135deg, #3498db, #2980b9) !important;
-}
-
-.tag.emergency {
-    background: linear-gradient(135deg, #e74c3c, #c0392b) !important;
-}
-
-.tag.employment {
-    background: linear-gradient(135deg, #27ae60, #229954) !important;
-}
-
-.tag.environment {
-    background: linear-gradient(135deg, #2ecc71, #27ae60) !important;
-}
-
-.tag.governance {
-    background: linear-gradient(135deg, #9b59b6, #8e44ad) !important;
-}
-
-.tag.health {
-    background: linear-gradient(135deg, #e91e63, #c2185b) !important;
-}
-
-.tag.incident {
-    background: linear-gradient(135deg, #c0392b, #a93226) !important;
-}
-
-.tag.infrastructure {
-    background: linear-gradient(135deg, #f39c12, #e67e22) !important;
-}
-
-.tag.inquiries {
-    background: linear-gradient(135deg, #f1c40f, #f39c12) !important;
-}
-
-.tag.livelihood {
-    background: linear-gradient(135deg, #1abc9c, #16a085) !important;
-}
-
-.tag.maintenance {
-    background: linear-gradient(135deg, #d35400, #ba4a00) !important;
-}
-
-.tag.sanitation {
-    background: linear-gradient(135deg, #00bcd4, #0097a7) !important;
-}
-
-.tag.sports {
-    background: linear-gradient(135deg, #4caf50, #388e3c) !important;
-}
-
-.tag.traffic {
-    background: linear-gradient(135deg, #ffc107, #ff9800) !important;
-}
-
-.tag.weather {
-    background: linear-gradient(135deg, #03a9f4, #0288d1) !important;
-}
-
-.tag.welfare {
-    background: linear-gradient(135deg, #e91e63, #c2185b) !important;
-}
-
-.tag.youth {
-    background: linear-gradient(135deg, #e91e63, #ad1457) !important;
-}
-
-.tag.question {
-    background: linear-gradient(135deg, #ff9800, #f57c00) !important;
-}
-
-.tag.suggestion {
-    background: linear-gradient(135deg, #273cb0, #273cb0) !important;
-}
-
-.tag.concern {
-    background: linear-gradient(135deg, #ff0303, #ff0303) !important;
-}
+.tag.business { border-color: #5f3dc4; background: #ede9fc; color: #5f3dc4; }
+.tag.education { border-color: #2980b9; background: #e3f2fd; color: #2980b9; }
+.tag.emergency { border-color: #c0392b; background: #ffebee; color: #c0392b; }
+.tag.employment { border-color: #1e7b4a; background: #e8f5e9; color: #1e7b4a; }
+.tag.environment { border-color: #27ae60; background: #e8f5e9; color: #27ae60; }
+.tag.governance { border-color: #8e44ad; background: #f3e5f5; color: #8e44ad; }
+.tag.health { border-color: #c2185b; background: #fce4ec; color: #c2185b; }
+.tag.incident { border-color: #a93226; background: #ffebee; color: #a93226; }
+.tag.infrastructure { border-color: #e67e22; background: #fff3e0; color: #e67e22; }
+.tag.inquiries { border-color: #b8860b; background: #fff8e1; color: #b8860b; }
+.tag.livelihood { border-color: #16a085; background: #e0f2f1; color: #16a085; }
+.tag.maintenance { border-color: #ba4a00; background: #fbe9e7; color: #ba4a00; }
+.tag.sanitation { border-color: #0097a7; background: #e0f7fa; color: #0097a7; }
+.tag.sports { border-color: #388e3c; background: #e8f5e9; color: #388e3c; }
+.tag.traffic { border-color: #e65100; background: #fff3e0; color: #e65100; }
+.tag.weather { border-color: #0288d1; background: #e1f5fe; color: #0288d1; }
+.tag.welfare { border-color: #c2185b; background: #fce4ec; color: #c2185b; }
+.tag.youth { border-color: #ad1457; background: #fce4ec; color: #ad1457; }
+.tag.question { border-color: #f57c00; background: #fff3e0; color: #f57c00; }
+.tag.suggestion { border-color: #273cb0; background: #e8eaf6; color: #273cb0; }
+.tag.concern { border-color: #c62828; background: #ffebee; color: #c62828; }
 
 .activity-time {
     text-align: right;

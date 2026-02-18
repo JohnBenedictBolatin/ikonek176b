@@ -129,6 +129,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/discussion/store', [DiscussionController::class, 'store'])->name('posts.store');
 
     // General posts
+    Route::put('/posts/{postId}', [PostController::class, 'update'])->name('posts.update');
     Route::delete('/posts/{postId}', [PostController::class, 'destroy'])->name('posts.destroy');
 
     // Comments
@@ -143,11 +144,12 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/requests', [DocumentRequestController::class, 'store'])->name('requests.store');
 });
 
-Route::inertia("/r_document_request_description", 'User/Resident/R_Document_Request_Description')->name('document_request_description_resident');
+// Unified document request pages (used by both residents and employees)
+Route::inertia("/r_document_request_description", 'User/Employee/E_Document_Request_Description')->name('document_request_description_resident');
 
-Route::inertia("/r_document_request_form", 'User/Resident/R_Document_Request_Form')->name('document_request_form_resident');
+Route::inertia("/r_document_request_form", 'User/Employee/E_Document_Request_Form')->name('document_request_form_resident');
 
-Route::inertia("/r_document_request_submission", 'User/Resident/R_Document_Request_Submission')->name('document_request_submission_resident');
+Route::inertia("/r_document_request_submission", 'User/Employee/E_Document_Request_Submission')->name('document_request_submission_resident');
 
 Route::middleware(['auth'])->group(function () {
     Route::get('/r_event_assist', [EventAssistanceController::class, 'selectPage'])->name('event_assistance_resident');
@@ -213,39 +215,70 @@ Route::middleware('auth')->group(function () {
     
     Route::post('/employee/discussion/store', [DiscussionController::class, 'store'])->name('posts_employee.store');
 
-    Route::get('/employee/announcement', [AnnouncementController::class, 'index'])->name('announcement_employee');
+    // Redirect employee announcement routes to unified resident announcement page
+    Route::get('/employee/announcement', function () {
+        return redirect()->route('announcement_resident');
+    })->name('announcement_employee');
+    
+    // Keep create and store routes for officials to post announcements
     Route::get('/employee/announcement/create', [AnnouncementController::class, 'create'])->name('announcement_addpost_employee');
     Route::post('/employee/announcement/store', [AnnouncementController::class, 'store'])->name('announcement_employee.store');
-    Route::get('/employee/announcement/{id}', [AnnouncementController::class, 'show'])->name('announcement_clickpost_employee');
+    Route::put('/employee/announcement/{id}', [AnnouncementController::class, 'update'])->name('announcement_employee.update');
+    
+    // Redirect employee announcement show route to resident announcement show route
+    Route::get('/employee/announcement/{id}', function ($id) {
+        return redirect()->route('announcement_clickpost_resident', $id);
+    })->name('announcement_clickpost_employee');
 
     // Note: This route is kept for backward compatibility but should not be used
     // Residents should use /discussion/store (posts.store) which goes to DiscussionController
     Route::post('/posts', [PostController::class, 'store'])->name('posts.store.legacy');
 });
 
-Route::inertia("/e_document_request_select", 'User/Employee/E_Document_Request_Select')->name('document_request_select_employee');
+// Employee document request routes redirect to resident routes (unified pages)
+Route::get('/e_document_request_select', function () {
+    return redirect()->route('document_request_select_resident');
+})->name('document_request_select_employee');
 
-Route::inertia("/e_document_request_description", 'User/Employee/E_Document_Request_Description')->name('document_request_description_employee');
+Route::get('/e_document_request_description', function () {
+    return redirect()->route('document_request_description_resident');
+})->name('document_request_description_employee');
 
-Route::inertia("/e_document_request_form", 'User/Employee/E_Document_Request_Form')->name('document_request_form_employee');
+Route::get('/e_document_request_form', function () {
+    return redirect()->route('document_request_form_resident');
+})->name('document_request_form_employee');
 
-Route::inertia("/e_document_request_submission", 'User/Employee/E_Document_Request_Submission')->name('document_request_submission_employee');
+Route::get('/e_document_request_submission', function () {
+    return redirect()->route('document_request_submission_resident');
+})->name('document_request_submission_employee');
 
-Route::inertia("/e_event_assist", 'User/Employee/E_Event_Assist')->name('event_assistance_employee');
+// Employee event assistance route redirects to resident route (unified page)
+Route::get('/e_event_assist', function () {
+    return redirect()->route('event_assistance_resident');
+})->name('event_assistance_employee');
 
-Route::inertia("/e_notification_activities", 'User/Employee/E_Notification_Activities')->name('notification_activities_employee');
+// Employee notification routes redirect to resident routes (unified pages)
+Route::get('/e_notification_activities', function () {
+    return redirect()->route('notification_activities_resident');
+})->name('notification_activities_employee');
 
 Route::middleware(['auth'])->group(function () {
-    Route::get('/e_notification_request', [NotificationRequestController::class, 'OfficialReq'])
-         ->name('notification_request_employee');
+    Route::get('/e_notification_request', function () {
+        return redirect()->route('notification_request_resident');
+    })->name('notification_request_employee');
 });
 
-Route::inertia("/e_notification_pick_info", 'User/Employee/E_Notification_Pick_Info')->name('notification_pick_info_employee');
+Route::get('/e_notification_pick_info', function () {
+    return redirect()->route('notification_pick_info_resident');
+})->name('notification_pick_info_employee');
 
 Route::inertia("/e_payment", 'User/Employee/E_Payment')->name('payment_employee');
 
 Route::middleware(['auth'])->group(function () {
-    Route::get('/e_profile', [ProfileController::class, 'employeeProfile'])->name('profile_employee');
+    // Employee profile route redirects to resident route (unified page)
+    Route::get('/e_profile', function () {
+        return redirect()->route('profile_resident');
+    })->name('profile_employee');
     Route::post('/e_profile/update-picture', [ProfileController::class, 'updateProfilePicture'])->name('profile_employee.update_picture');
     
     // Post reactions
@@ -261,6 +294,7 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/comments/{commentId}/reactions', [CommentReactionController::class, 'toggle'])->name('comments.reactions.toggle');
     
     // Tags API
+    Route::get('/api/tags', [TagController::class, 'index'])->name('api.tags.index');
     Route::get('/api/tags/trending', [TagController::class, 'trending'])->name('api.tags.trending');
     
     // Notifications API
@@ -276,7 +310,10 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/posts/{postId}/poll', [\App\Http\Controllers\PollController::class, 'getPoll'])->name('posts.poll');
 });
 
-Route::inertia("/e_help_center", 'User/Employee/E_Help_Center')->name('help_center_employee');
+// Employee help center route redirects to resident route (unified page)
+Route::get('/e_help_center', function () {
+    return redirect()->route('help_center_resident');
+})->name('help_center_employee');
 
 // Approver Routes
 Route::inertia("/a_dashboard", 'Admin/Approver/A_Dashboard')->name('dashboard_approver');

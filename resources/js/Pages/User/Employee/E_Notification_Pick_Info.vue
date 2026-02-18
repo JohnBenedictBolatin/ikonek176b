@@ -58,7 +58,7 @@
 
             <div class="confirm-btn">
                 <!-- <button @click="goToConfirm" class="btn-confirm">CONFIRM</button> -->
-                <Link :href="route('notification_request_employee')" class="btn-confirm">CONFIRM</Link>
+                <Link :href="route('notification_request_resident')" class="btn-confirm">CONFIRM</Link>
                 
             </div>
         </div>
@@ -68,7 +68,7 @@
 <script>
 function goToConfirm() {
   // Replace with actual route name
-  router.visit('/notification_request_employee')
+  router.visit('/r_notification_request')
 }
 
 function goToPayment() {

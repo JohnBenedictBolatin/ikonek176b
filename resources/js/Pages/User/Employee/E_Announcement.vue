@@ -12,12 +12,144 @@
                     <img src="/assets/LOGO.png" alt="Logo" class="header-logo" />
                 </div>
                 <div class="header-actions">
-                    <img src="/assets/SETTINGS.png" alt="Settings" class="settings-btn-img" @click="toggleSettings" />
+                    <button type="button" class="settings-burger-btn" @click="toggleSettings" aria-label="Settings">
+                    <svg class="settings-burger-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+                    </svg>
+                </button>
                     <!-- Settings Dropdown -->
                     <div v-if="showSettings" class="settings-dropdown">
                         <a href="#" class="settings-item" @click.prevent.stop="openTermsModal">TERMS & CONDITIONS</a>
                         <Link href="#" class="settings-item" @click="logout">SIGN OUT</Link>
                     </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Terms and Conditions Modal -->
+        <div v-if="showTermsModal" class="modal-overlay" @click.self="closeTermsModal">
+            <div class="terms-modal" @click.stop>
+                <div class="terms-modal-header">
+                    <h2 class="terms-modal-title">Terms and Conditions</h2>
+                    <button @click="closeTermsModal" class="terms-modal-close">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width: 24px; height: 24px;">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+                <div class="terms-modal-body">
+                    <div class="terms-section">
+                        <h3 class="terms-section-title">1. Account Registration and Access</h3>
+                        <p class="terms-text">
+                            By creating an account and using the iKonek176B portal, you agree to provide accurate, current, and complete information during registration. You are responsible for maintaining the confidentiality of your account credentials and for all activities that occur under your account. You must immediately notify Barangay 176B of any unauthorized use of your account or any other breach of security.
+                        </p>
+                    </div>
+
+                    <div class="terms-section">
+                        <h3 class="terms-section-title">2. Use of Services</h3>
+                        <p class="terms-text">
+                            The iKonek176B portal is provided for legitimate barangay-related purposes only. You may use the portal to:
+                            <ul class="terms-list">
+                                <li>Submit document requests (e.g., Barangay Certificate, Barangay ID, Business Permit)</li>
+                                <li>Request event assistance for community activities</li>
+                                <li>View announcements and community updates</li>
+                                <li>Participate in community discussions and forums</li>
+                                <li>Access your request history and status</li>
+                            </ul>
+                        </p>
+                    </div>
+
+                    <div class="terms-section">
+                        <h3 class="terms-section-title">3. Accurate Information</h3>
+                        <p class="terms-text">
+                            You are responsible for ensuring that all information you submit through the portal is accurate, truthful, and complete. Providing false, misleading, or incomplete information may result in rejection of your requests, suspension of your account, and possible legal action. You must update your account information promptly if any changes occur.
+                        </p>
+                    </div>
+
+                    <div class="terms-section">
+                        <h3 class="terms-section-title">4. Document Requests</h3>
+                        <p class="terms-text">
+                            When submitting document requests, you must:
+                            <ul class="terms-list">
+                                <li>Provide all required documents and information</li>
+                                <li>Ensure documents are authentic and valid</li>
+                                <li>Pay applicable processing fees as required</li>
+                                <li>Follow pickup instructions and deadlines</li>
+                                <li>Use documents only for their intended legal purposes</li>
+                            </ul>
+                            The barangay reserves the right to verify all submitted information and documents. Approval of requests is subject to verification and compliance with barangay policies and regulations.
+                        </p>
+                    </div>
+
+                    <div class="terms-section">
+                        <h3 class="terms-section-title">5. Event Assistance Requests</h3>
+                        <p class="terms-text">
+                            When requesting event assistance, you must provide accurate event details, including date, time, location, and purpose. Event assistance is subject to availability and approval by barangay officials. You are responsible for ensuring your event complies with all applicable laws, regulations, and barangay policies. The barangay reserves the right to deny or cancel event assistance for any reason.
+                        </p>
+                    </div>
+
+                    <div class="terms-section">
+                        <h3 class="terms-section-title">6. Payment and Fees</h3>
+                        <p class="terms-text">
+                            Some services may require payment of processing fees. All fees must be paid according to the payment methods provided. Payments are non-refundable unless otherwise stated. The barangay is not responsible for delays or issues caused by payment processing errors or failures. You are responsible for ensuring payments are made correctly and on time.
+                        </p>
+                    </div>
+
+                    <div class="terms-section">
+                        <h3 class="terms-section-title">7. Data Privacy</h3>
+                        <p class="terms-text">
+                            Your personal information is collected and processed in accordance with the Data Privacy Act of 2012 (Republic Act No. 10173). The barangay will use your information only for legitimate purposes related to service delivery, record-keeping, and compliance with legal requirements. Your information will not be shared with unauthorized third parties except as required by law.
+                        </p>
+                    </div>
+
+                    <div class="terms-section">
+                        <h3 class="terms-section-title">8. Prohibited Activities</h3>
+                        <p class="terms-text">
+                            You are strictly prohibited from:
+                            <ul class="terms-list">
+                                <li>Using the portal for any illegal or unauthorized purpose</li>
+                                <li>Submitting false, fraudulent, or misleading information</li>
+                                <li>Attempting to gain unauthorized access to the system or other users' accounts</li>
+                                <li>Interfering with or disrupting the portal's operation</li>
+                                <li>Harassing, threatening, or abusing other users or barangay officials</li>
+                                <li>Posting inappropriate, offensive, or defamatory content</li>
+                                <li>Violating any applicable laws or regulations</li>
+                            </ul>
+                        </p>
+                    </div>
+
+                    <div class="terms-section">
+                        <h3 class="terms-section-title">9. Account Suspension and Termination</h3>
+                        <p class="terms-text">
+                            The barangay reserves the right to suspend or terminate your account at any time, with or without notice, if you violate these terms and conditions, engage in prohibited activities, or for any other reason deemed necessary by barangay officials. Upon termination, your right to use the portal will immediately cease.
+                        </p>
+                    </div>
+
+                    <div class="terms-section">
+                        <h3 class="terms-section-title">10. Limitation of Liability</h3>
+                        <p class="terms-text">
+                            The barangay is not liable for any delays, errors, or failures in service delivery caused by technical issues, system maintenance, incorrect information provided by users, or circumstances beyond the barangay's reasonable control. The barangay does not guarantee uninterrupted or error-free access to the portal.
+                        </p>
+                    </div>
+
+                    <div class="terms-section">
+                        <h3 class="terms-section-title">11. Updates to Terms</h3>
+                        <p class="terms-text">
+                            These terms and conditions may be updated periodically. You will be notified of significant changes through the portal or other communication channels. Continued use of the portal after changes constitutes acceptance of the updated terms.
+                        </p>
+                    </div>
+
+                    <div class="terms-section">
+                        <h3 class="terms-section-title">12. Contact and Support</h3>
+                        <p class="terms-text">
+                            For questions, concerns, or to report issues related to your account or the portal, contact the Barangay 176B office at ikonek176b@dev.ph or +639193076338. For technical support or assistance with using the portal, please visit the Help Center section.
+                        </p>
+                    </div>
+                </div>
+                <div class="terms-modal-footer">
+                    <button @click="closeTermsModal" class="terms-modal-btn">
+                        I UNDERSTAND
+                    </button>
                 </div>
             </div>
         </div>
@@ -29,7 +161,7 @@
                 <div class="profile-card">
                     <img :src="profilePictureUrl" alt="Profile" class="profile-avatar" />
                     <div class="profile-info">
-                        <div class="profile-name">{{ user.name || 'Unknown User' }}</div>
+                        <div class="profile-name">{{ user?.name || 'Unknown User' }}</div>
                         <div class="profile-role">{{ displayRole }}</div>
                     </div>
                 </div>
@@ -72,12 +204,13 @@
                         href="#" 
                         class="nav-item"
                         :class="{ active: activeTab === 'notifications' }"
-                        @click="navigateToNotifications"
+                        @click.prevent="navigateToNotifications"
                     >
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="nav-icon">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0" />
                         </svg>
                         Notifications
+                        <span v-if="unreadCount > 0" class="unread-badge-nav">{{ unreadCount }}</span>
                     </Link>
                     <Link 
                         href="#" 
@@ -110,7 +243,9 @@
                         <div class="discussions-title">
                             <button class="title-dropdown" @click="toggleModeDropdown">
                                 <h2>{{ currentTab === 'announcements' ? 'Announcements' : 'Discussions' }}</h2>
-                                <span class="dropdown-icon" :class="{ rotated: showModeDropdown }">▼</span>
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="dropdown-icon" :class="{ rotated: showModeDropdown }">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+                                </svg>
                             </button>
                             <!-- Dropdown Menu -->
                             <div v-if="showModeDropdown" class="mode-dropdown">
@@ -142,7 +277,9 @@
                             <div class="filter-dropdown-wrapper">
                                 <button class="filter-dropdown-btn" @click="toggleSortDropdown">
                                     {{ sortOption.toUpperCase() }}
-                                    <span class="filter-arrow" :class="{ rotated: showSortDropdown }">▼</span>
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="filter-arrow" :class="{ rotated: showSortDropdown }">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+                                    </svg>
                                 </button>
                                 <div v-if="showSortDropdown" class="filter-dropdown-menu">
                                     <button @click="selectSort('newest')" :class="{ active: sortOption === 'newest' }">NEWEST</button>
@@ -153,7 +290,9 @@
                             <div class="filter-dropdown-wrapper">
                                 <button class="filter-dropdown-btn" @click="toggleFilterDropdown">
                                     {{ filterOption.toUpperCase() }}
-                                    <span class="filter-arrow" :class="{ rotated: showFilterDropdown }">▼</span>
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="filter-arrow" :class="{ rotated: showFilterDropdown }">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+                                    </svg>
                                 </button>
                                 <div v-if="showFilterDropdown" class="filter-dropdown-menu">
                                     <button @click="selectFilter('all')" :class="{ active: filterOption === 'all' }">ALL</button>
@@ -188,7 +327,11 @@
                                     placeholder="SEARCH..." 
                                     class="search-input" 
                                 />
-                                <button class="search-btn" @click="performSearch">🔍</button>
+                                <button class="search-btn" @click="performSearch">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="search-icon">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+                                    </svg>
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -227,6 +370,33 @@
                             <div class="post-content">
                                 <h2 v-if="post.header && post.header.trim()" class="post-header-text">{{ post.header }}</h2>
                                 <p class="post-text">{{ post.content }}</p>
+                                
+                                <!-- Post Images -->
+                                <div v-if="post.images && post.images.length > 0" class="post-images">
+                                    <img 
+                                        v-for="(image, index) in post.images" 
+                                        :key="index"
+                                        :src="image" 
+                                        :alt="`Post image ${index + 1}`"
+                                        class="post-image"
+                                        @error="handleImageError($event)"
+                                        loading="lazy"
+                                    />
+                                </div>
+                                
+                                <!-- Poll Component -->
+                                <div v-if="post.is_poll" class="poll-wrapper">
+                                    <Poll 
+                                        v-if="post.poll && post.poll.options && post.poll.options.length > 0" 
+                                        :poll="post.poll" 
+                                        :poll-id="post.poll.id"
+                                        @vote-updated="handlePollUpdate(post.id, $event)"
+                                    />
+                                    <div v-else-if="post.is_poll" class="poll-error-message">
+                                        <p>⚠️ Poll options are not available for this post.</p>
+                                        <p class="poll-error-hint">This poll post was created before poll functionality was enabled. Please recreate the poll.</p>
+                                    </div>
+                                </div>
                             </div>
 
                             <div class="post-actions" @click.stop>
@@ -239,17 +409,27 @@
                                         :class="{ liked: post.userLiked }"
                                         @click="toggleLike(post.id)"
                                     >
-                                        👍 {{ post.likes }}
+                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="reaction-icon">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12Z" />
+                                        </svg>
+                                        {{ post.likes }}
                                     </button>
                                     <button 
                                         class="reaction-btn"
                                         :class="{ disliked: post.userDisliked }"
                                         @click="toggleDislike(post.id)"
                                     >
-                                        👎 {{ post.dislikes }}
+                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="reaction-icon">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12Z" />
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M3 3l18 18" />
+                                        </svg>
+                                        {{ post.dislikes }}
                                     </button>
                                     <button class="comment-btn" @click="viewComments(post.id)">
-                                        💬 {{ post.comments }}
+                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="reaction-icon">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 20.25c4.97 0 9-3.694 9-8.25s-4.03-8.25-9-8.25S3 7.444 3 12c0 2.104.859 4.023 2.273 5.48.432.447.74 1.04.586 1.641a4.483 4.483 0 0 1-.923 1.785A5.969 5.969 0 0 0 6 21c1.282 0 2.47-.402 3.578-1.087a9.034 9.034 0 0 0 2.422 0Z" />
+                                        </svg>
+                                        {{ post.comments }}
                                     </button>
                                 </div>
                             </div>
@@ -263,7 +443,12 @@
 
                     <!-- Detailed Post View -->
                     <div class="post-detail-container" v-if="selectedPost">
-                        <button class="back-btn" @click="closePost">◀ BACK TO POSTS</button>
+                        <button class="back-btn" @click="closePost">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="back-icon">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />
+                            </svg>
+                            BACK TO POSTS
+                        </button>
                         
                         <!-- Post Detail -->
                         <div class="post-detail">
@@ -293,6 +478,20 @@
                                 <h2 v-if="selectedPost.header && selectedPost.header.trim()" class="post-header-text">{{ selectedPost.header }}</h2>
                                 <p class="post-text">{{ selectedPost.content }}</p>
                                 
+                                <!-- Poll Component -->
+                                <div v-if="selectedPost.is_poll" class="poll-wrapper">
+                                    <Poll 
+                                        v-if="selectedPost.poll && selectedPost.poll.options && selectedPost.poll.options.length > 0" 
+                                        :poll="selectedPost.poll" 
+                                        :poll-id="selectedPost.poll.id"
+                                        @vote-updated="handlePollUpdate(selectedPost.id, $event)"
+                                    />
+                                    <div v-else-if="selectedPost.is_poll" class="poll-error-message">
+                                        <p>⚠️ Poll options are not available for this post.</p>
+                                        <p class="poll-error-hint">This poll post was created before poll functionality was enabled. Please recreate the poll.</p>
+                                    </div>
+                                </div>
+                                
                                 <!-- Post Images -->
                                 <div v-if="selectedPost.images && selectedPost.images.length > 0" class="post-images">
                                     <img 
@@ -301,6 +500,8 @@
                                         :src="image" 
                                         :alt="`Post image ${index + 1}`"
                                         class="post-image"
+                                        @error="handleImageError($event)"
+                                        loading="lazy"
                                     />
                                 </div>
                             </div>
@@ -312,18 +513,36 @@
                                         :class="{ liked: selectedPost.userLiked }"
                                         @click="toggleLike(selectedPost.id)"
                                     >
-                                        👍 {{ selectedPost.likes }}
+                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="reaction-icon">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12Z" />
+                                        </svg>
+                                        {{ selectedPost.likes }}
                                     </button>
                                     <button 
                                         class="reaction-btn"
                                         :class="{ disliked: selectedPost.userDisliked }"
                                         @click="toggleDislike(selectedPost.id)"
                                     >
-                                        👎 {{ selectedPost.dislikes }}
+                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="reaction-icon">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12Z" />
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M3 3l18 18" />
+                                        </svg>
+                                        {{ selectedPost.dislikes }}
                                     </button>
                                 </div>
                                 <div class="post-options">
-                                    <button class="report-post-btn" @click="reportPost(selectedPost.id)">🚩 Report</button>
+                                    <button v-if="isPostOwner(selectedPost)" class="delete-post-btn" @click="confirmDeletePost(selectedPost.id)">
+                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="report-icon">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+                                        </svg>
+                                        DELETE
+                                    </button>
+                                    <button v-if="!isPostOwner(selectedPost)" class="report-post-btn" @click="reportPost(selectedPost.id)">
+                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="report-icon">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
+                                        </svg>
+                                        REPORT
+                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -603,7 +822,7 @@
         <div v-if="showDeleteModal" class="report-modal-overlay" @click="closeDeleteModal">
             <div class="report-modal" @click.stop>
                 <div class="report-modal-header">
-                    <h3>Delete Comment</h3>
+                    <h3>Delete {{ deleteType === 'post' ? 'Post' : 'Comment' }}</h3>
                     <button class="close-modal-btn" @click="closeDeleteModal">
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="close-icon">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
@@ -612,7 +831,7 @@
                 </div>
                 <div class="report-modal-body">
                     <p class="report-description">
-                        Are you sure you want to delete this comment? This action cannot be undone.
+                        Are you sure you want to delete this {{ deleteType === 'post' ? 'post' : 'comment' }}? This action cannot be undone.
                     </p>
                 </div>
                 <div class="report-modal-footer">
@@ -623,135 +842,6 @@
         </div>
         </div>
     </div>
-
-    <!-- Terms & Conditions Modal -->
-    <!-- Terms and Conditions Modal -->
-    <div v-if="showTermsModal" class="modal-overlay" @click.self="closeTermsModal">
-        <div class="terms-modal" @click.stop>
-            <div class="terms-modal-header">
-                <h2 class="terms-modal-title">Terms and Conditions</h2>
-                <button @click="closeTermsModal" class="terms-modal-close">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width: 24px; height: 24px;">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                </button>
-            </div>
-            <div class="terms-modal-body">
-                <div class="terms-section">
-                    <h3 class="terms-section-title">1. Account Registration and Access</h3>
-                    <p class="terms-text">
-                        By creating an account and using the iKonek176B portal, you agree to provide accurate, current, and complete information during registration. You are responsible for maintaining the confidentiality of your account credentials and for all activities that occur under your account. You must immediately notify Barangay 176B of any unauthorized use of your account or any other breach of security.
-                    </p>
-                </div>
-
-                <div class="terms-section">
-                    <h3 class="terms-section-title">2. Use of Services</h3>
-                    <p class="terms-text">
-                        The iKonek176B portal is provided for legitimate barangay-related purposes only. You may use the portal to:
-                        <ul class="terms-list">
-                            <li>Submit document requests (e.g., Barangay Certificate, Barangay ID, Business Permit)</li>
-                            <li>Request event assistance for community activities</li>
-                            <li>View announcements and community updates</li>
-                            <li>Participate in community discussions and forums</li>
-                            <li>Access your request history and status</li>
-                        </ul>
-                    </p>
-                </div>
-
-                <div class="terms-section">
-                    <h3 class="terms-section-title">3. Accurate Information</h3>
-                    <p class="terms-text">
-                        You are responsible for ensuring that all information you submit through the portal is accurate, truthful, and complete. Providing false, misleading, or incomplete information may result in rejection of your requests, suspension of your account, and possible legal action. You must update your account information promptly if any changes occur.
-                    </p>
-                </div>
-
-                <div class="terms-section">
-                    <h3 class="terms-section-title">4. Document Requests</h3>
-                    <p class="terms-text">
-                        When submitting document requests, you must:
-                        <ul class="terms-list">
-                            <li>Provide all required documents and information</li>
-                            <li>Ensure documents are authentic and valid</li>
-                            <li>Pay applicable processing fees as required</li>
-                            <li>Follow pickup instructions and deadlines</li>
-                            <li>Use documents only for their intended legal purposes</li>
-                        </ul>
-                        The barangay reserves the right to verify all submitted information and documents. Approval of requests is subject to verification and compliance with barangay policies and regulations.
-                    </p>
-                </div>
-
-                <div class="terms-section">
-                    <h3 class="terms-section-title">5. Event Assistance Requests</h3>
-                    <p class="terms-text">
-                        When requesting event assistance, you must provide accurate event details, including date, time, location, and purpose. Event assistance is subject to availability and approval by barangay officials. You are responsible for ensuring your event complies with all applicable laws, regulations, and barangay policies. The barangay reserves the right to deny or cancel event assistance for any reason.
-                    </p>
-                </div>
-
-                <div class="terms-section">
-                    <h3 class="terms-section-title">6. Payment and Fees</h3>
-                    <p class="terms-text">
-                        Some services may require payment of processing fees. All fees must be paid according to the payment methods provided. Payments are non-refundable unless otherwise stated. The barangay is not responsible for delays or issues caused by payment processing errors or failures. You are responsible for ensuring payments are made correctly and on time.
-                    </p>
-                </div>
-
-                <div class="terms-section">
-                    <h3 class="terms-section-title">7. Data Privacy</h3>
-                    <p class="terms-text">
-                        Your personal information is collected and processed in accordance with the Data Privacy Act of 2012 (Republic Act No. 10173). The barangay will use your information only for legitimate purposes related to service delivery, record-keeping, and compliance with legal requirements. Your information will not be shared with unauthorized third parties except as required by law.
-                    </p>
-                </div>
-
-                <div class="terms-section">
-                    <h3 class="terms-section-title">8. Prohibited Activities</h3>
-                    <p class="terms-text">
-                        You are strictly prohibited from:
-                        <ul class="terms-list">
-                            <li>Using the portal for any illegal or unauthorized purpose</li>
-                            <li>Submitting false, fraudulent, or misleading information</li>
-                            <li>Attempting to gain unauthorized access to the system or other users' accounts</li>
-                            <li>Interfering with or disrupting the portal's operation</li>
-                            <li>Harassing, threatening, or abusing other users or barangay officials</li>
-                            <li>Posting inappropriate, offensive, or defamatory content</li>
-                            <li>Violating any applicable laws or regulations</li>
-                        </ul>
-                    </p>
-                </div>
-
-                <div class="terms-section">
-                    <h3 class="terms-section-title">9. Account Suspension and Termination</h3>
-                    <p class="terms-text">
-                        The barangay reserves the right to suspend or terminate your account at any time, with or without notice, if you violate these terms and conditions, engage in prohibited activities, or for any other reason deemed necessary by barangay officials. Upon termination, your right to use the portal will immediately cease.
-                    </p>
-                </div>
-
-                <div class="terms-section">
-                    <h3 class="terms-section-title">10. Limitation of Liability</h3>
-                    <p class="terms-text">
-                        The barangay is not liable for any delays, errors, or failures in service delivery caused by technical issues, system maintenance, incorrect information provided by users, or circumstances beyond the barangay's reasonable control. The barangay does not guarantee uninterrupted or error-free access to the portal.
-                    </p>
-                </div>
-
-                <div class="terms-section">
-                    <h3 class="terms-section-title">11. Updates to Terms</h3>
-                    <p class="terms-text">
-                        These terms and conditions may be updated periodically. You will be notified of significant changes through the portal or other communication channels. Continued use of the portal after changes constitutes acceptance of the updated terms.
-                    </p>
-                </div>
-
-                <div class="terms-section">
-                    <h3 class="terms-section-title">12. Contact and Support</h3>
-                    <p class="terms-text">
-                        For questions, concerns, or to report issues related to your account or the portal, contact the Barangay 176B office at ikonek176b@dev.ph or +639193076338. For technical support or assistance with using the portal, please visit the Help Center section.
-                    </p>
-                </div>
-            </div>
-            <div class="terms-modal-footer">
-                <button @click="closeTermsModal" class="terms-modal-btn">
-                    I UNDERSTAND
-                </button>
-            </div>
-        </div>
-    </div>
 </template>
 
 <script setup>
@@ -760,6 +850,8 @@ import { Head } from '@inertiajs/vue3'
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { router } from '@inertiajs/vue3'
 import axios from 'axios'
+import Poll from '@/Components/Poll.vue'
+import { useUserNavigation } from '@/composables/useUserNavigation'
 
 // Define props - receive posts from backend
 const props = defineProps({
@@ -778,7 +870,13 @@ const page = usePage()
 
 // SAFE user access - prioritize prop, fallback to page.props
 const user = computed(() => {
-    // First try from props
+    // First try from shared Inertia auth (from middleware) - this has profile_pic
+    const pageUser = page?.props?.value?.auth?.user ?? page?.props?.auth?.user ?? null
+    if (pageUser) {
+        return pageUser
+    }
+    
+    // Then try from props.auth.user (from controller)
     if (props.auth?.user) {
         return props.auth.user
     }
@@ -807,7 +905,7 @@ const roleMap = {
     3: 'Barangay Secretary',
     4: 'Barangay Treasurer',
     5: 'Barangay Kagawad',
-    6: 'Sangguniang Kabataan Chairman',
+    6: 'SK Chairman',
     7: 'Sangguniang Kabataan Kagawad',
     9: 'System Admin',
 }
@@ -815,23 +913,31 @@ const roleMap = {
 // Computed display role
 const displayRole = computed(() => {
     const id = user.value?.fk_role_id ?? 2
-    return roleMap[id] ?? 'Employee'
+    const role = roleMap[id] ?? 'Employee'
+    return role.toUpperCase()
 })
 
 // Profile picture URL
 const profilePictureUrl = computed(() => {
     if (user.value?.profile_pic) {
         const pic = user.value.profile_pic
+        let url = ''
         // If it's a full URL, return as is
         if (pic.startsWith('http')) {
-            return pic
+            url = pic
         }
         // If it already has /storage/, return as is
-        if (pic.startsWith('/storage/')) {
-            return pic
+        else if (pic.startsWith('/storage/')) {
+            url = pic
         }
         // Otherwise prepend storage path
-        return `/storage/${pic}`
+        else {
+            url = `/storage/${pic}`
+        }
+        // Add cache-busting parameter based on profile_pic value to force browser reload when it changes
+        // Use a hash of the profile_pic path as version to ensure same image gets same URL
+        const version = pic ? pic.split('/').pop() + pic.length : Date.now()
+        return url + (url.includes('?') ? '&' : '?') + `v=${version}`
     }
     return '/assets/DEFAULT.jpg'
 })
@@ -861,9 +967,24 @@ const trendingTags = ref([])
 const loadingTrendingTags = ref(false)
 const selectedTrendingTag = ref(null)
 const showDeleteModal = ref(false)
-const deleteType = ref('') // 'comment' only (employees can't delete announcement posts)
+const deleteType = ref('') // 'post' or 'comment'
 const deleteTargetId = ref(null)
 const deleteTargetParentId = ref(null) // For replies, store parent comment ID
+const unreadCount = ref(0)
+
+// Fetch unread notification count
+const fetchUnreadCount = async () => {
+    try {
+        const response = await axios.get('/api/notifications')
+        if (response.data.success) {
+            const notifications = response.data.notifications || []
+            unreadCount.value = notifications.filter(n => !n.is_read).length
+        }
+    } catch (error) {
+        console.error('Error fetching unread count:', error)
+        unreadCount.value = 0
+    }
+}
 
 // Error handling state
 const commentError = ref('')
@@ -903,8 +1024,20 @@ function normalizePost(raw) {
     if (Array.isArray(raw.images) && raw.images.length) {
         images = raw.images
     } else if (raw.image_content) {
-        // backend stored path like "posts/abcd.jpg" -> convert to asset('storage/...')
-        images = [raw.image_content.startsWith('http') ? raw.image_content : `/storage/${raw.image_content}`]
+        // Check if image_content is JSON (multiple images) or single path
+        try {
+            const decoded = JSON.parse(raw.image_content)
+            if (Array.isArray(decoded)) {
+                // Multiple images stored as JSON array
+                images = decoded.map(path => path.startsWith('http') ? path : `/storage/${path}`)
+            } else {
+                // Single image stored as string path
+                images = [raw.image_content.startsWith('http') ? raw.image_content : `/storage/${raw.image_content}`]
+            }
+        } catch (e) {
+            // Not JSON, treat as single path
+            images = [raw.image_content.startsWith('http') ? raw.image_content : `/storage/${raw.image_content}`]
+        }
     } else if (raw.image_path) {
         images = [raw.image_path.startsWith('http') ? raw.image_path : `/storage/${raw.image_path}`]
     }
@@ -929,12 +1062,40 @@ function normalizePost(raw) {
         content: raw.content ?? '',
         images,
         video_content: raw.video_content ?? raw.video_path ?? null,
+        is_poll: raw.is_poll ?? false,
+        poll: raw.poll ?? null,
         likes: raw.likes ?? 0,
         dislikes: raw.dislikes ?? 0,
         comments: raw.comments ?? 0,
         userLiked: raw.userLiked ?? false,
         userDisliked: raw.userDisliked ?? false,
         commentsList: Array.isArray(raw.commentsList) ? raw.commentsList : []
+    }
+}
+
+// Handle poll vote update
+const handlePollUpdate = (postId, updatedPoll) => {
+    const post = posts.value.find(p => p.id === postId)
+    if (post && post.poll) {
+        Object.assign(post.poll, updatedPoll)
+    }
+    
+    if (selectedPost.value && selectedPost.value.id === postId && selectedPost.value.poll) {
+        Object.assign(selectedPost.value.poll, updatedPoll)
+    }
+}
+
+// Handle image loading errors
+const handleImageError = (event) => {
+    // If image fails to load, try to reload with cache-busting or set to default
+    const img = event.target
+    const currentSrc = img.src
+    // Try adding cache-busting parameter
+    if (!currentSrc.includes('?v=')) {
+        img.src = currentSrc + (currentSrc.includes('?') ? '&' : '?') + 'v=' + Date.now()
+    } else {
+        // If still fails, set to default image
+        img.src = '/assets/DEFAULT.jpg'
     }
 }
 
@@ -959,23 +1120,38 @@ function updatePostsFromProps() {
 watch(() => props.posts, updatePostsFromProps, { immediate: true, deep: true })
 watch(() => page.props.posts, updatePostsFromProps, { immediate: true, deep: true })
 
-// Navigation functions
+// Use navigation composable
+const { 
+    navigateToDocuments: navToDocuments, 
+    navigateToProfile: navToProfile, 
+    navigateToEvents: navToEvents, 
+    navigateToNotifications: navToNotifications,
+    navigateToHelpCenter: navToHelpCenter,
+    navigateToAnnouncement: navToAnnouncement,
+    navigateToDiscussion: navToDiscussion,
+    navigateToDiscussionAddPost: navToDiscussionAddPost
+} = useUserNavigation()
+
+// Navigation functions with activeTab management
 const navigateToDocuments = () => {
     activeTab.value = 'documents'
-    router.visit(route('document_request_select_employee'))
+    navToDocuments()
 }
 
 const navigateToProfile = () => {
     activeTab.value = 'profile'
-    router.visit(route('profile_employee'))
+    navToProfile()
 }
 
 const navigateToEvents = () => {
     activeTab.value = 'events'
-    router.visit(route('event_assistance_employee'))
+    navToEvents()
 }
 
-const navigateToNotifications = () => { activeTab.value = 'notifications'; router.visit(route('notification_request_employee')) }
+const navigateToNotifications = () => {
+    activeTab.value = 'notifications'
+    navToNotifications()
+}
 
 // Fetch trending tags
 const fetchTrendingTags = async () => {
@@ -1456,11 +1632,21 @@ const closeReportModal = () => {
 }
 
 // Check if user owns a comment
+const isPostOwner = (post) => {
+    return post.author_id === (user.value?.user_id ?? user.value?.id)
+}
+
 const isCommentOwner = (comment) => {
     return comment.author_id === (user.value?.user_id ?? user.value?.id)
 }
 
 // Delete functions
+const confirmDeletePost = (postId) => {
+    deleteType.value = 'post'
+    deleteTargetId.value = postId
+    showDeleteModal.value = true
+}
+
 const confirmDeleteComment = (commentId, parentId = null) => {
     deleteType.value = 'comment'
     deleteTargetId.value = commentId
@@ -1523,8 +1709,36 @@ const deleteComment = async () => {
     }
 }
 
+const deletePost = async () => {
+    if (!deleteTargetId.value) return
+    
+    try {
+        const response = await axios.delete(route('posts.destroy', deleteTargetId.value))
+        
+        if (response.data.success) {
+            // Remove post from list
+            posts.value = posts.value.filter(p => p.id !== deleteTargetId.value)
+            
+            // If it's the selected post, close it
+            if (selectedPost.value && selectedPost.value.id === deleteTargetId.value) {
+                selectedPost.value = null
+            }
+            
+            closeDeleteModal()
+            alert('Post deleted successfully.')
+        } else {
+            alert(response.data.message || 'Failed to delete post.')
+        }
+    } catch (error) {
+        console.error('Error deleting post:', error)
+        alert(error.response?.data?.message || 'Failed to delete post. Please try again.')
+    }
+}
+
 const handleDelete = () => {
-    if (deleteType.value === 'comment') {
+    if (deleteType.value === 'post') {
+        deletePost()
+    } else if (deleteType.value === 'comment') {
         deleteComment()
     }
 }
@@ -1695,7 +1909,7 @@ const showMoreOptions = (postId) => {
 }
 
 const openFAQ = () => {
-    router.visit(route('help_center_employee'))
+    router.visit(route('help_center_resident'))
 }
 
 // Helper function to normalize tag names for CSS classes
@@ -1759,6 +1973,17 @@ onMounted(() => {
     // Fetch trending tags on mount
     fetchTrendingTags()
     
+    // Fetch unread notification count
+    fetchUnreadCount()
+    
+    // Set up polling to update unread count every 30 seconds
+    const unreadCountInterval = setInterval(() => {
+        fetchUnreadCount()
+    }, 30000)
+    
+    // Store interval ID for cleanup
+    window.unreadCountInterval = unreadCountInterval
+    
     console.log('✅ Employee Announcement Component mounted')
     console.log('📊 Initial posts:', posts.value.length)
     console.log('👤 User:', user.value)
@@ -1767,6 +1992,12 @@ onMounted(() => {
 
 onUnmounted(() => {
     document.removeEventListener('click', handleClickOutside)
+    
+    // Clear unread count polling interval
+    if (window.unreadCountInterval) {
+        clearInterval(window.unreadCountInterval)
+        window.unreadCountInterval = null
+    }
 })
 </script>
 
@@ -1781,6 +2012,8 @@ onUnmounted(() => {
 .app-container {
     min-height: 100vh;
     width: 100vw;
+    max-width: 100vw;
+    overflow-x: hidden;
     background: url('/assets/BG MAIN.png') no-repeat center center fixed;
     background-size: cover;
     background-attachment: fixed;
@@ -1846,15 +2079,30 @@ onUnmounted(() => {
     transition: all 0.3s ease;
     backdrop-filter: blur(10px);
 }
-.settings-btn-img {
-    margin-right: 30px; /* adjust value as needed */
-    width: 30px;
+.settings-burger-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    margin-right: 30px;
+    padding: 0;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    border-radius: 50%;
+    color: white;
+    transition: background 0.2s, transform 0.2s;
 }
 
-.settings-btn:hover {
-    background: rgba(255,255,255,0.3);
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+.settings-burger-btn:hover {
+    background: rgba(255,255,255,0.15);
+    transform: scale(1.05);
+}
+
+.settings-burger-icon {
+    width: 24px;
+    height: 24px;
 }
 
 .settings-dropdown {
@@ -1898,17 +2146,21 @@ onUnmounted(() => {
     display: grid;
     grid-template-columns: 280px 1fr 280px;
     gap: 25px 25px;
-    width: 100%;
-    max-width: none;
+    width: 100vw;
+    max-width: 100vw;
     margin: 0;
     margin-top: 70px;
     padding: 25px 30px;
+    box-sizing: border-box;
 }
 
 /* Sidebar - Enhanced styling */
 .sidebar {
     background: transparent;
-    padding-right: 20px;
+    padding-right: 0;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
 }
 
 .profile-card {
@@ -1938,14 +2190,16 @@ onUnmounted(() => {
     text-shadow: 0 1px 3px rgba(0,0,0,0.2);
 }
 
+.profile-card .profile-role,
 .profile-role {
     font-size: 12px;
-    background: linear-gradient(135deg, #ff8c42, #ff7a28);
-    color: white;
+    background: linear-gradient(135deg, #ff8c42, #ff7a28) !important;
+    color: white !important;
     padding: 4px 12px;
     border-radius: 15px;
     display: inline-block;
     font-weight: 600;
+    backdrop-filter: blur(10px);
     text-transform: uppercase;
     box-shadow: 0 2px 8px rgba(255, 140, 66, 0.3);
 }
@@ -1983,9 +2237,20 @@ onUnmounted(() => {
     border-bottom: none;
 }
 
-.nav-item:hover {
+.nav-item:hover:not(.disabled-nav) {
     background: #fff7ef;
     transform: translateX(3px);
+}
+
+.nav-item.disabled-nav {
+    opacity: 0.5;
+    cursor: not-allowed;
+    color: #999;
+}
+
+.nav-item.disabled-nav:hover {
+    background: #f5f5f5;
+    transform: none;
 }
 
 .nav-item.active {
@@ -1993,6 +2258,19 @@ onUnmounted(() => {
     color: #ff8c42;
     font-weight: 600;
     border-left: 4px solid #ff8c42;
+}
+
+.unread-badge-nav {
+    background: linear-gradient(135deg, #ff8c42, #ff7a28);
+    color: white;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 4px 8px;
+    border-radius: 12px;
+    min-width: 20px;
+    text-align: center;
+    margin-left: auto;
+    box-shadow: 0 2px 6px rgba(255, 140, 66, 0.4);
 }
 
 .faq-btn {
@@ -2023,6 +2301,10 @@ onUnmounted(() => {
 .main-content-wrapper {
     flex: 1;
     display: flex;
+    flex-direction: column;
+    min-width: 0;
+    width: 100%;
+    overflow: visible;
 }
 
 /* Main Content */
@@ -2033,6 +2315,13 @@ onUnmounted(() => {
     box-shadow: 0 8px 25px rgba(0,0,0,0.08);
     flex: 1;
     border: 1px solid rgba(0,0,0,0.05);
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    z-index: 1;
 }
 
 .discussions-header {
@@ -2295,8 +2584,11 @@ onUnmounted(() => {
 /* Posts Container - Enhanced styling */
 .posts-container {
     padding: 0;
-    max-height: calc(100vh - 350px);
+    max-height: calc(100vh - 280px);
     overflow-y: auto;
+    width: 100%;
+    flex: 1;
+    display: block;
 }
 
 .post-card {
@@ -2307,13 +2599,18 @@ onUnmounted(() => {
     font-size: 15px; /* bump base text size for readability */
 }
 
-.post-card:hover {
-    background: linear-gradient(135deg, #fafbfc, #f8f9fa);
-    transform: translateY(-1px);
+.post-card:first-child {
+    border-radius: 0;
 }
 
 .post-card:last-child {
     border-bottom: none;
+    border-radius: 0 0 15px 15px;
+}
+
+.post-card:hover {
+    background: linear-gradient(135deg, #fafbfc, #f8f9fa);
+    transform: translateY(-1px);
 }
 
 .post-header {
@@ -2364,115 +2661,42 @@ onUnmounted(() => {
     display: flex;
     gap: 8px;
     flex-wrap: wrap;
+    align-items: center;
 }
 
+/* Category indicator — dark outline, light fill, dark text, not interactive */
 .tag {
-    font-size: 11px;
-    padding: 5px 10px;
-    border-radius: 15px;
+    font-size: 12px;
+    padding: 6px 14px;
+    border-radius: 999px;
     font-weight: 600;
-    color: white;
     text-transform: uppercase;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
-    /* Default background for unmatched tags */
-    background: linear-gradient(135deg, #95a5a6, #7f8c8d);
+    letter-spacing: 0.04em;
+    cursor: default;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    border: 2px solid #5a6a6b;
+    background: #e8eaeb;
+    color: #3d4849;
 }
 
-.tag:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-}
-
-/* Business - Blue/Purple */
-.tag.business {
-    background: linear-gradient(135deg, #6c5ce7, #5f3dc4) !important;
-}
-
-/* Education - Blue */
-.tag.education {
-    background: linear-gradient(135deg, #3498db, #2980b9) !important;
-}
-
-/* Emergency - Red */
-.tag.emergency {
-    background: linear-gradient(135deg, #e74c3c, #c0392b) !important;
-}
-
-/* Employment - Green */
-.tag.employment {
-    background: linear-gradient(135deg, #27ae60, #229954) !important;
-}
-
-/* Environment - Green */
-.tag.environment {
-    background: linear-gradient(135deg, #2ecc71, #27ae60) !important;
-}
-
-/* Governance - Purple */
-.tag.governance {
-    background: linear-gradient(135deg, #9b59b6, #8e44ad) !important;
-}
-
-/* Health - Red/Pink */
-.tag.health {
-    background: linear-gradient(135deg, #e91e63, #c2185b) !important;
-}
-
-/* Incident - Dark Red */
-.tag.incident {
-    background: linear-gradient(135deg, #c0392b, #a93226) !important;
-}
-
-/* Infrastructure - Orange */
-.tag.infrastructure {
-    background: linear-gradient(135deg, #f39c12, #e67e22) !important;
-}
-
-/* Inquiries - Yellow/Orange */
-.tag.inquiries {
-    background: linear-gradient(135deg, #f1c40f, #f39c12) !important;
-}
-
-/* Livelihood - Teal */
-.tag.livelihood {
-    background: linear-gradient(135deg, #1abc9c, #16a085) !important;
-}
-
-/* Maintenance - Brown/Orange */
-.tag.maintenance {
-    background: linear-gradient(135deg, #d35400, #ba4a00) !important;
-}
-
-/* Sanitation - Cyan */
-.tag.sanitation {
-    background: linear-gradient(135deg, #00bcd4, #0097a7) !important;
-}
-
-/* Sports - Green */
-.tag.sports {
-    background: linear-gradient(135deg, #4caf50, #388e3c) !important;
-}
-
-/* Traffic - Yellow */
-.tag.traffic {
-    background: linear-gradient(135deg, #ffc107, #ff9800) !important;
-}
-
-/* Weather - Light Blue */
-.tag.weather {
-    background: linear-gradient(135deg, #03a9f4, #0288d1) !important;
-}
-
-/* Welfare - Pink */
-.tag.welfare {
-    background: linear-gradient(135deg, #e91e63, #c2185b) !important;
-}
-
-/* Youth - Magenta */
-.tag.youth {
-    background: linear-gradient(135deg, #e91e63, #ad1457) !important;
-}
+.tag.business { border-color: #5f3dc4; background: #ede9fc; color: #5f3dc4; }
+.tag.education { border-color: #2980b9; background: #e3f2fd; color: #2980b9; }
+.tag.emergency { border-color: #c0392b; background: #ffebee; color: #c0392b; }
+.tag.employment { border-color: #1e7b4a; background: #e8f5e9; color: #1e7b4a; }
+.tag.environment { border-color: #27ae60; background: #e8f5e9; color: #27ae60; }
+.tag.governance { border-color: #8e44ad; background: #f3e5f5; color: #8e44ad; }
+.tag.health { border-color: #c2185b; background: #fce4ec; color: #c2185b; }
+.tag.incident { border-color: #a93226; background: #ffebee; color: #a93226; }
+.tag.infrastructure { border-color: #e67e22; background: #fff3e0; color: #e67e22; }
+.tag.inquiries { border-color: #b8860b; background: #fff8e1; color: #b8860b; }
+.tag.livelihood { border-color: #16a085; background: #e0f2f1; color: #16a085; }
+.tag.maintenance { border-color: #ba4a00; background: #fbe9e7; color: #ba4a00; }
+.tag.sanitation { border-color: #0097a7; background: #e0f7fa; color: #0097a7; }
+.tag.sports { border-color: #388e3c; background: #e8f5e9; color: #388e3c; }
+.tag.traffic { border-color: #e65100; background: #fff3e0; color: #e65100; }
+.tag.weather { border-color: #0288d1; background: #e1f5fe; color: #0288d1; }
+.tag.welfare { border-color: #c2185b; background: #fce4ec; color: #c2185b; }
+.tag.youth { border-color: #ad1457; background: #fce4ec; color: #ad1457; }
 
 .post-time {
     text-align: right;
@@ -3093,23 +3317,36 @@ onUnmounted(() => {
 /* Post Images */
 .post-images {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 10px;
-    margin-top: 20px;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+    margin-top: 30px;
+    width: 100%;
 }
 
 .post-image {
     width: 100%;
-    height: 200px;
+    height: 280px;
     object-fit: cover;
-    border-radius: 10px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
     cursor: pointer;
     transition: transform 0.3s ease;
+    display: block;
+    margin: 0 auto;
 }
 
 .post-image:hover {
     transform: scale(1.05);
+}
+
+/* Single image - center it */
+.post-images:has(img:only-child) {
+    display: flex;
+    justify-content: center;
+}
+
+.post-images:has(img:only-child) .post-image {
+    max-width: 600px;
 }
 
 /* Report Button for Posts */
@@ -3123,9 +3360,33 @@ onUnmounted(() => {
     padding: 8px 14px;
     border-radius: 8px;
     transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 6px;
 }
 
 .report-post-btn:hover {
+    background: rgba(220, 53, 69, 0.1);
+    transform: translateY(-1px);
+}
+
+.delete-post-btn {
+    background: none;
+    border: none;
+    color: #dc3545;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 8px 12px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s;
+    margin-right: 10px;
+}
+
+.delete-post-btn:hover {
     background: rgba(220, 53, 69, 0.1);
     transform: translateY(-1px);
 }
@@ -3317,6 +3578,8 @@ onUnmounted(() => {
     display: flex;
     flex-direction: column;
     width: 100%;
+    align-self: start;
+    height: fit-content;
 }
 
 .trending-tags-card {
@@ -3584,6 +3847,20 @@ onUnmounted(() => {
     }
 }
 
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.6);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 10000;
+    padding: 20px;
+}
+
 .modal-overlay:has(.terms-modal) {
     z-index: 10000 !important;
 }
@@ -3706,4 +3983,31 @@ onUnmounted(() => {
     transform: translateY(-1px);
     box-shadow: 0 4px 12px rgba(255, 140, 66, 0.4);
 }
+/* Poll wrapper and error message styles */
+.poll-wrapper {
+    margin-top: 15px;
+}
+
+.poll-error-message {
+    background: #fff3cd;
+    border: 2px solid #ffc107;
+    border-radius: 12px;
+    padding: 20px;
+    margin-top: 15px;
+    text-align: center;
+}
+
+.poll-error-message p {
+    margin: 5px 0;
+    color: #856404;
+    font-weight: 600;
+}
+
+.poll-error-hint {
+    font-size: 13px;
+    color: #856404;
+    font-weight: 400;
+    margin-top: 10px;
+}
+
 </style>

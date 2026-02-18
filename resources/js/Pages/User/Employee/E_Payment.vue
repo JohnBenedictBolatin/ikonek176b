@@ -13,7 +13,7 @@ const message = ref('')
 
 function goToNotifications() {
   // navigate to notifications (change route name if different)
-  router.visit(route('notification_request_employee'))
+  router.visit(route('notification_request_resident'))
 }
 
 function chooseOnsite() {

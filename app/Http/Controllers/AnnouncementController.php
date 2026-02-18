@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\RateLimiter;
 use Carbon\Carbon;
 
 class AnnouncementController extends Controller
@@ -35,19 +36,9 @@ class AnnouncementController extends Controller
                 'role_name' => $authUser->role ?? 'null'
             ]);
             
-            // Redirect residents to their own announcement page
-            if ($authUser->fk_role_id == 1) {
-                Log::info('🔄 User is a resident (role_id=1), redirecting to resident announcements');
-                return redirect()->route('announcement_resident');
-            }
-            
-            // Ensure user is an employee (role_id 2, 3, 4, 5, 6, 7, or 9)
-            if (!in_array($authUser->fk_role_id, [2, 3, 4, 5, 6, 7, 9])) {
-                Log::warning('❌ User role_id is not an employee role:', ['role_id' => $authUser->fk_role_id]);
-                return redirect()->route('login')->with('error', 'Access denied. Employee access required.');
-            }
-            
-            Log::info('✅ User is an employee, proceeding with employee announcements');
+            // Redirect all users (residents and officials) to unified announcement page
+            Log::info('🔄 Redirecting to unified announcement page');
+            return redirect()->route('announcement_resident');
 
             // Employees see all announcements (approved and pending)
             $posts = Post::with(['author', 'tags', 'poll.options', 'poll.votes'])
@@ -63,7 +54,7 @@ class AnnouncementController extends Controller
                 3 => 'Barangay Secretary',
                 4 => 'Barangay Treasurer',
                 5 => 'Barangay Kagawad',
-                6 => 'Sangguniang Kabataan Chairman',
+                6 => 'SK Chairman',
                 7 => 'Sangguniang Kabataan Kagawad',
                 9 => 'System Admin',
             ];
@@ -96,7 +87,17 @@ class AnnouncementController extends Controller
 
                 $images = [];
                 if (!empty($post->image_content)) {
-                    $images[] = asset('storage/' . $post->image_content);
+                    // Check if image_content is JSON (multiple images) or single path
+                    $decoded = json_decode($post->image_content, true);
+                    if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+                        // Multiple images stored as JSON array
+                        foreach ($decoded as $path) {
+                            $images[] = asset('storage/' . $path);
+                        }
+                    } else {
+                        // Single image stored as string path
+                        $images[] = asset('storage/' . $post->image_content);
+                    }
                 }
 
                 $tags = $post->tags && $post->tags->count() ? $post->tags->pluck('tag_name')->toArray() : ['General'];
@@ -231,14 +232,14 @@ class AnnouncementController extends Controller
 
             Log::info('Tags fetched:', ['count' => $tags->count()]);
 
-            return Inertia::render('User/Employee/E_Announcement_AddPost', [
+            return Inertia::render('User/Resident/R_Announcement_AddPost', [
                 'availableTags' => $tags->toArray()
             ]);
 
         } catch (\Exception $e) {
             Log::error('Error fetching tags: ' . $e->getMessage());
 
-            return Inertia::render('User/Employee/E_Announcement_AddPost', [
+            return Inertia::render('User/Resident/R_Announcement_AddPost', [
                 'availableTags' => []
             ]);
         }
@@ -246,19 +247,96 @@ class AnnouncementController extends Controller
 
     public function store(Request $request)
     {
-        Log::info('🔵 AnnouncementController@store called', $request->all());
+        // Rate limiting: Max 3 posts per minute per user
+        $userId = Auth::id();
+        $key = 'post_creation:' . $userId;
+        
+        if (RateLimiter::tooManyAttempts($key, 3)) {
+            $seconds = RateLimiter::availableIn($key);
+            return redirect()->back()
+                ->withInput()
+                ->withErrors(['content' => "Too many posts. Please wait {$seconds} seconds before posting again."]);
+        }
+        
+        RateLimiter::hit($key, 60); // 60 seconds = 1 minute
+        
+        Log::info('🔵 AnnouncementController@store called', [
+            'all' => $request->all(),
+            'has_images' => $request->hasFile('images'),
+            'has_image' => $request->hasFile('image'),
+            'files' => array_keys($request->allFiles())
+        ]);
 
-        $validated = $request->validate([
+        $rules = [
             'header' => ['nullable', 'string', 'max:255'],
             'content' => ['required', 'string', 'max:1000'],
-            'tag_ids' => ['required', 'array', 'min:1'],
+            'tag_ids' => ['nullable', 'array'],
             'tag_ids.*' => ['integer', 'exists:tags,tag_id'],
-            'image' => ['nullable', 'file', 'image', 'max:5120'],
+            'custom_tag_names' => ['nullable', 'array', 'max:10'],
+            'custom_tag_names.*' => ['required', 'string', 'max:50'],
+            'image' => ['nullable', 'file', 'image', 'max:5120'], // Legacy single image support
+            'images' => ['nullable', 'array', 'max:10'], // Multiple images support
+            'images.*' => ['file', 'image', 'max:5120'],
             'video_content' => ['nullable', 'string'],
             'is_poll' => ['nullable', 'boolean'],
-            'poll_options' => ['required_if:is_poll,true', 'array', 'min:2', 'max:10'],
-            'poll_options.*' => ['required', 'string', 'max:255'],
-        ]);
+        ];
+        
+        // Handle tag_ids if sent as JSON string (from FormData)
+        if ($request->has('tag_ids') && is_string($request->input('tag_ids'))) {
+            $request->merge(['tag_ids' => json_decode($request->input('tag_ids'), true) ?? []]);
+        }
+        // Handle custom_tag_names if sent as JSON string (from FormData)
+        if ($request->has('custom_tag_names') && is_string($request->input('custom_tag_names'))) {
+            $request->merge(['custom_tag_names' => json_decode($request->input('custom_tag_names'), true) ?? []]);
+        }
+        
+        // Handle poll_options if sent as JSON string (from FormData)
+        if ($request->has('poll_options') && is_string($request->input('poll_options'))) {
+            $request->merge(['poll_options' => json_decode($request->input('poll_options'), true) ?? []]);
+        }
+
+        // Only require poll_options if is_poll is true
+        if ($request->boolean('is_poll')) {
+            $rules['poll_options'] = ['required', 'array', 'min:2', 'max:10'];
+            $rules['poll_options.*'] = ['required', 'string', 'max:255'];
+        } else {
+            $rules['poll_options'] = ['nullable', 'array'];
+            $rules['poll_options.*'] = ['nullable', 'string', 'max:255'];
+        }
+
+        $validated = $request->validate($rules);
+
+        $tagIds = $this->resolveTagIds($validated['tag_ids'] ?? [], $validated['custom_tag_names'] ?? []);
+        if (empty($tagIds)) {
+            return redirect()->back()->withInput()->withErrors(['tag_ids' => 'Please select at least one tag or add a custom tag.']);
+        }
+
+        // Check for profanity in content and header
+        $profanityCheck = \App\Services\ProfanityFilterService::validateContent(
+            $validated['content'] ?? null,
+            $validated['header'] ?? null
+        );
+
+        if (!$profanityCheck['is_valid']) {
+            return redirect()->back()
+                ->withInput()
+                ->withErrors(['content' => $profanityCheck['message']]);
+        }
+
+        // Check poll options for profanity if it's a poll
+        if ($request->boolean('is_poll') && $request->has('poll_options')) {
+            $pollOptions = is_array($request->poll_options) 
+                ? $request->poll_options 
+                : json_decode($request->poll_options, true) ?? [];
+            
+            foreach ($pollOptions as $option) {
+                if (!empty($option) && \App\Services\ProfanityFilterService::containsProfanity($option)) {
+                    return redirect()->back()
+                        ->withInput()
+                        ->withErrors(['poll_options' => 'Poll options contain inappropriate language. Please remove offensive words.']);
+                }
+            }
+        }
 
         try {
             $userId = Auth::id();
@@ -285,16 +363,111 @@ class AnnouncementController extends Controller
             }
             // Note: status column doesn't exist in posts table, so we don't set it
 
-            // Image upload -> store path in image_content
-            if ($request->hasFile('image')) {
-                $path = $request->file('image')->store('posts', 'public');
-                $post->image_content = $path;
+            // Handle multiple images - store as JSON array in image_content
+            $imagePaths = [];
+            
+            // Get all uploaded files
+            $allFiles = $request->allFiles();
+            
+            Log::info('All files received', [
+                'keys' => array_keys($allFiles),
+                'count' => count($allFiles),
+                'has_images' => $request->hasFile('images'),
+                'has_image' => $request->hasFile('image')
+            ]);
+            
+            // Handle multiple images - check for 'images' key (FormData sends as 'images[]')
+            // Laravel automatically converts 'images[]' to 'images' array
+            if ($request->hasFile('images')) {
+                $images = $request->file('images');
+                // Handle both array and single file
+                if (is_array($images)) {
+                    foreach ($images as $index => $image) {
+                        if ($image && $image->isValid()) {
+                            try {
+                                $path = $image->store('posts', 'public');
+                                $imagePaths[] = $path;
+                                Log::info("Image $index stored", ['path' => $path]);
+                            } catch (\Exception $e) {
+                                Log::error('Error storing image: ' . $e->getMessage());
+                            }
+                        } else {
+                            Log::warning("Image $index is invalid", ['image' => $image]);
+                        }
+                    }
+                } else {
+                    // Single file uploaded as images[]
+                    if ($images && $images->isValid()) {
+                        try {
+                            $path = $images->store('posts', 'public');
+                            $imagePaths[] = $path;
+                            Log::info('Single image stored', ['path' => $path]);
+                        } catch (\Exception $e) {
+                            Log::error('Error storing image: ' . $e->getMessage());
+                        }
+                    }
+                }
+                
+                Log::info('Images processed from images[]', [
+                    'count' => count($imagePaths),
+                    'paths' => $imagePaths,
+                    'input_type' => is_array($images) ? 'array' : 'single',
+                    'input_count' => is_array($images) ? count($images) : 1
+                ]);
+            } elseif (isset($allFiles['images'])) {
+                // Fallback: check allFiles directly
+                $images = $allFiles['images'];
+                if (is_array($images)) {
+                    foreach ($images as $index => $image) {
+                        if ($image && $image->isValid()) {
+                            try {
+                                $path = $image->store('posts', 'public');
+                                $imagePaths[] = $path;
+                                Log::info("Image $index stored (fallback)", ['path' => $path]);
+                            } catch (\Exception $e) {
+                                Log::error('Error storing image: ' . $e->getMessage());
+                            }
+                        }
+                    }
+                }
+            }
+            
+            // Handle single image (legacy support)
+            if ($request->hasFile('image') && empty($imagePaths)) {
+                try {
+                    $path = $request->file('image')->store('posts', 'public');
+                    $imagePaths[] = $path;
+                    Log::info('Single image processed', ['path' => $path]);
+                } catch (\Exception $e) {
+                    Log::error('Error storing single image: ' . $e->getMessage());
+                }
+            }
+            
+            // Store images as JSON array if multiple, or single path if one
+            if (!empty($imagePaths)) {
+                if (count($imagePaths) === 1) {
+                    $post->image_content = $imagePaths[0]; // Store single path for backward compatibility
+                } else {
+                    $post->image_content = json_encode($imagePaths); // Store as JSON array for multiple images
+                }
             }
 
             $post->video_content = $request->input('video_content', null);
             $isPoll = $request->boolean('is_poll');
             $post->is_poll = $isPoll ? 1 : 0;
             $post->is_reported = 0;
+
+            // Check for spam before saving
+            $spamCheck = \App\Services\AntiSpamService::checkAndHandleSpam(
+                $userId,
+                $validated['content'],
+                $validated['header'] ?? null
+            );
+            
+            if ($spamCheck['is_spam']) {
+                return redirect()->back()
+                    ->with('error', 'Your post has been removed due to spam detection. Multiple duplicate posts were detected. Your posting privileges have been restricted. Please check your notifications for more information.');
+            }
 
             $post->save();
             
@@ -331,15 +504,12 @@ class AnnouncementController extends Controller
                 }
             }
 
-            // Attach tags
-            if (!empty($validated['tag_ids'])) {
-                $post->tags()->sync($validated['tag_ids']);
-
-                Log::info('✅ Announcement created with tags', [
-                    'post_id' => $post->post_id,
-                    'tag_ids' => $validated['tag_ids']
-                ]);
-            }
+            // Attach tags (resolved from tag_ids + custom_tag_names)
+            $post->tags()->sync($tagIds);
+            Log::info('✅ Announcement created with tags', [
+                'post_id' => $post->post_id,
+                'tag_ids' => $tagIds
+            ]);
 
             return redirect()->route('announcement_employee')
                 ->with('success', 'Announcement published successfully!');
@@ -370,7 +540,7 @@ class AnnouncementController extends Controller
                 3 => 'Barangay Secretary',
                 4 => 'Barangay Treasurer',
                 5 => 'Barangay Kagawad',
-                6 => 'Sangguniang Kabataan Chairman',
+                6 => 'SK Chairman',
                 7 => 'Sangguniang Kabataan Kagawad',
                 9 => 'System Admin',
             ];
@@ -403,7 +573,17 @@ class AnnouncementController extends Controller
 
                 $images = [];
                 if (!empty($post->image_content)) {
-                    $images[] = asset('storage/' . $post->image_content);
+                    // Check if image_content is JSON (multiple images) or single path
+                    $decoded = json_decode($post->image_content, true);
+                    if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+                        // Multiple images stored as JSON array
+                        foreach ($decoded as $path) {
+                            $images[] = asset('storage/' . $path);
+                        }
+                    } else {
+                        // Single image stored as string path
+                        $images[] = asset('storage/' . $post->image_content);
+                    }
                 }
 
                 $tags = $post->tags && $post->tags->count() ? $post->tags->pluck('tag_name')->toArray() : ['General'];
@@ -507,5 +687,267 @@ class AnnouncementController extends Controller
                 'error' => $e->getMessage()
             ]);
         }
+    }
+
+    public function update(Request $request, $id)
+    {
+        Log::info('🔵 AnnouncementController@update called', [
+            'post_id' => $id,
+            'all' => $request->all(),
+            'has_images' => $request->hasFile('images'),
+            'has_image' => $request->hasFile('image'),
+            'files' => array_keys($request->allFiles())
+        ]);
+
+        $rules = [
+            'header' => ['nullable', 'string', 'max:255'],
+            'content' => ['required', 'string', 'max:1000'],
+            'tag_ids' => ['nullable', 'array'],
+            'tag_ids.*' => ['integer', 'exists:tags,tag_id'],
+            'custom_tag_names' => ['nullable', 'array', 'max:10'],
+            'custom_tag_names.*' => ['required', 'string', 'max:50'],
+            'image' => ['nullable', 'file', 'image', 'max:5120'], // Legacy single image support
+            'images' => ['nullable', 'array', 'max:10'], // Multiple images support
+            'images.*' => ['file', 'image', 'max:5120'],
+            'video_content' => ['nullable', 'string'],
+            'is_poll' => ['nullable', 'boolean'],
+        ];
+        
+        // Handle tag_ids if sent as JSON string (from FormData)
+        if ($request->has('tag_ids') && is_string($request->input('tag_ids'))) {
+            $request->merge(['tag_ids' => json_decode($request->input('tag_ids'), true) ?? []]);
+        }
+        if ($request->has('custom_tag_names') && is_string($request->input('custom_tag_names'))) {
+            $request->merge(['custom_tag_names' => json_decode($request->input('custom_tag_names'), true) ?? []]);
+        }
+        
+        // Handle poll_options if sent as JSON string (from FormData)
+        if ($request->has('poll_options') && is_string($request->input('poll_options'))) {
+            $request->merge(['poll_options' => json_decode($request->input('poll_options'), true) ?? []]);
+        }
+
+        // Only require poll_options if is_poll is true
+        if ($request->boolean('is_poll')) {
+            $rules['poll_options'] = ['required', 'array', 'min:2', 'max:10'];
+            $rules['poll_options.*'] = ['required', 'string', 'max:255'];
+        } else {
+            $rules['poll_options'] = ['nullable', 'array'];
+            $rules['poll_options.*'] = ['nullable', 'string', 'max:255'];
+        }
+
+        $validated = $request->validate($rules);
+
+        $tagIds = $this->resolveTagIds($validated['tag_ids'] ?? [], $validated['custom_tag_names'] ?? []);
+        if (empty($tagIds)) {
+            return redirect()->back()->withInput()->withErrors(['tag_ids' => 'Please select at least one tag or add a custom tag.']);
+        }
+
+        try {
+            $userId = Auth::id();
+            if (!$userId) {
+                return redirect()->back()->with('error', 'You must be logged in to edit posts.');
+            }
+
+            $post = Post::where('post_id', $id)
+                ->where('section', 'Announcement')
+                ->first();
+
+            if (!$post) {
+                return redirect()->back()->with('error', 'Post not found.');
+            }
+
+            // Check if user is the author
+            if ($post->fk_post_author_id != $userId) {
+                return redirect()->back()->with('error', 'You can only edit your own posts.');
+            }
+
+            // Update post content
+            $post->content = $validated['content'];
+
+            // Only set header if column exists in database
+            if (Schema::hasColumn('posts', 'header')) {
+                $headerValue = $validated['header'] ?? null;
+                $post->header = (!empty(trim($headerValue ?? ''))) ? trim($headerValue) : null;
+            }
+
+            // Handle multiple images - store as JSON array in image_content
+            $imagePaths = [];
+            
+            // Get all uploaded files
+            $allFiles = $request->allFiles();
+            
+            Log::info('All files received for update', [
+                'keys' => array_keys($allFiles),
+                'count' => count($allFiles),
+                'has_images' => $request->hasFile('images'),
+                'has_image' => $request->hasFile('image')
+            ]);
+            
+            // Handle multiple images - check for 'images' key (FormData sends as 'images[]')
+            if ($request->hasFile('images')) {
+                $images = $request->file('images');
+                if (is_array($images)) {
+                    foreach ($images as $index => $image) {
+                        if ($image && $image->isValid()) {
+                            try {
+                                $path = $image->store('posts', 'public');
+                                $imagePaths[] = $path;
+                                Log::info("Image $index stored", ['path' => $path]);
+                            } catch (\Exception $e) {
+                                Log::error('Error storing image: ' . $e->getMessage());
+                            }
+                        }
+                    }
+                } else {
+                    if ($images && $images->isValid()) {
+                        try {
+                            $path = $images->store('posts', 'public');
+                            $imagePaths[] = $path;
+                        } catch (\Exception $e) {
+                            Log::error('Error storing image: ' . $e->getMessage());
+                        }
+                    }
+                }
+            } elseif (isset($allFiles['images'])) {
+                $images = $allFiles['images'];
+                if (is_array($images)) {
+                    foreach ($images as $index => $image) {
+                        if ($image && $image->isValid()) {
+                            try {
+                                $path = $image->store('posts', 'public');
+                                $imagePaths[] = $path;
+                            } catch (\Exception $e) {
+                                Log::error('Error storing image: ' . $e->getMessage());
+                            }
+                        }
+                    }
+                }
+            }
+            
+            // Handle single image (legacy support)
+            if ($request->hasFile('image') && empty($imagePaths)) {
+                try {
+                    $path = $request->file('image')->store('posts', 'public');
+                    $imagePaths[] = $path;
+                } catch (\Exception $e) {
+                    Log::error('Error storing single image: ' . $e->getMessage());
+                }
+            }
+
+            // Update images if new ones were uploaded
+            if (!empty($imagePaths)) {
+                if (count($imagePaths) === 1) {
+                    // Delete old images
+                    if ($post->image_content) {
+                        $oldImages = json_decode($post->image_content, true);
+                        if (is_array($oldImages)) {
+                            foreach ($oldImages as $oldPath) {
+                                if (Storage::disk('public')->exists($oldPath)) {
+                                    Storage::disk('public')->delete($oldPath);
+                                }
+                            }
+                        } else {
+                            if (Storage::disk('public')->exists($post->image_content)) {
+                                Storage::disk('public')->delete($post->image_content);
+                            }
+                        }
+                    }
+                    $post->image_content = $imagePaths[0];
+                } else {
+                    // Delete old images
+                    if ($post->image_content) {
+                        $oldImages = json_decode($post->image_content, true);
+                        if (is_array($oldImages)) {
+                            foreach ($oldImages as $oldPath) {
+                                if (Storage::disk('public')->exists($oldPath)) {
+                                    Storage::disk('public')->delete($oldPath);
+                                }
+                            }
+                        } else {
+                            if (Storage::disk('public')->exists($post->image_content)) {
+                                Storage::disk('public')->delete($post->image_content);
+                            }
+                        }
+                    }
+                    $post->image_content = json_encode($imagePaths);
+                }
+            }
+
+            $post->video_content = $request->input('video_content', null);
+            $isPoll = $request->boolean('is_poll');
+            $post->is_poll = $isPoll ? 1 : 0;
+
+            $post->save();
+
+            // Update tags
+            $post->tags()->sync($tagIds);
+
+            // Handle poll update
+            if ($isPoll && $request->has('poll_options') && is_array($request->poll_options)) {
+                $pollOptions = array_filter($request->poll_options, function($option) {
+                    return !empty(trim($option));
+                });
+
+                if (count($pollOptions) >= 2) {
+                    // Delete existing poll and create new one
+                    $existingPoll = \App\Models\PostPoll::where('post_id', $post->post_id)->first();
+                    if ($existingPoll) {
+                        \App\Models\PollVote::where('poll_id', $existingPoll->id)->delete();
+                        \App\Models\PollOption::where('poll_id', $existingPoll->id)->delete();
+                        $existingPoll->delete();
+                    }
+
+                    $poll = \App\Models\PostPoll::create([
+                        'post_id' => $post->post_id,
+                    ]);
+
+                    foreach ($pollOptions as $optionText) {
+                        \App\Models\PollOption::create([
+                            'poll_id' => $poll->id,
+                            'option_text' => trim($optionText),
+                            'vote_count' => 0,
+                        ]);
+                    }
+                }
+            } elseif (!$isPoll) {
+                // Delete poll if post is no longer a poll
+                $existingPoll = \App\Models\PostPoll::where('post_id', $post->post_id)->first();
+                if ($existingPoll) {
+                    \App\Models\PollVote::where('poll_id', $existingPoll->id)->delete();
+                    \App\Models\PollOption::where('poll_id', $existingPoll->id)->delete();
+                    $existingPoll->delete();
+                }
+            }
+
+            Log::info('✅ Post updated successfully', [
+                'post_id' => $post->post_id,
+                'section' => $post->section,
+                'author_id' => $post->fk_post_author_id
+            ]);
+
+            return redirect()->back()->with('success', 'Post updated successfully!');
+
+        } catch (\Exception $e) {
+            Log::error('❌ Exception in AnnouncementController@update: ' . $e->getMessage());
+            return redirect()->back()
+                ->with('error', 'Error: ' . $e->getMessage())
+                ->withInput();
+        }
+    }
+
+    /**
+     * Resolve tag_ids and custom_tag_names into a single array of tag IDs.
+     */
+    protected function resolveTagIds(array $tagIds, array $customNames): array
+    {
+        $ids = array_values(array_unique(array_map('intval', array_filter($tagIds))));
+        foreach (array_unique(array_filter(array_map('trim', $customNames))) as $name) {
+            if ($name === '') {
+                continue;
+            }
+            $tag = TagsModel::firstOrCreate(['tag_name' => $name]);
+            $ids[] = $tag->tag_id;
+        }
+        return array_values(array_unique($ids));
     }
 }

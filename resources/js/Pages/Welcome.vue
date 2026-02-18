@@ -1003,117 +1003,42 @@ html {
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
+  align-items: center;
 }
 
+/* Category indicator — dark outline, light fill, dark text, not interactive */
 .post-tag {
-  font-size: 11px;
-  padding: 5px 10px;
-  border-radius: 15px;
+  font-size: 12px;
+  padding: 6px 14px;
+  border-radius: 999px;
   font-weight: 600;
-  color: white;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-  /* Default background for unmatched tags */
-  background: linear-gradient(135deg, #95a5a6, #7f8c8d);
-  border: none;
+  letter-spacing: 0.04em;
+  cursor: default;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  border: 2px solid #5a6a6b;
+  background: #e8eaeb;
+  color: #3d4849;
 }
 
-.post-tag:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-}
-
-/* Business - Blue/Purple */
-.post-tag.business {
-  background: linear-gradient(135deg, #6c5ce7, #5f3dc4) !important;
-}
-
-/* Education - Blue */
-.post-tag.education {
-  background: linear-gradient(135deg, #3498db, #2980b9) !important;
-}
-
-/* Emergency - Red */
-.post-tag.emergency {
-  background: linear-gradient(135deg, #e74c3c, #c0392b) !important;
-}
-
-/* Employment - Green */
-.post-tag.employment {
-  background: linear-gradient(135deg, #27ae60, #229954) !important;
-}
-
-/* Environment - Green */
-.post-tag.environment {
-  background: linear-gradient(135deg, #2ecc71, #27ae60) !important;
-}
-
-/* Governance - Purple */
-.post-tag.governance {
-  background: linear-gradient(135deg, #9b59b6, #8e44ad) !important;
-}
-
-/* Health - Red/Pink */
-.post-tag.health {
-  background: linear-gradient(135deg, #e91e63, #c2185b) !important;
-}
-
-/* Incident - Dark Red */
-.post-tag.incident {
-  background: linear-gradient(135deg, #c0392b, #a93226) !important;
-}
-
-/* Infrastructure - Orange */
-.post-tag.infrastructure {
-  background: linear-gradient(135deg, #f39c12, #e67e22) !important;
-}
-
-/* Inquiries - Yellow/Orange */
-.post-tag.inquiries {
-  background: linear-gradient(135deg, #f1c40f, #f39c12) !important;
-}
-
-/* Livelihood - Teal */
-.post-tag.livelihood {
-  background: linear-gradient(135deg, #1abc9c, #16a085) !important;
-}
-
-/* Maintenance - Brown/Orange */
-.post-tag.maintenance {
-  background: linear-gradient(135deg, #d35400, #ba4a00) !important;
-}
-
-/* Sanitation - Cyan */
-.post-tag.sanitation {
-  background: linear-gradient(135deg, #00bcd4, #0097a7) !important;
-}
-
-/* Sports - Green */
-.post-tag.sports {
-  background: linear-gradient(135deg, #4caf50, #388e3c) !important;
-}
-
-/* Traffic - Yellow */
-.post-tag.traffic {
-  background: linear-gradient(135deg, #ffc107, #ff9800) !important;
-}
-
-/* Weather - Light Blue */
-.post-tag.weather {
-  background: linear-gradient(135deg, #03a9f4, #0288d1) !important;
-}
-
-/* Welfare - Pink */
-.post-tag.welfare {
-  background: linear-gradient(135deg, #e91e63, #c2185b) !important;
-}
-
-/* Youth - Magenta */
-.post-tag.youth {
-  background: linear-gradient(135deg, #e91e63, #ad1457) !important;
-}
+.post-tag.business { border-color: #5f3dc4; background: #ede9fc; color: #5f3dc4; }
+.post-tag.education { border-color: #2980b9; background: #e3f2fd; color: #2980b9; }
+.post-tag.emergency { border-color: #c0392b; background: #ffebee; color: #c0392b; }
+.post-tag.employment { border-color: #1e7b4a; background: #e8f5e9; color: #1e7b4a; }
+.post-tag.environment { border-color: #27ae60; background: #e8f5e9; color: #27ae60; }
+.post-tag.governance { border-color: #8e44ad; background: #f3e5f5; color: #8e44ad; }
+.post-tag.health { border-color: #c2185b; background: #fce4ec; color: #c2185b; }
+.post-tag.incident { border-color: #a93226; background: #ffebee; color: #a93226; }
+.post-tag.infrastructure { border-color: #e67e22; background: #fff3e0; color: #e67e22; }
+.post-tag.inquiries { border-color: #b8860b; background: #fff8e1; color: #b8860b; }
+.post-tag.livelihood { border-color: #16a085; background: #e0f2f1; color: #16a085; }
+.post-tag.maintenance { border-color: #ba4a00; background: #fbe9e7; color: #ba4a00; }
+.post-tag.sanitation { border-color: #0097a7; background: #e0f7fa; color: #0097a7; }
+.post-tag.sports { border-color: #388e3c; background: #e8f5e9; color: #388e3c; }
+.post-tag.traffic { border-color: #e65100; background: #fff3e0; color: #e65100; }
+.post-tag.weather { border-color: #0288d1; background: #e1f5fe; color: #0288d1; }
+.post-tag.welfare { border-color: #c2185b; background: #fce4ec; color: #c2185b; }
+.post-tag.youth { border-color: #ad1457; background: #fce4ec; color: #ad1457; }
 
 .post-stats {
   display: flex;
