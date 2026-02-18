@@ -12,6 +12,9 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (!Schema::hasTable('event_assistance_requests')) {
+            return;
+        }
         // Use raw SQL to ensure the column type changes to LONGTEXT (can store up to 4GB)
         DB::statement('ALTER TABLE event_assistance_requests MODIFY COLUMN purpose LONGTEXT NULL');
     }
@@ -21,6 +24,9 @@ return new class extends Migration
      */
     public function down(): void
     {
+        if (!Schema::hasTable('event_assistance_requests')) {
+            return;
+        }
         // Use raw SQL to revert to VARCHAR(255)
         DB::statement('ALTER TABLE event_assistance_requests MODIFY COLUMN purpose VARCHAR(255) NULL');
     }
